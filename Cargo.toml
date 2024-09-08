@@ -1,6 +1,9 @@
 [package]
 name = "zebrachain"
 version = "0.1.0"
+authors = ["Jason Gerard DeRose <jasonderose@gmail.com>"]
 edition = "2021"
+licence = "AGPL-3.0-or-later"
+rust-version = "1.81"
 
 [dependencies]
