@@ -7,3 +7,4 @@ licence = "AGPL-3.0-or-later"
 rust-version = "1.81"
 
 [dependencies]
+blake3 = "1.5.4"
