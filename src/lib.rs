@@ -40,6 +40,10 @@ impl<'a> Block<'a> {
         hash(self.as_hashable())
     }
 
+    fn hash_is_valid(&self) -> bool {
+        self.compute_hash() == self.hash()
+    }
+
     pub fn previous_hash(&self) -> Hash {
         let bytes: [u8; DIGEST] = self.buf[BLOCK - DIGEST..]
             .try_into().expect("whoa, that sucks");
@@ -58,6 +62,14 @@ mod tests {
 
     fn new_expected() -> Hash {
         Hash::from_hex(EXPECTED).unwrap()
+    }
+
+    fn new_valid_store() -> Vec<u8> {
+        let mut store = Vec::with_capacity(BLOCK);
+        store.extend_from_slice(new_expected().as_bytes());
+        store.extend_from_slice(&[2; PAYLOAD][..]);
+        store.extend_from_slice(&[3; DIGEST][..]);
+        store
     }
 
     fn new_store() -> Vec<u8> {
@@ -112,6 +124,19 @@ mod tests {
         let block = Block::new(&store[..]);
         let hash = block.compute_hash();
         assert_eq!(hash, new_expected());
+    }
+
+    #[test]
+    fn block_hash_is_valid() {
+        let store = new_store();
+        let block = Block::new(&store[..]);
+        assert!(! block.hash_is_valid());
+        assert_ne!(block.hash(), new_expected());
+
+        let store = new_valid_store();
+        let block = Block::new(&store[..]);
+        assert!(block.hash_is_valid());
+        assert_eq!(block.hash(), new_expected());
     }
 
     #[test]
