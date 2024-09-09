@@ -43,7 +43,7 @@ impl<'a> Block<'a> {
     }
 
     pub fn hash(&self) -> Hash {
-        let bytes: [u8; DIGEST] = self.buf[0..DIGEST]
+        let bytes = self.buf[0..DIGEST]
             .try_into().expect("whoa, that sucks");
         Hash::from_bytes(bytes)
     }
@@ -61,7 +61,7 @@ impl<'a> Block<'a> {
     }
 
     pub fn previous_hash(&self) -> Hash {
-        let bytes: [u8; DIGEST] = self.buf[BLOCK - DIGEST..]
+        let bytes = self.buf[BLOCK - DIGEST..]
             .try_into().expect("whoa, that sucks");
         Hash::from_bytes(bytes)
     }
