@@ -4,9 +4,10 @@ const DIGEST: usize = 32;
 const SIGNATURE: usize = 64;  // Need more Dilithium, Captian!
 const PUBKEY: usize = 32;     // STILL need more Dilithium, Captian!!!
 
-//                                          NEXT_PUBKKEY_HASH
+
 const PAYLOAD: usize = SIGNATURE + PUBKEY + DIGEST + DIGEST;
-//                                                   PREVIOUS_HASH
+//                                          ^^^^^^ NEXT_PUBKKEY_HASH
+//                                                   ^^^^^^ PREVIOUS_BLOCK_HASH
 
 const HASHABLE: usize = PAYLOAD + DIGEST;  // Ends with hash of previous block
 const BLOCK: usize = DIGEST + HASHABLE;  // Begins with hash of HASHABLE slice
