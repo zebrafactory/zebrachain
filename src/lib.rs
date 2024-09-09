@@ -1,25 +1,32 @@
 use blake3::{hash, Hash};
 
-
 const DIGEST: usize = 32;
+const SIGNATURE: usize = 64;  // Need more Dilithium, Captian!
+const PUBKEY: usize = 32;     // STILL need more Dilithium, Captian!!!
 
-const PAYLOAD: usize = 69;  // Haha, for now.
+//                                          NEXT_PUBKKEY_HASH
+const PAYLOAD: usize = SIGNATURE + PUBKEY + DIGEST + DIGEST;
+//                                                   PREVIOUS_HASH
 
 const HASHABLE: usize = PAYLOAD + DIGEST;  // Ends with hash of previous block
-
 const BLOCK: usize = DIGEST + HASHABLE;  // Begins with hash of HASHABLE slice
 
-
 /*
-HASH || PAYLOAD || PREVIOUS_HASH
+A full block looks like:
 
-HASH = hash(PAYLOAD || PREVIOUS_HASH)
+    HASH || PAYLOAD || PREVIOUS_HASH
 
-And PAYLOAD is:
+Where:
 
-SIGNATURE || PUBKEY || NEXT_PUBKEY_HASH || STATE_HASH
+    HASH = hash(PAYLOAD || PREVIOUS_HASH)
 
-SIGNATURE = sign(PUBKEY || NEXT_PUBKEY_HASH || STATE_HASH || PREVIOUS_HASH)
+And PAYLOAD expands to:
+
+    SIGNATURE || PUBKEY || NEXT_PUBKEY_HASH || STATE_HASH
+
+Where:
+
+    SIGNATURE = sign(PUBKEY || NEXT_PUBKEY_HASH || STATE_HASH || PREVIOUS_HASH)
 */
 
 pub struct Block<'a> {
@@ -66,7 +73,7 @@ mod tests {
     use super::*;
 
     const EXPECTED: &str =
-        "b8b105419679ed70d2804e224276d1624ea85bbf7211ef75e8395b48acbd2f2e";
+        "e17e48f651b5d03585d26accca19bd39466a3aa46f7d499c4bd5a449eb2a0097";
 
     fn new_expected() -> Hash {
         Hash::from_hex(EXPECTED).unwrap()
@@ -95,14 +102,14 @@ mod tests {
     }
 
     #[test]
-    #[should_panic (expected="Need a 133 byte slice; got 132 bytes")]
+    #[should_panic (expected="Need a 224 byte slice; got 223 bytes")]
     fn block_new_short_panic() {
         let store: Vec<u8> = vec![0; BLOCK - 1];
         let block = Block::new(&store[..]);
     }
 
     #[test]
-    #[should_panic (expected="Need a 133 byte slice; got 134 bytes")]
+    #[should_panic (expected="Need a 224 byte slice; got 225 bytes")]
     fn block_new_long_panic() {
         let store: Vec<u8> = vec![0; BLOCK + 1];
         let block = Block::new(&store[..]);
