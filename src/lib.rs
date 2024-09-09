@@ -5,16 +5,16 @@ const DIGEST: usize = 32;
 
 const PAYLOAD: usize = 69;  // Haha, for now.
 
-const SIGNABLE: usize = PAYLOAD + DIGEST;  // Ends with hash of previous block
+const HASHABLE: usize = PAYLOAD + DIGEST;  // Ends with hash of previous block
 
-const BLOCK: usize = DIGEST + SIGNABLE;
+const BLOCK: usize = DIGEST + HASHABLE;  // Begins with hash of HASHABLE slice
 
 
 /*
 HASH | PAYLOAD | PREVIOUS
 */
 
-struct Block<'a> {
+pub struct Block<'a> {
     buf: &'a [u8],
 }
 
@@ -30,6 +30,11 @@ impl<'a> Block<'a> {
         let bytes: [u8; DIGEST] = self.buf[0..DIGEST]
             .try_into().expect("whoa, that sucks");
         Hash::from_bytes(bytes)
+    }
+
+    /// Returns final HASHABLE bytes (block hash is hash of this slice).
+    pub fn as_hashable(&self) -> &[u8] {
+        &self.buf[DIGEST..]
     }
 
     pub fn previous_hash(&self) -> Hash {
@@ -61,14 +66,14 @@ mod tests {
 
     #[test]
     #[should_panic (expected="Need a 133 byte slice; got 132 bytes")]
-    fn block_new_panic_short() {
+    fn block_new_short_panic() {
         let store: Vec<u8> = vec![0; BLOCK - 1];
         let block = Block::new(&store[..]);
     }
 
     #[test]
     #[should_panic (expected="Need a 133 byte slice; got 134 bytes")]
-    fn block_new_panic_long() {
+    fn block_new_long_panic() {
         let store: Vec<u8> = vec![0; BLOCK + 1];
         let block = Block::new(&store[..]);
     }
@@ -79,6 +84,16 @@ mod tests {
         let block = Block::new(&store[..]);
         let hash = block.hash();
         assert_eq!(hash, Hash::from_bytes([1; DIGEST]));
+    }
+
+    #[test]
+    fn block_as_hashable() {
+        let store = new_store();
+        let block = Block::new(&store[..]);
+        let mut expected = Vec::new();
+        expected.extend_from_slice(&[2; PAYLOAD][..]);
+        expected.extend_from_slice(&[3; DIGEST][..]);
+        assert_eq!(block.as_hashable(), &expected[..]);
     }
 
     #[test]
