@@ -1,4 +1,4 @@
-use blake3::Hash;
+use blake3::{hash, Hash};
 
 
 const DIGEST: usize = 32;
@@ -32,9 +32,12 @@ impl<'a> Block<'a> {
         Hash::from_bytes(bytes)
     }
 
-    /// Returns final HASHABLE bytes (block hash is hash of this slice).
-    pub fn as_hashable(&self) -> &[u8] {
+    fn as_hashable(&self) -> &[u8] {
         &self.buf[DIGEST..]
+    }
+
+    fn compute_hash(&self) -> Hash {
+        hash(self.as_hashable())
     }
 
     pub fn previous_hash(&self) -> Hash {
@@ -49,6 +52,13 @@ impl<'a> Block<'a> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    const EXPECTED: &str =
+        "b8b105419679ed70d2804e224276d1624ea85bbf7211ef75e8395b48acbd2f2e";
+
+    fn new_expected() -> Hash {
+        Hash::from_hex(EXPECTED).unwrap()
+    }
 
     fn new_store() -> Vec<u8> {
         let mut store: Vec<u8> = Vec::with_capacity(BLOCK);
@@ -94,6 +104,14 @@ mod tests {
         expected.extend_from_slice(&[2; PAYLOAD][..]);
         expected.extend_from_slice(&[3; DIGEST][..]);
         assert_eq!(block.as_hashable(), &expected[..]);
+    }
+
+    #[test]
+    fn block_compute_hash() {
+        let store = new_store();
+        let block = Block::new(&store[..]);
+        let hash = block.compute_hash();
+        assert_eq!(hash, new_expected());
     }
 
     #[test]
