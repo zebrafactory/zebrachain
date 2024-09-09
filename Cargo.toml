@@ -8,3 +8,4 @@ rust-version = "1.81"
 
 [dependencies]
 blake3 = "1.5.4"
+ed25519-dalek = "2.1.1"
