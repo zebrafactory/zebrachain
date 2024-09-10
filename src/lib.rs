@@ -1,3 +1,6 @@
+mod pksign;
+
+
 use blake3::{hash, Hash};
 
 const DIGEST: usize = 32;
