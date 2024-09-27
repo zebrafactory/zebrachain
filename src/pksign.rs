@@ -1,7 +1,7 @@
 //! Abstraction over public key signature algorithms.
 
 use blake3;
-use ed25519_dalek;
+use ed25519_dalek::{Signer};
 
 const ED25119_CONTEXT: &str = "win.zebrachain.sign.ed25519";
 
@@ -62,10 +62,12 @@ impl Pair for Ed25519 {
     }
  
     fn write_pubkey(&self, dst: &mut [u8]) {
+        dst.copy_from_slice(self.key.verifying_key().as_bytes());
     }
 
     fn sign(self, msg: &[u8], dst: &mut [u8]) {
-        ()
+        let sig = self.key.sign(msg);
+        dst.copy_from_slice(&sig.to_bytes());
     }
 }
 
@@ -75,7 +77,15 @@ mod tests {
     use super::*;
 
     #[test]
-    fn fail() {
-        assert!(false);
+    fn ed25519_new() {
+        let secret = [7; 32];
+        let pair = Ed25519::new(&secret);
+
+        let mut pubkey = [0; 32];
+        pair.write_pubkey(&mut pubkey);
+
+        let msg = b"hello all the world, yo!";
+        let mut sig = [0; 64];
+        pair.sign(msg, &mut sig);
     }
 }
