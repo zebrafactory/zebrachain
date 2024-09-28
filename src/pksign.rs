@@ -3,7 +3,7 @@
 use blake3;
 use ed25519_dalek::{Signer};
 
-const ED25119_CONTEXT: &str = "win.zebrachain.sign.ed25519";
+const ED25519_CONTEXT: &str = "win.zebrachain.sign.ed25519";
 
 /*
 We need public key signing systems with this deterministic flow:
@@ -47,6 +47,25 @@ pub trait Pair {
     fn sign(self, msg: &[u8], dst: &mut [u8]);
 }
 
+pub enum Error {
+    MalformedPublicKey,
+    MalformedSignature,
+    InvalidSignature,
+}
+
+pub trait PubKey {
+    fn build(pubkey: &[u8]) -> Result<impl PubKey, &str>;
+
+    fn verify(&self, msg: &[u8], sig: &[u8]) -> Result<(), Error>;
+
+    fn write_hash(&self, dst: &mut [u8]);
+
+    /// Write public key into byte slice.
+    fn write_pubkey(&self, dst: &mut [u8]);
+}
+
+
+
 
 struct Ed25519 {
     key: ed25519_dalek::SigningKey,
@@ -54,7 +73,7 @@ struct Ed25519 {
 
 impl Pair for Ed25519 {
     fn new(secret: &[u8]) -> Ed25519 {
-        let mut hasher = blake3::Hasher::new_derive_key(ED25119_CONTEXT);
+        let mut hasher = blake3::Hasher::new_derive_key(ED25519_CONTEXT);
         hasher.update(secret);
         let derived = hasher.finalize();
         let key = ed25519_dalek::SigningKey::from_bytes(derived.as_bytes());
