@@ -3,7 +3,7 @@
 use blake3;
 use ed25519_dalek::{Signer};
 
-const ED25519_CONTEXT: &str = "win.zebrachain.sign.ed25519";
+static ED25519_CONTEXT: &str = "win.zebrachain.sign.ed25519";
 
 /*
 We need public key signing systems with this deterministic flow:
@@ -37,8 +37,19 @@ In order to make the next signature in the chain, we need to:
 pub trait Pair {
     /// We need deterministic Pair generation from the same secret.
     ///
-    /// This should work from an arbitrary secret and 
+    /// This should work from an arbitrary secret and
+
+    fn get_context() -> &'static str;
+
+    fn derive(secret: &[u8]) -> blake3::Hash {
+        let mut hasher = blake3::Hasher::new_derive_key(Self::get_context());
+        hasher.update(secret);
+        hasher.finalize()
+    }
+
     fn new(secret: &[u8]) -> impl Pair;
+
+    //fn new_derived(derived: blake3::Hash) -> impl Pair;
 
     /// Write public key into byte slice.
     fn write_pubkey(&self, dst: &mut [u8]);
@@ -54,7 +65,8 @@ pub enum Error {
 }
 
 pub trait PubKey {
-    fn build(pubkey: &[u8]) -> Result<impl PubKey, &str>;
+
+    fn build(pubkey: &[u8]) -> Result<impl PubKey, Error>;
 
     fn verify(&self, msg: &[u8], sig: &[u8]) -> Result<(), Error>;
 
@@ -72,6 +84,11 @@ struct Ed25519 {
 }
 
 impl Pair for Ed25519 {
+
+    fn get_context() -> &'static str {
+        ED25519_CONTEXT
+    }
+
     fn new(secret: &[u8]) -> Ed25519 {
         let mut hasher = blake3::Hasher::new_derive_key(ED25519_CONTEXT);
         hasher.update(secret);
