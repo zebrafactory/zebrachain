@@ -39,17 +39,19 @@ pub trait Pair {
     ///
     /// This should work from an arbitrary secret and
 
-    fn get_context() -> &'static str;
-
     fn derive(secret: &[u8]) -> blake3::Hash {
         let mut hasher = blake3::Hasher::new_derive_key(Self::get_context());
         hasher.update(secret);
         hasher.finalize()
     }
 
-    fn new(secret: &[u8]) -> impl Pair;
+    fn new(secret: &[u8]) -> impl Pair {
+        Self::new_derived(Self::derive(secret))
+    }
 
-    //fn new_derived(derived: blake3::Hash) -> impl Pair;
+    fn get_context() -> &'static str;
+
+    fn new_derived(derived: blake3::Hash) -> impl Pair;
 
     /// Write public key into byte slice.
     fn write_pubkey(&self, dst: &mut [u8]);
@@ -89,10 +91,7 @@ impl Pair for Ed25519 {
         ED25519_CONTEXT
     }
 
-    fn new(secret: &[u8]) -> Ed25519 {
-        let mut hasher = blake3::Hasher::new_derive_key(ED25519_CONTEXT);
-        hasher.update(secret);
-        let derived = hasher.finalize();
+    fn new_derived(derived: blake3::Hash) -> Ed25519 {
         let key = ed25519_dalek::SigningKey::from_bytes(derived.as_bytes());
         Ed25519 {key}
     }
