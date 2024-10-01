@@ -24,7 +24,7 @@ In order to make the next signature in the chain, we need to:
 3.  Deterministicly generate the algorithm-specific (secret, private) key pair
     from the derived secret (eg, the Dilithium or ed25519 keypair).  There is no
     reason to ever expose details of secret signing key type or its bytes
-    outside the Pair.  We do need to expose the public key bytes to the outside,
+    outside the KeyPair.  We do need to expose the public key bytes to the outside,
     though.
 
 4.  Generate the
@@ -33,9 +33,9 @@ In order to make the next signature in the chain, we need to:
 
 /// Trait to expose the needed bits of a (secret, private) keypair.
 ///
-/// Remember that a `Pair` could be a Dilithium + ed25519 hybrid pair.
-pub trait Pair {
-    /// We need deterministic Pair generation from the same secret.
+/// Remember that a `KeyPair` could be a Dilithium + ed25519 hybrid pair.
+pub trait KeyPair {
+    /// We need deterministic KeyPair generation from the same secret.
     ///
     /// This should work from an arbitrary secret and
 
@@ -45,13 +45,13 @@ pub trait Pair {
         hasher.finalize()
     }
 
-    fn new(secret: &[u8]) -> impl Pair {
+    fn new(secret: &[u8]) -> impl KeyPair {
         Self::new_derived(Self::derive(secret))
     }
 
     fn get_context() -> &'static str;
 
-    fn new_derived(derived: blake3::Hash) -> impl Pair;
+    fn new_derived(derived: blake3::Hash) -> impl KeyPair;
 
     /// Write public key into byte slice.
     fn write_pubkey(&self, dst: &mut [u8]);
@@ -85,8 +85,7 @@ struct Ed25519 {
     key: ed25519_dalek::SigningKey,
 }
 
-impl Pair for Ed25519 {
-
+impl KeyPair for Ed25519 {
     fn get_context() -> &'static str {
         ED25519_CONTEXT
     }
