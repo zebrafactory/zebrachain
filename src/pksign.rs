@@ -67,15 +67,7 @@ pub enum Error {
 }
 
 pub trait PubKey {
-
-    fn build(pubkey: &[u8]) -> Result<impl PubKey, Error>;
-
-    fn verify(&self, msg: &[u8], sig: &[u8]) -> Result<(), Error>;
-
-    fn write_hash(&self, dst: &mut [u8]);
-
-    /// Write public key into byte slice.
-    fn write_pubkey(&self, dst: &mut [u8]);
+    fn verify(pubkey: &[u8], sig: &[u8], msg: &[u8]) -> Result<(), Error>;
 }
 
 
@@ -102,6 +94,13 @@ impl KeyPair for Ed25519 {
     fn sign(self, msg: &[u8], dst: &mut [u8]) {
         let sig = self.key.sign(msg);
         dst.copy_from_slice(&sig.to_bytes());
+    }
+}
+
+
+impl PubKey for Ed25519 {
+    fn verify(pubkey: &[u8], sig: &[u8], msg: &[u8]) -> Result<(), Error> {
+        Ok(())
     }
 }
 
