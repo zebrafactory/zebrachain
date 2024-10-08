@@ -1,7 +1,14 @@
 //! Abstraction over public key signature algorithms.
 
 use blake3;
-use ed25519_dalek::{Signer};
+use ed25519_dalek::{
+    SigningKey,
+    Signer,
+    Signature,
+    SignatureError,
+    VerifyingKey,
+    Verifier,
+};
 
 static ED25519_CONTEXT: &str = "win.zebrachain.sign.ed25519";
 
@@ -60,6 +67,7 @@ pub trait KeyPair {
     fn sign(self, msg: &[u8], dst: &mut [u8]);
 }
 
+#[derive(Debug)]
 pub enum Error {
     MalformedPublicKey,
     MalformedSignature,
@@ -100,7 +108,20 @@ impl KeyPair for Ed25519 {
 
 impl PubKey for Ed25519 {
     fn verify(pubkey: &[u8], sig: &[u8], msg: &[u8]) -> Result<(), Error> {
-        Ok(())
+        if let Ok(pubkey) = ed25519_dalek::VerifyingKey::from_bytes(
+            pubkey.try_into().expect("oops"))
+        {
+            let sig = Signature::from_bytes(sig.try_into().expect("oops"));
+            if let Ok(_) = pubkey.verify_strict(msg, &sig) {
+                Ok(())
+            }
+            else {
+                Err(Error::InvalidSignature)
+            }
+        }
+        else {
+            Err(Error::MalformedPublicKey)
+        }
     }
 }
 
@@ -120,5 +141,24 @@ mod tests {
         let msg = b"hello all the world, yo!";
         let mut sig = [0; 64];
         pair.sign(msg, &mut sig);
+    }
+
+    #[test]
+    fn ed25519_verify() {
+        let msg = b"long live the human species";
+
+        let sec1 = [11; 32];
+        let sec2 = [13; 32];
+        let pair1 = Ed25519::new(&sec1);
+        let pair2 = Ed25519::new(&sec2);
+
+        let mut pubkey1 = [0; 32];
+        pair1.write_pubkey(&mut pubkey1);
+        let mut pubkey1 = [0; 32];
+        pair1.write_pubkey(&mut pubkey1);
+
+        let mut sig1 = [0; 64];
+        pair1.sign(msg, &mut sig1);
+        
     }
 }
