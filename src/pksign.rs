@@ -38,13 +38,14 @@ In order to make the next signature in the chain, we need to:
 
 */
 
-/// Trait to expose the needed bits of a (secret, private) keypair.
-///
-/// Remember that a `KeyPair` could be a Dilithium + ed25519 hybrid pair.
-pub trait KeyPair {
-    /// We need deterministic KeyPair generation from the same secret.
-    ///
-    /// This should work from an arbitrary secret and
+struct KeyPair {
+    key: ed25519_dalek::SigningKey,
+}
+
+impl KeyPair {
+    fn new(secret: &[u8]) -> Self {
+        Self::new_derived(Self::derive(secret))
+    }
 
     fn derive(secret: &[u8]) -> blake3::Hash {
         let mut hasher = blake3::Hasher::new_derive_key(Self::get_context());
@@ -52,47 +53,13 @@ pub trait KeyPair {
         hasher.finalize()
     }
 
-    fn new(secret: &[u8]) -> impl KeyPair {
-        Self::new_derived(Self::derive(secret))
-    }
-
-    fn get_context() -> &'static str;
-
-    fn new_derived(derived: blake3::Hash) -> impl KeyPair;
-
-    /// Write public key into byte slice.
-    fn write_pubkey(&self, dst: &mut [u8]);
-
-    /// Sign message.
-    fn sign(self, msg: &[u8], dst: &mut [u8]);
-}
-
-#[derive(Debug)]
-pub enum Error {
-    MalformedPublicKey,
-    MalformedSignature,
-    InvalidSignature,
-}
-
-pub trait PubKey {
-    fn verify(pubkey: &[u8], sig: &[u8], msg: &[u8]) -> Result<(), Error>;
-}
-
-
-
-
-struct Ed25519 {
-    key: ed25519_dalek::SigningKey,
-}
-
-impl KeyPair for Ed25519 {
     fn get_context() -> &'static str {
         ED25519_CONTEXT
     }
 
-    fn new_derived(derived: blake3::Hash) -> Ed25519 {
+    fn new_derived(derived: blake3::Hash) -> Self {
         let key = ed25519_dalek::SigningKey::from_bytes(derived.as_bytes());
-        Ed25519 {key}
+        Self {key}
     }
  
     fn write_pubkey(&self, dst: &mut [u8]) {
@@ -105,23 +72,28 @@ impl KeyPair for Ed25519 {
     }
 }
 
+#[derive(Debug)]
+pub enum Error {
+    MalformedPublicKey,
+    MalformedSignature,
+    InvalidSignature,
+}
 
-impl PubKey for Ed25519 {
-    fn verify(pubkey: &[u8], sig: &[u8], msg: &[u8]) -> Result<(), Error> {
-        if let Ok(pubkey) = ed25519_dalek::VerifyingKey::from_bytes(
-            pubkey.try_into().expect("oops"))
-        {
-            let sig = Signature::from_bytes(sig.try_into().expect("oops"));
-            if let Ok(_) = pubkey.verify_strict(msg, &sig) {
-                Ok(())
-            }
-            else {
-                Err(Error::InvalidSignature)
-            }
+
+fn verify(pubkey: &[u8], sig: &[u8], msg: &[u8]) -> Result<(), Error> {
+    if let Ok(pubkey) = ed25519_dalek::VerifyingKey::from_bytes(
+        pubkey.try_into().expect("oops"))
+    {
+        let sig = Signature::from_bytes(sig.try_into().expect("oops"));
+        if let Ok(_) = pubkey.verify_strict(msg, &sig) {
+            Ok(())
         }
         else {
-            Err(Error::MalformedPublicKey)
+            Err(Error::InvalidSignature)
         }
+    }
+    else {
+        Err(Error::MalformedPublicKey)
     }
 }
 
@@ -131,9 +103,9 @@ mod tests {
     use super::*;
 
     #[test]
-    fn ed25519_new() {
+    fn keypair_new() {
         let secret = [7; 32];
-        let pair = Ed25519::new(&secret);
+        let pair = KeyPair::new(&secret);
 
         let mut pubkey = [0; 32];
         pair.write_pubkey(&mut pubkey);
@@ -141,24 +113,5 @@ mod tests {
         let msg = b"hello all the world, yo!";
         let mut sig = [0; 64];
         pair.sign(msg, &mut sig);
-    }
-
-    #[test]
-    fn ed25519_verify() {
-        let msg = b"long live the human species";
-
-        let sec1 = [11; 32];
-        let sec2 = [13; 32];
-        let pair1 = Ed25519::new(&sec1);
-        let pair2 = Ed25519::new(&sec2);
-
-        let mut pubkey1 = [0; 32];
-        pair1.write_pubkey(&mut pubkey1);
-        let mut pubkey1 = [0; 32];
-        pair1.write_pubkey(&mut pubkey1);
-
-        let mut sig1 = [0; 64];
-        pair1.sign(msg, &mut sig1);
-        
     }
 }
