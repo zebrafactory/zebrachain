@@ -38,6 +38,14 @@ In order to make the next signature in the chain, we need to:
 
 */
 
+
+fn derive(context: &str, secret: &[u8]) -> blake3::Hash {
+    let mut hasher = blake3::Hasher::new_derive_key(context);
+    hasher.update(secret);
+    hasher.finalize()
+}
+
+
 struct KeyPair {
     key: ed25519_dalek::SigningKey,
 }
@@ -101,6 +109,21 @@ fn verify(pubkey: &[u8], sig: &[u8], msg: &[u8]) -> Result<(), Error> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn derive_key() {
+        let secret = [7; 32];
+
+        let h = derive("example0", &secret);
+        assert_eq!(h.as_bytes(),
+            &[201, 197, 207, 85, 251, 50, 175, 230, 93, 166, 135, 151, 254, 182, 137, 72, 247, 158, 154, 71, 13, 107, 98, 185, 50, 220, 200, 223, 244, 224, 121, 36]
+        );
+
+        let h = derive("example1", &secret);
+        assert_eq!(h.as_bytes(),
+            &[12, 255, 43, 240, 22, 55, 198, 18, 190, 243, 159, 226, 207, 193, 9, 243, 40, 12, 148, 123, 160, 138, 63, 163, 136, 72, 203, 47, 243, 111, 81, 122]
+        );
+    }
 
     #[test]
     fn keypair_new() {
