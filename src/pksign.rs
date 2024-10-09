@@ -46,35 +46,22 @@ fn derive(context: &str, secret: &[u8]) -> blake3::Hash {
 }
 
 
-struct KeyPair {
+pub struct KeyPair {
     key: ed25519_dalek::SigningKey,
 }
 
 impl KeyPair {
-    fn new(secret: &[u8]) -> Self {
-        Self::new_derived(Self::derive(secret))
-    }
-
-    fn derive(secret: &[u8]) -> blake3::Hash {
-        let mut hasher = blake3::Hasher::new_derive_key(Self::get_context());
-        hasher.update(secret);
-        hasher.finalize()
-    }
-
-    fn get_context() -> &'static str {
-        ED25519_CONTEXT
-    }
-
-    fn new_derived(derived: blake3::Hash) -> Self {
-        let key = ed25519_dalek::SigningKey::from_bytes(derived.as_bytes());
+    pub fn new(secret: &[u8]) -> Self {
+        let h = derive(ED25519_CONTEXT, secret);
+        let key = ed25519_dalek::SigningKey::from_bytes(h.as_bytes());
         Self {key}
     }
- 
-    fn write_pubkey(&self, dst: &mut [u8]) {
+
+    pub fn write_pubkey(&self, dst: &mut [u8]) {
         dst.copy_from_slice(self.key.verifying_key().as_bytes());
     }
 
-    fn sign(self, msg: &[u8], dst: &mut [u8]) {
+    pub fn sign(self, msg: &[u8], dst: &mut [u8]) {
         let sig = self.key.sign(msg);
         dst.copy_from_slice(&sig.to_bytes());
     }
@@ -127,14 +114,20 @@ mod tests {
 
     #[test]
     fn keypair_new() {
-        let secret = [7; 32];
+        let secret = [7u8; 32];
         let pair = KeyPair::new(&secret);
 
-        let mut pubkey = [0; 32];
+        let mut pubkey = [0u8; 32];
         pair.write_pubkey(&mut pubkey);
+        assert_eq!(pubkey,
+            [54, 112, 220, 24, 105, 66, 248, 10, 41, 195, 89, 189, 126, 216, 231, 244, 66, 45, 137, 51, 190, 211, 57, 34, 49, 138, 83, 189, 98, 158, 53, 49]
+        );
 
         let msg = b"hello all the world, yo!";
-        let mut sig = [0; 64];
+        let mut sig = [0u8; 64];
         pair.sign(msg, &mut sig);
+        assert_eq!(sig,
+            [49, 206, 153, 167, 46, 196, 137, 170, 211, 11, 118, 171, 219, 141, 177, 220, 167, 186, 248, 227, 236, 191, 24, 158, 120, 191, 213, 150, 71, 193, 250, 224, 64, 162, 240, 212, 89, 58, 116, 193, 12, 158, 0, 67, 200, 235, 219, 94, 101, 46, 55, 133, 123, 57, 88, 39, 102, 63, 227, 26, 186, 138, 85, 9]
+        );
     }
 }
