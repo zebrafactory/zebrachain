@@ -12,31 +12,6 @@ use ed25519_dalek::{
 
 static ED25519_CONTEXT: &str = "win.zebrachain.sign.ed25519";
 
-/*
-We need public key signing systems with this deterministic flow:
-
-ENCRYPTED_SECRET --> SECRET --> DERIVED_SECRET --> (SECRET_KEY, PUBLIC_KEY)
-
-You can do this with most (all?) algorithms (even RSA), but Dilithium and
-ed25519 are both extra great for this.
-
-In order to make the next signature in the chain, we need to:
-
-1.  Decrypt secret.
-
-2.  Derive context secret with, eg, blake3::Hasher::new_derived key().  Note
-    that in a Dilithium + ed25519 hybrid construction, each algorithm MUST
-    derive their own key with their own unique context string.
-
-3.  Deterministicly generate the algorithm-specific (secret, private) key pair
-    from the derived secret (eg, the Dilithium or ed25519 keypair).  There is no
-    reason to ever expose details of secret signing key type or its bytes
-    outside the KeyPair.  We do need to expose the public key bytes to the outside,
-    though.
-
-4.  Generate the
-
-*/
 
 
 fn derive(context: &str, secret: &[u8]) -> blake3::Hash {
@@ -46,6 +21,7 @@ fn derive(context: &str, secret: &[u8]) -> blake3::Hash {
 }
 
 
+#[derive(Debug)]
 pub struct KeyPair {
     key: ed25519_dalek::SigningKey,
 }
@@ -61,6 +37,7 @@ impl KeyPair {
         dst.copy_from_slice(self.key.verifying_key().as_bytes());
     }
 
+    // Consumes instance because we should only make one signature per KeyPair1
     pub fn sign(self, msg: &[u8], dst: &mut [u8]) {
         let sig = self.key.sign(msg);
         dst.copy_from_slice(&sig.to_bytes());
