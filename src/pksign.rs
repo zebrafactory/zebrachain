@@ -73,6 +73,17 @@ fn verify(pubkey: &[u8], sig: &[u8], msg: &[u8]) -> Result<(), Error> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use pqcrypto_dilithium::dilithium3;
+
+    #[test]
+    fn test_dilithium() {
+        // FIXME: We need an API that allows us to generate from a seed
+        let msg = b"hello";
+        let (pk, sk) = dilithium3::keypair();
+        let sm = dilithium3::sign(msg, &sk);
+        let vmsg = dilithium3::open(&sm, &pk).unwrap();
+        assert_eq!(vmsg, msg);
+    }
 
     #[test]
     fn derive_key() {
