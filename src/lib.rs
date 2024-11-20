@@ -1,4 +1,5 @@
 mod pksign;
+mod chain;
 
 
 use blake3::{hash, Hash};
