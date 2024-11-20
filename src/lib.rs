@@ -1,20 +1,18 @@
-mod pksign;
 mod chain;
-
+mod pksign;
 
 use blake3::{hash, Hash};
 
 const DIGEST: usize = 32;
-const SIGNATURE: usize = 64;  // Need more Dilithium, Captian!
-const PUBKEY: usize = 32;     // STILL need more Dilithium, Captian!!!
-
+const SIGNATURE: usize = 64; // Need more Dilithium, Captian!
+const PUBKEY: usize = 32; // STILL need more Dilithium, Captian!!!
 
 const PAYLOAD: usize = SIGNATURE + PUBKEY + DIGEST + DIGEST;
 //                                          ^^^^^^ NEXT_PUBKKEY_HASH
 //                                                   ^^^^^^ PREVIOUS_BLOCK_HASH
 
-const HASHABLE: usize = PAYLOAD + DIGEST;  // Ends with hash of previous block
-const BLOCK: usize = DIGEST + HASHABLE;  // Begins with hash of HASHABLE slice
+const HASHABLE: usize = PAYLOAD + DIGEST; // Ends with hash of previous block
+const BLOCK: usize = DIGEST + HASHABLE; // Begins with hash of HASHABLE slice
 
 /*
 A full block looks like:
@@ -47,8 +45,7 @@ impl<'a> Block<'a> {
     }
 
     pub fn hash(&self) -> Hash {
-        let bytes = self.buf[0..DIGEST]
-            .try_into().expect("whoa, that sucks");
+        let bytes = self.buf[0..DIGEST].try_into().expect("whoa, that sucks");
         Hash::from_bytes(bytes)
     }
 
@@ -66,19 +63,17 @@ impl<'a> Block<'a> {
 
     pub fn previous_hash(&self) -> Hash {
         let bytes = self.buf[BLOCK - DIGEST..]
-            .try_into().expect("whoa, that sucks");
+            .try_into()
+            .expect("whoa, that sucks");
         Hash::from_bytes(bytes)
     }
 }
-
-
 
 #[cfg(test)]
 mod tests {
     use super::*;
 
-    const EXPECTED: &str =
-        "e17e48f651b5d03585d26accca19bd39466a3aa46f7d499c4bd5a449eb2a0097";
+    const EXPECTED: &str = "e17e48f651b5d03585d26accca19bd39466a3aa46f7d499c4bd5a449eb2a0097";
 
     fn new_expected() -> Hash {
         Hash::from_hex(EXPECTED).unwrap()
@@ -107,14 +102,14 @@ mod tests {
     }
 
     #[test]
-    #[should_panic (expected="Need a 224 byte slice; got 223 bytes")]
+    #[should_panic(expected = "Need a 224 byte slice; got 223 bytes")]
     fn block_new_short_panic() {
         let store: Vec<u8> = vec![0; BLOCK - 1];
         let block = Block::new(&store[..]);
     }
 
     #[test]
-    #[should_panic (expected="Need a 224 byte slice; got 225 bytes")]
+    #[should_panic(expected = "Need a 224 byte slice; got 225 bytes")]
     fn block_new_long_panic() {
         let store: Vec<u8> = vec![0; BLOCK + 1];
         let block = Block::new(&store[..]);
@@ -150,7 +145,7 @@ mod tests {
     fn block_hash_is_valid() {
         let store = new_store();
         let block = Block::new(&store[..]);
-        assert!(! block.hash_is_valid());
+        assert!(!block.hash_is_valid());
         assert_ne!(block.hash(), new_expected());
 
         let store = new_valid_store();
@@ -167,4 +162,3 @@ mod tests {
         assert_eq!(hash, Hash::from_bytes([3; DIGEST]));
     }
 }
-
