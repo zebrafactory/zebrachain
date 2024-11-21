@@ -92,8 +92,7 @@ impl<'a> Block<'a> {
     }
 
     pub fn hash(&self) -> Hash {
-        let bytes = self.buf[HASH_RANGE].try_into().expect("whoa, that sucks");
-        Hash::from_bytes(bytes)
+        Hash::from_bytes(self.as_hash().try_into().expect("oops"))
     }
 
     fn compute_hash(&self) -> Hash {
@@ -105,10 +104,7 @@ impl<'a> Block<'a> {
     }
 
     pub fn previous_hash(&self) -> Hash {
-        let bytes = self.buf[PREVIOUS_HASH_RANGE]
-            .try_into()
-            .expect("whoa, that sucks");
-        Hash::from_bytes(bytes)
+        Hash::from_bytes(self.as_previous_hash().try_into().expect("oops"))
     }
 }
 
