@@ -14,7 +14,6 @@ const PAYLOAD: usize = SIGNATURE + PUBKEY + DIGEST + DIGEST;
 
 const HASHABLE: usize = PAYLOAD + DIGEST; // Ends with hash of previous block
 const BLOCK: usize = DIGEST + HASHABLE; // Begins with hash of HASHABLE slice
-const PREAMBLE: usize = DIGEST + SIGNATURE + PUBKEY + DIGEST;
 
 const HASHABLE_RANGE: Range<usize> = DIGEST..BLOCK;
 const SIGNABLE_RANGE: Range<usize> = DIGEST + SIGNATURE..BLOCK;
@@ -22,8 +21,8 @@ const SIGNABLE_RANGE: Range<usize> = DIGEST + SIGNATURE..BLOCK;
 const HASH_RANGE: Range<usize> = 0..DIGEST;
 const SIGNATURE_RANGE: Range<usize> = DIGEST..DIGEST + SIGNATURE;
 const PUBKEY_RANGE: Range<usize> = DIGEST + SIGNATURE..DIGEST + SIGNATURE + PUBKEY;
-const NEXT_PUBKEY_HASH_RANGE: Range<usize> = DIGEST + SIGNATURE + PUBKEY..PREAMBLE;
-const STATE_HASH_RANGE: Range<usize> = PREAMBLE..PREAMBLE + DIGEST;
+const NEXT_PUBKEY_HASH_RANGE: Range<usize> = BLOCK - DIGEST * 3..BLOCK - DIGEST * 2;
+const STATE_HASH_RANGE: Range<usize> = BLOCK - DIGEST * 2..BLOCK - DIGEST;
 const PREVIOUS_HASH_RANGE: Range<usize> = BLOCK - DIGEST..BLOCK;
 
 /*
@@ -66,6 +65,30 @@ impl<'a> Block<'a> {
 
     fn as_signable(&self) -> &[u8] {
         &self.buf[SIGNABLE_RANGE]
+    }
+
+    fn as_hash(&self) -> &[u8] {
+        &self.buf[HASH_RANGE]
+    }
+
+    fn as_signature(&self) -> &[u8] {
+        &self.buf[SIGNATURE_RANGE]
+    }
+
+    fn as_pubkey(&self) -> &[u8] {
+        &self.buf[PUBKEY_RANGE]
+    }
+
+    fn as_next_pubkey_hash(&self) -> &[u8] {
+        &self.buf[NEXT_PUBKEY_HASH_RANGE]
+    }
+
+    fn as_state_hash(&self) -> &[u8] {
+        &self.buf[STATE_HASH_RANGE]
+    }
+
+    fn as_previous_hash(&self) -> &[u8] {
+        &self.buf[PREVIOUS_HASH_RANGE]
     }
 
     pub fn hash(&self) -> Hash {
@@ -154,6 +177,18 @@ mod tests {
     fn block_new_long_panic() {
         let store: Vec<u8> = vec![0; BLOCK + 1];
         let block = Block::new(&store[..]);
+    }
+
+    #[test]
+    fn test_block_as_fns() {
+        let store = new_store();
+        let block = Block::new(&store[..]);
+        assert_eq!(block.as_hash(), [1; DIGEST]);
+        assert_eq!(block.as_signature(), [2; SIGNATURE]);
+        assert_eq!(block.as_pubkey(), [3; PUBKEY]);
+        assert_eq!(block.as_next_pubkey_hash(), [4; DIGEST]);
+        assert_eq!(block.as_state_hash(), [5; DIGEST]);
+        assert_eq!(block.as_previous_hash(), [6; DIGEST]);
     }
 
     #[test]
