@@ -4,13 +4,7 @@ use std::ops::Range;
 const DIGEST: usize = 32;
 const SIGNATURE: usize = 64; // Need more Dilithium, Captian!
 const PUBKEY: usize = 32; // STILL need more Dilithium, Captian!!!
-
-const PAYLOAD: usize = SIGNATURE + PUBKEY + DIGEST + DIGEST;
-//                                          ^^^^^^ NEXT_PUBKKEY_HASH
-//                                                   ^^^^^^ PREVIOUS_BLOCK_HASH
-
-const HASHABLE: usize = PAYLOAD + DIGEST; // Ends with hash of previous block
-const BLOCK: usize = DIGEST + HASHABLE; // Begins with hash of HASHABLE slice
+const BLOCK: usize = DIGEST * 4 + SIGNATURE + PUBKEY;
 
 const HASHABLE_RANGE: Range<usize> = DIGEST..BLOCK;
 const SIGNABLE_RANGE: Range<usize> = DIGEST + SIGNATURE..BLOCK;
@@ -23,25 +17,19 @@ const STATE_HASH_RANGE: Range<usize> = BLOCK - DIGEST * 2..BLOCK - DIGEST;
 const PREVIOUS_HASH_RANGE: Range<usize> = BLOCK - DIGEST..BLOCK;
 
 /*
-A full block looks like:
+A Block has 6 fields (currently):
 
     HASH || SIGNATURE || PUBKEY || NEXT_PUBKEY_HASH || STATE_HASH || PREVIOUS_HASH
 
-Which you can think of like this:
-
-    HASH || PAYLOAD || PREVIOUS_HASH
-
 Where:
 
-    HASH = hash(PAYLOAD || PREVIOUS_HASH)
+    HASH = hash(SIGNATURE || PUBKEY || NEXT_PUBKEY_HASH || STATE_HASH || PREVIOUS_HASH)
 
-And PAYLOAD expands to:
-
-    SIGNATURE || PUBKEY || NEXT_PUBKEY_HASH || STATE_HASH
-
-Where:
+And where:
 
     SIGNATURE = sign(PUBKEY || NEXT_PUBKEY_HASH || STATE_HASH || PREVIOUS_HASH)
+
+A COUNTER and TIMESTAMP will likely be added.
 */
 
 pub struct Block<'a> {

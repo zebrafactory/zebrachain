@@ -1,4 +1,3 @@
+mod block;
 mod chain;
 mod pksign;
-mod block;
-
