@@ -53,6 +53,10 @@ impl<'a> Block<'a> {
         &self.buf[DIGEST..]
     }
 
+    fn as_signable(&self) -> &[u8] {
+        &self.buf[DIGEST + SIGNATURE..]
+    }
+
     fn compute_hash(&self) -> Hash {
         hash(self.as_hashable())
     }
@@ -95,6 +99,17 @@ mod tests {
         store
     }
 
+    fn new_store2() -> Vec<u8> {
+        let mut store: Vec<u8> = Vec::with_capacity(BLOCK);
+        store.extend_from_slice(&[1; DIGEST][..]);
+        store.extend_from_slice(&[2; SIGNATURE][..]);
+        store.extend_from_slice(&[3; PUBKEY][..]);
+        store.extend_from_slice(&[4; DIGEST][..]);  // NEXT_PUBKEY_HASH
+        store.extend_from_slice(&[5; DIGEST][..]);  // STATE_HASH
+        store.extend_from_slice(&[6; DIGEST][..]);  // PREVIOUS_HASH
+        store
+    }
+
     #[test]
     fn block_new() {
         let store: Vec<u8> = vec![0; BLOCK];
@@ -131,6 +146,13 @@ mod tests {
         expected.extend_from_slice(&[2; PAYLOAD][..]);
         expected.extend_from_slice(&[3; DIGEST][..]);
         assert_eq!(block.as_hashable(), &expected[..]);
+    }
+
+    #[test]
+    fn block_as_signable() {
+        let store = new_store2();
+        let block = Block::new(&store[..]);
+        assert_eq!(block.as_signable(), &store[DIGEST + SIGNATURE..]);
     }
 
     #[test]
