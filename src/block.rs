@@ -151,21 +151,21 @@ mod tests {
     #[test]
     fn block_new() {
         let store: Vec<u8> = vec![0; BLOCK];
-        let block = Block::new(&store[..]);
+        let _block = Block::new(&store[..]);
     }
 
     #[test]
     #[should_panic(expected = "Need a 224 byte slice; got 223 bytes")]
     fn block_new_short_panic() {
         let store: Vec<u8> = vec![0; BLOCK - 1];
-        let block = Block::new(&store[..]);
+        let _block = Block::new(&store[..]);
     }
 
     #[test]
     #[should_panic(expected = "Need a 224 byte slice; got 225 bytes")]
     fn block_new_long_panic() {
         let store: Vec<u8> = vec![0; BLOCK + 1];
-        let block = Block::new(&store[..]);
+        let _block = Block::new(&store[..]);
     }
 
     #[test]
