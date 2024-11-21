@@ -99,14 +99,18 @@ mod tests {
         Hash::from_hex(EXPECTED).unwrap()
     }
 
+    fn extend_with_hashes(store: &mut Vec<u8>) {
+        store.extend_from_slice(&[4; DIGEST][..]); // NEXT_PUBKEY_HASH
+        store.extend_from_slice(&[5; DIGEST][..]); // STATE_HASH
+        store.extend_from_slice(&[6; DIGEST][..]); // PREVIOUS_HASH
+    }
+
     fn new_valid_store() -> Vec<u8> {
         let mut store = Vec::with_capacity(BLOCK);
         store.extend_from_slice(new_expected().as_bytes());
         store.extend_from_slice(&[2; SIGNATURE][..]);
         store.extend_from_slice(&[3; PUBKEY][..]);
-        store.extend_from_slice(&[4; DIGEST][..]); // NEXT_PUBKEY_HASH
-        store.extend_from_slice(&[5; DIGEST][..]); // STATE_HASH
-        store.extend_from_slice(&[6; DIGEST][..]); // PREVIOUS_HASH
+        extend_with_hashes(&mut store);
         store
     }
 
@@ -115,9 +119,7 @@ mod tests {
         store.extend_from_slice(&[1; DIGEST][..]);
         store.extend_from_slice(&[2; SIGNATURE][..]);
         store.extend_from_slice(&[3; PUBKEY][..]);
-        store.extend_from_slice(&[4; DIGEST][..]); // NEXT_PUBKEY_HASH
-        store.extend_from_slice(&[5; DIGEST][..]); // STATE_HASH
-        store.extend_from_slice(&[6; DIGEST][..]); // PREVIOUS_HASH
+        extend_with_hashes(&mut store);
         store
     }
 
