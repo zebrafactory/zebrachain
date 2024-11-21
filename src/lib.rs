@@ -88,9 +88,9 @@ mod tests {
         store.extend_from_slice(new_expected().as_bytes());
         store.extend_from_slice(&[2; SIGNATURE][..]);
         store.extend_from_slice(&[3; PUBKEY][..]);
-        store.extend_from_slice(&[4; DIGEST][..]);  // NEXT_PUBKEY_HASH
-        store.extend_from_slice(&[5; DIGEST][..]);  // STATE_HASH
-        store.extend_from_slice(&[6; DIGEST][..]);  // PREVIOUS_HASH
+        store.extend_from_slice(&[4; DIGEST][..]); // NEXT_PUBKEY_HASH
+        store.extend_from_slice(&[5; DIGEST][..]); // STATE_HASH
+        store.extend_from_slice(&[6; DIGEST][..]); // PREVIOUS_HASH
         store
     }
 
@@ -99,9 +99,9 @@ mod tests {
         store.extend_from_slice(&[1; DIGEST][..]);
         store.extend_from_slice(&[2; SIGNATURE][..]);
         store.extend_from_slice(&[3; PUBKEY][..]);
-        store.extend_from_slice(&[4; DIGEST][..]);  // NEXT_PUBKEY_HASH
-        store.extend_from_slice(&[5; DIGEST][..]);  // STATE_HASH
-        store.extend_from_slice(&[6; DIGEST][..]);  // PREVIOUS_HASH
+        store.extend_from_slice(&[4; DIGEST][..]); // NEXT_PUBKEY_HASH
+        store.extend_from_slice(&[5; DIGEST][..]); // STATE_HASH
+        store.extend_from_slice(&[6; DIGEST][..]); // PREVIOUS_HASH
         store
     }
 
