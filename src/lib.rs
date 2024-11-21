@@ -2,6 +2,7 @@ mod chain;
 mod pksign;
 
 use blake3::{hash, Hash};
+use std::ops::Range;
 
 const DIGEST: usize = 32;
 const SIGNATURE: usize = 64; // Need more Dilithium, Captian!
@@ -13,9 +14,24 @@ const PAYLOAD: usize = SIGNATURE + PUBKEY + DIGEST + DIGEST;
 
 const HASHABLE: usize = PAYLOAD + DIGEST; // Ends with hash of previous block
 const BLOCK: usize = DIGEST + HASHABLE; // Begins with hash of HASHABLE slice
+const PREAMBLE: usize = DIGEST + SIGNATURE + PUBKEY + DIGEST;
+
+const HASHABLE_RANGE: Range<usize> = DIGEST..BLOCK;
+const SIGNABLE_RANGE: Range<usize> = DIGEST + SIGNATURE..BLOCK;
+
+const HASH_RANGE: Range<usize> = 0..DIGEST;
+const SIGNATURE_RANGE: Range<usize> = DIGEST..DIGEST + SIGNATURE;
+const PUBKEY_RANGE: Range<usize> = DIGEST + SIGNATURE..DIGEST + SIGNATURE + PUBKEY;
+const NEXT_PUBKEY_HASH_RANGE: Range<usize> = DIGEST + SIGNATURE + PUBKEY..PREAMBLE;
+const STATE_HASH_RANGE: Range<usize> = PREAMBLE..PREAMBLE + DIGEST;
+const PREVIOUS_HASH_RANGE: Range<usize> = BLOCK - DIGEST..BLOCK;
 
 /*
 A full block looks like:
+
+    HASH || SIGNATURE || PUBKEY || NEXT_PUBKEY_HASH || STATE_HASH || PREVIOUS_HASH
+
+Which you can think of like this:
 
     HASH || PAYLOAD || PREVIOUS_HASH
 
@@ -44,17 +60,17 @@ impl<'a> Block<'a> {
         Self { buf }
     }
 
-    pub fn hash(&self) -> Hash {
-        let bytes = self.buf[0..DIGEST].try_into().expect("whoa, that sucks");
-        Hash::from_bytes(bytes)
-    }
-
     fn as_hashable(&self) -> &[u8] {
-        &self.buf[DIGEST..]
+        &self.buf[HASHABLE_RANGE]
     }
 
     fn as_signable(&self) -> &[u8] {
-        &self.buf[DIGEST + SIGNATURE..]
+        &self.buf[SIGNABLE_RANGE]
+    }
+
+    pub fn hash(&self) -> Hash {
+        let bytes = self.buf[HASH_RANGE].try_into().expect("whoa, that sucks");
+        Hash::from_bytes(bytes)
     }
 
     fn compute_hash(&self) -> Hash {
@@ -66,7 +82,7 @@ impl<'a> Block<'a> {
     }
 
     pub fn previous_hash(&self) -> Hash {
-        let bytes = self.buf[BLOCK - DIGEST..]
+        let bytes = self.buf[PREVIOUS_HASH_RANGE]
             .try_into()
             .expect("whoa, that sucks");
         Hash::from_bytes(bytes)
@@ -103,6 +119,19 @@ mod tests {
         store.extend_from_slice(&[5; DIGEST][..]); // STATE_HASH
         store.extend_from_slice(&[6; DIGEST][..]); // PREVIOUS_HASH
         store
+    }
+
+    #[test]
+    fn test_ranges() {
+        assert_eq!(HASHABLE_RANGE, 32..224);
+        assert_eq!(SIGNABLE_RANGE, 96..224);
+
+        assert_eq!(HASH_RANGE, 0..32);
+        assert_eq!(SIGNATURE_RANGE, 32..96);
+        assert_eq!(PUBKEY_RANGE, 96..128);
+        assert_eq!(NEXT_PUBKEY_HASH_RANGE, 128..160);
+        assert_eq!(STATE_HASH_RANGE, 160..192);
+        assert_eq!(PREVIOUS_HASH_RANGE, 192..224);
     }
 
     #[test]
