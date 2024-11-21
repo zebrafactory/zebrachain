@@ -80,16 +80,24 @@ impl<'a> Block<'a> {
         Hash::from_bytes(self.as_hash().try_into().expect("oops"))
     }
 
+    pub fn next_pubkey_hash(&self) -> Hash {
+        Hash::from_bytes(self.as_next_pubkey_hash().try_into().expect("oops"))
+    }
+
+    pub fn state_hash(&self) -> Hash {
+        Hash::from_bytes(self.as_state_hash().try_into().expect("oops"))
+    }
+
+    pub fn previous_hash(&self) -> Hash {
+        Hash::from_bytes(self.as_previous_hash().try_into().expect("oops"))
+    }
+
     fn compute_hash(&self) -> Hash {
         hash(self.as_hashable())
     }
 
     fn hash_is_valid(&self) -> bool {
         self.compute_hash() == self.hash()
-    }
-
-    pub fn previous_hash(&self) -> Hash {
-        Hash::from_bytes(self.as_previous_hash().try_into().expect("oops"))
     }
 }
 
@@ -173,11 +181,13 @@ mod tests {
     }
 
     #[test]
-    fn block_hash() {
+    fn test_block_hash_accessors() {
         let store = new_store();
         let block = Block::new(&store[..]);
-        let hash = block.hash();
-        assert_eq!(hash, Hash::from_bytes([1; DIGEST]));
+        assert_eq!(block.hash(), Hash::from_bytes([1; DIGEST]));
+        assert_eq!(block.next_pubkey_hash(), Hash::from_bytes([4; DIGEST]));
+        assert_eq!(block.state_hash(), Hash::from_bytes([5; DIGEST]));
+        assert_eq!(block.previous_hash(), Hash::from_bytes([6; DIGEST]));
     }
 
     #[test]
@@ -213,13 +223,5 @@ mod tests {
         let block = Block::new(&store[..]);
         assert!(block.hash_is_valid());
         assert_eq!(block.hash(), new_expected());
-    }
-
-    #[test]
-    fn block_previous_hash() {
-        let store = new_store();
-        let block = Block::new(&store[..]);
-        let hash = block.previous_hash();
-        assert_eq!(hash, Hash::from_bytes([6; DIGEST]));
     }
 }
