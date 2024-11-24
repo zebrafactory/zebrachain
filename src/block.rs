@@ -34,16 +34,36 @@ A COUNTER and TIMESTAMP will likely be added.
 */
 
 #[derive(Debug)]
+pub enum BlockError {
+    BadHash,
+    BadPubKeyHash,
+}
+
+pub type BlockResult<'a> = Result<Block<'a>, BlockError>;
+
+#[derive(Debug)]
 pub struct Block<'a> {
     buf: &'a [u8],
 }
 
 impl<'a> Block<'a> {
-    pub fn new(buf: &'a [u8]) -> Self {
+    fn new(buf: &'a [u8]) -> Self {
         if buf.len() != BLOCK {
             panic!("Need a {BLOCK} byte slice; got {} bytes", buf.len());
         }
         Self { buf }
+    }
+
+    pub fn from_hash(buf: &'a [u8], h: Hash) -> BlockResult {
+        let block = Block::new(buf);
+        // We don't want to short circuit (does this accomplish that?):
+        let matches = block.hash() == h;
+        let valid = block.hash_is_valid();
+        if valid && matches {
+            Ok(block)
+        } else {
+            Err(BlockError::BadHash)
+        }
     }
 
     fn as_hashable(&self) -> &[u8] {
@@ -116,8 +136,7 @@ impl<'a> Block<'a> {
         let sig = self.signature();
         if let Ok(_) = pubkey.verify_strict(self.as_signable(), &sig) {
             true
-        }
-        else {
+        } else {
             false
         }
     }
@@ -188,6 +207,15 @@ mod tests {
     fn block_new_long_panic() {
         let store: Vec<u8> = vec![0; BLOCK + 1];
         let _block = Block::new(&store[..]);
+    }
+
+    #[test]
+    fn test_block_from_hash() {
+        let h = new_expected();
+        let store = new_store();
+        assert!(Block::from_hash(&store[..], h).is_err());
+        let store = new_valid_store();
+        assert!(Block::from_hash(&store[..], h).is_ok());
     }
 
     #[test]
@@ -267,6 +295,6 @@ mod tests {
     fn test_block_signature_is_value() {
         let store = new_store();
         let block = Block::new(&store[..]);
-        assert!(! block.signature_is_valid());
+        assert!(!block.signature_is_valid());
     }
 }
