@@ -86,6 +86,11 @@ impl<'a> Block<'a> {
         Signature::from_bytes(self.as_signature().try_into().expect("opps"))
     }
 
+    pub fn pubkey(&self) -> VerifyingKey {
+        let bytes: [u8; 32] = self.as_pubkey().try_into().expect("oops");
+        VerifyingKey::from_bytes(&bytes).unwrap()
+    }
+
     pub fn next_pubkey_hash(&self) -> Hash {
         Hash::from_bytes(self.as_next_pubkey_hash().try_into().expect("oops"))
     }
@@ -197,11 +202,19 @@ mod tests {
     }
 
     #[test]
-    fn test_signature() {
+    fn test_block_signature() {
         let store = new_store();
         let block = Block::new(&store[..]);
         let sig = block.signature();
         assert_eq!(sig.to_bytes(), [2; 64]);
+    }
+
+    #[test]
+    fn test_block_pubkey() {
+        let store = new_store();
+        let block = Block::new(&store[..]);
+        let pubkey = block.pubkey();
+        assert_eq!(pubkey.to_bytes(), [3; 32]);
     }
 
     #[test]
