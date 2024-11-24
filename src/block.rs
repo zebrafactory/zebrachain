@@ -1,4 +1,5 @@
 use blake3::{hash, Hash};
+use ed25519_dalek::{Signature, SignatureError, Signer, SigningKey, Verifier, VerifyingKey};
 use std::ops::Range;
 
 const DIGEST: usize = 32;
@@ -32,6 +33,7 @@ And where:
 A COUNTER and TIMESTAMP will likely be added.
 */
 
+#[derive(Debug)]
 pub struct Block<'a> {
     buf: &'a [u8],
 }
@@ -78,6 +80,10 @@ impl<'a> Block<'a> {
 
     pub fn hash(&self) -> Hash {
         Hash::from_bytes(self.as_hash().try_into().expect("oops"))
+    }
+
+    pub fn signature(&self) -> Signature {
+        Signature::from_bytes(self.as_signature().try_into().expect("opps"))
     }
 
     pub fn next_pubkey_hash(&self) -> Hash {
@@ -188,6 +194,14 @@ mod tests {
         assert_eq!(block.next_pubkey_hash(), Hash::from_bytes([4; DIGEST]));
         assert_eq!(block.state_hash(), Hash::from_bytes([5; DIGEST]));
         assert_eq!(block.previous_hash(), Hash::from_bytes([6; DIGEST]));
+    }
+
+    #[test]
+    fn test_signature() {
+        let store = new_store();
+        let block = Block::new(&store[..]);
+        let sig = block.signature();
+        assert_eq!(sig.to_bytes(), [2; 64]);
     }
 
     #[test]

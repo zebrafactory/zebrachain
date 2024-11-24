@@ -6,8 +6,6 @@ impl Chain {
     pub fn append(&mut self) {}
 }
 
-// Clone creates a deep copy
-
 #[cfg(test)]
 mod tests {
     use super::*;
