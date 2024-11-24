@@ -110,6 +110,17 @@ impl<'a> Block<'a> {
     fn hash_is_valid(&self) -> bool {
         self.compute_hash() == self.hash()
     }
+
+    fn signature_is_valid(&self) -> bool {
+        let pubkey = self.pubkey();
+        let sig = self.signature();
+        if let Ok(_) = pubkey.verify_strict(self.as_signable(), &sig) {
+            true
+        }
+        else {
+            false
+        }
+    }
 }
 
 #[cfg(test)]
@@ -250,5 +261,12 @@ mod tests {
         let block = Block::new(&store[..]);
         assert!(block.hash_is_valid());
         assert_eq!(block.hash(), new_expected());
+    }
+
+    #[test]
+    fn test_block_signature_is_value() {
+        let store = new_store();
+        let block = Block::new(&store[..]);
+        assert!(! block.signature_is_valid());
     }
 }
