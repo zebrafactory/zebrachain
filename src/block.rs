@@ -33,17 +33,19 @@ And where:
 A COUNTER and TIMESTAMP will likely be added.
 */
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub enum BlockError {
     BadHash,
     BadContent,
     BadPubKeyHash,
     BadPubKey,
+    BadPreviousHash,
+    Signature,
 }
 
 pub type BlockResult<'a> = Result<Block<'a>, BlockError>;
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub struct Block<'a> {
     buf: &'a [u8],
 }
@@ -69,7 +71,15 @@ impl<'a> Block<'a> {
 
     pub fn from_previous(buf: &'a [u8], pubkey_h: Hash, previous_h: Hash) -> BlockResult {
         let block = Block::new(buf);
-        Ok(block)
+        if !block.hash_is_valid() {
+            Err(BlockError::BadContent)
+        } else if block.compute_pubkey_hash() != pubkey_h {
+            Err(BlockError::BadPubKeyHash)
+        } else if !block.signature_is_valid() {
+            Err(BlockError::Signature)
+        } else {
+            Ok(block)
+        }
     }
 
     fn as_hashable(&self) -> &[u8] {
@@ -226,6 +236,22 @@ mod tests {
         assert!(Block::from_hash(&store[..], h).is_err());
         let store = new_valid_store();
         assert!(Block::from_hash(&store[..], h).is_ok());
+    }
+
+    #[test]
+    fn test_block_from_previous() {
+        let store = new_store();
+        let pubkey_h = Hash::from_bytes([69; DIGEST]);
+        let previous_h = Hash::from_bytes([42; DIGEST]);
+        assert_eq!(
+            Block::from_previous(&store[..], pubkey_h, previous_h),
+            Err(BlockError::BadContent),
+        );
+        let store = new_valid_store();
+        assert_eq!(
+            Block::from_previous(&store[..], pubkey_h, previous_h),
+            Err(BlockError::BadPubKeyHash),
+        );
     }
 
     #[test]
