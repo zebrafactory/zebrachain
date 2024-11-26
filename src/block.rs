@@ -35,12 +35,20 @@ A COUNTER and TIMESTAMP will likely be added.
 
 #[derive(Debug, PartialEq)]
 pub enum BlockError {
-    BadHash,
-    BadContent,
-    BadPubKeyHash,
-    BadPubKey,
-    BadPreviousHash,
+    /// Hash of block content does not match hash in block.
+    Content,
+
+    /// Public key is invalid or signature does not match.
     Signature,
+
+    /// Block hash does not match expected external value.
+    Hash,
+
+    /// Public Key hash does not match expected external value.
+    PubKeyHash,
+
+    /// Previous hash does not match expected external value.
+    PreviousHash,
 }
 
 pub type BlockResult<'a> = Result<Block<'a>, BlockError>;
@@ -58,12 +66,16 @@ impl<'a> Block<'a> {
         Self { buf }
     }
 
+    pub fn open(buf: &'a [u8]) -> BlockResult {
+        Err(BlockError::Content)
+    }
+
     pub fn from_hash(buf: &'a [u8], h: Hash) -> BlockResult {
         let block = Block::new(buf);
         if h != block.hash() {
-            Err(BlockError::BadHash)
+            Err(BlockError::Hash)
         } else if !block.hash_is_valid() {
-            Err(BlockError::BadContent)
+            Err(BlockError::Content)
         } else {
             Ok(block)
         }
@@ -72,9 +84,9 @@ impl<'a> Block<'a> {
     pub fn from_previous(buf: &'a [u8], pubkey_h: Hash, previous_h: Hash) -> BlockResult {
         let block = Block::new(buf);
         if !block.hash_is_valid() {
-            Err(BlockError::BadContent)
+            Err(BlockError::Content)
         } else if block.compute_pubkey_hash() != pubkey_h {
-            Err(BlockError::BadPubKeyHash)
+            Err(BlockError::PubKeyHash)
         } else if !block.signature_is_valid() {
             Err(BlockError::Signature)
         } else {
@@ -245,12 +257,12 @@ mod tests {
         let previous_h = Hash::from_bytes([42; DIGEST]);
         assert_eq!(
             Block::from_previous(&store[..], pubkey_h, previous_h),
-            Err(BlockError::BadContent),
+            Err(BlockError::Content),
         );
         let store = new_valid_store();
         assert_eq!(
             Block::from_previous(&store[..], pubkey_h, previous_h),
-            Err(BlockError::BadPubKeyHash),
+            Err(BlockError::PubKeyHash),
         );
     }
 
