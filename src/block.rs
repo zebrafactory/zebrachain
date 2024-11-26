@@ -74,7 +74,7 @@ impl<'a> Block<'a> {
         let block = Block::new(buf);
         if h != block.hash() {
             Err(BlockError::Hash)
-        } else if !block.hash_is_valid() {
+        } else if !block.content_is_valid() {
             Err(BlockError::Content)
         } else {
             Ok(block)
@@ -83,7 +83,7 @@ impl<'a> Block<'a> {
 
     pub fn from_previous(buf: &'a [u8], pubkey_h: Hash, previous_h: Hash) -> BlockResult {
         let block = Block::new(buf);
-        if !block.hash_is_valid() {
+        if !block.content_is_valid() {
             Err(BlockError::Content)
         } else if block.compute_pubkey_hash() != pubkey_h {
             Err(BlockError::PubKeyHash)
@@ -159,7 +159,7 @@ impl<'a> Block<'a> {
         hash(self.as_pubkey())
     }
 
-    fn hash_is_valid(&self) -> bool {
+    fn content_is_valid(&self) -> bool {
         self.compute_hash() == self.hash()
     }
 
@@ -327,15 +327,15 @@ mod tests {
     }
 
     #[test]
-    fn block_hash_is_valid() {
+    fn block_content_is_valid() {
         let store = new_store();
         let block = Block::new(&store[..]);
-        assert!(!block.hash_is_valid());
+        assert!(!block.content_is_valid());
         assert_ne!(block.hash(), new_expected());
 
         let store = new_valid_store();
         let block = Block::new(&store[..]);
-        assert!(block.hash_is_valid());
+        assert!(block.content_is_valid());
         assert_eq!(block.hash(), new_expected());
     }
 
