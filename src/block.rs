@@ -36,7 +36,9 @@ A COUNTER and TIMESTAMP will likely be added.
 #[derive(Debug)]
 pub enum BlockError {
     BadHash,
+    BadContent,
     BadPubKeyHash,
+    BadPubKey,
 }
 
 pub type BlockResult<'a> = Result<Block<'a>, BlockError>;
@@ -56,14 +58,18 @@ impl<'a> Block<'a> {
 
     pub fn from_hash(buf: &'a [u8], h: Hash) -> BlockResult {
         let block = Block::new(buf);
-        // We don't want to short circuit (does this accomplish that?):
-        let matches = block.hash() == h;
-        let valid = block.hash_is_valid();
-        if valid && matches {
-            Ok(block)
-        } else {
+        if h != block.hash() {
             Err(BlockError::BadHash)
+        } else if !block.hash_is_valid() {
+            Err(BlockError::BadContent)
+        } else {
+            Ok(block)
         }
+    }
+
+    pub fn from_previous(buf: &'a [u8], pubkey_h: Hash, previous_h: Hash) -> BlockResult {
+        let block = Block::new(buf);
+        Ok(block)
     }
 
     fn as_hashable(&self) -> &[u8] {
@@ -125,6 +131,10 @@ impl<'a> Block<'a> {
 
     fn compute_hash(&self) -> Hash {
         hash(self.as_hashable())
+    }
+
+    fn compute_pubkey_hash(&self) -> Hash {
+        hash(self.as_pubkey())
     }
 
     fn hash_is_valid(&self) -> bool {
