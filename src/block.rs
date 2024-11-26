@@ -67,7 +67,14 @@ impl<'a> Block<'a> {
     }
 
     pub fn open(buf: &'a [u8]) -> BlockResult {
-        Err(BlockError::Content)
+        let block = Block::new(buf);
+        if !block.content_is_valid() {
+            Err(BlockError::Content)
+        } else if !block.signature_is_valid() {
+            Err(BlockError::Signature)
+        } else {
+            Ok(block)
+        }
     }
 
     pub fn from_hash(buf: &'a [u8], h: Hash) -> BlockResult {
