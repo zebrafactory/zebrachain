@@ -178,6 +178,28 @@ impl<'a> Block<'a> {
     }
 }
 
+pub fn write_block(
+    buf: &mut [u8],
+    keypair: KeyPair,
+    next_pubkey_hash: Hash,
+    state_hash: Hash,
+    previous_hash: Hash,
+) {
+    // Copy in these 4 fields:
+    keypair.write_pubkey(&mut buf[PUBKEY_RANGE]);
+    buf[NEXT_PUBKEY_HASH_RANGE].copy_from_slice(next_pubkey_hash.as_bytes());
+    buf[STATE_HASH_RANGE].copy_from_slice(state_hash.as_bytes());
+    buf[PREVIOUS_HASH_RANGE].copy_from_slice(previous_hash.as_bytes());
+
+    // Compute signature, copy value into signature field:
+    let sig = keypair.sign2(&buf[SIGNABLE_RANGE]);
+    buf[SIGNATURE_RANGE].copy_from_slice(&sig);
+
+    // Compute hash, copy value into hash field:
+    let block_hash = hash(&buf[HASHABLE_RANGE]);
+    buf[HASH_RANGE].copy_from_slice(block_hash.as_bytes());
+}
+
 pub fn build_block<'a>(
     buf: &'a mut [u8],
     keypair: KeyPair,
@@ -185,14 +207,7 @@ pub fn build_block<'a>(
     state_hash: Hash,
     previous_hash: Hash,
 ) -> BlockResult {
-    keypair.write_pubkey(&mut buf[PUBKEY_RANGE]);
-    buf[NEXT_PUBKEY_HASH_RANGE].copy_from_slice(next_pubkey_hash.as_bytes());
-    buf[STATE_HASH_RANGE].copy_from_slice(state_hash.as_bytes());
-    buf[PREVIOUS_HASH_RANGE].copy_from_slice(previous_hash.as_bytes());
-    let sig = keypair.sign2(&buf[SIGNABLE_RANGE]);
-    buf[SIGNATURE_RANGE].copy_from_slice(&sig);
-    let block_hash = hash(&buf[HASHABLE_RANGE]);
-    buf[HASH_RANGE].copy_from_slice(block_hash.as_bytes());
+    write_block(buf, keypair, next_pubkey_hash, state_hash, previous_hash);
     Block::open(buf)
 }
 
