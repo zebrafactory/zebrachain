@@ -191,6 +191,8 @@ pub fn build_block<'a>(
     buf[PREVIOUS_HASH_RANGE].copy_from_slice(previous_hash.as_bytes());
     let sig = keypair.sign2(&buf[SIGNABLE_RANGE]);
     buf[SIGNATURE_RANGE].copy_from_slice(&sig);
+    let block_hash = hash(&buf[HASHABLE_RANGE]);
+    buf[HASH_RANGE].copy_from_slice(block_hash.as_bytes());
     Block::open(buf)
 }
 
