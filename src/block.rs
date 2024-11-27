@@ -1,3 +1,4 @@
+use crate::pksign::KeyPair;
 use blake3::{hash, Hash};
 use ed25519_dalek::{Signature, SignatureError, Signer, SigningKey, Verifier, VerifyingKey};
 use std::ops::Range;
@@ -177,10 +178,25 @@ impl<'a> Block<'a> {
     }
 }
 
+pub fn build_block<'a>(
+    buf: &'a mut [u8],
+    keypair: KeyPair,
+    next_pubkey_hash: Hash,
+    state_hash: Hash,
+    previous_hash: Hash,
+) -> BlockResult {
+    keypair.write_pubkey(&mut buf[PUBKEY_RANGE]);
+    buf[NEXT_PUBKEY_HASH_RANGE].copy_from_slice(next_pubkey_hash.as_bytes());
+    buf[STATE_HASH_RANGE].copy_from_slice(state_hash.as_bytes());
+    buf[PREVIOUS_HASH_RANGE].copy_from_slice(previous_hash.as_bytes());
+    let sig = keypair.sign2(&buf[SIGNABLE_RANGE]);
+    buf[SIGNATURE_RANGE].copy_from_slice(&sig);
+    Block::open(buf)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::pksign::KeyPair;
 
     const EXPECTED: &str = "8c055bbd86ce68355dbccdea130317563c638f482690eb7fac3f821e624061fc";
 

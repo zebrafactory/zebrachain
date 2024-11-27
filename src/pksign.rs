@@ -32,6 +32,12 @@ impl KeyPair {
         let sig = self.key.sign(msg);
         dst.copy_from_slice(&sig.to_bytes());
     }
+
+    // Consumes instance because we should only make one signature per KeyPair1
+    pub fn sign2(self, msg: &[u8]) -> [u8; 64] {
+        let sig = self.key.sign(msg);
+        sig.to_bytes()
+    }
 }
 
 #[derive(Debug)]
