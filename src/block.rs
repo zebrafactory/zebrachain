@@ -200,8 +200,8 @@ pub fn write_block(
     buf[HASH_RANGE].copy_from_slice(block_hash.as_bytes());
 }
 
-pub fn build_block<'a>(
-    buf: &'a mut [u8],
+pub fn build_block(
+    buf: &mut [u8],
     keypair: KeyPair,
     next_pubkey_hash: Hash,
     state_hash: Hash,
