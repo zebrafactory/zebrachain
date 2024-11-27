@@ -78,24 +78,20 @@ impl<'a> Block<'a> {
     }
 
     pub fn from_hash(buf: &'a [u8], h: Hash) -> BlockResult {
-        let block = Block::new(buf);
+        let block = Block::open(buf)?;
         if h != block.hash() {
             Err(BlockError::Hash)
-        } else if !block.content_is_valid() {
-            Err(BlockError::Content)
         } else {
             Ok(block)
         }
     }
 
     pub fn from_previous(buf: &'a [u8], pubkey_h: Hash, previous_h: Hash) -> BlockResult {
-        let block = Block::new(buf);
-        if !block.content_is_valid() {
-            Err(BlockError::Content)
-        } else if block.compute_pubkey_hash() != pubkey_h {
+        let block = Block::open(buf)?;
+        if block.compute_pubkey_hash() != pubkey_h {
             Err(BlockError::PubKeyHash)
-        } else if !block.signature_is_valid() {
-            Err(BlockError::Signature)
+        } else if block.previous_hash() != previous_h {
+            Err(BlockError::PreviousHash)
         } else {
             Ok(block)
         }
@@ -184,6 +180,7 @@ impl<'a> Block<'a> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::pksign::KeyPair;
 
     const EXPECTED: &str = "8c055bbd86ce68355dbccdea130317563c638f482690eb7fac3f821e624061fc";
 
@@ -254,7 +251,7 @@ mod tests {
         let store = new_store();
         assert!(Block::from_hash(&store[..], h).is_err());
         let store = new_valid_store();
-        assert!(Block::from_hash(&store[..], h).is_ok());
+        assert!(Block::from_hash(&store[..], h).is_err());
     }
 
     #[test]
@@ -269,7 +266,7 @@ mod tests {
         let store = new_valid_store();
         assert_eq!(
             Block::from_previous(&store[..], pubkey_h, previous_h),
-            Err(BlockError::PubKeyHash),
+            Err(BlockError::Signature),
         );
     }
 
