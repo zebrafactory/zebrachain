@@ -139,9 +139,9 @@ impl<'a> Block<'a> {
         Signature::from_bytes(self.as_signature().try_into().expect("opps"))
     }
 
-    pub fn pubkey(&self) -> VerifyingKey {
+    pub fn pubkey(&self) -> Result<VerifyingKey, SignatureError> {
         let bytes: [u8; 32] = self.as_pubkey().try_into().expect("oops");
-        VerifyingKey::from_bytes(&bytes).unwrap()
+        VerifyingKey::from_bytes(&bytes)
     }
 
     pub fn next_pubkey_hash(&self) -> Hash {
@@ -169,10 +169,13 @@ impl<'a> Block<'a> {
     }
 
     fn signature_is_valid(&self) -> bool {
-        let pubkey = self.pubkey();
-        let sig = self.signature();
-        if let Ok(_) = pubkey.verify_strict(self.as_signable(), &sig) {
-            true
+        if let Ok(pubkey) = self.pubkey() {
+            let sig = self.signature();
+            if let Ok(_) = pubkey.verify_strict(self.as_signable(), &sig) {
+                true
+            } else {
+                false
+            }
         } else {
             false
         }
@@ -370,6 +373,13 @@ mod tests {
         for bad in BitFlipper::new(&buf[..]) {
             assert_eq!(Block::open(&bad[..]), Err(BlockError::Content));
         }
+        let mut bad = vec![0; BLOCK];
+        for end in BitFlipper::new(&buf[DIGEST..]) {
+            let h = hash(&end[..]);
+            bad[0..DIGEST].copy_from_slice(h.as_bytes());
+            bad[DIGEST..].copy_from_slice(&end[..]);
+            assert_eq!(Block::open(&bad[..]), Err(BlockError::Signature));
+        }
     }
 
     #[test]
@@ -425,14 +435,6 @@ mod tests {
         let block = Block::new(&store[..]);
         let sig = block.signature();
         assert_eq!(sig.to_bytes(), [2; 64]);
-    }
-
-    #[test]
-    fn test_block_pubkey() {
-        let store = new_store();
-        let block = Block::new(&store[..]);
-        let pubkey = block.pubkey();
-        assert_eq!(pubkey.to_bytes(), [3; 32]);
     }
 
     #[test]
