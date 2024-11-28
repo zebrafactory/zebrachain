@@ -241,8 +241,7 @@ impl Iterator for BitFlipper {
             bad.extend_from_slice(&self.good[..]);
             let i = self.counter / 8;
             let b = (self.counter % 8) as u8;
-            let mask = 1 << b;
-            bad[i] ^= mask;
+            bad[i] ^= 1 << b; // Flip bit `b` in byte `i`
             self.counter += 1;
             Some(bad)
         } else {
@@ -306,6 +305,7 @@ mod tests {
     fn test_bit_flipper() {
         let good: Vec<u8> = vec![0b00000000, 0b11111111];
         let badies = Vec::from_iter(BitFlipper::new(&good[..]));
+        assert_eq!(badies.len(), 16);
         assert_eq!(
             badies,
             vec![
