@@ -1,6 +1,7 @@
 use crate::pksign::KeyPair;
 use blake3::{hash, Hash};
 use ed25519_dalek::{Signature, SignatureError, Signer, SigningKey, Verifier, VerifyingKey};
+use std::iter::FusedIterator;
 use std::ops::Range;
 
 const DIGEST: usize = 32;
@@ -211,11 +212,67 @@ pub fn build_block(
     Block::open(buf)
 }
 
+#[derive(Debug)]
+struct BitFlipper {
+    good: Vec<u8>,
+    counter: usize,
+}
+
+// FIXME: Put this somewhere better
+impl BitFlipper {
+    pub fn new(orig: &[u8]) -> Self {
+        let mut good = Vec::with_capacity(orig.len());
+        good.extend_from_slice(orig);
+        BitFlipper {
+            good: good,
+            counter: 0,
+        }
+    }
+}
+
+impl FusedIterator for BitFlipper {}
+
+impl Iterator for BitFlipper {
+    type Item = Vec<u8>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.counter < self.good.len() * 8 {
+            let mut bad = Vec::with_capacity(self.good.len());
+            bad.extend_from_slice(&self.good[..]);
+            let i = self.counter / 8;
+            let b = (self.counter % 8) as u8;
+            let mask = 1 << b;
+            bad[i] ^= mask;
+            self.counter += 1;
+            Some(bad)
+        } else {
+            None
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
 
     const EXPECTED: &str = "8c055bbd86ce68355dbccdea130317563c638f482690eb7fac3f821e624061fc";
+
+    fn new_new() -> Vec<u8> {
+        let mut buf = vec![0; BLOCK];
+        let secret = [69; 32];
+        let keypair = KeyPair::new(&secret);
+        let next_pubkey_hash = Hash::from_bytes([1; 32]);
+        let state_hash = Hash::from_bytes([2; 32]);
+        let previous_hash = Hash::from_bytes([3; 32]);
+        write_block(
+            &mut buf[..],
+            keypair,
+            next_pubkey_hash,
+            state_hash,
+            previous_hash,
+        );
+        buf
+    }
 
     fn new_expected() -> Hash {
         Hash::from_hex(EXPECTED).unwrap()
@@ -243,6 +300,33 @@ mod tests {
         store.extend_from_slice(&[3; PUBKEY][..]);
         extend_with_hashes(&mut store);
         store
+    }
+
+    #[test]
+    fn test_bit_flipper() {
+        let good: Vec<u8> = vec![0b00000000, 0b11111111];
+        let badies = Vec::from_iter(BitFlipper::new(&good[..]));
+        assert_eq!(
+            badies,
+            vec![
+                vec![0b00000001, 0b11111111],
+                vec![0b00000010, 0b11111111],
+                vec![0b00000100, 0b11111111],
+                vec![0b00001000, 0b11111111],
+                vec![0b00010000, 0b11111111],
+                vec![0b00100000, 0b11111111],
+                vec![0b01000000, 0b11111111],
+                vec![0b10000000, 0b11111111],
+                vec![0b00000000, 0b11111110],
+                vec![0b00000000, 0b11111101],
+                vec![0b00000000, 0b11111011],
+                vec![0b00000000, 0b11110111],
+                vec![0b00000000, 0b11101111],
+                vec![0b00000000, 0b11011111],
+                vec![0b00000000, 0b10111111],
+                vec![0b00000000, 0b01111111],
+            ]
+        );
     }
 
     #[test]
@@ -276,6 +360,16 @@ mod tests {
     fn block_new_long_panic() {
         let store: Vec<u8> = vec![0; BLOCK + 1];
         let _block = Block::new(&store[..]);
+    }
+
+    #[test]
+    fn test_block_open() {
+        let buf = new_new();
+        let result = Block::open(&buf[..]);
+        assert!(result.is_ok());
+        for bad in BitFlipper::new(&buf[..]) {
+            assert_eq!(Block::open(&bad[..]), Err(BlockError::Content));
+        }
     }
 
     #[test]
