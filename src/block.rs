@@ -171,11 +171,7 @@ impl<'a> Block<'a> {
     fn signature_is_valid(&self) -> bool {
         if let Ok(pubkey) = self.pubkey() {
             let sig = self.signature();
-            if let Ok(_) = pubkey.verify_strict(self.as_signable(), &sig) {
-                true
-            } else {
-                false
-            }
+            pubkey.verify_strict(self.as_signable(), &sig).is_ok()
         } else {
             false
         }
