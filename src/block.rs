@@ -199,17 +199,6 @@ pub fn write_block(
     buf[HASH_RANGE].copy_from_slice(block_hash.as_bytes());
 }
 
-pub fn build_block(
-    buf: &mut [u8],
-    keypair: KeyPair,
-    next_pubkey_hash: Hash,
-    state_hash: Hash,
-    previous_hash: Hash,
-) -> BlockResult {
-    write_block(buf, keypair, next_pubkey_hash, state_hash, previous_hash);
-    Block::open(buf)
-}
-
 #[derive(Debug)]
 struct BitFlipper {
     good: Vec<u8>,
