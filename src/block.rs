@@ -380,11 +380,14 @@ mod tests {
 
     #[test]
     fn test_block_from_hash() {
-        let h = new_expected();
-        let store = new_store();
-        assert!(Block::from_hash(&store[..], h).is_err());
-        let store = new_valid_store();
-        assert!(Block::from_hash(&store[..], h).is_err());
+        let buf = new_new();
+        let good = Block::open(&buf[..]).unwrap().hash();
+        assert!(Block::from_hash(&buf[..], good).is_ok());
+        for bad in BitFlipper::new(good.as_bytes()) {
+            let bytes: [u8; 32] = bad[..].try_into().unwrap();
+            let h = Hash::from_bytes(bytes);
+            assert_eq!(Block::from_hash(&buf[..], h), Err(BlockError::Hash));
+        }
     }
 
     #[test]
