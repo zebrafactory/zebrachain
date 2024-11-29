@@ -389,18 +389,29 @@ mod tests {
 
     #[test]
     fn test_block_from_previous() {
-        let store = new_store();
-        let pubkey_h = Hash::from_bytes([69; DIGEST]);
-        let previous_h = Hash::from_bytes([42; DIGEST]);
-        assert_eq!(
-            Block::from_previous(&store[..], pubkey_h, previous_h),
-            Err(BlockError::Content),
-        );
-        let store = new_valid_store();
-        assert_eq!(
-            Block::from_previous(&store[..], pubkey_h, previous_h),
-            Err(BlockError::Signature),
-        );
+        let buf = new_new();
+        let block = Block::open(&buf[..]).unwrap();
+        let next_pubkey_hash = block.compute_pubkey_hash();
+        let previous_hash = block.previous_hash();
+        assert!(Block::from_previous(&buf[..], next_pubkey_hash, previous_hash).is_ok());
+
+        for bad in BitFlipper::new(next_pubkey_hash.as_bytes()) {
+            let bytes: [u8; 32] = bad[..].try_into().unwrap();
+            let h = Hash::from_bytes(bytes);
+            assert_eq!(
+                Block::from_previous(&buf[..], h, previous_hash),
+                Err(BlockError::PubKeyHash)
+            );
+        }
+
+        for bad in BitFlipper::new(previous_hash.as_bytes()) {
+            let bytes: [u8; 32] = bad[..].try_into().unwrap();
+            let h = Hash::from_bytes(bytes);
+            assert_eq!(
+                Block::from_previous(&buf[..], next_pubkey_hash, h),
+                Err(BlockError::PreviousHash)
+            );
+        }
     }
 
     #[test]
