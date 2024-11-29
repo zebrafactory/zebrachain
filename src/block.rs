@@ -1,7 +1,6 @@
 use crate::pksign::KeyPair;
 use blake3::{hash, Hash};
 use ed25519_dalek::{Signature, SignatureError, Signer, SigningKey, Verifier, VerifyingKey};
-use std::iter::FusedIterator;
 use std::ops::Range;
 
 const DIGEST: usize = 32;
@@ -228,8 +227,6 @@ impl BitFlipper {
         }
     }
 }
-
-impl FusedIterator for BitFlipper {}
 
 impl Iterator for BitFlipper {
     type Item = Vec<u8>;
