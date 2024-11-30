@@ -191,7 +191,7 @@ pub fn write_block(
     buf[PREVIOUS_HASH_RANGE].copy_from_slice(previous_hash.as_bytes());
 
     // Compute signature, copy value into signature field:
-    let sig = keypair.sign2(&buf[SIGNABLE_RANGE]);
+    let sig = keypair.sign(&buf[SIGNABLE_RANGE]);
     buf[SIGNATURE_RANGE].copy_from_slice(&sig);
 
     // Compute hash, copy value into hash field:

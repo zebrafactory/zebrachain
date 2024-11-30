@@ -27,14 +27,8 @@ impl KeyPair {
         dst.copy_from_slice(self.key.verifying_key().as_bytes());
     }
 
-    // Consumes instance because we should only make one signature per KeyPair1
-    pub fn sign(self, msg: &[u8], dst: &mut [u8]) {
-        let sig = self.key.sign(msg);
-        dst.copy_from_slice(&sig.to_bytes());
-    }
-
-    // Consumes instance because we should only make one signature per KeyPair1
-    pub fn sign2(self, msg: &[u8]) -> [u8; 64] {
+    // Consumes instance because we should only make one signature per KeyPair:
+    pub fn sign(self, msg: &[u8]) -> [u8; 64] {
         let sig = self.key.sign(msg);
         sig.to_bytes()
     }
@@ -134,8 +128,7 @@ mod tests {
         );
 
         let msg = b"hello all the world, yo!";
-        let mut sig = [0u8; 64];
-        pair.sign(msg, &mut sig);
+        let sig = pair.sign(msg);
         assert_eq!(
             sig,
             [
