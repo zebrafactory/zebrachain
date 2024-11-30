@@ -1,5 +1,3 @@
-use blake3::Hash;
-
 pub struct Chain {}
 
 impl Chain {

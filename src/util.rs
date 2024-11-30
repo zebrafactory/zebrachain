@@ -11,10 +11,7 @@ impl BitFlipper {
     pub fn new(orig: &[u8]) -> Self {
         let mut good = Vec::with_capacity(orig.len());
         good.extend_from_slice(orig);
-        BitFlipper {
-            good: good,
-            counter: 0,
-        }
+        BitFlipper { good, counter: 0 }
     }
 }
 

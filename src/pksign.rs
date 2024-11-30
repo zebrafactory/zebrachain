@@ -1,7 +1,7 @@
 //! Abstraction over public key signature algorithms.
 
 use blake3;
-use ed25519_dalek::{Signature, SignatureError, Signer, SigningKey, Verifier, VerifyingKey};
+use ed25519_dalek::{Signer, SigningKey};
 
 static ED25519_CONTEXT: &str = "win.zebrachain.sign.ed25519";
 
@@ -13,13 +13,13 @@ fn derive(context: &str, secret: &[u8]) -> blake3::Hash {
 
 #[derive(Debug)]
 pub struct KeyPair {
-    key: ed25519_dalek::SigningKey,
+    key: SigningKey,
 }
 
 impl KeyPair {
     pub fn new(secret: &[u8]) -> Self {
         let h = derive(ED25519_CONTEXT, secret);
-        let key = ed25519_dalek::SigningKey::from_bytes(h.as_bytes());
+        let key = SigningKey::from_bytes(h.as_bytes());
         Self { key }
     }
 

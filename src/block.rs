@@ -1,6 +1,6 @@
 use crate::pksign::KeyPair;
 use blake3::{hash, Hash};
-use ed25519_dalek::{Signature, SignatureError, Signer, SigningKey, Verifier, VerifyingKey};
+use ed25519_dalek::{Signature, SignatureError, VerifyingKey};
 use std::ops::Range;
 
 const DIGEST: usize = 32;
@@ -67,7 +67,7 @@ impl<'a> Block<'a> {
         Self { buf }
     }
 
-    pub fn open(buf: &'a [u8]) -> BlockResult {
+    pub fn open(buf: &'a [u8]) -> BlockResult<'a> {
         let block = Block::new(buf);
         if !block.content_is_valid() {
             Err(BlockError::Content)
@@ -78,7 +78,7 @@ impl<'a> Block<'a> {
         }
     }
 
-    pub fn from_hash(buf: &'a [u8], h: Hash) -> BlockResult {
+    pub fn from_hash(buf: &'a [u8], h: Hash) -> BlockResult<'a> {
         let block = Block::open(buf)?;
         if h != block.hash() {
             Err(BlockError::Hash)
@@ -87,7 +87,7 @@ impl<'a> Block<'a> {
         }
     }
 
-    pub fn from_previous(buf: &'a [u8], pubkey_h: Hash, previous_h: Hash) -> BlockResult {
+    pub fn from_previous(buf: &'a [u8], pubkey_h: Hash, previous_h: Hash) -> BlockResult<'a> {
         let block = Block::open(buf)?;
         if block.compute_pubkey_hash() != pubkey_h {
             Err(BlockError::PubKeyHash)
