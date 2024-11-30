@@ -42,6 +42,23 @@ mod tests {
 
     #[test]
     fn test_bit_flipper() {
+        let good: Vec<u8> = vec![0b01010101];
+        let badies = Vec::from_iter(BitFlipper::new(&good[..]));
+        assert_eq!(badies.len(), 8);
+        assert_eq!(
+            badies,
+            vec![
+                vec![0b01010100],
+                vec![0b01010111],
+                vec![0b01010001],
+                vec![0b01011101],
+                vec![0b01000101],
+                vec![0b01110101],
+                vec![0b00010101],
+                vec![0b11010101],
+            ]
+        );
+
         let good: Vec<u8> = vec![0b00000000, 0b11111111];
         let badies = Vec::from_iter(BitFlipper::new(&good[..]));
         assert_eq!(badies.len(), 16);
