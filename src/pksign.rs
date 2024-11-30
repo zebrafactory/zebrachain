@@ -34,26 +34,6 @@ impl KeyPair {
     }
 }
 
-#[derive(Debug)]
-pub enum Error {
-    MalformedPublicKey,
-    MalformedSignature,
-    InvalidSignature,
-}
-
-fn verify(pubkey: &[u8], sig: &[u8], msg: &[u8]) -> Result<(), Error> {
-    if let Ok(pubkey) = ed25519_dalek::VerifyingKey::from_bytes(pubkey.try_into().expect("oops")) {
-        let sig = Signature::from_bytes(sig.try_into().expect("oops"));
-        if let Ok(_) = pubkey.verify_strict(msg, &sig) {
-            Ok(())
-        } else {
-            Err(Error::InvalidSignature)
-        }
-    } else {
-        Err(Error::MalformedPublicKey)
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
