@@ -241,6 +241,10 @@ mod tests {
 
     const EXPECTED: &str = "8c055bbd86ce68355dbccdea130317563c638f482690eb7fac3f821e624061fc";
 
+    fn new_expected() -> Hash {
+        Hash::from_hex(EXPECTED).unwrap()
+    }
+
     fn new_valid_block() -> Vec<u8> {
         let mut buf = vec![0; BLOCK];
         let secret = [69; 32];
@@ -256,10 +260,6 @@ mod tests {
             previous_hash,
         );
         buf
-    }
-
-    fn new_expected() -> Hash {
-        Hash::from_hex(EXPECTED).unwrap()
     }
 
     fn new_dummy_block() -> Vec<u8> {
@@ -332,6 +332,20 @@ mod tests {
     fn test_block_new_long_panic() {
         let buf: Vec<u8> = vec![0; BLOCK + 1];
         let _block = Block::new(&buf[..]);
+    }
+
+    #[test]
+    #[should_panic(expected = "Need a 224 byte slice; got 223 bytes")]
+    fn test_block_open_short_panic() {
+        let buf: Vec<u8> = vec![0; BLOCK - 1];
+        let _block = Block::open(&buf[..]);
+    }
+
+    #[test]
+    #[should_panic(expected = "Need a 224 byte slice; got 225 bytes")]
+    fn test_block_open_long_panic() {
+        let buf: Vec<u8> = vec![0; BLOCK + 1];
+        let _block = Block::open(&buf[..]);
     }
 
     #[test]
