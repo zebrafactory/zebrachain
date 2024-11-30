@@ -468,8 +468,17 @@ mod tests {
 
     #[test]
     fn test_block_signature_is_value() {
-        let store = new_store();
-        let block = Block::new(&store[..]);
-        assert!(!block.signature_is_valid());
+        let good = new_new();
+        let block = Block::new(&good[..]);
+        assert!(block.signature_is_valid());
+        for bad in BitFlipper::new(&good[..]) {
+            let block = Block::new(&bad[..]);
+            if bad[HASH_RANGE] == good[HASH_RANGE] {
+                assert!(!block.signature_is_valid());
+            }
+            else {
+                assert!(block.signature_is_valid());
+            }
+        }
     }
 }
