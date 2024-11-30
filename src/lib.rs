@@ -1,3 +1,3 @@
 pub mod block;
-mod chain;
-mod pksign;
+pub mod chain;
+pub mod pksign;
