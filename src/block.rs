@@ -457,15 +457,13 @@ mod tests {
 
     #[test]
     fn block_content_is_valid() {
-        let store = new_store();
-        let block = Block::new(&store[..]);
-        assert!(!block.content_is_valid());
-        assert_ne!(block.hash(), new_expected());
-
-        let store = new_valid_store();
-        let block = Block::new(&store[..]);
+        let good = new_new();
+        let block = Block::new(&good[..]);
         assert!(block.content_is_valid());
-        assert_eq!(block.hash(), new_expected());
+        for bad in BitFlipper::new(&good[..]) {
+            let block = Block::new(&bad[..]);
+            assert!(!block.content_is_valid());
+        }
     }
 
     #[test]
