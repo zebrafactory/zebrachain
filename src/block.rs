@@ -241,7 +241,7 @@ mod tests {
 
     const EXPECTED: &str = "8c055bbd86ce68355dbccdea130317563c638f482690eb7fac3f821e624061fc";
 
-    fn new_new() -> Vec<u8> {
+    fn new_valid_block() -> Vec<u8> {
         let mut buf = vec![0; BLOCK];
         let secret = [69; 32];
         let keypair = KeyPair::new(&secret);
@@ -262,28 +262,15 @@ mod tests {
         Hash::from_hex(EXPECTED).unwrap()
     }
 
-    fn extend_with_hashes(store: &mut Vec<u8>) {
-        store.extend_from_slice(&[4; DIGEST][..]); // NEXT_PUBKEY_HASH
-        store.extend_from_slice(&[5; DIGEST][..]); // STATE_HASH
-        store.extend_from_slice(&[6; DIGEST][..]); // PREVIOUS_HASH
-    }
-
-    fn new_valid_store() -> Vec<u8> {
-        let mut store = Vec::with_capacity(BLOCK);
-        store.extend_from_slice(new_expected().as_bytes());
-        store.extend_from_slice(&[2; SIGNATURE][..]);
-        store.extend_from_slice(&[3; PUBKEY][..]);
-        extend_with_hashes(&mut store);
-        store
-    }
-
-    fn new_store() -> Vec<u8> {
-        let mut store: Vec<u8> = Vec::with_capacity(BLOCK);
-        store.extend_from_slice(&[1; DIGEST][..]);
-        store.extend_from_slice(&[2; SIGNATURE][..]);
-        store.extend_from_slice(&[3; PUBKEY][..]);
-        extend_with_hashes(&mut store);
-        store
+    fn new_dummy_block() -> Vec<u8> {
+        let mut buf: Vec<u8> = Vec::with_capacity(BLOCK);
+        buf.extend_from_slice(&[1; DIGEST][..]);
+        buf.extend_from_slice(&[2; SIGNATURE][..]);
+        buf.extend_from_slice(&[3; PUBKEY][..]);
+        buf.extend_from_slice(&[4; DIGEST][..]); // NEXT_PUBKEY_HASH
+        buf.extend_from_slice(&[5; DIGEST][..]); // STATE_HASH
+        buf.extend_from_slice(&[6; DIGEST][..]); // PREVIOUS_HASH
+        buf
     }
 
     #[test]
@@ -328,45 +315,44 @@ mod tests {
     }
 
     #[test]
-    fn block_new() {
-        let store: Vec<u8> = vec![0; BLOCK];
-        let _block = Block::new(&store[..]);
+    fn test_block_new() {
+        let buf: Vec<u8> = vec![0; BLOCK];
+        let _block = Block::new(&buf[..]);
     }
 
     #[test]
     #[should_panic(expected = "Need a 224 byte slice; got 223 bytes")]
-    fn block_new_short_panic() {
-        let store: Vec<u8> = vec![0; BLOCK - 1];
-        let _block = Block::new(&store[..]);
+    fn test_block_new_short_panic() {
+        let buf: Vec<u8> = vec![0; BLOCK - 1];
+        let _block = Block::new(&buf[..]);
     }
 
     #[test]
     #[should_panic(expected = "Need a 224 byte slice; got 225 bytes")]
-    fn block_new_long_panic() {
-        let store: Vec<u8> = vec![0; BLOCK + 1];
-        let _block = Block::new(&store[..]);
+    fn test_block_new_long_panic() {
+        let buf: Vec<u8> = vec![0; BLOCK + 1];
+        let _block = Block::new(&buf[..]);
     }
 
     #[test]
     fn test_block_open() {
-        let buf = new_new();
-        let result = Block::open(&buf[..]);
-        assert!(result.is_ok());
+        let buf = new_valid_block();
+        assert!(Block::open(&buf[..]).is_ok());
         for bad in BitFlipper::new(&buf[..]) {
             assert_eq!(Block::open(&bad[..]), Err(BlockError::Content));
         }
         let mut bad = vec![0; BLOCK];
-        for end in BitFlipper::new(&buf[DIGEST..]) {
+        for end in BitFlipper::new(&buf[HASHABLE_RANGE]) {
             let h = hash(&end[..]);
-            bad[0..DIGEST].copy_from_slice(h.as_bytes());
-            bad[DIGEST..].copy_from_slice(&end[..]);
+            bad[HASH_RANGE].copy_from_slice(h.as_bytes());
+            bad[HASHABLE_RANGE].copy_from_slice(&end[..]);
             assert_eq!(Block::open(&bad[..]), Err(BlockError::Signature));
         }
     }
 
     #[test]
     fn test_block_from_hash() {
-        let buf = new_new();
+        let buf = new_valid_block();
         let good = Block::open(&buf[..]).unwrap().hash();
         assert!(Block::from_hash(&buf[..], good).is_ok());
         for bad in BitFlipper::new(good.as_bytes()) {
@@ -378,7 +364,7 @@ mod tests {
 
     #[test]
     fn test_block_from_previous() {
-        let buf = new_new();
+        let buf = new_valid_block();
         let block = Block::open(&buf[..]).unwrap();
         let next_pubkey_hash = block.compute_pubkey_hash();
         let previous_hash = block.previous_hash();
@@ -405,8 +391,8 @@ mod tests {
 
     #[test]
     fn test_block_as_fns() {
-        let store = new_store();
-        let block = Block::new(&store[..]);
+        let buf = new_dummy_block();
+        let block = Block::new(&buf[..]);
         assert_eq!(block.as_hash(), [1; DIGEST]);
         assert_eq!(block.as_signature(), [2; SIGNATURE]);
         assert_eq!(block.as_pubkey(), [3; PUBKEY]);
@@ -417,8 +403,8 @@ mod tests {
 
     #[test]
     fn test_block_hash_accessors() {
-        let store = new_store();
-        let block = Block::new(&store[..]);
+        let buf = new_dummy_block();
+        let block = Block::new(&buf[..]);
         assert_eq!(block.hash(), Hash::from_bytes([1; DIGEST]));
         assert_eq!(block.next_pubkey_hash(), Hash::from_bytes([4; DIGEST]));
         assert_eq!(block.state_hash(), Hash::from_bytes([5; DIGEST]));
@@ -427,37 +413,37 @@ mod tests {
 
     #[test]
     fn test_block_signature() {
-        let store = new_store();
-        let block = Block::new(&store[..]);
+        let buf = new_dummy_block();
+        let block = Block::new(&buf[..]);
         let sig = block.signature();
         assert_eq!(sig.to_bytes(), [2; 64]);
     }
 
     #[test]
-    fn block_as_hashable() {
-        let store = new_store();
-        let block = Block::new(&store[..]);
-        assert_eq!(block.as_hashable(), &store[DIGEST..]);
+    fn test_block_as_hashable() {
+        let buf = new_dummy_block();
+        let block = Block::new(&buf[..]);
+        assert_eq!(block.as_hashable(), &buf[DIGEST..]);
     }
 
     #[test]
     fn block_as_signable() {
-        let store = new_store();
-        let block = Block::new(&store[..]);
-        assert_eq!(block.as_signable(), &store[DIGEST + SIGNATURE..]);
+        let buf = new_dummy_block();
+        let block = Block::new(&buf[..]);
+        assert_eq!(block.as_signable(), &buf[DIGEST + SIGNATURE..]);
     }
 
     #[test]
-    fn block_compute_hash() {
-        let store = new_store();
-        let block = Block::new(&store[..]);
+    fn test_block_compute_hash() {
+        let buf = new_dummy_block();
+        let block = Block::new(&buf[..]);
         let hash = block.compute_hash();
         assert_eq!(hash, new_expected());
     }
 
     #[test]
-    fn block_content_is_valid() {
-        let good = new_new();
+    fn test_block_content_is_valid() {
+        let good = new_valid_block();
         let block = Block::new(&good[..]);
         assert!(block.content_is_valid());
         for bad in BitFlipper::new(&good[..]) {
@@ -468,15 +454,14 @@ mod tests {
 
     #[test]
     fn test_block_signature_is_value() {
-        let good = new_new();
+        let good = new_valid_block();
         let block = Block::new(&good[..]);
         assert!(block.signature_is_valid());
         for bad in BitFlipper::new(&good[..]) {
             let block = Block::new(&bad[..]);
             if bad[HASH_RANGE] == good[HASH_RANGE] {
                 assert!(!block.signature_is_valid());
-            }
-            else {
+            } else {
                 assert!(block.signature_is_valid());
             }
         }
