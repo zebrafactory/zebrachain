@@ -153,15 +153,13 @@ pub fn write_block(
     state_hash: Hash,
     previous_hash: Hash,
 ) {
-    // Copy in these 4 fields:
-    keypair.write_pubkey(&mut buf[PUBKEY_RANGE]);
+    // Copy in these 3 hash fields:
     buf[NEXT_PUBKEY_HASH_RANGE].copy_from_slice(next_pubkey_hash.as_bytes());
     buf[STATE_HASH_RANGE].copy_from_slice(state_hash.as_bytes());
     buf[PREVIOUS_HASH_RANGE].copy_from_slice(previous_hash.as_bytes());
 
-    // Compute signature, copy value into signature field:
-    let sig = keypair.sign(&buf[SIGNABLE_RANGE]);
-    buf[SIGNATURE_RANGE].copy_from_slice(&sig);
+    // KeyPair.sign() will write public and then signature:
+    keypair.sign(&mut buf[DIGEST..]);
 
     // Compute hash, copy value into hash field:
     let block_hash = hash(&buf[HASHABLE_RANGE]);

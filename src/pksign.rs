@@ -1,5 +1,6 @@
 //! Abstraction over public key signature algorithms.
 
+use crate::tunable::*;
 use blake3;
 use ed25519_dalek::{Signer, SigningKey};
 
@@ -28,12 +29,7 @@ impl KeyPair {
     }
 
     // Consumes instance because we should only make one signature per KeyPair:
-    pub fn sign(self, msg: &[u8]) -> [u8; 64] {
-        let sig = self.key.sign(msg);
-        sig.to_bytes()
-    }
-
-    pub fn sign2(self, buf: &mut [u8]) {
+    pub fn sign(self, buf: &mut [u8]) {
         /*
         write ed25519 and dilithium pubkeys into buffer
         sign signable with ed25519
@@ -41,6 +37,9 @@ impl KeyPair {
         sign ed25519 sig + signable with dilithium
         write dilithium sig into buffer
         */
+        self.write_pubkey(&mut buf[SIGNATURE..SIGNATURE + PUBKEY]);
+        let sig = self.key.sign(&buf[SIGNATURE..]);
+        buf[0..SIGNATURE].copy_from_slice(&sig.to_bytes());
     }
 }
 
@@ -117,15 +116,20 @@ mod tests {
             ]
         );
 
-        let msg = b"hello all the world, yo!";
-        let sig = pair.sign(msg);
+        let mut buf = vec![0; BLOCK - DIGEST];
+        pair.sign(&mut buf[..]);
         assert_eq!(
-            sig,
+            buf,
             [
-                49, 206, 153, 167, 46, 196, 137, 170, 211, 11, 118, 171, 219, 141, 177, 220, 167,
-                186, 248, 227, 236, 191, 24, 158, 120, 191, 213, 150, 71, 193, 250, 224, 64, 162,
-                240, 212, 89, 58, 116, 193, 12, 158, 0, 67, 200, 235, 219, 94, 101, 46, 55, 133,
-                123, 57, 88, 39, 102, 63, 227, 26, 186, 138, 85, 9
+                69, 209, 255, 220, 65, 47, 68, 57, 193, 181, 9, 213, 42, 220, 41, 97, 37, 201, 121,
+                186, 226, 134, 132, 219, 14, 18, 143, 41, 139, 53, 143, 1, 52, 207, 23, 21, 145,
+                232, 66, 199, 42, 72, 26, 90, 31, 63, 217, 22, 16, 77, 236, 42, 50, 157, 56, 200,
+                140, 8, 5, 92, 62, 171, 187, 13, 54, 112, 220, 24, 105, 66, 248, 10, 41, 195, 89,
+                189, 126, 216, 231, 244, 66, 45, 137, 51, 190, 211, 57, 34, 49, 138, 83, 189, 98,
+                158, 53, 49, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
             ]
         );
     }
