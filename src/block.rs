@@ -202,7 +202,7 @@ pub fn write_block(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::util::BitFlipper;
+    use crate::misc::BitFlipper;
 
     const EXPECTED: &str = "8c055bbd86ce68355dbccdea130317563c638f482690eb7fac3f821e624061fc";
 

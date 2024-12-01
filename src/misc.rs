@@ -5,7 +5,7 @@
 /// # Examples
 ///
 /// ```
-/// use zebrachain::util::BitFlipper;
+/// use zebrachain::misc::BitFlipper;
 /// let good = vec![0b11110000];
 /// let badies = Vec::from_iter(BitFlipper::new(&good[..]));
 /// assert_eq!(badies,
