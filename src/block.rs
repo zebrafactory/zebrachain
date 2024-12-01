@@ -158,8 +158,8 @@ pub fn write_block(
     buf[STATE_HASH_RANGE].copy_from_slice(state_hash.as_bytes());
     buf[PREVIOUS_HASH_RANGE].copy_from_slice(previous_hash.as_bytes());
 
-    // KeyPair.sign() will write public and then signature:
-    keypair.sign(&mut buf[DIGEST..]);
+    // KeyPair.sign() will write public key and then signature:
+    keypair.sign(buf);
 
     // Compute hash, copy value into hash field:
     let block_hash = hash(&buf[HASHABLE_RANGE]);
