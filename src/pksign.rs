@@ -32,6 +32,16 @@ impl KeyPair {
         let sig = self.key.sign(msg);
         sig.to_bytes()
     }
+
+    pub fn sign2(self, buf: &mut [u8]) {
+        /*
+        write ed25519 and dilithium pubkeys into buffer
+        sign signable with ed25519
+        write ed25519 sig into buffer
+        sign ed25519 sig + signable with dilithium
+        write dilithium sig into buffer
+        */
+    }
 }
 
 #[cfg(test)]
