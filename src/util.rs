@@ -20,7 +20,7 @@
 ///         vec![0b01110000],
 ///     ]
 /// );
-///
+/// ```
 #[derive(Debug)]
 pub struct BitFlipper {
     good: Vec<u8>,
