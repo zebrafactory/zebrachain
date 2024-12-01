@@ -1,6 +1,26 @@
 //! Some test fixtures that should really be split out into another crate.
 
 /// Create test permutations with 1 bit flipped at a time.
+///
+/// # Examples
+///
+/// ```
+/// use zebrachain::util::BitFlipper;
+/// let good = vec![0b11110000];
+/// let badies = Vec::from_iter(BitFlipper::new(&good[..]));
+/// assert_eq!(badies,
+///     [
+///         vec![0b11110001],
+///         vec![0b11110010],
+///         vec![0b11110100],
+///         vec![0b11111000],
+///         vec![0b11100000],
+///         vec![0b11010000],
+///         vec![0b10110000],
+///         vec![0b01110000],
+///     ]
+/// );
+///
 #[derive(Debug)]
 pub struct BitFlipper {
     good: Vec<u8>,
