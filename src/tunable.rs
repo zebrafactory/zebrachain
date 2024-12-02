@@ -1,17 +1,17 @@
 use std::ops::Range;
 
 /*
-A Block has 6 fields (currently):
+A Block has 7 fields (currently):
 
-    HASH || SIGNATURE || PUBKEY || NEXT_PUBKEY_HASH || STATE_HASH || PREVIOUS_HASH
+    HASH || SIGNATURE || PUBKEY || NEXT_PUBKEY_HASH || STATE_HASH || PREVIOUS_HASH  || FIRST_HASH
 
 Where:
 
-    HASH = hash(SIGNATURE || PUBKEY || NEXT_PUBKEY_HASH || STATE_HASH || PREVIOUS_HASH)
+    HASH = hash(SIGNATURE || PUBKEY || NEXT_PUBKEY_HASH || STATE_HASH || PREVIOUS_HASH  || FIRST_HASH)
 
 And where:
 
-    SIGNATURE = sign(PUBKEY || NEXT_PUBKEY_HASH || STATE_HASH || PREVIOUS_HASH)
+    SIGNATURE = sign(PUBKEY || NEXT_PUBKEY_HASH || STATE_HASH || PREVIOUS_HASH  || FIRST_HASH)
 
 A COUNTER and TIMESTAMP will likely be added.
 */
@@ -19,7 +19,7 @@ A COUNTER and TIMESTAMP will likely be added.
 pub const DIGEST: usize = 32;
 pub const SIGNATURE: usize = 64; // Need more Dilithium, Captian!
 pub const PUBKEY: usize = 32; // STILL need more Dilithium, Captian!!!
-pub const BLOCK: usize = DIGEST * 4 + SIGNATURE + PUBKEY;
+pub const BLOCK: usize = DIGEST * 5 + SIGNATURE + PUBKEY;
 
 pub const HASHABLE_RANGE: Range<usize> = DIGEST..BLOCK;
 pub const SIGNABLE_RANGE: Range<usize> = DIGEST + SIGNATURE..BLOCK;
@@ -27,9 +27,10 @@ pub const SIGNABLE_RANGE: Range<usize> = DIGEST + SIGNATURE..BLOCK;
 pub const HASH_RANGE: Range<usize> = 0..DIGEST;
 pub const SIGNATURE_RANGE: Range<usize> = DIGEST..DIGEST + SIGNATURE;
 pub const PUBKEY_RANGE: Range<usize> = DIGEST + SIGNATURE..DIGEST + SIGNATURE + PUBKEY;
-pub const NEXT_PUBKEY_HASH_RANGE: Range<usize> = BLOCK - DIGEST * 3..BLOCK - DIGEST * 2;
-pub const STATE_HASH_RANGE: Range<usize> = BLOCK - DIGEST * 2..BLOCK - DIGEST;
-pub const PREVIOUS_HASH_RANGE: Range<usize> = BLOCK - DIGEST..BLOCK;
+pub const NEXT_PUBKEY_HASH_RANGE: Range<usize> = BLOCK - DIGEST * 4..BLOCK - DIGEST * 3;
+pub const STATE_HASH_RANGE: Range<usize> = BLOCK - DIGEST * 3..BLOCK - DIGEST * 2;
+pub const PREVIOUS_HASH_RANGE: Range<usize> = BLOCK - DIGEST * 2..BLOCK - DIGEST;
+pub const FIRST_HASH_RANGE: Range<usize> = BLOCK - DIGEST..BLOCK;
 
 #[cfg(test)]
 mod tests {
@@ -37,8 +38,8 @@ mod tests {
 
     #[test]
     fn test_ranges() {
-        assert_eq!(HASHABLE_RANGE, 32..224);
-        assert_eq!(SIGNABLE_RANGE, 96..224);
+        assert_eq!(HASHABLE_RANGE, 32..256);
+        assert_eq!(SIGNABLE_RANGE, 96..256);
 
         assert_eq!(HASH_RANGE, 0..32);
         assert_eq!(SIGNATURE_RANGE, 32..96);
@@ -46,5 +47,6 @@ mod tests {
         assert_eq!(NEXT_PUBKEY_HASH_RANGE, 128..160);
         assert_eq!(STATE_HASH_RANGE, 160..192);
         assert_eq!(PREVIOUS_HASH_RANGE, 192..224);
+        assert_eq!(FIRST_HASH_RANGE, 224..256);
     }
 }

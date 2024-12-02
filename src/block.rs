@@ -156,7 +156,7 @@ mod tests {
     use super::*;
     use crate::misc::BitFlipper;
 
-    const EXPECTED: &str = "8c055bbd86ce68355dbccdea130317563c638f482690eb7fac3f821e624061fc";
+    const EXPECTED: &str = "1235a30e9a3086fa131087c5683eeaa5e4733dfa28fe610d4ed2b76e114011c7";
 
     fn new_expected() -> Hash {
         Hash::from_hex(EXPECTED).unwrap()
@@ -187,6 +187,7 @@ mod tests {
         buf.extend_from_slice(&[4; DIGEST][..]); // NEXT_PUBKEY_HASH
         buf.extend_from_slice(&[5; DIGEST][..]); // STATE_HASH
         buf.extend_from_slice(&[6; DIGEST][..]); // PREVIOUS_HASH
+        buf.extend_from_slice(&[7; DIGEST][..]); // FIRST_HASH
         buf
     }
 
@@ -197,28 +198,28 @@ mod tests {
     }
 
     #[test]
-    #[should_panic(expected = "Need a 224 byte slice; got 223 bytes")]
+    #[should_panic(expected = "Need a 256 byte slice; got 255 bytes")]
     fn test_block_new_short_panic() {
         let buf: Vec<u8> = vec![0; BLOCK - 1];
         let _block = Block::new(&buf[..]);
     }
 
     #[test]
-    #[should_panic(expected = "Need a 224 byte slice; got 225 bytes")]
+    #[should_panic(expected = "Need a 256 byte slice; got 257 bytes")]
     fn test_block_new_long_panic() {
         let buf: Vec<u8> = vec![0; BLOCK + 1];
         let _block = Block::new(&buf[..]);
     }
 
     #[test]
-    #[should_panic(expected = "Need a 224 byte slice; got 223 bytes")]
+    #[should_panic(expected = "Need a 256 byte slice; got 255 bytes")]
     fn test_block_open_short_panic() {
         let buf: Vec<u8> = vec![0; BLOCK - 1];
         let _block = Block::open(&buf[..]);
     }
 
     #[test]
-    #[should_panic(expected = "Need a 224 byte slice; got 225 bytes")]
+    #[should_panic(expected = "Need a 256 byte slice; got 257 bytes")]
     fn test_block_open_long_panic() {
         let buf: Vec<u8> = vec![0; BLOCK + 1];
         let _block = Block::open(&buf[..]);
