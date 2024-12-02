@@ -1,7 +1,6 @@
-use crate::pksign::KeyPair;
+use crate::pksign::{verify_signature, KeyPair};
 use crate::tunable::*;
 use blake3::{hash, Hash};
-use ed25519_dalek::{Signature, SignatureError, VerifyingKey};
 
 #[derive(Debug, PartialEq)]
 pub enum BlockError {
@@ -103,15 +102,6 @@ impl<'a> Block<'a> {
         Hash::from_bytes(self.as_hash().try_into().expect("oops"))
     }
 
-    pub fn signature(&self) -> Signature {
-        Signature::from_bytes(self.as_signature().try_into().expect("opps"))
-    }
-
-    pub fn pubkey(&self) -> Result<VerifyingKey, SignatureError> {
-        let bytes: [u8; 32] = self.as_pubkey().try_into().expect("oops");
-        VerifyingKey::from_bytes(&bytes)
-    }
-
     pub fn next_pubkey_hash(&self) -> Hash {
         Hash::from_bytes(self.as_next_pubkey_hash().try_into().expect("oops"))
     }
@@ -137,12 +127,7 @@ impl<'a> Block<'a> {
     }
 
     fn signature_is_valid(&self) -> bool {
-        if let Ok(pubkey) = self.pubkey() {
-            let sig = self.signature();
-            pubkey.verify_strict(self.as_signable(), &sig).is_ok()
-        } else {
-            false
-        }
+        verify_signature(self.buf)
     }
 }
 
@@ -314,14 +299,6 @@ mod tests {
         assert_eq!(block.next_pubkey_hash(), Hash::from_bytes([4; DIGEST]));
         assert_eq!(block.state_hash(), Hash::from_bytes([5; DIGEST]));
         assert_eq!(block.previous_hash(), Hash::from_bytes([6; DIGEST]));
-    }
-
-    #[test]
-    fn test_block_signature() {
-        let buf = new_dummy_block();
-        let block = Block::new(&buf[..]);
-        let sig = block.signature();
-        assert_eq!(sig.to_bytes(), [2; 64]);
     }
 
     #[test]

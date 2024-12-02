@@ -2,7 +2,7 @@
 
 use crate::tunable::*;
 use blake3;
-use ed25519_dalek::{Signer, SigningKey};
+use ed25519_dalek::{Signature, Signer, SigningKey, VerifyingKey};
 
 static ED25519_CONTEXT: &str = "win.zebrachain.sign.ed25519";
 
@@ -43,8 +43,14 @@ impl KeyPair {
     }
 }
 
-pub fn verify(buf: &[u8]) -> bool {
-    true
+pub fn verify_signature(buf: &[u8]) -> bool {
+    let bytes: [u8; 32] = buf[PUBKEY_RANGE].try_into().unwrap();
+    let sig = Signature::from_bytes(buf[SIGNATURE_RANGE].try_into().unwrap());
+    if let Ok(pubkey) = VerifyingKey::from_bytes(&bytes) {
+        pubkey.verify_strict(&buf[SIGNABLE_RANGE], &sig).is_ok()
+    } else {
+        false
+    }
 }
 
 #[cfg(test)]
