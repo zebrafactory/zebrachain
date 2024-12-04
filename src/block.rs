@@ -98,6 +98,10 @@ impl<'a> Block<'a> {
         &self.buf[PREVIOUS_HASH_RANGE]
     }
 
+    fn as_first_hash(&self) -> &[u8] {
+        &self.buf[FIRST_HASH_RANGE]
+    }
+
     pub fn hash(&self) -> Hash {
         Hash::from_bytes(self.as_hash().try_into().expect("oops"))
     }
@@ -112,6 +116,10 @@ impl<'a> Block<'a> {
 
     pub fn previous_hash(&self) -> Hash {
         Hash::from_bytes(self.as_previous_hash().try_into().expect("oops"))
+    }
+
+    pub fn first_hash(&self) -> Hash {
+        Hash::from_bytes(self.as_first_hash().try_into().expect("oops"))
     }
 
     fn compute_hash(&self) -> Hash {
@@ -290,6 +298,7 @@ mod tests {
         assert_eq!(block.as_next_pubkey_hash(), [4; DIGEST]);
         assert_eq!(block.as_state_hash(), [5; DIGEST]);
         assert_eq!(block.as_previous_hash(), [6; DIGEST]);
+        assert_eq!(block.as_first_hash(), [7; DIGEST]);
     }
 
     #[test]
@@ -300,6 +309,7 @@ mod tests {
         assert_eq!(block.next_pubkey_hash(), Hash::from_bytes([4; DIGEST]));
         assert_eq!(block.state_hash(), Hash::from_bytes([5; DIGEST]));
         assert_eq!(block.previous_hash(), Hash::from_bytes([6; DIGEST]));
+        assert_eq!(block.first_hash(), Hash::from_bytes([7; DIGEST]));
     }
 
     #[test]
