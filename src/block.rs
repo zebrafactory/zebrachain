@@ -193,13 +193,13 @@ mod tests {
 
     fn new_dummy_block() -> Vec<u8> {
         let mut buf: Vec<u8> = Vec::with_capacity(BLOCK);
-        buf.extend_from_slice(&[1; DIGEST][..]);
-        buf.extend_from_slice(&[2; SIGNATURE][..]);
-        buf.extend_from_slice(&[3; PUBKEY][..]);
-        buf.extend_from_slice(&[4; DIGEST][..]); // NEXT_PUBKEY_HASH
-        buf.extend_from_slice(&[5; DIGEST][..]); // STATE_HASH
-        buf.extend_from_slice(&[6; DIGEST][..]); // PREVIOUS_HASH
-        buf.extend_from_slice(&[7; DIGEST][..]); // FIRST_HASH
+        buf.extend_from_slice(&[1; DIGEST]);
+        buf.extend_from_slice(&[2; SIGNATURE]);
+        buf.extend_from_slice(&[3; PUBKEY]);
+        buf.extend_from_slice(&[4; DIGEST]); // NEXT_PUBKEY_HASH
+        buf.extend_from_slice(&[5; DIGEST]); // STATE_HASH
+        buf.extend_from_slice(&[6; DIGEST]); // PREVIOUS_HASH
+        buf.extend_from_slice(&[7; DIGEST]); // FIRST_HASH
         buf
     }
 
