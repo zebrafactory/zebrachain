@@ -145,11 +145,13 @@ pub fn write_block(
     next_pubkey_hash: Hash,
     state_hash: Hash,
     previous_hash: Hash,
+    first_hash: Hash,
 ) {
     // Copy in these 3 hash fields:
     buf[NEXT_PUBKEY_HASH_RANGE].copy_from_slice(next_pubkey_hash.as_bytes());
     buf[STATE_HASH_RANGE].copy_from_slice(state_hash.as_bytes());
     buf[PREVIOUS_HASH_RANGE].copy_from_slice(previous_hash.as_bytes());
+    buf[FIRST_HASH_RANGE].copy_from_slice(first_hash.as_bytes());
 
     // KeyPair.sign() will write public key and then signature:
     keypair.sign(buf);
@@ -177,12 +179,14 @@ mod tests {
         let next_pubkey_hash = Hash::from_bytes([1; 32]);
         let state_hash = Hash::from_bytes([2; 32]);
         let previous_hash = Hash::from_bytes([3; 32]);
+        let first_hash = Hash::from_bytes([4; 32]);
         write_block(
             &mut buf[..],
             keypair,
             next_pubkey_hash,
             state_hash,
             previous_hash,
+            first_hash,
         );
         buf
     }
