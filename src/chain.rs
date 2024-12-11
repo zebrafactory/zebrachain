@@ -34,7 +34,7 @@ impl Chain {
         self.file.rewind()?;
         self.file.read_exact(&mut self.buf)?;
         if let Ok(block) = Block::open(&self.buf) {
-            let first_hash = block.first_hash();
+            self.first_hash = block.first_hash();
             let mut previous_hash = block.hash();
             let mut next_pubkey_hash = block.next_pubkey_hash();
             while self.file.read_exact(&mut self.buf).is_ok() {
@@ -63,6 +63,7 @@ mod tests {
     #[test]
     fn test_chain_new() {
         let tmp = tempfile::tempfile().unwrap();
-        let chain = Chain::new(tmp);
+        let mut chain = Chain::new(tmp);
+        assert!(chain.validate().is_err());
     }
 }
