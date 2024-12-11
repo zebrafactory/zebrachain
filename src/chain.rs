@@ -1,7 +1,9 @@
+use crate::block::Block;
 use crate::tunable::*;
 use blake3::Hash;
 use std::fs::File;
 use std::io::Result as IoResult;
+use std::io::{Read, Seek};
 
 /*
 For now we will fully validate all chains when opening them.
@@ -26,6 +28,24 @@ impl Chain {
             file,
             buf: [0; BLOCK],
         }
+    }
+
+    fn validate(&mut self) -> IoResult<()> {
+        self.file.rewind()?;
+        self.file.read_exact(&mut self.buf)?;
+        if let Ok(block) = Block::open(&self.buf) {
+            let first_hash = block.first_hash();
+            let mut previous_hash = block.hash();
+            let mut next_pubkey_hash = block.next_pubkey_hash();
+            while self.file.read_exact(&mut self.buf).is_ok() {
+                if let Ok(block) = Block::from_previous(&self.buf, next_pubkey_hash, previous_hash)
+                {
+                    previous_hash = block.hash();
+                    next_pubkey_hash = block.next_pubkey_hash();
+                }
+            }
+        }
+        Ok(())
     }
 
     pub fn open(first_hash: Hash, file: File) -> IoResult<Self> {
