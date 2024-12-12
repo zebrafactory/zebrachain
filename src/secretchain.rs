@@ -34,7 +34,8 @@ fn derive(context: &str, secret: &[u8]) -> Hash {
 /// let initial_entropy = [42; 32];
 /// let new_entropy = [69; 32];
 /// let seed = Seed::create(&initial_entropy);
-/// let seed = seed.advance(&new_entropy);
+/// let next = seed.advance(&new_entropy);
+/// assert_eq!(next.secret, seed.next_secret);
 /// ```
 #[derive(Clone, Debug, PartialEq)]
 pub struct Seed {
@@ -98,6 +99,23 @@ impl SecretChain {
         file.read_exact(&mut buf)?;
         let seed = Seed::load(&buf);
         Ok(Self { file, seed })
+    }
+
+    pub fn current_seed(&self) -> Seed {
+        self.seed.clone()
+    }
+
+    pub fn advance(&self, new_entropy: &[u8; 32]) -> Seed {
+        self.seed.advance(new_entropy)
+    }
+
+    pub fn commit(&mut self, seed: Seed) -> IoResult<()> {
+        if seed.secret != self.seed.next_secret {
+            panic!("fuck");
+        }
+        self.file.write_all(seed.as_next_secret_bytes())?;
+        self.seed = seed;
+        Ok(())
     }
 
     pub fn into_file(self) -> File {
@@ -201,5 +219,22 @@ mod tests {
         file.write_all(&[42; 32]).unwrap();
         file.write_all(&[69; 32]).unwrap();
         assert!(SecretChain::open(file).is_ok());
+    }
+
+    #[test]
+    fn test_sc_advance_and_commit() {
+        let count = 1000;
+        let entropy = [69; 32];
+        let file = tempfile().unwrap();
+        let seed = Seed::create(&entropy);
+        let mut sc = SecretChain::create(file, seed.clone()).unwrap();
+        for _ in 0..count {
+            let next = sc.advance(&entropy);
+            assert!(sc.commit(next).is_ok());
+        }
+        let last = sc.current_seed();
+        let file = sc.into_file();
+        let sc = SecretChain::open(file).unwrap();
+        assert_eq!(last, sc.current_seed());
     }
 }
