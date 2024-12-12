@@ -18,7 +18,6 @@ Steps to create a new chain:
 
 static SECRET_CONTEXT: &str = "foo";
 static NEXT_SECRET_CONTEXT: &str = "bar";
-static SECRET_CHAIN_CONTEXT: &str = "win.zebrachain chain";
 
 fn derive(context: &str, secret: &[u8]) -> Hash {
     let mut hasher = Hasher::new_derive_key(context);
@@ -74,13 +73,12 @@ impl Seed {
         Self::new(secret, next_secret)
     }
 
-    pub fn advance(self, new_entropy: &[u8; 32]) -> Self {
+    pub fn advance(&self, new_entropy: &[u8; 32]) -> Self {
         let secret = self.next_secret;
         let next_secret = keyed_hash(self.next_secret.as_bytes(), new_entropy);
         Self::new(secret, next_secret)
     }
 }
-
 
 pub struct SecretChain {
     file: File,
@@ -90,7 +88,7 @@ impl SecretChain {
     pub fn create(mut file: File, seed: &Seed) -> IoResult<Self> {
         file.write_all(seed.as_secret_bytes())?;
         file.write_all(seed.as_next_secret_bytes())?;
-        Ok(Self {file})
+        Ok(Self { file })
     }
 
     pub fn into_file(self) -> File {
