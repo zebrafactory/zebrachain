@@ -28,6 +28,13 @@ impl KeyPair {
         dst.copy_from_slice(self.key.verifying_key().as_bytes());
     }
 
+    // Consumes instance becase we either sign or hash the pubkey, not both
+    pub fn pubkey_hash(self) -> blake3::Hash {
+        let mut buf = [0; PUBKEY];
+        self.write_pubkey(&mut buf);
+        blake3::hash(&buf)
+    }
+
     // Consumes instance because we should only make one signature per KeyPair:
     pub fn sign(self, buf: &mut [u8]) {
         /*
@@ -57,6 +64,10 @@ pub fn verify_signature(buf: &[u8]) -> bool {
 mod tests {
     use super::*;
     use pqcrypto_dilithium::dilithium3;
+
+
+
+    static HEX0: &str = "27ed25c29cfa0c0b5667f9e1bdd6eec1385e815776a4dc8379141da13afa98e1";
 
     #[test]
     fn test_dilithium() {
@@ -144,5 +155,11 @@ mod tests {
                 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
             ]
         );
+    }
+
+    #[test]
+    fn test_keypair_pubkey_hash() {
+        let pair = KeyPair::new(&[69; 32]);
+        assert_eq!(pair.pubkey_hash(), blake3::Hash::from_hex(HEX0).unwrap());
     }
 }

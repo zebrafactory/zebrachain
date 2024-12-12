@@ -28,7 +28,10 @@ impl Seed {
         let secret = h.finalize();
         let next_secret = keyed_hash(secret.as_bytes(), initial_entropy);
         assert_ne!(secret, next_secret);
-        Self {secret, next_secret}
+        Self {
+            secret,
+            next_secret,
+        }
     }
 }
 
@@ -82,7 +85,7 @@ mod tests {
         let key = [69; 32];
         SecretChain::new(file, &key)
     }
-    
+
     #[test]
     fn test_seed_new() {
         let seed = Seed::new(&[69; 32]);
