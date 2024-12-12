@@ -10,10 +10,27 @@ Steps to create a new chain:
 2. First secret generates the KeyPair that will sign the first block
 3. Second secret generates the PubKey that will sign the *next* block (we just need pubkey hash)
 4. Sign block
+
 5. Write new secret in SecretChain, new Block in Chain
 */
 
 static SECRET_CHAIN_CONTEXT: &str = "win.zebrachain chain";
+
+pub struct Seed {
+    pub secret: Hash,
+    pub next_secret: Hash,
+}
+
+impl Seed {
+    pub fn new(initial_entropy: &[u8; 32]) -> Self {
+        let mut h = Hasher::new_derive_key(SECRET_CHAIN_CONTEXT);
+        h.update(initial_entropy);
+        let secret = h.finalize();
+        let next_secret = keyed_hash(secret.as_bytes(), initial_entropy);
+        assert_ne!(secret, next_secret);
+        Self {secret, next_secret}
+    }
+}
 
 pub struct SecretChain {
     file: File,
@@ -64,6 +81,11 @@ mod tests {
         let file = tempfile().unwrap();
         let key = [69; 32];
         SecretChain::new(file, &key)
+    }
+    
+    #[test]
+    fn test_seed_new() {
+        let seed = Seed::new(&[69; 32]);
     }
 
     #[test]
