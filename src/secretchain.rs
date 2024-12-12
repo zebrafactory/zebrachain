@@ -41,14 +41,14 @@ impl SecretChain {
 
     pub fn unadvance(&mut self) {
         if self.next_key.take().is_none() {
-            panic!("Cannot call Chain.unadvance() next_key is None");
+            panic!("Cannot call Chain.unadvance() when next_key is None");
         }
     }
 
     pub fn commit(&mut self) -> IoResult<()> {
         let key = self.next_key.take();
         if key.is_none() {
-            panic!("Cannot call Chain.commit() next_key is None");
+            panic!("Cannot call Chain.commit() when next_key is None");
         }
         self.key = key.unwrap();
         self.file.write_all(self.key.as_bytes())
@@ -87,14 +87,14 @@ mod tests {
     }
 
     #[test]
-    #[should_panic(expected = "Cannot call Chain.unadvance() next_key is None")]
+    #[should_panic(expected = "Cannot call Chain.unadvance() when next_key is None")]
     fn test_sc_unadvance_panic() {
         let mut sc = new_sc();
         sc.unadvance();
     }
 
     #[test]
-    #[should_panic(expected = "Cannot call Chain.commit() next_key is None")]
+    #[should_panic(expected = "Cannot call Chain.commit() when next_key is None")]
     fn test_sc_commit_panic() {
         let mut sc = new_sc();
         sc.commit();
