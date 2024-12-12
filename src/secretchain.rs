@@ -1,4 +1,4 @@
-use blake3::{keyed_hash, Hash};
+use blake3::{keyed_hash, Hash, Hasher};
 use std::fs::File;
 use std::io::Result as IoResult;
 use std::io::{Read, Write};
@@ -13,17 +13,23 @@ Steps to create a new chain:
 5. Write new secret in SecretChain, new Block in Chain
 */
 
+
+static SECRET_CHAIN_CONTEXT: &str = "win.zebrachain chain";
+
+
 pub struct SecretChain {
     file: File,
-    pub key: [u8; 32],
+    pub key: Hash,
     pub next_key: Option<Hash>,
 }
 
 impl SecretChain {
-    pub fn new(file: File, key: [u8; 32]) -> Self {
+    pub fn new(file: File, initial_entropy: [u8; 32]) -> Self {
+        let mut h = Hasher::new_derive_key(SECRET_CHAIN_CONTEXT);
+        h.update(&initial_entropy);
         Self {
             file,
-            key,
+            key: h.finalize(),
             next_key: None,
         }
     }
@@ -32,7 +38,7 @@ impl SecretChain {
         if self.next_key.is_some() {
             panic!("Cannot call Chain.advance() when next_key is Some");
         }
-        self.next_key = Some(keyed_hash(&self.key, new_entropy));
+        self.next_key = Some(keyed_hash(self.key.as_bytes(), new_entropy));
     }
 
     pub fn unadvance(&mut self) {
@@ -46,8 +52,8 @@ impl SecretChain {
         if key.is_none() {
             panic!("Cannot call Chain.commit() next_key is None");
         }
-        self.key.copy_from_slice(key.unwrap().as_bytes());
-        self.file.write_all(&self.key)
+        self.key = key.unwrap();
+        self.file.write_all(self.key.as_bytes())
     }
 }
 
@@ -67,7 +73,10 @@ mod tests {
         let file = tempfile().unwrap();
         let key = [69; 32];
         let sc = SecretChain::new(file, key);
-        assert_eq!(sc.key, [69; 32]);
+        assert_eq!(
+            sc.key,
+            Hash::from_hex("1f90fc1e2ad76220f1c4069018e0b48ecba090379aa6dc969b2d92a67fb05e49").unwrap()
+        );
     }
 
     #[test]
