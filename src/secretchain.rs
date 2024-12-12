@@ -26,7 +26,6 @@ fn derive(context: &str, secret: &[u8]) -> Hash {
     hasher.finalize()
 }
 
-
 /// Stores secret and next_secret.
 ///
 /// # Examples
@@ -44,7 +43,7 @@ pub struct Seed {
 }
 
 impl Seed {
-    pub fn new(secret: Hash, next_secret: Hash) -> Self {
+    fn new(secret: Hash, next_secret: Hash) -> Self {
         if secret == next_secret {
             panic!("secret and next_secret cannot be equal");
         }
@@ -52,6 +51,12 @@ impl Seed {
             secret,
             next_secret,
         }
+    }
+
+    pub fn load(buf: &[u8; 64]) -> Self {
+        let secret = Hash::from_bytes(buf[0..32].try_into().unwrap());
+        let next_secret = Hash::from_bytes(buf[32..64].try_into().unwrap());
+        Self::new(secret, next_secret)
     }
 
     pub fn create(initial_entropy: &[u8; 32]) -> Self {
@@ -135,6 +140,23 @@ mod tests {
         let secret = hash(&[42; 32]);
         let next_secret = hash(&[42; 32]);
         let seed = Seed::new(secret, next_secret);
+    }
+
+    #[test]
+    fn test_seed_load() {
+        let mut buf: [u8; 64] = [0; 64];
+        buf[0..32].copy_from_slice(&[42; 32]);
+        buf[32..64].copy_from_slice(&[69; 32]);
+        let seed = Seed::load(&buf);
+        assert_eq!(seed.secret.as_bytes(), &[42; 32]);
+        assert_eq!(seed.next_secret.as_bytes(), &[69; 32]);
+    }
+
+    #[test]
+    #[should_panic(expected = "secret and next_secret cannot be equal")]
+    fn test_seed_load_panic() {
+        let buf = [42; 64];
+        let seed = Seed::load(&buf);
     }
 
     #[test]
