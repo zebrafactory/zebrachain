@@ -36,7 +36,7 @@ fn derive(context: &str, secret: &[u8]) -> Hash {
 /// let seed = Seed::create(&initial_entropy);
 /// let seed = seed.advance(&new_entropy);
 /// ```
-#[derive(Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct Seed {
     pub secret: Hash,
     pub next_secret: Hash,
@@ -82,13 +82,14 @@ impl Seed {
 
 pub struct SecretChain {
     file: File,
+    seed: Seed,
 }
 
 impl SecretChain {
-    pub fn create(mut file: File, seed: &Seed) -> IoResult<Self> {
+    pub fn create(mut file: File, seed: Seed) -> IoResult<Self> {
         file.write_all(seed.as_secret_bytes())?;
         file.write_all(seed.as_next_secret_bytes())?;
-        Ok(Self { file })
+        Ok(Self { file, seed })
     }
 
     pub fn into_file(self) -> File {
@@ -169,7 +170,7 @@ mod tests {
     fn test_sc_create() {
         let file = tempfile().unwrap();
         let seed = Seed::create(&[42; 32]);
-        let result = SecretChain::create(file, &seed);
+        let result = SecretChain::create(file, seed.clone());
         assert!(result.is_ok());
         let mut file = result.unwrap().into_file();
         file.rewind().unwrap();
