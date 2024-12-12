@@ -13,9 +13,7 @@ Steps to create a new chain:
 5. Write new secret in SecretChain, new Block in Chain
 */
 
-
 static SECRET_CHAIN_CONTEXT: &str = "win.zebrachain chain";
-
 
 pub struct SecretChain {
     file: File,
@@ -24,9 +22,9 @@ pub struct SecretChain {
 }
 
 impl SecretChain {
-    pub fn new(file: File, initial_entropy: [u8; 32]) -> Self {
+    pub fn new(file: File, initial_entropy: &[u8; 32]) -> Self {
         let mut h = Hasher::new_derive_key(SECRET_CHAIN_CONTEXT);
-        h.update(&initial_entropy);
+        h.update(initial_entropy);
         Self {
             file,
             key: h.finalize(),
@@ -65,17 +63,18 @@ mod tests {
     fn new_sc() -> SecretChain {
         let file = tempfile().unwrap();
         let key = [69; 32];
-        SecretChain::new(file, key)
+        SecretChain::new(file, &key)
     }
 
     #[test]
     fn test_sc_new() {
         let file = tempfile().unwrap();
         let key = [69; 32];
-        let sc = SecretChain::new(file, key);
+        let sc = SecretChain::new(file, &key);
         assert_eq!(
             sc.key,
-            Hash::from_hex("1f90fc1e2ad76220f1c4069018e0b48ecba090379aa6dc969b2d92a67fb05e49").unwrap()
+            Hash::from_hex("1f90fc1e2ad76220f1c4069018e0b48ecba090379aa6dc969b2d92a67fb05e49")
+                .unwrap()
         );
     }
 
