@@ -65,8 +65,6 @@ mod tests {
     use super::*;
     use pqcrypto_dilithium::dilithium3;
 
-
-
     static HEX0: &str = "27ed25c29cfa0c0b5667f9e1bdd6eec1385e815776a4dc8379141da13afa98e1";
 
     #[test]

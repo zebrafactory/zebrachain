@@ -122,7 +122,7 @@ mod tests {
     #[should_panic(expected = "Cannot call Chain.commit() when next_key is None")]
     fn test_sc_commit_panic() {
         let mut sc = new_sc();
-        sc.commit();
+        sc.commit().unwrap();
     }
 
     #[test]
