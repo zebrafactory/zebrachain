@@ -3,7 +3,7 @@
 use blake3::{keyed_hash, Hash, Hasher};
 use std::fs::File;
 use std::io::Result as IoResult;
-use std::io::{Read, Seek, Write};
+use std::io::{Read, Seek, SeekFrom, Write};
 
 /*
 Steps to create a new chain:
@@ -89,6 +89,14 @@ impl SecretChain {
     pub fn create(mut file: File, seed: Seed) -> IoResult<Self> {
         file.write_all(seed.as_secret_bytes())?;
         file.write_all(seed.as_next_secret_bytes())?;
+        Ok(Self { file, seed })
+    }
+
+    pub fn open(mut file: File) -> IoResult<Self> {
+        file.seek(SeekFrom::End(-64))?;
+        let mut buf = [0; 64];
+        file.read_exact(&mut buf)?;
+        let seed = Seed::load(&buf);
         Ok(Self { file, seed })
     }
 
@@ -178,5 +186,20 @@ mod tests {
         file.read_exact(&mut buf).unwrap();
         let seed2 = Seed::load(&buf);
         assert_eq!(seed, seed2);
+    }
+
+    #[test]
+    fn test_sc_open() {
+        let file = tempfile().unwrap();
+        assert!(SecretChain::open(file).is_err());
+
+        let mut file = tempfile().unwrap();
+        file.write_all(&[42; 32]).unwrap();
+        assert!(SecretChain::open(file).is_err());
+
+        let mut file = tempfile().unwrap();
+        file.write_all(&[42; 32]).unwrap();
+        file.write_all(&[69; 32]).unwrap();
+        assert!(SecretChain::open(file).is_ok());
     }
 }
