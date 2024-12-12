@@ -75,9 +75,8 @@ impl Seed {
     }
 
     pub fn advance(&self, new_entropy: &[u8; 32]) -> Self {
-        let secret = self.next_secret;
-        let next_secret = keyed_hash(self.next_secret.as_bytes(), new_entropy);
-        Self::new(secret, next_secret)
+        let next_next_secret = keyed_hash(self.next_secret.as_bytes(), new_entropy);
+        Self::new(self.next_secret, next_next_secret)
     }
 }
 
