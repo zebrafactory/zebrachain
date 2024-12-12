@@ -97,8 +97,8 @@ impl SecretChain {
 mod tests {
     use super::*;
     use blake3::hash;
-    use tempfile::tempfile;
     use std::collections::HashSet;
+    use tempfile::tempfile;
 
     fn new_sc() -> SecretChain {
         let file = tempfile().unwrap();
@@ -121,6 +121,18 @@ mod tests {
         let secret = hash(&[42; 32]);
         let next_secret = hash(&[42; 32]);
         let seed = Seed::new(secret, next_secret);
+    }
+
+    #[test]
+    fn test_seed_create() {
+        let mut hset: HashSet<Hash> = HashSet::new();
+        for i in 0..=255 {
+            let entropy = [i; 32];
+            let seed = Seed::create(&entropy);
+            assert!(hset.insert(seed.secret));
+            assert!(hset.insert(seed.next_secret));
+        }
+        assert_eq!(hset.len(), 512);
     }
 
     #[test]
