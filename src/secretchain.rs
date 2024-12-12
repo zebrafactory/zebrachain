@@ -34,7 +34,10 @@ impl Seed {
         if secret == next_secret {
             panic!("secret and next_secret cannot be equal");
         }
-        Self {secret, next_secret}
+        Self {
+            secret,
+            next_secret,
+        }
     }
 
     pub fn create(initial_entropy: &[u8; 32]) -> Self {
@@ -93,8 +96,9 @@ impl SecretChain {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use tempfile::tempfile;
     use blake3::hash;
+    use tempfile::tempfile;
+    use std::collections::HashSet;
 
     fn new_sc() -> SecretChain {
         let file = tempfile().unwrap();
@@ -117,6 +121,22 @@ mod tests {
         let secret = hash(&[42; 32]);
         let next_secret = hash(&[42; 32]);
         let seed = Seed::new(secret, next_secret);
+    }
+
+    #[test]
+    fn test_seed_advance() {
+        let count = 10000;
+        let entropy = [69; 32];
+        let mut seed = Seed::create(&entropy);
+        let mut hset: HashSet<Hash> = HashSet::new();
+        assert!(hset.insert(seed.secret));
+        assert!(hset.insert(seed.next_secret));
+        for _ in 0..count {
+            seed = seed.advance(&entropy);
+            assert!(!hset.insert(seed.secret)); // Should already be contained
+            assert!(hset.insert(seed.next_secret));
+        }
+        assert_eq!(hset.len(), count + 2);
     }
 
     #[test]
