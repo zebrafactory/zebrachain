@@ -99,4 +99,22 @@ mod tests {
         let mut sc = new_sc();
         sc.commit();
     }
+
+    #[test]
+    fn test_sc_unadvance() {
+        let mut sc = new_sc();
+        sc.advance(&[42; 32]);
+        assert!(sc.next_key.is_some());
+        sc.unadvance();
+        assert!(sc.next_key.is_none());
+    }
+
+    #[test]
+    fn test_sc_commit() {
+        let mut sc = new_sc();
+        sc.advance(&[42; 32]);
+        assert!(sc.next_key.is_some());
+        assert!(sc.commit().is_ok());
+        assert!(sc.next_key.is_none());
+    }
 }
