@@ -29,21 +29,21 @@ impl SecretChain {
     }
 
     pub fn advance(&mut self, new_entropy: &[u8; 32]) {
-        if self.next_key != None {
+        if self.next_key.is_some() {
             panic!("Cannot call Chain.advance() when next_key already has a value");
         }
         self.next_key = Some(keyed_hash(&self.key, new_entropy));
     }
 
     pub fn unadvance(&mut self) {
-        if self.next_key.take() == None {
+        if self.next_key.take().is_none() {
             panic!("Cannot call Chain.unadvance() next_key is None");
         }
     }
 
     pub fn commit(&mut self) -> IoResult<()> {
         let key = self.next_key.take();
-        if key == None {
+        if key.is_none() {
             panic!("Cannot call Chain.commit() next_key is None");
         }
         self.key.copy_from_slice(key.unwrap().as_bytes());
