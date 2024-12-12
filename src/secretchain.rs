@@ -14,7 +14,15 @@ Steps to create a new chain:
 5. Write new secret in SecretChain, new Block in Chain
 */
 
+static SECRET_CONTEXT: &str = "foo";
+static NEXT_SECRET_CONTEXT: &str = "bar";
 static SECRET_CHAIN_CONTEXT: &str = "win.zebrachain chain";
+
+fn derive(context: &str, secret: &[u8]) -> Hash {
+    let mut hasher = Hasher::new_derive_key(context);
+    hasher.update(secret);
+    hasher.finalize()
+}
 
 pub struct Seed {
     pub secret: Hash,
@@ -22,16 +30,23 @@ pub struct Seed {
 }
 
 impl Seed {
-    pub fn new(initial_entropy: &[u8; 32]) -> Self {
-        let mut h = Hasher::new_derive_key(SECRET_CHAIN_CONTEXT);
-        h.update(initial_entropy);
-        let secret = h.finalize();
-        let next_secret = keyed_hash(secret.as_bytes(), initial_entropy);
-        assert_ne!(secret, next_secret);
-        Self {
-            secret,
-            next_secret,
+    pub fn new(secret: Hash, next_secret: Hash) -> Self {
+        if secret == next_secret {
+            panic!("secret and next_secret cannot be equal");
         }
+        Self {secret, next_secret}
+    }
+
+    pub fn create(initial_entropy: &[u8; 32]) -> Self {
+        let secret = derive(SECRET_CONTEXT, initial_entropy);
+        let next_secret = derive(NEXT_SECRET_CONTEXT, initial_entropy);
+        Self::new(secret, next_secret)
+    }
+
+    pub fn advance(self, new_entropy: &[u8; 32]) -> Self {
+        let secret = self.next_secret;
+        let next_secret = keyed_hash(self.next_secret.as_bytes(), new_entropy);
+        Self::new(secret, next_secret)
     }
 }
 
@@ -79,6 +94,7 @@ impl SecretChain {
 mod tests {
     use super::*;
     use tempfile::tempfile;
+    use blake3::hash;
 
     fn new_sc() -> SecretChain {
         let file = tempfile().unwrap();
@@ -88,7 +104,19 @@ mod tests {
 
     #[test]
     fn test_seed_new() {
-        let seed = Seed::new(&[69; 32]);
+        let secret = hash(&[42; 32]);
+        let next_secret = hash(&[69; 32]);
+        let seed = Seed::new(secret, next_secret);
+        assert_eq!(seed.secret, hash(&[42; 32]));
+        assert_eq!(seed.next_secret, hash(&[69; 32]));
+    }
+
+    #[test]
+    #[should_panic(expected = "secret and next_secret cannot be equal")]
+    fn test_seed_new_panic() {
+        let secret = hash(&[42; 32]);
+        let next_secret = hash(&[42; 32]);
+        let seed = Seed::new(secret, next_secret);
     }
 
     #[test]
