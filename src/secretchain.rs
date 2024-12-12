@@ -30,7 +30,7 @@ impl SecretChain {
 
     pub fn advance(&mut self, new_entropy: &[u8; 32]) {
         if self.next_key.is_some() {
-            panic!("Cannot call Chain.advance() when next_key already has a value");
+            panic!("Cannot call Chain.advance() when next_key is Some");
         }
         self.next_key = Some(keyed_hash(&self.key, new_entropy));
     }
@@ -71,7 +71,7 @@ mod tests {
     }
 
     #[test]
-    #[should_panic(expected = "Cannot call Chain.advance() when next_key already has a value")]
+    #[should_panic(expected = "Cannot call Chain.advance() when next_key is Some")]
     fn test_sc_advance_panic() {
         let mut sc = new_sc();
         sc.advance(&[42; 32]);
