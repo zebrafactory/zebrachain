@@ -1,3 +1,5 @@
+//! Manages chain of secrets.
+
 use blake3::{keyed_hash, Hash, Hasher};
 use std::fs::File;
 use std::io::Result as IoResult;
@@ -24,6 +26,18 @@ fn derive(context: &str, secret: &[u8]) -> Hash {
     hasher.finalize()
 }
 
+
+/// Stores secret and next_secret.
+///
+/// # Examples
+///
+/// ```
+/// use zebrachain::secretchain::Seed;
+/// let initial_entropy = [42; 32];
+/// let new_entropy = [69; 32];
+/// let seed = Seed::create(&initial_entropy);
+/// let seed = seed.advance(&new_entropy);
+/// ```
 pub struct Seed {
     pub secret: Hash,
     pub next_secret: Hash,
