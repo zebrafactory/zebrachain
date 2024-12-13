@@ -15,7 +15,7 @@ Walk chain till last block.
 */
 
 pub struct Chain {
-    counter: u64,
+    counter: u128,
     first_hash: Hash,
     hash: Hash,
     next_pubkey_hash: Hash,

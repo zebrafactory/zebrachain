@@ -56,16 +56,6 @@ impl Seed {
         }
     }
 
-    pub fn load(buf: &[u8; 64]) -> IoResult<Self> {
-        let secret = Hash::from_bytes(buf[0..32].try_into().unwrap());
-        let next_secret = Hash::from_bytes(buf[32..64].try_into().unwrap());
-        if secret == next_secret {
-            Err(IoError::other("secret and next_secret match"))
-        } else {
-            Ok(Self::new(secret, next_secret))
-        }
-    }
-
     pub fn create(initial_entropy: &[u8; 32]) -> Self {
         let secret = derive(SECRET_CONTEXT, initial_entropy);
         let next_secret = derive(NEXT_SECRET_CONTEXT, initial_entropy);
@@ -75,6 +65,16 @@ impl Seed {
     pub fn advance(&self, new_entropy: &[u8; 32]) -> Self {
         let next_next_secret = keyed_hash(self.next_secret.as_bytes(), new_entropy);
         Self::new(self.next_secret, next_next_secret)
+    }
+
+    pub fn load(buf: &[u8; 64]) -> IoResult<Self> {
+        let secret = Hash::from_bytes(buf[0..32].try_into().unwrap());
+        let next_secret = Hash::from_bytes(buf[32..64].try_into().unwrap());
+        if secret == next_secret {
+            Err(IoError::other("secret and next_secret match"))
+        } else {
+            Ok(Self::new(secret, next_secret))
+        }
     }
 }
 
