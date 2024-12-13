@@ -138,7 +138,7 @@ impl SecretChain {
 
     pub fn commit(&mut self, seed: Seed) -> IoResult<()> {
         if seed.secret != self.seed.next_secret {
-            panic!("fuck");
+            panic!("cannot commit out of sequence seed");
         }
         self.file.write_all(seed.as_next_secret_bytes())?;
         self.seed = seed;
@@ -267,5 +267,17 @@ mod tests {
         let file = sc.into_file();
         let sc = SecretChain::open(file).unwrap();
         assert_eq!(last, sc.current_seed());
+    }
+
+    #[test]
+    #[should_panic(expected = "cannot commit out of sequence seed")]
+    fn test_sc_commit_panic() {
+        let entropy = &[69; 32];
+        let file = tempfile().unwrap();
+        let seed = Seed::create(&entropy);
+        let mut sc = SecretChain::create(file, seed).unwrap();
+        let next = sc.advance(&entropy);
+        let next_next = next.advance(&entropy);
+        sc.commit(next_next);
     }
 }
