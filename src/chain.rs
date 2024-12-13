@@ -27,7 +27,7 @@ impl Chain {
         let block = Block::open(buf)?;
         Ok(Self {
             counter: 0,
-            first_hash: block.first_hash(),
+            first_hash: block.hash(),
             hash: block.hash(),
             next_pubkey_hash: block.next_pubkey_hash(),
             state_hash: block.state_hash(),
@@ -36,13 +36,17 @@ impl Chain {
 
     pub fn append(self, buf: &[u8]) -> Result<Self, BlockError> {
         let block = Block::from_previous(buf, self.next_pubkey_hash, self.hash)?;
-        Ok(Self {
-            counter: self.counter + 1,
-            first_hash: self.first_hash,
-            hash: block.hash(),
-            next_pubkey_hash: block.next_pubkey_hash(),
-            state_hash: block.state_hash(),
-        })
+        if block.first_hash() != self.first_hash {
+            Err(BlockError::FirstHash)
+        } else {
+            Ok(Self {
+                counter: self.counter + 1,
+                first_hash: self.first_hash,
+                hash: block.hash(),
+                next_pubkey_hash: block.next_pubkey_hash(),
+                state_hash: block.state_hash(),
+            })
+        }
     }
 }
 
