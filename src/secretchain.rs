@@ -56,14 +56,6 @@ impl Seed {
         }
     }
 
-    pub fn as_secret_bytes(&self) -> &[u8] {
-        self.secret.as_bytes()
-    }
-
-    pub fn as_next_secret_bytes(&self) -> &[u8] {
-        self.next_secret.as_bytes()
-    }
-
     pub fn load(buf: &[u8; 64]) -> IoResult<Self> {
         let secret = Hash::from_bytes(buf[0..32].try_into().unwrap());
         let next_secret = Hash::from_bytes(buf[32..64].try_into().unwrap());
@@ -94,8 +86,8 @@ pub struct SecretSigner {
 impl SecretSigner {
     pub fn new(seed: &Seed) -> Self {
         Self {
-            keypair: KeyPair::new(seed.as_secret_bytes()),
-            next_pubkey_hash: KeyPair::new(seed.as_next_secret_bytes()).pubkey_hash(),
+            keypair: KeyPair::new(seed.secret.as_bytes()),
+            next_pubkey_hash: KeyPair::new(seed.next_secret.as_bytes()).pubkey_hash(),
         }
     }
     /*
@@ -115,8 +107,8 @@ pub struct SecretChain {
 
 impl SecretChain {
     pub fn create(mut file: File, seed: Seed) -> IoResult<Self> {
-        file.write_all(seed.as_secret_bytes())?;
-        file.write_all(seed.as_next_secret_bytes())?;
+        file.write_all(seed.secret.as_bytes())?;
+        file.write_all(seed.next_secret.as_bytes())?;
         Ok(Self { file, seed })
     }
 
@@ -140,7 +132,7 @@ impl SecretChain {
         if seed.secret != self.seed.next_secret {
             panic!("cannot commit out of sequence seed");
         }
-        self.file.write_all(seed.as_next_secret_bytes())?;
+        self.file.write_all(seed.next_secret.as_bytes())?;
         self.seed = seed;
         Ok(())
     }
