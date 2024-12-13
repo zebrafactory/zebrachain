@@ -28,7 +28,7 @@ impl KeyPair {
         dst.copy_from_slice(self.key.verifying_key().as_bytes());
     }
 
-    // Consumes instance becase we either sign or hash the pubkey, not both
+    // Consumes instance becase we either make a signature or hash the pubkey, not both:
     pub fn pubkey_hash(self) -> blake3::Hash {
         let mut buf = [0; PUBKEY];
         self.write_pubkey(&mut buf);

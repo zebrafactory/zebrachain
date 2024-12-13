@@ -3,6 +3,7 @@
 use crate::pksign::KeyPair;
 use blake3::{keyed_hash, Hash, Hasher};
 use std::fs::File;
+use std::io::Error as IoError;
 use std::io::Result as IoResult;
 use std::io::{Read, Seek, SeekFrom, Write};
 
@@ -32,8 +33,8 @@ fn derive(context: &str, secret: &[u8]) -> Hash {
 ///
 /// ```
 /// use zebrachain::secretchain::Seed;
-/// let initial_entropy = [42; 32];
-/// let new_entropy = [69; 32];
+/// let initial_entropy = [42u8; 32];
+/// let new_entropy = [69u8; 32];
 /// let seed = Seed::create(&initial_entropy);
 /// let next = seed.advance(&new_entropy);
 /// assert_eq!(next.secret, seed.next_secret);
@@ -63,10 +64,14 @@ impl Seed {
         self.next_secret.as_bytes()
     }
 
-    pub fn load(buf: &[u8; 64]) -> Self {
+    pub fn load(buf: &[u8; 64]) -> IoResult<Self> {
         let secret = Hash::from_bytes(buf[0..32].try_into().unwrap());
         let next_secret = Hash::from_bytes(buf[32..64].try_into().unwrap());
-        Self::new(secret, next_secret)
+        if secret == next_secret {
+            Err(IoError::other("secret and next_secret match"))
+        } else {
+            Ok(Self::new(secret, next_secret))
+        }
     }
 
     pub fn create(initial_entropy: &[u8; 32]) -> Self {
@@ -93,6 +98,14 @@ impl SecretSigner {
             next_pubkey_hash: KeyPair::new(seed.as_next_secret_bytes()).pubkey_hash(),
         }
     }
+    /*
+        pub fn sign(self, block: &mut MutBlock) {
+            self.keypair.write_pubkey(block.as_mut_pubkey());
+            block.set_next_pubkey_hash(&self.next_pubkey_hash);
+            sig = self.keypair.sign(block.as_signable());
+            block.set_signature(sig);
+        }
+    */
 }
 
 pub struct SecretChain {
@@ -111,7 +124,7 @@ impl SecretChain {
         file.seek(SeekFrom::End(-64))?;
         let mut buf = [0; 64];
         file.read_exact(&mut buf)?;
-        let seed = Seed::load(&buf);
+        let seed = Seed::load(&buf)?;
         Ok(Self { file, seed })
     }
 
@@ -166,16 +179,12 @@ mod tests {
         let mut buf: [u8; 64] = [0; 64];
         buf[0..32].copy_from_slice(&[42; 32]);
         buf[32..64].copy_from_slice(&[69; 32]);
-        let seed = Seed::load(&buf);
+        let seed = Seed::load(&buf).unwrap();
         assert_eq!(seed.secret.as_bytes(), &[42; 32]);
         assert_eq!(seed.next_secret.as_bytes(), &[69; 32]);
-    }
 
-    #[test]
-    #[should_panic(expected = "secret and next_secret cannot be equal")]
-    fn test_seed_load_panic() {
-        let buf = [42; 64];
-        let seed = Seed::load(&buf);
+        let buf = [69; 64];
+        assert!(Seed::load(&buf).is_err());
     }
 
     #[test]
@@ -224,7 +233,7 @@ mod tests {
         file.rewind().unwrap();
         let mut buf = [0; 64];
         file.read_exact(&mut buf).unwrap();
-        let seed2 = Seed::load(&buf);
+        let seed2 = Seed::load(&buf).unwrap();
         assert_eq!(seed, seed2);
     }
 
