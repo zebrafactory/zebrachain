@@ -1,5 +1,6 @@
 //! Manages chain of secrets.
 
+use crate::pksign::KeyPair;
 use blake3::{keyed_hash, Hash, Hasher};
 use std::fs::File;
 use std::io::Result as IoResult;
@@ -77,6 +78,20 @@ impl Seed {
     pub fn advance(&self, new_entropy: &[u8; 32]) -> Self {
         let next_next_secret = keyed_hash(self.next_secret.as_bytes(), new_entropy);
         Self::new(self.next_secret, next_next_secret)
+    }
+}
+
+pub struct SecretSigner {
+    pub keypair: KeyPair,
+    pub next_pubkey_hash: Hash,
+}
+
+impl SecretSigner {
+    pub fn new(seed: &Seed) -> Self {
+        Self {
+            keypair: KeyPair::new(seed.as_secret_bytes()),
+            next_pubkey_hash: KeyPair::new(seed.as_next_secret_bytes()).pubkey_hash(),
+        }
     }
 }
 
@@ -189,6 +204,14 @@ mod tests {
             assert!(hset.insert(seed.next_secret));
         }
         assert_eq!(hset.len(), count + 2);
+    }
+
+    #[test]
+    fn test_secrect_signer() {
+        let seed = Seed::create(&[69; 32]);
+        let secsign = SecretSigner::new(&seed);
+        let next_pubkey_hash = secsign.next_pubkey_hash;
+        assert_ne!(next_pubkey_hash, secsign.keypair.pubkey_hash());
     }
 
     #[test]
