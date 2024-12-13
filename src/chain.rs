@@ -1,4 +1,4 @@
-use crate::block::Block;
+use crate::block::{Block, BlockError};
 use crate::tunable::*;
 use blake3::Hash;
 use std::fs::File;
@@ -15,44 +15,35 @@ Walk chain till last block.
 */
 
 pub struct Chain {
-    pub first_hash: Hash,
-    file: File,
-    buf: [u8; BLOCK],
+    counter: u64,
+    first_hash: Hash,
+    hash: Hash,
+    next_pubkey_hash: Hash,
+    state_hash: Hash,
 }
 
 impl Chain {
-    pub fn new(file: File) -> Self {
-        let first_hash = Hash::from_bytes([0; DIGEST]);
-        Self {
-            first_hash,
-            file,
-            buf: [0; BLOCK],
-        }
+    pub fn open(buf: &[u8]) -> Result<Self, BlockError> {
+        let block = Block::open(buf)?;
+        Ok(Self {
+            counter: 0,
+            first_hash: block.first_hash(),
+            hash: block.hash(),
+            next_pubkey_hash: block.next_pubkey_hash(),
+            state_hash: block.state_hash(),
+        })
     }
 
-    fn validate(&mut self) -> IoResult<()> {
-        self.file.rewind()?;
-        self.file.read_exact(&mut self.buf)?;
-        if let Ok(block) = Block::open(&self.buf) {
-            self.first_hash = block.first_hash();
-            let mut previous_hash = block.hash();
-            let mut next_pubkey_hash = block.next_pubkey_hash();
-            while self.file.read_exact(&mut self.buf).is_ok() {
-                if let Ok(block) = Block::from_previous(&self.buf, next_pubkey_hash, previous_hash)
-                {
-                    previous_hash = block.hash();
-                    next_pubkey_hash = block.next_pubkey_hash();
-                }
-            }
-        }
-        Ok(())
+    pub fn append(self, buf: &[u8]) -> Result<Self, BlockError> {
+        let block = Block::from_previous(buf, self.next_pubkey_hash, self.hash)?;
+        Ok(Self {
+            counter: self.counter + 1,
+            first_hash: self.first_hash,
+            hash: block.hash(),
+            next_pubkey_hash: block.next_pubkey_hash(),
+            state_hash: block.state_hash(),
+        })
     }
-
-    pub fn open(first_hash: Hash, file: File) -> IoResult<Self> {
-        Ok(Self::new(file))
-    }
-
-    pub fn append(&mut self) {}
 }
 
 #[cfg(test)]
@@ -61,9 +52,8 @@ mod tests {
     use tempfile;
 
     #[test]
-    fn test_chain_new() {
-        let tmp = tempfile::tempfile().unwrap();
-        let mut chain = Chain::new(tmp);
-        assert!(chain.validate().is_err());
+    fn test_chain_open() {
+        let buf = [0; BLOCK];
+        assert!(Chain::open(&buf).is_err());
     }
 }
