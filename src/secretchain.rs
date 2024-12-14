@@ -100,7 +100,7 @@ impl SecretSigner {
         Finally, the byte representation of the signature is copied into
         SIGNATURE_RANGE.
 
-        The secret signer should not compute or set the block hash.
+        The SecrectSignner should not compute or set the block hash.
 
         pub fn sign(self, block: &mut MutBlock) {
             self.keypair.write_pubkey(block.as_mut_pubkey());

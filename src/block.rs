@@ -164,6 +164,21 @@ pub fn write_block(
     buf[HASH_RANGE].copy_from_slice(block_hash.as_bytes());
 }
 
+pub struct MutBlock<'a> {
+    buf: &'a mut [u8],
+}
+
+impl<'a> MutBlock<'a> {
+    pub fn new(buf: &'a mut [u8], state_hash: Hash) -> Self {
+        if buf.len() != BLOCK {
+            panic!("Need a {BLOCK} byte slice; got {} bytes", buf.len());
+        }
+        buf.fill(0);
+        buf[STATE_HASH_RANGE].copy_from_slice(state_hash.as_bytes());
+        Self { buf }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -365,5 +380,27 @@ mod tests {
                 assert!(block.signature_is_valid());
             }
         }
+    }
+
+    #[test]
+    fn test_mutblock_new() {
+        let mut buf = [42; BLOCK];
+        let state_hash = Hash::from_bytes([69; DIGEST]);
+        let mut block = MutBlock::new(&mut buf, state_hash);
+        assert_eq!(
+            buf,
+            [
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 69, 69, 69, 69, 69, 69,
+                69, 69, 69, 69, 69, 69, 69, 69, 69, 69, 69, 69, 69, 69, 69, 69, 69, 69, 69, 69, 69,
+                69, 69, 69, 69, 69, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+            ]
+        );
     }
 }
