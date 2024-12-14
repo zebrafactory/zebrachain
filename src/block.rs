@@ -189,7 +189,7 @@ impl<'a> MutBlock<'a> {
     pub fn finalize(mut self) -> BlockResult<'a> {
         let block_hash = hash(self.as_hashable());
         self.set_hash(&block_hash);
-        Block::open(self.buf)
+        Block::from_hash(self.buf, block_hash)
     }
 }
 
