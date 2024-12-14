@@ -78,6 +78,7 @@ impl Seed {
     }
 }
 
+/// Use to get current KeyPair and next PubKey hash from a Seed.
 pub struct SecretSigner {
     pub keypair: KeyPair,
     pub next_pubkey_hash: Hash,
@@ -91,6 +92,16 @@ impl SecretSigner {
         }
     }
     /*
+        The SecretSigner must first copy the pubkey and next_pubkey_hash byte
+        representations into the PUBKEY_RANGE and NEXT_PUBKEY_HASH_RANGE, respectively.
+
+        The signature is then computed over the SIGNABLE_RAGE.
+
+        Finally, the byte representation of the signature is copied into
+        SIGNATURE_RANGE.
+
+        The secret signer should not compute or set the block hash.
+
         pub fn sign(self, block: &mut MutBlock) {
             self.keypair.write_pubkey(block.as_mut_pubkey());
             block.set_next_pubkey_hash(&self.next_pubkey_hash);
