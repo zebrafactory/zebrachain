@@ -53,10 +53,10 @@ impl Chain {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use tempfile;
-    use crate::secrets::Seed;
     use crate::block::MutBlock;
     use crate::pksign::SecretSigner;
+    use crate::secrets::Seed;
+    use tempfile;
 
     #[test]
     fn test_chain_open() {

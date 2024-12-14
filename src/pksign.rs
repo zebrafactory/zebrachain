@@ -21,7 +21,7 @@ pub struct KeyPair {
 }
 
 impl KeyPair {
-    pub fn new(secret: &[u8]) -> Self {
+    pub fn new(secret: &[u8; 32]) -> Self {
         let h = derive(ED25519_CONTEXT, secret);
         let key = SigningKey::from_bytes(h.as_bytes());
         Self { key }
