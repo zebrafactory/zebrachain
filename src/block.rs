@@ -1,4 +1,4 @@
-use crate::pksign::{verify_signature, KeyPair};
+use crate::pksign::{verify_signature, KeyPair, SecretSigner};
 use crate::tunable::*;
 use blake3::{hash, Hash};
 
@@ -169,7 +169,7 @@ pub struct MutBlock<'a> {
 }
 
 impl<'a> MutBlock<'a> {
-    pub fn new(buf: &'a mut [u8], state_hash: Hash) -> Self {
+    pub fn new(buf: &'a mut [u8], state_hash: &Hash) -> Self {
         if buf.len() != BLOCK {
             panic!("Need a {BLOCK} byte slice; got {} bytes", buf.len());
         }
@@ -187,7 +187,9 @@ impl<'a> MutBlock<'a> {
     }
 
     pub fn set_previous(&mut self, previous_hash: &Hash, first_hash: &Hash) {
+        // Either both of these get set or, in the case of the first block, neither are set.
         self.buf[PREVIOUS_HASH_RANGE].copy_from_slice(previous_hash.as_bytes());
+        self.buf[FIRST_HASH_RANGE].copy_from_slice(first_hash.as_bytes());
     }
 
     pub fn as_mut_signature(&mut self) -> &mut [u8] {
@@ -205,12 +207,19 @@ impl<'a> MutBlock<'a> {
     pub fn as_signable(&self) -> &[u8] {
         &self.buf[SIGNABLE_RANGE]
     }
+
+    pub fn finalize(mut self) -> BlockResult<'a> {
+        let block_hash = hash(self.as_hashable());
+        self.set_hash(&block_hash);
+        Block::open(self.buf)
+    }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
     use crate::misc::BitFlipper;
+    use crate::secretchain::Seed;
 
     const EXPECTED: &str = "1235a30e9a3086fa131087c5683eeaa5e4733dfa28fe610d4ed2b76e114011c7";
 
@@ -220,20 +229,15 @@ mod tests {
 
     fn new_valid_block() -> Vec<u8> {
         let mut buf = vec![0; BLOCK];
-        let secret = [69; 32];
-        let keypair = KeyPair::new(&secret);
-        let next_pubkey_hash = Hash::from_bytes([1; 32]);
+        let seed = Seed::create(&[69; 32]);
+        let secsign = SecretSigner::new(&seed);
         let state_hash = Hash::from_bytes([2; 32]);
         let previous_hash = Hash::from_bytes([3; 32]);
         let first_hash = Hash::from_bytes([4; 32]);
-        write_block(
-            &mut buf[..],
-            keypair,
-            next_pubkey_hash,
-            state_hash,
-            previous_hash,
-            first_hash,
-        );
+        let mut block = MutBlock::new(&mut buf, &state_hash);
+        block.set_previous(&previous_hash, &first_hash);
+        secsign.sign(&mut block);
+        block.finalize();
         buf
     }
 
@@ -414,7 +418,7 @@ mod tests {
     fn test_mutblock_new() {
         let mut buf = [42; BLOCK];
         let state_hash = Hash::from_bytes([69; DIGEST]);
-        let mut block = MutBlock::new(&mut buf, state_hash);
+        let mut block = MutBlock::new(&mut buf, &state_hash);
         assert_eq!(
             buf,
             [

@@ -1,8 +1,10 @@
 //! Abstraction over public key signature algorithms.
 
 use crate::block::MutBlock;
+use crate::secretchain::Seed;
 use crate::tunable::*;
 use blake3;
+use blake3::Hash;
 use ed25519_dalek::{Signature, Signer, SigningKey, VerifyingKey};
 
 static ED25519_CONTEXT: &str = "win.zebrachain.sign.ed25519";
@@ -64,6 +66,40 @@ pub fn verify_signature(buf: &[u8]) -> bool {
         pubkey.verify_strict(&buf[SIGNABLE_RANGE], &sig).is_ok()
     } else {
         false
+    }
+}
+
+/// Use to get current KeyPair and next PubKey hash from a Seed.
+pub struct SecretSigner {
+    pub keypair: KeyPair,
+    pub next_pubkey_hash: Hash,
+}
+
+impl SecretSigner {
+    pub fn new(seed: &Seed) -> Self {
+        Self {
+            keypair: KeyPair::new(seed.secret.as_bytes()),
+            next_pubkey_hash: KeyPair::new(seed.next_secret.as_bytes()).pubkey_hash(),
+        }
+    }
+    /*
+        The SecretSigner must first copy the pubkey and next_pubkey_hash byte
+        representations into the PUBKEY_RANGE and NEXT_PUBKEY_HASH_RANGE, respectively.
+
+        The signature is then computed over the SIGNABLE_RAGE.
+
+        Finally, the byte representation of the signature is copied into
+        SIGNATURE_RANGE.
+
+        The SecrectSignner should not compute or set the block hash.
+    */
+
+    pub fn sign(self, block: &mut MutBlock) {
+        self.keypair.write_pubkey(block.as_mut_pubkey());
+        block.set_next_pubkey_hash(&self.next_pubkey_hash);
+        self.keypair.sign2(block);
+        //self.keypair.sign(block.as_signable());
+        //block.set_signature(sig);
     }
 }
 

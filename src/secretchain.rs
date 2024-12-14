@@ -1,7 +1,6 @@
 //! Manages chain of secrets.
 
 use crate::block::MutBlock;
-use crate::pksign::KeyPair;
 use blake3::{keyed_hash, Hash, Hasher};
 use std::fs::File;
 use std::io::Error as IoError;
@@ -76,39 +75,6 @@ impl Seed {
         } else {
             Ok(Self::new(secret, next_secret))
         }
-    }
-}
-
-/// Use to get current KeyPair and next PubKey hash from a Seed.
-pub struct SecretSigner {
-    pub keypair: KeyPair,
-    pub next_pubkey_hash: Hash,
-}
-
-impl SecretSigner {
-    pub fn new(seed: &Seed) -> Self {
-        Self {
-            keypair: KeyPair::new(seed.secret.as_bytes()),
-            next_pubkey_hash: KeyPair::new(seed.next_secret.as_bytes()).pubkey_hash(),
-        }
-    }
-    /*
-        The SecretSigner must first copy the pubkey and next_pubkey_hash byte
-        representations into the PUBKEY_RANGE and NEXT_PUBKEY_HASH_RANGE, respectively.
-
-        The signature is then computed over the SIGNABLE_RAGE.
-
-        Finally, the byte representation of the signature is copied into
-        SIGNATURE_RANGE.
-
-        The SecrectSignner should not compute or set the block hash.
-    */
-
-    pub fn sign(self, block: &mut MutBlock) {
-        self.keypair.write_pubkey(block.as_mut_pubkey());
-        block.set_next_pubkey_hash(&self.next_pubkey_hash);
-        //self.keypair.sign(block.as_signable());
-        //block.set_signature(sig);
     }
 }
 
@@ -217,14 +183,6 @@ mod tests {
             assert!(hset.insert(seed.next_secret));
         }
         assert_eq!(hset.len(), count + 2);
-    }
-
-    #[test]
-    fn test_secrect_signer() {
-        let seed = Seed::create(&[69; 32]);
-        let secsign = SecretSigner::new(&seed);
-        let next_pubkey_hash = secsign.next_pubkey_hash;
-        assert_ne!(next_pubkey_hash, secsign.keypair.pubkey_hash());
     }
 
     #[test]
