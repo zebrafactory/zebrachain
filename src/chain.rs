@@ -54,10 +54,28 @@ impl Chain {
 mod tests {
     use super::*;
     use tempfile;
+    use crate::secrets::Seed;
+    use crate::block::MutBlock;
+    use crate::pksign::SecretSigner;
 
     #[test]
     fn test_chain_open() {
-        let buf = [0; BLOCK];
+        let mut buf = [0; BLOCK];
         assert!(Chain::open(&buf).is_err());
+        {
+            let seed = Seed::create(&[69; 32]);
+            let signer = SecretSigner::new(&seed);
+            let state_hash = Hash::from_bytes([42; 32]);
+            let mut block = MutBlock::new(&mut buf, &state_hash);
+            signer.sign(&mut block);
+            block.finalize().unwrap();
+        }
+        let block = Block::open(&buf).unwrap();
+        let chain = Chain::open(&buf).unwrap();
+        assert_eq!(chain.counter, 0);
+        assert_eq!(chain.first_hash, block.hash());
+        assert_eq!(chain.hash, block.hash());
+        assert_eq!(chain.next_pubkey_hash, block.next_pubkey_hash());
+        assert_eq!(chain.state_hash, Hash::from_bytes([42; 32]));
     }
 }

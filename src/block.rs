@@ -197,7 +197,7 @@ impl<'a> MutBlock<'a> {
 mod tests {
     use super::*;
     use crate::misc::BitFlipper;
-    use crate::secretchain::Seed;
+    use crate::secrets::Seed;
 
     const EXPECTED: &str = "1235a30e9a3086fa131087c5683eeaa5e4733dfa28fe610d4ed2b76e114011c7";
 

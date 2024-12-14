@@ -32,7 +32,7 @@ fn derive(context: &str, secret: &[u8]) -> Hash {
 /// # Examples
 ///
 /// ```
-/// use zebrachain::secretchain::Seed;
+/// use zebrachain::secrets::Seed;
 /// let initial_entropy = [42u8; 32];
 /// let new_entropy = [69u8; 32];
 /// let seed = Seed::create(&initial_entropy);
