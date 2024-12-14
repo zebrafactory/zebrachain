@@ -142,28 +142,6 @@ impl<'a> Block<'a> {
     }
 }
 
-pub fn write_block(
-    buf: &mut [u8],
-    keypair: KeyPair,
-    next_pubkey_hash: Hash,
-    state_hash: Hash,
-    previous_hash: Hash,
-    first_hash: Hash,
-) {
-    // Copy in these 3 hash fields:
-    buf[NEXT_PUBKEY_HASH_RANGE].copy_from_slice(next_pubkey_hash.as_bytes());
-    buf[STATE_HASH_RANGE].copy_from_slice(state_hash.as_bytes());
-    buf[PREVIOUS_HASH_RANGE].copy_from_slice(previous_hash.as_bytes());
-    buf[FIRST_HASH_RANGE].copy_from_slice(first_hash.as_bytes());
-
-    // KeyPair.sign() will write public key and then signature:
-    keypair.sign(buf);
-
-    // Compute hash, copy value into hash field:
-    let block_hash = hash(&buf[HASHABLE_RANGE]);
-    buf[HASH_RANGE].copy_from_slice(block_hash.as_bytes());
-}
-
 pub struct MutBlock<'a> {
     buf: &'a mut [u8],
 }

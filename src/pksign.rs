@@ -39,20 +39,7 @@ impl KeyPair {
     }
 
     // Consumes instance because we should only make one signature per KeyPair:
-    pub fn sign(self, buf: &mut [u8]) {
-        /*
-        write ed25519 and dilithium pubkeys into buffer
-        sign signable with ed25519
-        write ed25519 sig into buffer
-        sign ed25519 sig + signable with dilithium
-        write dilithium sig into buffer
-        */
-        self.write_pubkey(&mut buf[PUBKEY_RANGE]);
-        let sig = self.key.sign(&buf[SIGNABLE_RANGE]);
-        buf[SIGNATURE_RANGE].copy_from_slice(&sig.to_bytes());
-    }
-
-    pub fn sign2(self, block: &mut MutBlock) {
+    pub fn sign(self, block: &mut MutBlock) {
         self.write_pubkey(block.as_mut_pubkey());
         let sig = self.key.sign(block.as_signable());
         block.as_mut_signature().copy_from_slice(&sig.to_bytes());
@@ -97,9 +84,7 @@ impl SecretSigner {
     pub fn sign(self, block: &mut MutBlock) {
         self.keypair.write_pubkey(block.as_mut_pubkey());
         block.set_next_pubkey_hash(&self.next_pubkey_hash);
-        self.keypair.sign2(block);
-        //self.keypair.sign(block.as_signable());
-        //block.set_signature(sig);
+        self.keypair.sign(block);
     }
 }
 
@@ -179,7 +164,7 @@ mod tests {
         );
 
         let mut buf = vec![0; BLOCK];
-        pair.sign(&mut buf[..]);
+        pair.sign(&mut MutBlock::new(&mut buf[..], &Hash::from_bytes([0; 32])));
         assert_eq!(
             buf,
             [
