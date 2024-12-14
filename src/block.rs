@@ -177,6 +177,34 @@ impl<'a> MutBlock<'a> {
         buf[STATE_HASH_RANGE].copy_from_slice(state_hash.as_bytes());
         Self { buf }
     }
+
+    pub fn set_hash(&mut self, block_hash: &Hash) {
+        self.buf[HASH_RANGE].copy_from_slice(block_hash.as_bytes());
+    }
+
+    pub fn set_next_pubkey_hash(&mut self, next_pubkey_hash: &Hash) {
+        self.buf[NEXT_PUBKEY_HASH_RANGE].copy_from_slice(next_pubkey_hash.as_bytes());
+    }
+
+    pub fn set_previous(&mut self, previous_hash: &Hash, first_hash: &Hash) {
+        self.buf[PREVIOUS_HASH_RANGE].copy_from_slice(previous_hash.as_bytes());
+    }
+
+    pub fn as_mut_signature(&mut self) -> &mut [u8] {
+        &mut self.buf[SIGNATURE_RANGE]
+    }
+
+    pub fn as_mut_pubkey(&mut self) -> &mut [u8] {
+        &mut self.buf[PUBKEY_RANGE]
+    }
+
+    pub fn as_hashable(&self) -> &[u8] {
+        &self.buf[HASHABLE_RANGE]
+    }
+
+    pub fn as_signable(&self) -> &[u8] {
+        &self.buf[SIGNABLE_RANGE]
+    }
 }
 
 #[cfg(test)]

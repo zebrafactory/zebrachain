@@ -1,5 +1,6 @@
 //! Manages chain of secrets.
 
+use crate::block::MutBlock;
 use crate::pksign::KeyPair;
 use blake3::{keyed_hash, Hash, Hasher};
 use std::fs::File;
@@ -101,14 +102,14 @@ impl SecretSigner {
         SIGNATURE_RANGE.
 
         The SecrectSignner should not compute or set the block hash.
-
-        pub fn sign(self, block: &mut MutBlock) {
-            self.keypair.write_pubkey(block.as_mut_pubkey());
-            block.set_next_pubkey_hash(&self.next_pubkey_hash);
-            sig = self.keypair.sign(block.as_signable());
-            block.set_signature(sig);
-        }
     */
+
+    pub fn sign(self, block: &mut MutBlock) {
+        self.keypair.write_pubkey(block.as_mut_pubkey());
+        block.set_next_pubkey_hash(&self.next_pubkey_hash);
+        //self.keypair.sign(block.as_signable());
+        //block.set_signature(sig);
+    }
 }
 
 pub struct SecretChain {

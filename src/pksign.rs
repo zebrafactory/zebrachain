@@ -1,5 +1,6 @@
 //! Abstraction over public key signature algorithms.
 
+use crate::block::MutBlock;
 use crate::tunable::*;
 use blake3;
 use ed25519_dalek::{Signature, Signer, SigningKey, VerifyingKey};
@@ -47,6 +48,12 @@ impl KeyPair {
         self.write_pubkey(&mut buf[PUBKEY_RANGE]);
         let sig = self.key.sign(&buf[SIGNABLE_RANGE]);
         buf[SIGNATURE_RANGE].copy_from_slice(&sig.to_bytes());
+    }
+
+    pub fn sign2(self, block: &mut MutBlock) {
+        self.write_pubkey(block.as_mut_pubkey());
+        let sig = self.key.sign(block.as_signable());
+        block.as_mut_signature().copy_from_slice(&sig.to_bytes());
     }
 }
 
