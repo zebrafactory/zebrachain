@@ -15,6 +15,18 @@ fn derive(context: &str, secret: &[u8]) -> blake3::Hash {
     hasher.finalize()
 }
 
+/// Abstraction over specific public key algorithms (and hybrid combinations thereof).
+///
+/// Currently this just signs with ed25519. Soon we will sign using a hybrid
+/// Dilithium + ed25519 scheme.
+///
+/// # Examples
+///
+/// ```
+/// use zebrachain::pksign::KeyPair;
+/// let secret = [69u8; 32];
+/// let keypair = KeyPair::new(&secret);
+/// ```
 #[derive(Debug)]
 pub struct KeyPair {
     key: SigningKey,
@@ -27,18 +39,23 @@ impl KeyPair {
         Self { key }
     }
 
+    /// Write Public Key(s) into buffer (could be ed25519 + Dilithium).
     pub fn write_pubkey(&self, dst: &mut [u8]) {
         dst.copy_from_slice(self.key.verifying_key().as_bytes());
     }
 
-    // Consumes instance becase we either make a signature or hash the pubkey, not both:
+    /// Returns hash of public key byte representation.
+    ///
+    /// Consumes instance becase we should either make a signature or hash the pubkey, not both.
     pub fn pubkey_hash(self) -> blake3::Hash {
         let mut buf = [0; PUBKEY];
         self.write_pubkey(&mut buf);
         blake3::hash(&buf)
     }
 
-    // Consumes instance because we should only make one signature per KeyPair:
+    /// Sign a block being built up.
+    ///
+    /// Consumes instance because we should only make one signature per KeyPair.
     pub fn sign(self, block: &mut MutBlock) {
         self.write_pubkey(block.as_mut_pubkey());
         let sig = self.key.sign(block.as_signable());
