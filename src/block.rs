@@ -7,10 +7,10 @@ pub enum BlockError {
     /// Hash of block content does not match hash in block.
     Content,
 
-    /// Public key is invalid or signature does not match.
+    /// Public key or signature is invalid.
     Signature,
 
-    /// Block hash does not match expected external value.
+    /// Hash in block does not match expected external value.
     Hash,
 
     /// Public Key hash does not match expected external value.
@@ -24,6 +24,26 @@ pub enum BlockError {
 }
 
 pub type BlockResult<'a> = Result<Block<'a>, BlockError>;
+
+/// Contains from previous block needed to validate next block.
+#[derive(Debug, PartialEq)]
+pub struct BlockState {
+    pub counter: u128,
+    pub block_hash: Hash,
+    pub chain_hash: Hash,
+    pub next_pubkey_hash: Hash,
+}
+
+impl BlockState {
+    pub fn new(counter: u128, block_hash: Hash, chain_hash: Hash, next_pubkey_hash: Hash) -> Self {
+        Self {
+            counter,
+            block_hash,
+            chain_hash,
+            next_pubkey_hash,
+        }
+    }
+}
 
 #[derive(Debug, PartialEq)]
 pub struct Block<'a> {
@@ -64,6 +84,19 @@ impl<'a> Block<'a> {
             Err(BlockError::PubKeyHash)
         } else if block.previous_hash() != previous_h {
             Err(BlockError::PreviousHash)
+        } else {
+            Ok(block)
+        }
+    }
+
+    pub fn from_previous2(buf: &'a [u8], last: BlockState) -> BlockResult<'a> {
+        let block = Block::open(buf)?;
+        if block.compute_pubkey_hash() != last.next_pubkey_hash {
+            Err(BlockError::PubKeyHash)
+        } else if block.previous_hash() != last.block_hash {
+            Err(BlockError::PreviousHash)
+        } else if block.first_hash() != last.chain_hash {
+            Err(BlockError::FirstHash)
         } else {
             Ok(block)
         }
