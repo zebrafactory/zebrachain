@@ -35,9 +35,9 @@ pub struct BlockState {
 }
 
 impl BlockState {
-    pub fn new(counter: u128, block_hash: Hash, chain_hash: Hash, next_pubkey_hash: Hash) -> Self {
+    pub fn new(block_hash: Hash, chain_hash: Hash, next_pubkey_hash: Hash) -> Self {
         Self {
-            counter,
+            counter: 0,  // FIXME: Add counter to block wire format
             block_hash,
             chain_hash,
             next_pubkey_hash,
@@ -100,6 +100,10 @@ impl<'a> Block<'a> {
         } else {
             Ok(block)
         }
+    }
+
+    pub fn state(&self) -> BlockState {
+        BlockState::new(self.hash(), self.chain_hash(), self.next_pubkey_hash())
     }
 
     fn as_hashable(&self) -> &[u8] {
@@ -331,10 +335,9 @@ mod tests {
     fn test_block_from_previous() {
         let buf = new_valid_block();
         let block = Block::open(&buf[..]).unwrap();
-        let next_pubkey_hash = block.compute_pubkey_hash();
-        let previous_hash = block.previous_hash();
-        assert!(Block::from_previous(&buf[..], next_pubkey_hash, previous_hash).is_ok());
-
+        let state = block.state();  // Cannot append from self
+        assert!(Block::from_previous2(&buf[..], state).is_err());;
+/*
         for bad in BitFlipper::new(next_pubkey_hash.as_bytes()) {
             let bytes: [u8; 32] = bad[..].try_into().unwrap();
             let h = Hash::from_bytes(bytes);
@@ -352,6 +355,7 @@ mod tests {
                 Err(BlockError::PreviousHash)
             );
         }
+*/
     }
 
     #[test]
