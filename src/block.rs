@@ -20,12 +20,12 @@ pub enum BlockError {
     PreviousHash,
 
     /// Hash of chain namespace is wrong
-    FirstHash,
+    ChainHash,
 }
 
 pub type BlockResult<'a> = Result<Block<'a>, BlockError>;
 
-/// Contains from previous block needed to validate next block.
+/// Contains state from current block needed to validate next block.
 #[derive(Debug, PartialEq)]
 pub struct BlockState {
     pub counter: u128,
@@ -95,8 +95,8 @@ impl<'a> Block<'a> {
             Err(BlockError::PubKeyHash)
         } else if block.previous_hash() != last.block_hash {
             Err(BlockError::PreviousHash)
-        } else if block.first_hash() != last.chain_hash {
-            Err(BlockError::FirstHash)
+        } else if block.chain_hash() != last.chain_hash {
+            Err(BlockError::ChainHash)
         } else {
             Ok(block)
         }
@@ -134,7 +134,7 @@ impl<'a> Block<'a> {
         &self.buf[PREVIOUS_HASH_RANGE]
     }
 
-    fn as_first_hash(&self) -> &[u8] {
+    fn as_chain_hash(&self) -> &[u8] {
         &self.buf[FIRST_HASH_RANGE]
     }
 
@@ -154,8 +154,8 @@ impl<'a> Block<'a> {
         Hash::from_bytes(self.as_previous_hash().try_into().expect("oops"))
     }
 
-    pub fn first_hash(&self) -> Hash {
-        Hash::from_bytes(self.as_first_hash().try_into().expect("oops"))
+    pub fn chain_hash(&self) -> Hash {
+        Hash::from_bytes(self.as_chain_hash().try_into().expect("oops"))
     }
 
     fn compute_hash(&self) -> Hash {
@@ -197,10 +197,10 @@ impl<'a> MutBlock<'a> {
         self.buf[NEXT_PUBKEY_HASH_RANGE].copy_from_slice(next_pubkey_hash.as_bytes());
     }
 
-    pub fn set_previous(&mut self, previous_hash: &Hash, first_hash: &Hash) {
+    pub fn set_previous(&mut self, previous_hash: &Hash, chain_hash: &Hash) {
         // Either both of these get set or, in the case of the first block, neither are set.
         self.buf[PREVIOUS_HASH_RANGE].copy_from_slice(previous_hash.as_bytes());
-        self.buf[FIRST_HASH_RANGE].copy_from_slice(first_hash.as_bytes());
+        self.buf[FIRST_HASH_RANGE].copy_from_slice(chain_hash.as_bytes());
     }
 
     pub fn as_mut_signature(&mut self) -> &mut [u8] {
@@ -245,9 +245,9 @@ mod tests {
         let secsign = SecretSigner::new(&seed);
         let state_hash = Hash::from_bytes([2; 32]);
         let previous_hash = Hash::from_bytes([3; 32]);
-        let first_hash = Hash::from_bytes([4; 32]);
+        let chain_hash = Hash::from_bytes([4; 32]);
         let mut block = MutBlock::new(&mut buf, &state_hash);
-        block.set_previous(&previous_hash, &first_hash);
+        block.set_previous(&previous_hash, &chain_hash);
         secsign.sign(&mut block);
         block.finalize();
         buf
@@ -364,7 +364,7 @@ mod tests {
         assert_eq!(block.as_next_pubkey_hash(), [4; DIGEST]);
         assert_eq!(block.as_state_hash(), [5; DIGEST]);
         assert_eq!(block.as_previous_hash(), [6; DIGEST]);
-        assert_eq!(block.as_first_hash(), [7; DIGEST]);
+        assert_eq!(block.as_chain_hash(), [7; DIGEST]);
     }
 
     #[test]
@@ -375,7 +375,7 @@ mod tests {
         assert_eq!(block.next_pubkey_hash(), Hash::from_bytes([4; DIGEST]));
         assert_eq!(block.state_hash(), Hash::from_bytes([5; DIGEST]));
         assert_eq!(block.previous_hash(), Hash::from_bytes([6; DIGEST]));
-        assert_eq!(block.first_hash(), Hash::from_bytes([7; DIGEST]));
+        assert_eq!(block.chain_hash(), Hash::from_bytes([7; DIGEST]));
     }
 
     #[test]

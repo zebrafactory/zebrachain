@@ -12,7 +12,7 @@ Walk chain till last block.
 
 pub struct ChainState {
     counter: u128,
-    first_hash: Hash,
+    chain_hash: Hash,
     hash: Hash,
     next_pubkey_hash: Hash,
 }
@@ -22,7 +22,7 @@ impl ChainState {
         let block = Block::open(buf)?;
         Ok(Self {
             counter: 0,
-            first_hash: block.hash(),
+            chain_hash: block.hash(),
             hash: block.hash(),
             next_pubkey_hash: block.next_pubkey_hash(),
         })
@@ -30,12 +30,12 @@ impl ChainState {
 
     pub fn append(self, buf: &[u8]) -> Result<Self, BlockError> {
         let block = Block::from_previous(buf, self.next_pubkey_hash, self.hash)?;
-        if block.first_hash() != self.first_hash {
-            Err(BlockError::FirstHash)
+        if block.chain_hash() != self.chain_hash {
+            Err(BlockError::ChainHash)
         } else {
             Ok(Self {
                 counter: self.counter + 1,
-                first_hash: self.first_hash,
+                chain_hash: self.chain_hash,
                 hash: block.hash(),
                 next_pubkey_hash: block.next_pubkey_hash(),
             })
@@ -67,7 +67,7 @@ mod tests {
         let block = Block::open(&buf).unwrap();
         let chain = ChainState::open(&buf).unwrap();
         assert_eq!(chain.counter, 0);
-        assert_eq!(chain.first_hash, block.hash());
+        assert_eq!(chain.chain_hash, block.hash());
         assert_eq!(chain.hash, block.hash());
         assert_eq!(chain.next_pubkey_hash, block.next_pubkey_hash());
     }
