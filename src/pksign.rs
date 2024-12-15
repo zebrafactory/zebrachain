@@ -99,7 +99,6 @@ impl SecretSigner {
     */
 
     pub fn sign(self, block: &mut MutBlock) {
-        self.keypair.write_pubkey(block.as_mut_pubkey());
         block.set_next_pubkey_hash(&self.next_pubkey_hash);
         self.keypair.sign(block);
     }
