@@ -1,4 +1,4 @@
-use crate::block::{Block, BlockError};
+use crate::block::{Block, BlockError, BlockState};
 use blake3::Hash;
 
 /*
@@ -11,36 +11,23 @@ Walk chain till last block.
 */
 
 pub struct ChainState {
-    counter: u128,
-    chain_hash: Hash,
-    hash: Hash,
-    next_pubkey_hash: Hash,
+    tail: BlockState,
 }
 
 impl ChainState {
     pub fn open(buf: &[u8]) -> Result<Self, BlockError> {
         let block = Block::open(buf)?;
         Ok(Self {
-            counter: 0,
-            chain_hash: block.hash(),
-            hash: block.hash(),
-            next_pubkey_hash: block.next_pubkey_hash(),
+            tail: block.state(),
         })
     }
 
-    pub fn append(self, buf: &[u8]) -> Result<Self, BlockError> {
-        let block = Block::from_previous(buf, self.next_pubkey_hash, self.hash)?;
-        if block.chain_hash() != self.chain_hash {
-            Err(BlockError::ChainHash)
-        } else {
-            Ok(Self {
-                counter: self.counter + 1,
-                chain_hash: self.chain_hash,
-                hash: block.hash(),
-                next_pubkey_hash: block.next_pubkey_hash(),
-            })
+    /*
+        pub fn append(self, buf: &[u8]) -> Result<Self, BlockError> {
+            let block = Block::from_previous(buf, self.next_pubkey_hash, self.hash)?;
+            }
         }
-    }
+    */
 }
 
 #[cfg(test)]
@@ -66,9 +53,9 @@ mod tests {
         }
         let block = Block::open(&buf).unwrap();
         let chain = ChainState::open(&buf).unwrap();
-        assert_eq!(chain.counter, 0);
-        assert_eq!(chain.chain_hash, block.hash());
-        assert_eq!(chain.hash, block.hash());
-        assert_eq!(chain.next_pubkey_hash, block.next_pubkey_hash());
+        assert_eq!(chain.tail.counter, 0);
+        assert_eq!(chain.tail.chain_hash, block.chain_hash());
+        assert_eq!(chain.tail.block_hash, block.hash());
+        assert_eq!(chain.tail.next_pubkey_hash, block.next_pubkey_hash());
     }
 }
