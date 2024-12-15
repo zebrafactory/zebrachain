@@ -1,9 +1,5 @@
 use crate::block::{Block, BlockError};
-use crate::tunable::*;
 use blake3::Hash;
-use std::fs::File;
-use std::io::Result as IoResult;
-use std::io::{Read, Seek};
 
 /*
 For now we will fully validate all chains when opening them.
@@ -14,15 +10,14 @@ Walk chain till last block.
 
 */
 
-pub struct Chain {
+pub struct ChainState {
     counter: u128,
     first_hash: Hash,
     hash: Hash,
     next_pubkey_hash: Hash,
-    state_hash: Hash,
 }
 
-impl Chain {
+impl ChainState {
     pub fn open(buf: &[u8]) -> Result<Self, BlockError> {
         let block = Block::open(buf)?;
         Ok(Self {
@@ -30,7 +25,6 @@ impl Chain {
             first_hash: block.hash(),
             hash: block.hash(),
             next_pubkey_hash: block.next_pubkey_hash(),
-            state_hash: block.state_hash(),
         })
     }
 
@@ -44,7 +38,6 @@ impl Chain {
                 first_hash: self.first_hash,
                 hash: block.hash(),
                 next_pubkey_hash: block.next_pubkey_hash(),
-                state_hash: block.state_hash(),
             })
         }
     }
@@ -56,12 +49,13 @@ mod tests {
     use crate::block::MutBlock;
     use crate::pksign::SecretSigner;
     use crate::secrets::Seed;
+    use crate::tunable::*;
     use tempfile;
 
     #[test]
-    fn test_chain_open() {
+    fn test_chainstate_open() {
         let mut buf = [0; BLOCK];
-        assert!(Chain::open(&buf).is_err());
+        assert!(ChainState::open(&buf).is_err());
         {
             let seed = Seed::create(&[69; 32]);
             let signer = SecretSigner::new(&seed);
@@ -71,11 +65,10 @@ mod tests {
             block.finalize().unwrap();
         }
         let block = Block::open(&buf).unwrap();
-        let chain = Chain::open(&buf).unwrap();
+        let chain = ChainState::open(&buf).unwrap();
         assert_eq!(chain.counter, 0);
         assert_eq!(chain.first_hash, block.hash());
         assert_eq!(chain.hash, block.hash());
         assert_eq!(chain.next_pubkey_hash, block.next_pubkey_hash());
-        assert_eq!(chain.state_hash, Hash::from_bytes([42; 32]));
     }
 }

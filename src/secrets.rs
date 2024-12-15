@@ -1,6 +1,5 @@
 //! Manages chain of secrets.
 
-use crate::block::MutBlock;
 use blake3::{keyed_hash, Hash, Hasher};
 use std::fs::File;
 use std::io::Error as IoError;
