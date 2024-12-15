@@ -37,7 +37,7 @@ pub struct BlockState {
 impl BlockState {
     pub fn new(block_hash: Hash, chain_hash: Hash, next_pubkey_hash: Hash) -> Self {
         Self {
-            counter: 0,  // FIXME: Add counter to block wire format
+            counter: 0, // FIXME: Add counter to block wire format
             block_hash,
             chain_hash,
             next_pubkey_hash,
@@ -335,27 +335,27 @@ mod tests {
     fn test_block_from_previous() {
         let buf = new_valid_block();
         let block = Block::open(&buf[..]).unwrap();
-        let state = block.state();  // Cannot append from self
-        assert!(Block::from_previous2(&buf[..], state).is_err());;
-/*
-        for bad in BitFlipper::new(next_pubkey_hash.as_bytes()) {
-            let bytes: [u8; 32] = bad[..].try_into().unwrap();
-            let h = Hash::from_bytes(bytes);
-            assert_eq!(
-                Block::from_previous(&buf[..], h, previous_hash),
-                Err(BlockError::PubKeyHash)
-            );
-        }
+        let state = block.state(); // Cannot append from self
+        assert!(Block::from_previous2(&buf[..], state).is_err());
+        /*
+                for bad in BitFlipper::new(next_pubkey_hash.as_bytes()) {
+                    let bytes: [u8; 32] = bad[..].try_into().unwrap();
+                    let h = Hash::from_bytes(bytes);
+                    assert_eq!(
+                        Block::from_previous(&buf[..], h, previous_hash),
+                        Err(BlockError::PubKeyHash)
+                    );
+                }
 
-        for bad in BitFlipper::new(previous_hash.as_bytes()) {
-            let bytes: [u8; 32] = bad[..].try_into().unwrap();
-            let h = Hash::from_bytes(bytes);
-            assert_eq!(
-                Block::from_previous(&buf[..], next_pubkey_hash, h),
-                Err(BlockError::PreviousHash)
-            );
-        }
-*/
+                for bad in BitFlipper::new(previous_hash.as_bytes()) {
+                    let bytes: [u8; 32] = bad[..].try_into().unwrap();
+                    let h = Hash::from_bytes(bytes);
+                    assert_eq!(
+                        Block::from_previous(&buf[..], next_pubkey_hash, h),
+                        Err(BlockError::PreviousHash)
+                    );
+                }
+        */
     }
 
     #[test]
