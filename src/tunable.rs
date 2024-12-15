@@ -3,15 +3,15 @@ use std::ops::Range;
 /*
 A Block has 7 fields (currently):
 
-    HASH || SIGNATURE || PUBKEY || NEXT_PUBKEY_HASH || STATE_HASH || PREVIOUS_HASH  || FIRST_HASH
+    HASH || SIGNATURE || PUBKEY || NEXT_PUBKEY_HASH || STATE_HASH || PREVIOUS_HASH  || CHAIN_HASH
 
 Where:
 
-    HASH = hash(SIGNATURE || PUBKEY || NEXT_PUBKEY_HASH || STATE_HASH || PREVIOUS_HASH  || FIRST_HASH)
+    HASH = hash(SIGNATURE || PUBKEY || NEXT_PUBKEY_HASH || STATE_HASH || PREVIOUS_HASH  || CHAIN_HASH)
 
 And where:
 
-    SIGNATURE = sign(PUBKEY || NEXT_PUBKEY_HASH || STATE_HASH || PREVIOUS_HASH  || FIRST_HASH)
+    SIGNATURE = sign(PUBKEY || NEXT_PUBKEY_HASH || STATE_HASH || PREVIOUS_HASH  || CHAIN_HASH)
 
 A COUNTER and TIMESTAMP will likely be added.
 */
@@ -30,7 +30,7 @@ pub const PUBKEY_RANGE: Range<usize> = DIGEST + SIGNATURE..DIGEST + SIGNATURE + 
 pub const NEXT_PUBKEY_HASH_RANGE: Range<usize> = BLOCK - DIGEST * 4..BLOCK - DIGEST * 3;
 pub const STATE_HASH_RANGE: Range<usize> = BLOCK - DIGEST * 3..BLOCK - DIGEST * 2;
 pub const PREVIOUS_HASH_RANGE: Range<usize> = BLOCK - DIGEST * 2..BLOCK - DIGEST;
-pub const FIRST_HASH_RANGE: Range<usize> = BLOCK - DIGEST..BLOCK;
+pub const CHAIN_HASH_RANGE: Range<usize> = BLOCK - DIGEST..BLOCK;
 
 #[cfg(test)]
 mod tests {
@@ -47,6 +47,6 @@ mod tests {
         assert_eq!(NEXT_PUBKEY_HASH_RANGE, 128..160);
         assert_eq!(STATE_HASH_RANGE, 160..192);
         assert_eq!(PREVIOUS_HASH_RANGE, 192..224);
-        assert_eq!(FIRST_HASH_RANGE, 224..256);
+        assert_eq!(CHAIN_HASH_RANGE, 224..256);
     }
 }

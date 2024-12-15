@@ -135,7 +135,7 @@ impl<'a> Block<'a> {
     }
 
     fn as_chain_hash(&self) -> &[u8] {
-        &self.buf[FIRST_HASH_RANGE]
+        &self.buf[CHAIN_HASH_RANGE]
     }
 
     pub fn hash(&self) -> Hash {
@@ -200,7 +200,7 @@ impl<'a> MutBlock<'a> {
     pub fn set_previous(&mut self, previous_hash: &Hash, chain_hash: &Hash) {
         // Either both of these get set or, in the case of the first block, neither are set.
         self.buf[PREVIOUS_HASH_RANGE].copy_from_slice(previous_hash.as_bytes());
-        self.buf[FIRST_HASH_RANGE].copy_from_slice(chain_hash.as_bytes());
+        self.buf[CHAIN_HASH_RANGE].copy_from_slice(chain_hash.as_bytes());
     }
 
     pub fn as_mut_signature(&mut self) -> &mut [u8] {
@@ -261,7 +261,7 @@ mod tests {
         buf.extend_from_slice(&[4; DIGEST]); // NEXT_PUBKEY_HASH
         buf.extend_from_slice(&[5; DIGEST]); // STATE_HASH
         buf.extend_from_slice(&[6; DIGEST]); // PREVIOUS_HASH
-        buf.extend_from_slice(&[7; DIGEST]); // FIRST_HASH
+        buf.extend_from_slice(&[7; DIGEST]); // CHAIN_HASH
         buf
     }
 
