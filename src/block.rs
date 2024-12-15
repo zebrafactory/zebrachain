@@ -78,7 +78,7 @@ impl<'a> Block<'a> {
         }
     }
 
-    pub fn from_previous(buf: &'a [u8], last: BlockState) -> BlockResult<'a> {
+    pub fn from_previous(buf: &'a [u8], last: &BlockState) -> BlockResult<'a> {
         let block = Block::open(buf)?;
         if block.compute_pubkey_hash() != last.next_pubkey_hash {
             Err(BlockError::PubKeyHash)
@@ -325,13 +325,13 @@ mod tests {
         let buf = new_valid_block();
         let block = Block::open(&buf[..]).unwrap();
         let state = block.state(); // Cannot append from self
-        assert!(Block::from_previous(&buf[..], state).is_err());
+        assert!(Block::from_previous(&buf[..], &state).is_err());
         let state = BlockState::new(
             block.previous_hash(),
             block.chain_hash(),
             block.compute_pubkey_hash(),
         );
-        assert!(Block::from_previous(&buf[..], state).is_ok());
+        assert!(Block::from_previous(&buf[..], &state).is_ok());
 
         let next_pubkey_hash = block.compute_pubkey_hash();
         let previous_hash = block.previous_hash();
@@ -340,7 +340,7 @@ mod tests {
             let h = Hash::from_bytes(bytes);
             let state = BlockState::new(previous_hash, block.chain_hash(), h);
             assert_eq!(
-                Block::from_previous(&buf[..], state),
+                Block::from_previous(&buf[..], &state),
                 Err(BlockError::PubKeyHash)
             );
         }
@@ -349,7 +349,7 @@ mod tests {
             let h = Hash::from_bytes(bytes);
             let state = BlockState::new(h, block.chain_hash(), next_pubkey_hash);
             assert_eq!(
-                Block::from_previous(&buf[..], state),
+                Block::from_previous(&buf[..], &state),
                 Err(BlockError::PreviousHash)
             );
         }
