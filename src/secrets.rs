@@ -9,12 +9,12 @@ use std::io::{Read, Seek, SeekFrom, Write};
 /*
 Steps to create a new chain:
 
-1. Generate first 2 secrets in SecretChain
+1. Generate first 2 secrets in SecretStore
 2. First secret generates the KeyPair that will sign the first block
 3. Second secret generates the PubKey that will sign the *next* block (we just need pubkey hash)
 4. Sign block
 
-5. Write new secret in SecretChain, new Block in Chain
+5. Write new secret in SecretStore, new Block in Chain
 */
 
 static SECRET_CONTEXT: &str = "foo";
@@ -77,12 +77,20 @@ impl Seed {
     }
 }
 
-pub struct SecretChain {
+
+/// Save secret chain to non-volitile storage.
+///
+/// This is pure crap currently.  We need validation and encryption of this.
+///
+/// But remember an import use case for ZebraChain is Hardware Security Modules
+/// that *never* write any secrets to non-volitle storage.  Always on, only in
+/// memory.
+pub struct SecretStore {
     file: File,
     seed: Seed,
 }
 
-impl SecretChain {
+impl SecretStore {
     pub fn create(mut file: File, seed: Seed) -> IoResult<Self> {
         file.write_all(seed.secret.as_bytes())?;
         file.write_all(seed.next_secret.as_bytes())?;
@@ -185,10 +193,10 @@ mod tests {
     }
 
     #[test]
-    fn test_sc_create() {
+    fn test_store_create() {
         let file = tempfile().unwrap();
         let seed = Seed::create(&[42; 32]);
-        let result = SecretChain::create(file, seed.clone());
+        let result = SecretStore::create(file, seed.clone());
         assert!(result.is_ok());
         let mut file = result.unwrap().into_file();
         file.rewind().unwrap();
@@ -199,46 +207,46 @@ mod tests {
     }
 
     #[test]
-    fn test_sc_open() {
+    fn test_store_open() {
         let file = tempfile().unwrap();
-        assert!(SecretChain::open(file).is_err());
+        assert!(SecretStore::open(file).is_err());
 
         let mut file = tempfile().unwrap();
         file.write_all(&[42; 32]).unwrap();
-        assert!(SecretChain::open(file).is_err());
+        assert!(SecretStore::open(file).is_err());
 
         let mut file = tempfile().unwrap();
         file.write_all(&[42; 32]).unwrap();
         file.write_all(&[69; 32]).unwrap();
-        assert!(SecretChain::open(file).is_ok());
+        assert!(SecretStore::open(file).is_ok());
     }
 
     #[test]
-    fn test_sc_advance_and_commit() {
+    fn test_store_advance_and_commit() {
         let count = 1000;
         let entropy = [69; 32];
         let file = tempfile().unwrap();
         let seed = Seed::create(&entropy);
-        let mut sc = SecretChain::create(file, seed.clone()).unwrap();
+        let mut store = SecretStore::create(file, seed.clone()).unwrap();
         for _ in 0..count {
-            let next = sc.advance(&entropy);
-            assert!(sc.commit(next).is_ok());
+            let next = store.advance(&entropy);
+            assert!(store.commit(next).is_ok());
         }
-        let last = sc.current_seed();
-        let file = sc.into_file();
-        let sc = SecretChain::open(file).unwrap();
-        assert_eq!(last, sc.current_seed());
+        let last = store.current_seed();
+        let file = store.into_file();
+        let store = SecretStore::open(file).unwrap();
+        assert_eq!(last, store.current_seed());
     }
 
     #[test]
     #[should_panic(expected = "cannot commit out of sequence seed")]
-    fn test_sc_commit_panic() {
+    fn test_store_commit_panic() {
         let entropy = &[69; 32];
         let file = tempfile().unwrap();
         let seed = Seed::create(&entropy);
-        let mut sc = SecretChain::create(file, seed).unwrap();
-        let next = sc.advance(&entropy);
+        let mut store = SecretStore::create(file, seed).unwrap();
+        let next = store.advance(&entropy);
         let next_next = next.advance(&entropy);
-        sc.commit(next_next);
+        store.commit(next_next);
     }
 }

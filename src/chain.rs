@@ -22,13 +22,15 @@ impl ChainState {
         })
     }
 
-    /*
-        pub fn append(self, buf: &[u8]) -> Result<Self, BlockError> {
-            let block = Block::from_previous(buf, self.next_pubkey_hash, self.hash)?;
-            }
-        }
-    */
+    pub fn append(&mut self, buf: &[u8]) -> Result<(), BlockError> {
+        let block = Block::from_previous(buf, &self.tail)?;
+        self.tail = block.state();
+        Ok(())
+    }
+
 }
+
+
 
 #[cfg(test)]
 mod tests {
