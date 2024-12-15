@@ -75,8 +75,8 @@ pub fn verify_signature(buf: &[u8]) -> bool {
 
 /// Use to get current KeyPair and next PubKey hash from a Seed.
 pub struct SecretSigner {
-    pub keypair: KeyPair,
-    pub next_pubkey_hash: Hash,
+    keypair: KeyPair,
+    next_pubkey_hash: Hash,
 }
 
 impl SecretSigner {
