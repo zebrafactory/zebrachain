@@ -6,17 +6,6 @@ use std::io::Error as IoError;
 use std::io::Result as IoResult;
 use std::io::{Read, Seek, SeekFrom, Write};
 
-/*
-Steps to create a new chain:
-
-1. Generate first 2 secrets in SecretStore
-2. First secret generates the KeyPair that will sign the first block
-3. Second secret generates the PubKey that will sign the *next* block (we just need pubkey hash)
-4. Sign block
-
-5. Write new secret in SecretStore, new Block in Chain
-*/
-
 static SECRET_CONTEXT: &str = "foo";
 static NEXT_SECRET_CONTEXT: &str = "bar";
 
@@ -77,7 +66,6 @@ impl Seed {
     }
 }
 
-
 /// Save secret chain to non-volitile storage.
 ///
 /// This is pure crap currently.  We need validation and encryption of this.
@@ -85,6 +73,11 @@ impl Seed {
 /// But remember an import use case for ZebraChain is Hardware Security Modules
 /// that *never* write any secrets to non-volitle storage.  Always on, only in
 /// memory.
+///
+/// Good idea: when we are saving a secret chain, we should include the
+/// state_hash and timestamp in the secret block... that way the public block
+/// can be recreating from the secret chain if the public block doesn't make it
+/// to non-volitile storage.
 pub struct SecretStore {
     file: File,
     seed: Seed,

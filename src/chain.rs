@@ -27,10 +27,7 @@ impl ChainState {
         self.tail = block.state();
         Ok(())
     }
-
 }
-
-
 
 #[cfg(test)]
 mod tests {
