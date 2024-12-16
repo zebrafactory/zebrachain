@@ -190,10 +190,10 @@ impl<'a> MutBlock<'a> {
         self.buf[NEXT_PUBKEY_HASH_RANGE].copy_from_slice(next_pubkey_hash.as_bytes());
     }
 
-    pub fn set_previous(&mut self, previous_hash: &Hash, chain_hash: &Hash) {
+    pub fn set_previous(&mut self, last: &BlockState) {
         // Either both of these get set or, in the case of the first block, neither are set.
-        self.buf[PREVIOUS_HASH_RANGE].copy_from_slice(previous_hash.as_bytes());
-        self.buf[CHAIN_HASH_RANGE].copy_from_slice(chain_hash.as_bytes());
+        self.buf[PREVIOUS_HASH_RANGE].copy_from_slice(last.block_hash.as_bytes());
+        self.buf[CHAIN_HASH_RANGE].copy_from_slice(last.chain_hash.as_bytes());
     }
 
     pub fn as_mut_signature(&mut self) -> &mut [u8] {
@@ -237,10 +237,13 @@ mod tests {
         let seed = Seed::create(&[69; 32]);
         let secsign = SecretSigner::new(&seed);
         let state_hash = Hash::from_bytes([2; 32]);
-        let previous_hash = Hash::from_bytes([3; 32]);
-        let chain_hash = Hash::from_bytes([4; 32]);
         let mut block = MutBlock::new(&mut buf, &state_hash);
-        block.set_previous(&previous_hash, &chain_hash);
+        let last = BlockState::new(
+            Hash::from_bytes([3; 32]),
+            Hash::from_bytes([4; 32]),
+            Hash::from_bytes([5; 32]),
+        );
+        block.set_previous(&last);
         secsign.sign(&mut block);
         block.finalize();
         buf
