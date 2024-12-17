@@ -99,7 +99,7 @@ impl<'a> Block<'a> {
         &self.buf[HASHABLE_RANGE]
     }
 
-    fn as_signable(&self) -> &[u8] {
+    pub fn as_signable(&self) -> &[u8] {
         &self.buf[SIGNABLE_RANGE]
     }
 
@@ -107,11 +107,11 @@ impl<'a> Block<'a> {
         &self.buf[HASH_RANGE]
     }
 
-    fn as_signature(&self) -> &[u8] {
+    pub fn as_signature(&self) -> &[u8] {
         &self.buf[SIGNATURE_RANGE]
     }
 
-    fn as_pubkey(&self) -> &[u8] {
+    pub fn as_pubkey(&self) -> &[u8] {
         &self.buf[PUBKEY_RANGE]
     }
 
@@ -164,7 +164,7 @@ impl<'a> Block<'a> {
     }
 
     fn signature_is_valid(&self) -> bool {
-        verify_signature(self.buf)
+        verify_signature(self)
     }
 }
 

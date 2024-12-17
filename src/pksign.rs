@@ -1,6 +1,6 @@
 //! Abstraction over public key signature algorithms.
 
-use crate::block::MutBlock;
+use crate::block::{Block, MutBlock};
 use crate::secrets::Seed;
 use crate::tunable::*;
 use blake3;
@@ -63,11 +63,10 @@ impl KeyPair {
     }
 }
 
-pub fn verify_signature(buf: &[u8]) -> bool {
-    let bytes: [u8; 32] = buf[PUBKEY_RANGE].try_into().unwrap();
-    let sig = Signature::from_bytes(buf[SIGNATURE_RANGE].try_into().unwrap());
-    if let Ok(pubkey) = VerifyingKey::from_bytes(&bytes) {
-        pubkey.verify_strict(&buf[SIGNABLE_RANGE], &sig).is_ok()
+pub fn verify_signature(block: &Block) -> bool {
+    let sig = Signature::from_bytes(block.as_signature().try_into().unwrap());
+    if let Ok(pubkey) = VerifyingKey::from_bytes(block.as_pubkey().try_into().unwrap()) {
+        pubkey.verify_strict(block.as_signable(), &sig).is_ok()
     } else {
         false
     }

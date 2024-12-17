@@ -1,5 +1,9 @@
 use crate::block::{Block, BlockError, BlockState};
+use crate::tunable::*;
 use blake3::Hash;
+use std::fs::File;
+use std::io::Read;
+use std::io::Result as IoResult;
 
 /*
 For now we will fully validate all chains when opening them.
@@ -26,6 +30,26 @@ impl ChainState {
         let block = Block::from_previous(buf, &self.tail)?;
         self.tail = block.state();
         Ok(())
+    }
+}
+
+struct Chain {
+    file: File,
+    buf: [u8; BLOCK],
+}
+
+impl Chain {
+    pub fn new(file: File) -> Self {
+        Self {
+            file,
+            buf: [0; BLOCK],
+        }
+    }
+
+    pub fn open(mut file: File) -> IoResult<Self> {
+        let mut buf = [0; BLOCK];
+        file.read_exact(&mut buf)?;
+        Ok(Self::new(file))
     }
 }
 
