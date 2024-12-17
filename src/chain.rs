@@ -16,6 +16,7 @@ Walk chain till last block.
 */
 
 pub struct ChainState {
+    head: BlockState,
     tail: BlockState,
 }
 
@@ -23,6 +24,7 @@ impl ChainState {
     pub fn open(buf: &[u8]) -> Result<Self, BlockError> {
         let block = Block::open(buf)?;
         Ok(Self {
+            head: block.state(),
             tail: block.state(),
         })
     }
@@ -30,6 +32,7 @@ impl ChainState {
     pub fn append(&mut self, buf: &[u8]) -> Result<(), BlockError> {
         let block = Block::from_previous(buf, &self.tail)?;
         self.tail = block.state();
+        assert_eq!(self.tail.chain_hash, self.head.chain_hash);
         Ok(())
     }
 }

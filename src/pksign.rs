@@ -1,6 +1,6 @@
 //! Abstraction over public key signature algorithms.
 
-use crate::block::{Block, MutBlock};
+use crate::block::{Block, BlockState, MutBlock};
 use crate::secrets::Seed;
 use crate::tunable::*;
 use blake3;
@@ -102,6 +102,25 @@ impl SecretSigner {
         self.keypair.sign(block);
     }
 }
+
+pub struct SecretChain {
+    tail: BlockState,
+    seed: Seed,
+}
+
+impl SecretChain {
+    pub fn sign_next(&mut self, buf: &mut [u8], state_hash: &Hash, new_entropy: &[u8; 32]) {
+        let mut block = MutBlock::new(buf, state_hash);
+        block.set_previous(&self.tail);
+        let next = self.seed.advance(new_entropy);
+        let signer = SecretSigner::new(&next);
+        signer.sign(&mut block);
+        let block = block.finalize().unwrap();
+        self.tail = block.state();
+        self.seed = next;
+    }
+}
+
 
 #[cfg(test)]
 mod tests {
