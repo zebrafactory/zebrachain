@@ -121,7 +121,6 @@ impl SecretChain {
     }
 }
 
-
 #[cfg(test)]
 mod tests {
     use super::*;

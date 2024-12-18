@@ -32,6 +32,14 @@ pub const STATE_HASH_RANGE: Range<usize> = BLOCK - DIGEST * 3..BLOCK - DIGEST * 
 pub const PREVIOUS_HASH_RANGE: Range<usize> = BLOCK - DIGEST * 2..BLOCK - DIGEST;
 pub const CHAIN_HASH_RANGE: Range<usize> = BLOCK - DIGEST..BLOCK;
 
+/*
+A SecretBlock currently has 5 fields:
+
+    HASH || SECRET || NEXT_SECRET || STATE_HASH || PREVIOUS_HASH
+*/
+
+pub const SECRET_BLOCK: usize = DIGEST * 5;
+
 #[cfg(test)]
 mod tests {
     use super::*;
