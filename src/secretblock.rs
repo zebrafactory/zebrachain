@@ -1,6 +1,12 @@
 use crate::secrets::Seed;
 use crate::tunable::*;
 use blake3::{hash, Hash};
+use std::ops::Range;
+
+const SECRET_INDEX: usize = 1;
+const NEXT_SECRET_INDEX: usize = 2;
+const STATE_INDEX: usize = 3;
+const PREVIOUS_INDEX: usize = 4;
 
 fn check_secret_buf(buf: &[u8]) {
     if buf.len() != SECRET_BLOCK {
@@ -8,9 +14,18 @@ fn check_secret_buf(buf: &[u8]) {
     }
 }
 
+fn hash_range(index: usize) -> Range<usize> {
+    index * DIGEST..(index + 1) * DIGEST
+}
+
 fn get_hash(buf: &[u8], index: usize) -> Hash {
-    let range = index * DIGEST..(index + 1) * DIGEST;
+    let range = hash_range(index);
     Hash::from_bytes(buf[range].try_into().unwrap())
+}
+
+fn set_hash(buf: &mut [u8], index: usize, value: &Hash) {
+    let range = hash_range(index);
+    buf[range].copy_from_slice(value.as_bytes());
 }
 
 #[derive(Debug, PartialEq)]
@@ -42,17 +57,12 @@ pub struct SecretBlock<'a> {
 impl<'a> SecretBlock<'a> {
     fn new(buf: &'a [u8]) -> Self {
         check_secret_buf(buf);
-        let block_hash = get_hash(buf, 0);
-        let secret = get_hash(buf, 1);
-        let next_secret = get_hash(buf, 2);
-        let state_hash = get_hash(buf, 3);
-        let previous_hash = get_hash(buf, 4);
         let info = SecretBlockInfo {
-            block_hash,
-            secret,
-            next_secret,
-            state_hash,
-            previous_hash,
+            block_hash: get_hash(buf, 0),
+            secret: get_hash(buf, SECRET_INDEX),
+            next_secret: get_hash(buf, NEXT_SECRET_INDEX),
+            state_hash: get_hash(buf, STATE_INDEX),
+            previous_hash: get_hash(buf, PREVIOUS_INDEX),
         };
         Self { buf, info }
     }
@@ -114,21 +124,21 @@ impl<'a> MutSecretBlock<'a> {
     }
 
     fn set_seed(&mut self, seed: &Seed) {
-        self.buf[SECRET_RANGE].copy_from_slice(seed.secret.as_bytes());
-        self.buf[NEXT_SECRET_RANGE].copy_from_slice(seed.next_secret.as_bytes());
+        set_hash(self.buf, SECRET_INDEX, &seed.secret);
+        set_hash(self.buf, NEXT_SECRET_INDEX, &seed.next_secret);
     }
 
     fn set_state_hash(&mut self, state_hash: &Hash) {
-        self.buf[SECRET_STATE_RANGE].copy_from_slice(state_hash.as_bytes());
+        set_hash(self.buf, STATE_INDEX, state_hash);
     }
 
     fn set_previous_hash(&mut self, previous_hash: &Hash) {
-        self.buf[SECRET_PREVIOUS_RANGE].copy_from_slice(previous_hash.as_bytes());
+        set_hash(self.buf, PREVIOUS_INDEX, previous_hash)
     }
 
     fn finalize(mut self) -> Hash {
         let block_hash = hash(self.as_hashable());
-        self.buf[0..DIGEST].copy_from_slice(block_hash.as_bytes());
+        set_hash(self.buf, 0, &block_hash);
         block_hash
     }
 }
