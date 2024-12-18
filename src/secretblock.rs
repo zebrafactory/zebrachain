@@ -29,7 +29,7 @@ fn set_hash(buf: &mut [u8], index: usize, value: &Hash) {
 }
 
 #[derive(Debug, PartialEq)]
-struct SecretBlockInfo {
+pub struct SecretBlockInfo {
     pub block_hash: Hash,
     pub secret: Hash,
     pub next_secret: Hash,
@@ -48,7 +48,7 @@ pub enum SecretBlockError {
 
 pub type SecretBlockResult<'a> = Result<SecretBlock<'a>, SecretBlockError>;
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub struct SecretBlock<'a> {
     buf: &'a [u8],
     pub info: SecretBlockInfo,
@@ -113,14 +113,10 @@ pub struct MutSecretBlock<'a> {
 }
 
 impl<'a> MutSecretBlock<'a> {
-    fn new(buf: &'a mut [u8]) -> Self {
+    pub fn new(buf: &'a mut [u8]) -> Self {
         check_secret_buf(buf);
         buf.fill(0);
         Self { buf }
-    }
-
-    fn as_hashable(&self) -> &[u8] {
-        &self.buf[DIGEST..]
     }
 
     fn set_seed(&mut self, seed: &Seed) {
@@ -137,7 +133,7 @@ impl<'a> MutSecretBlock<'a> {
     }
 
     fn finalize(mut self) -> Hash {
-        let block_hash = hash(self.as_hashable());
+        let block_hash = hash(&self.buf[DIGEST..]);
         set_hash(self.buf, 0, &block_hash);
         block_hash
     }
@@ -145,7 +141,20 @@ impl<'a> MutSecretBlock<'a> {
 
 #[cfg(test)]
 mod tests {
+
     use super::*;
+    use crate::misc::BitFlipper;
+
+    fn valid_secret_block() -> [u8; SECRET_BLOCK] {
+        let mut buf = [0; SECRET_BLOCK];
+        set_hash(&mut buf, SECRET_INDEX, &Hash::from_bytes([1; DIGEST]));
+        set_hash(&mut buf, NEXT_SECRET_INDEX, &Hash::from_bytes([2; DIGEST]));
+        set_hash(&mut buf, STATE_INDEX, &Hash::from_bytes([3; DIGEST]));
+        set_hash(&mut buf, PREVIOUS_INDEX, &Hash::from_bytes([4; DIGEST]));
+        let block_hash = hash(&buf[DIGEST..]);
+        set_hash(&mut buf, 0, &block_hash);
+        buf
+    }
 
     #[test]
     fn test_check_secret_buf() {
@@ -166,6 +175,36 @@ mod tests {
     fn test_check_secret_buf_panic_high() {
         let buf = [0; SECRET_BLOCK + 1];
         check_secret_buf(&buf);
+    }
+
+    #[test]
+    fn test_block_open() {
+        let buf = valid_secret_block();
+        let block = SecretBlock::open(&buf).unwrap();
+        assert_eq!(
+            block.info.block_hash,
+            Hash::from_hex("cf003f3cff7ebdbc562c85b6735046a094ed68e2708b6a253d234ed2f273ede6")
+                .unwrap()
+        );
+        assert_eq!(block.info.secret, Hash::from_bytes([1; DIGEST]));
+        assert_eq!(block.info.next_secret, Hash::from_bytes([2; DIGEST]));
+        assert_eq!(block.info.state_hash, Hash::from_bytes([3; DIGEST]));
+        assert_eq!(block.info.previous_hash, Hash::from_bytes([4; DIGEST]));
+        for bad in BitFlipper::new(&buf) {
+            assert_eq!(SecretBlock::open(&bad[..]), Err(SecretBlockError::Content));
+        }
+
+        let mut buf = valid_secret_block();
+        for i in 0..=255 {
+            let mut block = MutSecretBlock::new(&mut buf);
+            let seed = Seed {
+                secret: Hash::from_bytes([i; DIGEST]),
+                next_secret: Hash::from_bytes([i; DIGEST]),
+            };
+            block.set_seed(&seed);
+            block.finalize();
+            assert_eq!(SecretBlock::open(&buf), Err(SecretBlockError::Seed));
+        }
     }
 
     #[test]
