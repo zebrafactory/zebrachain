@@ -8,15 +8,87 @@ fn check_secret_buf(buf: &[u8]) {
     }
 }
 
+#[derive(Debug, PartialEq)]
+struct SecretBlockInfo {
+    pub block_hash: Hash,
+    pub secret: Hash,
+    pub next_secret: Hash,
+    pub state_hash: Hash,
+    pub previous_hash: Hash,
+}
+
+#[derive(Debug, PartialEq)]
+pub enum SecretBlockError {
+    Content,
+    Seed,
+    SeedSequence,
+    Hash,
+    PreviousHash,
+}
+
+pub type SecretBlockResult<'a> = Result<SecretBlock<'a>, SecretBlockError>;
+
 #[derive(Debug)]
 pub struct SecretBlock<'a> {
     buf: &'a [u8],
+    pub info: SecretBlockInfo,
 }
 
 impl<'a> SecretBlock<'a> {
     fn new(buf: &'a [u8]) -> Self {
         check_secret_buf(buf);
-        Self { buf }
+        let block_hash = Hash::from_bytes(buf[0..DIGEST].try_into().unwrap());
+        let secret = Hash::from_bytes(buf[SECRET_RANGE].try_into().unwrap());
+        let next_secret = Hash::from_bytes(buf[NEXT_SECRET_RANGE].try_into().unwrap());
+        let state_hash = Hash::from_bytes(buf[SECRET_STATE_RANGE].try_into().unwrap());
+        let previous_hash = Hash::from_bytes(buf[SECRET_PREVIOUS_RANGE].try_into().unwrap());
+        let info = SecretBlockInfo {
+            block_hash,
+            secret,
+            next_secret,
+            state_hash,
+            previous_hash,
+        };
+        Self { buf, info }
+    }
+
+    fn compute_hash(&self) -> Hash {
+        hash(&self.buf[DIGEST..])
+    }
+
+    fn content_is_valid(&self) -> bool {
+        self.info.block_hash == self.compute_hash()
+    }
+
+    pub fn open(buf: &'a [u8]) -> SecretBlockResult<'a> {
+        let block = Self::new(buf);
+        if !block.content_is_valid() {
+            Err(SecretBlockError::Content)
+        } else if block.info.secret == block.info.next_secret {
+            Err(SecretBlockError::Seed)
+        } else {
+            Ok(block)
+        }
+    }
+
+    pub fn from_hash(buf: &'a [u8], block_hash: &Hash) -> SecretBlockResult<'a> {
+        let block = Self::open(buf)?;
+        if block_hash != &block.info.block_hash {
+            Err(SecretBlockError::Hash)
+        } else {
+            Ok(block)
+        }
+    }
+
+    pub fn from_previous(buf: &'a [u8], info: &SecretBlockInfo) -> SecretBlockResult<'a> {
+        let block = Self::open(buf)?;
+        if block.info.previous_hash != info.block_hash {
+            Err(SecretBlockError::PreviousHash)
+        } else if block.info.secret != info.next_secret {
+            Err(SecretBlockError::SeedSequence)
+        } else {
+            Ok(block)
+        }
     }
 }
 
