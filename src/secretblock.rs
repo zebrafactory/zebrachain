@@ -8,6 +8,11 @@ fn check_secret_buf(buf: &[u8]) {
     }
 }
 
+fn get_hash(buf: &[u8], index: usize) -> Hash {
+    let range = index * DIGEST..(index + 1) * DIGEST;
+    Hash::from_bytes(buf[range].try_into().unwrap())
+}
+
 #[derive(Debug, PartialEq)]
 struct SecretBlockInfo {
     pub block_hash: Hash,
@@ -37,11 +42,11 @@ pub struct SecretBlock<'a> {
 impl<'a> SecretBlock<'a> {
     fn new(buf: &'a [u8]) -> Self {
         check_secret_buf(buf);
-        let block_hash = Hash::from_bytes(buf[0..DIGEST].try_into().unwrap());
-        let secret = Hash::from_bytes(buf[SECRET_RANGE].try_into().unwrap());
-        let next_secret = Hash::from_bytes(buf[NEXT_SECRET_RANGE].try_into().unwrap());
-        let state_hash = Hash::from_bytes(buf[SECRET_STATE_RANGE].try_into().unwrap());
-        let previous_hash = Hash::from_bytes(buf[SECRET_PREVIOUS_RANGE].try_into().unwrap());
+        let block_hash = get_hash(buf, 0);
+        let secret = get_hash(buf, 1);
+        let next_secret = get_hash(buf, 2);
+        let state_hash = get_hash(buf, 3);
+        let previous_hash = get_hash(buf, 4);
         let info = SecretBlockInfo {
             block_hash,
             secret,
