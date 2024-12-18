@@ -143,7 +143,7 @@ impl<'a> MutSecretBlock<'a> {
 mod tests {
 
     use super::*;
-    use crate::misc::BitFlipper;
+    use crate::misc::{BitFlipper, HashBitFlipper};
 
     fn valid_secret_block() -> [u8; SECRET_BLOCK] {
         let mut buf = [0; SECRET_BLOCK];
@@ -204,6 +204,16 @@ mod tests {
             block.set_seed(&seed);
             block.finalize();
             assert_eq!(SecretBlock::open(&buf), Err(SecretBlockError::Seed));
+        }
+    }
+
+    #[test]
+    fn test_block_from_hash() {
+        let buf = valid_secret_block();
+        let block_hash = hash(&buf[DIGEST..]);
+        let block = SecretBlock::from_hash(&buf, &block_hash).unwrap();
+        for bad in HashBitFlipper::new(block_hash) {
+            assert_eq!(SecretBlock::from_hash(&buf, &bad), Err(SecretBlockError::Hash));
         }
     }
 
