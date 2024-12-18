@@ -67,7 +67,10 @@ pub struct HashBitFlipper {
 
 impl HashBitFlipper {
     pub fn new(orig: &Hash) -> Self {
-        Self { orig: orig.clone(), counter: 0 }
+        Self {
+            orig: *orig,
+            counter: 0,
+        }
     }
 }
 
@@ -76,7 +79,7 @@ impl Iterator for HashBitFlipper {
 
     fn next(&mut self) -> Option<Self::Item> {
         if self.counter < self.orig.as_bytes().len() * 8 {
-            let mut bad = self.orig.as_bytes().clone();
+            let mut bad = *self.orig.as_bytes();
             flip_bit(&mut bad, self.counter);
             self.counter += 1;
             Some(Hash::from_bytes(bad))
