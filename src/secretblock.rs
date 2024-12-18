@@ -212,8 +212,11 @@ mod tests {
         let buf = valid_secret_block();
         let block_hash = hash(&buf[DIGEST..]);
         let block = SecretBlock::from_hash(&buf, &block_hash).unwrap();
-        for bad in HashBitFlipper::new(block_hash) {
-            assert_eq!(SecretBlock::from_hash(&buf, &bad), Err(SecretBlockError::Hash));
+        for bad in HashBitFlipper::new(&block_hash) {
+            assert_eq!(
+                SecretBlock::from_hash(&buf, &bad),
+                Err(SecretBlockError::Hash)
+            );
         }
     }
 

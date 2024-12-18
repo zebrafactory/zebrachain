@@ -66,8 +66,8 @@ pub struct HashBitFlipper {
 }
 
 impl HashBitFlipper {
-    pub fn new(orig: Hash) -> Self {
-        Self { orig, counter: 0 }
+    pub fn new(orig: &Hash) -> Self {
+        Self { orig: orig.clone(), counter: 0 }
     }
 }
 
@@ -141,7 +141,7 @@ mod tests {
         let orig = Hash::from_bytes([69; 32]);
         let mut hset: HashSet<Hash> = HashSet::new();
         assert!(hset.insert(orig));
-        for bad in HashBitFlipper::new(orig) {
+        for bad in HashBitFlipper::new(&orig) {
             assert!(hset.insert(bad));
         }
         assert_eq!(hset.len(), 32 * 8 + 1);
