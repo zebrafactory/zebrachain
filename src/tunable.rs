@@ -39,6 +39,10 @@ A SecretBlock currently has 5 fields:
 */
 
 pub const SECRET_BLOCK: usize = DIGEST * 5;
+pub const SECRET_RANGE: Range<usize> = DIGEST..DIGEST * 2;
+pub const NEXT_SECRET_RANGE: Range<usize> = DIGEST * 2..DIGEST * 3;
+pub const SECRET_STATE_RANGE: Range<usize> = DIGEST * 3..DIGEST * 4;
+pub const SECRET_PREVIOUS_RANGE: Range<usize> = DIGEST * 4..DIGEST * 5;
 
 #[cfg(test)]
 mod tests {
