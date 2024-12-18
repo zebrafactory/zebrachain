@@ -212,10 +212,10 @@ impl<'a> MutBlock<'a> {
         &self.buf[SIGNABLE_RANGE]
     }
 
-    pub fn finalize(mut self) -> BlockResult<'a> {
+    pub fn finalize(mut self) -> Hash {
         let block_hash = hash(self.as_hashable());
         self.set_hash(&block_hash);
-        Block::from_hash(self.buf, block_hash)
+        block_hash
     }
 }
 

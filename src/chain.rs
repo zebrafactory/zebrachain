@@ -94,7 +94,7 @@ mod tests {
             let state_hash = Hash::from_bytes([42; 32]);
             let mut block = MutBlock::new(&mut buf, &state_hash);
             signer.sign(&mut block);
-            block.finalize().unwrap();
+            block.finalize();
         }
         let block = Block::open(&buf).unwrap();
         let chain = ChainState::open(&buf).unwrap();

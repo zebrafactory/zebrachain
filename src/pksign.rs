@@ -115,7 +115,8 @@ impl SecretChain {
         let next = self.seed.advance(new_entropy);
         let signer = SecretSigner::new(&next);
         signer.sign(&mut block);
-        let block = block.finalize().unwrap();
+        let block_hash = block.finalize();
+        let block = Block::from_hash(buf, block_hash).unwrap();
         self.tail = block.state();
         self.seed = next;
     }
