@@ -21,6 +21,14 @@
 ///     ]
 /// );
 /// ```
+use blake3::Hash;
+
+fn flip_bit(buf: &mut [u8], counter: usize) {
+    let i = counter / 8;
+    let b = (counter % 8) as u8;
+    buf[i] ^= 1 << b; // Flip bit `b` in byte `i`
+}
+
 #[derive(Debug)]
 pub struct BitFlipper {
     good: Vec<u8>,
@@ -42,11 +50,36 @@ impl Iterator for BitFlipper {
         if self.counter < self.good.len() * 8 {
             let mut bad = Vec::with_capacity(self.good.len());
             bad.extend_from_slice(&self.good[..]);
-            let i = self.counter / 8;
-            let b = (self.counter % 8) as u8;
-            bad[i] ^= 1 << b; // Flip bit `b` in byte `i`
+            flip_bit(&mut bad[..], self.counter);
             self.counter += 1;
             Some(bad)
+        } else {
+            None
+        }
+    }
+}
+
+#[derive(Debug)]
+pub struct HashBitFlipper {
+    orig: Hash,
+    counter: usize,
+}
+
+impl HashBitFlipper {
+    pub fn new(orig: Hash) -> Self {
+        Self { orig, counter: 0 }
+    }
+}
+
+impl Iterator for HashBitFlipper {
+    type Item = Hash;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.counter < self.orig.as_bytes().len() * 8 {
+            let mut bad = self.orig.as_bytes().clone();
+            flip_bit(&mut bad, self.counter);
+            self.counter += 1;
+            Some(Hash::from_bytes(bad))
         } else {
             None
         }
@@ -56,6 +89,7 @@ impl Iterator for BitFlipper {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::collections::HashSet;
 
     #[test]
     fn test_bit_flipper() {
@@ -100,5 +134,16 @@ mod tests {
                 vec![0b00000000, 0b01111111],
             ]
         );
+    }
+
+    #[test]
+    fn test_hash_bit_flipper() {
+        let orig = Hash::from_bytes([69; 32]);
+        let mut hset: HashSet<Hash> = HashSet::new();
+        assert!(hset.insert(orig));
+        for bad in HashBitFlipper::new(orig) {
+            assert!(hset.insert(bad));
+        }
+        assert_eq!(hset.len(), 32 * 8 + 1);
     }
 }
