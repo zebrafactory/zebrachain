@@ -37,7 +37,7 @@ general design philosophy is: public key crypto weak, hash crypto strong.  So
 we want to verify by the signature only if essential, and otherwise move onto
 relying on the hash instead.
 
-In the near term ZebraChain needs to configurable to support all the [NIST post quantum standards](https://www.nist.gov/news-events/news/2024/08/nist-releases-first-3-finalized-post-quantum-encryption-standards) and multiple hash algorithms.  It be possible to add new algorithms in the future.
+In the near term ZebraChain needs to configurable to support all the [NIST post quantum standards](https://www.nist.gov/news-events/news/2024/08/nist-releases-first-3-finalized-post-quantum-encryption-standards) and multiple hash algorithms.  It must be possible to add new algorithms in the future.
 
 But the current focus is on building a simple, non-configurable reference implementation using:
 
