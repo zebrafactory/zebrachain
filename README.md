@@ -37,5 +37,10 @@ general design philosophy is: public key crypto weak, hash crypto strong.  So
 we want to verify by the signature only if essential, and otherwise move onto
 relying on the hash instead.
 
-Current focus is on building up a simple reference implementation step by step
-and getting broad feedback and reveiew.
+In the near term ZebraChain needs to configurable to support all the [NIST post quantum standards](https://www.nist.gov/news-events/news/2024/08/nist-releases-first-3-finalized-post-quantum-encryption-standards) and multiple hash algorithms.  It be possible to add new algorithms in the future.
+
+But the current focus is on building a simple, non-configurable reference implementation using:
+
+* A [Dilithium](https://pq-crystals.org/dilithium/) + [ed25519](https://ed25519.cr.yp.to/) hybrid construction for signing
+
+* [Blake3](https://github.com/BLAKE3-team/BLAKE3) for hashing
