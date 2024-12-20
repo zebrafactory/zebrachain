@@ -95,11 +95,11 @@ impl<'a> SecretBlock<'a> {
         }
     }
 
-    pub fn from_previous(buf: &'a [u8], info: &SecretBlockInfo) -> SecretBlockResult<'a> {
+    pub fn from_previous(buf: &'a [u8], prev: &SecretBlockInfo) -> SecretBlockResult<'a> {
         let block = Self::open(buf)?;
-        if block.info.previous_hash != info.block_hash {
+        if block.info.previous_hash != prev.block_hash {
             Err(SecretBlockError::PreviousHash)
-        } else if block.info.secret != info.next_secret {
+        } else if block.info.secret != prev.next_secret {
             Err(SecretBlockError::SeedSequence)
         } else {
             Ok(block)
@@ -216,6 +216,45 @@ mod tests {
             assert_eq!(
                 SecretBlock::from_hash(&buf, &bad),
                 Err(SecretBlockError::Hash)
+            );
+        }
+    }
+
+    #[test]
+    fn test_block_from_previous() {
+        let buf = valid_secret_block();
+        let prev = SecretBlockInfo {
+            block_hash: get_hash(&buf, PREVIOUS_INDEX),
+            secret: Hash::from_bytes([0; 32]),
+            next_secret: get_hash(&buf, SECRET_INDEX),
+            state_hash: Hash::from_bytes([0; 32]),
+            previous_hash: Hash::from_bytes([0; 32]),
+        };
+        let block = SecretBlock::from_previous(&buf, &prev).unwrap();
+        for bad_block_hash in HashBitFlipper::new(&prev.block_hash) {
+            let bad_prev = SecretBlockInfo {
+                block_hash: bad_block_hash,
+                secret: prev.secret,
+                next_secret: prev.next_secret,
+                state_hash: prev.state_hash,
+                previous_hash: prev.previous_hash,
+            };
+            assert_eq!(
+                SecretBlock::from_previous(&buf, &bad_prev),
+                Err(SecretBlockError::PreviousHash)
+            );
+        }
+        for bad_next_secret in HashBitFlipper::new(&prev.next_secret) {
+            let bad_prev = SecretBlockInfo {
+                block_hash: prev.block_hash,
+                secret: prev.secret,
+                next_secret: bad_next_secret,
+                state_hash: prev.state_hash,
+                previous_hash: prev.previous_hash,
+            };
+            assert_eq!(
+                SecretBlock::from_previous(&buf, &bad_prev),
+                Err(SecretBlockError::SeedSequence)
             );
         }
     }
