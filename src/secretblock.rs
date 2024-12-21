@@ -212,10 +212,34 @@ mod tests {
         let buf = valid_secret_block();
         let block_hash = hash(&buf[DIGEST..]);
         let block = SecretBlock::from_hash(&buf, &block_hash).unwrap();
+
+        // Test error specific to SecretBlock::from_hash():
         for bad in HashBitFlipper::new(&block_hash) {
             assert_eq!(
                 SecretBlock::from_hash(&buf, &bad),
                 Err(SecretBlockError::Hash)
+            );
+        }
+
+        // Make sure SecretBlock::open() is getting called:
+        for bad in BitFlipper::new(&buf) {
+            assert_eq!(
+                SecretBlock::from_hash(&bad[..], &block_hash),
+                Err(SecretBlockError::Content)
+            );
+        }
+        let mut buf = valid_secret_block();
+        for i in 0..=255 {
+            let mut block = MutSecretBlock::new(&mut buf);
+            let seed = Seed {
+                secret: Hash::from_bytes([i; DIGEST]),
+                next_secret: Hash::from_bytes([i; DIGEST]),
+            };
+            block.set_seed(&seed);
+            block.finalize();
+            assert_eq!(
+                SecretBlock::from_hash(&buf, &block_hash),
+                Err(SecretBlockError::Seed)
             );
         }
     }
@@ -231,6 +255,8 @@ mod tests {
             previous_hash: Hash::from_bytes([0; 32]),
         };
         let block = SecretBlock::from_previous(&buf, &prev).unwrap();
+
+        // Test errors specific to SecretBloc::from_previous():
         for bad_block_hash in HashBitFlipper::new(&prev.block_hash) {
             let bad_prev = SecretBlockInfo {
                 block_hash: bad_block_hash,
@@ -255,6 +281,28 @@ mod tests {
             assert_eq!(
                 SecretBlock::from_previous(&buf, &bad_prev),
                 Err(SecretBlockError::SeedSequence)
+            );
+        }
+
+        // Make sure SecretBlock::open() is getting called:
+        for bad in BitFlipper::new(&buf) {
+            assert_eq!(
+                SecretBlock::from_previous(&bad[..], &prev),
+                Err(SecretBlockError::Content)
+            );
+        }
+        let mut buf = valid_secret_block();
+        for i in 0..=255 {
+            let mut block = MutSecretBlock::new(&mut buf);
+            let seed = Seed {
+                secret: Hash::from_bytes([i; DIGEST]),
+                next_secret: Hash::from_bytes([i; DIGEST]),
+            };
+            block.set_seed(&seed);
+            block.finalize();
+            assert_eq!(
+                SecretBlock::from_previous(&buf, &prev),
+                Err(SecretBlockError::Seed)
             );
         }
     }
