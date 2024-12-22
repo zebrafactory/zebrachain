@@ -1,3 +1,5 @@
+//! Entropy accumulating chain of secrets.
+
 use crate::secrets::Seed;
 use crate::tunable::*;
 use blake3::{hash, Hash};
@@ -256,7 +258,7 @@ mod tests {
         };
         let block = SecretBlock::from_previous(&buf, &prev).unwrap();
 
-        // Test errors specific to SecretBloc::from_previous():
+        // Test errors specific to SecretBlock::from_previous():
         for bad_block_hash in HashBitFlipper::new(&prev.block_hash) {
             let bad_prev = SecretBlockInfo {
                 block_hash: bad_block_hash,

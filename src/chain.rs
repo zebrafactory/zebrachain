@@ -1,3 +1,5 @@
+//! Writes/reads blocks to/from non-volitile storage and network.
+
 use crate::block::{Block, BlockError, BlockState};
 use crate::tunable::*;
 use blake3::Hash;

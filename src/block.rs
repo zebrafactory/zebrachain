@@ -1,3 +1,5 @@
+//! Block construction, validation, and wire format.
+
 use crate::pksign::verify_signature;
 use crate::tunable::*;
 use blake3::{hash, Hash};

@@ -1,3 +1,5 @@
+//! Wire format ranges are defined here (good place to start).
+
 use std::ops::Range;
 
 /*
