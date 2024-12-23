@@ -68,8 +68,8 @@ impl Seed {
         // little overhead, so we might as well do that (feedback encouraged).
         //
         // Mr. Zebra's rationale as to whether the key passed to keyed_hash() should be
-        // `self.next_secret` or `new_entropy` goes like this: we should use the least-attacker
-        // knowable, which in this case will usally be `self.next_secret` (because of the entropy
+        // `self.next_secret` or `new_entropy` goes like this: we should use the least attacker
+        // knowable, which in this case will usually be `self.next_secret` (because of the entropy
         // accumulation).
         let next_next_secret = keyed_hash(self.next_secret.as_bytes(), new_entropy);
         Self::new(self.next_secret, next_next_secret)
