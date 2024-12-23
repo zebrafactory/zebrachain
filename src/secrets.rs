@@ -50,7 +50,27 @@ impl Seed {
         Self::new(secret, next_secret)
     }
 
+    /// Create next seed by mixing `new_entropy` into the entropy chain.
+    ///
+    /// This is a critical part of the ZebraChain design.  If we simply created the next secret
+    /// using `new_entropy`, that would be totally reasonable and is usually what happens when key
+    /// rotation is done in existing signing systems (er, if/when key rotation actually happens).
+    ///
+    /// But we can do better if we accumulate entropy in the secret chain, and then create the next
+    /// secret by securely mixing the accumulated entropy with `new_entropy`. This is much more
+    /// robust.
+    ///
+    /// See the source code for sure because it's simple, but important to understand.
     pub fn advance(&self, new_entropy: &[u8; 32]) -> Self {
+        // We need to securely mix the previous entropy with new_entropy.  Hashing the concatenation
+        // hash(next_secret || new_entropy) should be sufficient (right?), but
+        // keyed_hash(next_secret, new_entropy) is definitely a more conservative construction with
+        // little overhead, so we might as well do that (feedback encouraged).
+        //
+        // Mr. Zebra's rationale as to whether the key passed to keyed_hash() should be
+        // `self.next_secret` or `new_entropy` goes like this: we should use the least-attacker
+        // knowable, which in this case will usally be `self.next_secret` (because of the entropy
+        // accumulation).
         let next_next_secret = keyed_hash(self.next_secret.as_bytes(), new_entropy);
         Self::new(self.next_secret, next_next_secret)
     }
