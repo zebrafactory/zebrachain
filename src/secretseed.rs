@@ -1,4 +1,7 @@
 //! Entropy accumulating chain of secrets (in-memory).
+//!
+//! Note that we capare secrets a lot here and rely on the constant time comparison of
+//! [blake3::Hash].
 
 use blake3::{keyed_hash, Hash, Hasher};
 use std::fs::File;
@@ -35,12 +38,17 @@ pub struct Seed {
 
 impl Seed {
     fn new(secret: Hash, next_secret: Hash) -> Self {
-        if secret == next_secret {
-            panic!("secret and next_secret cannot be equal");
-        }
-        Self {
+        let seed = Self {
             secret,
             next_secret,
+        };
+        seed.check();
+        seed
+    }
+
+    fn check(&self) {
+        if self.secret == self.next_secret {
+            panic!("secret and next_secret cannot be equal");
         }
     }
 
@@ -79,11 +87,9 @@ impl Seed {
         if seed.secret != self.next_secret {
             panic!("cannot commit out of sequence seed");
         }
-        if seed.secret == seed.next_secret {
-            panic!("secret and next_secret cannot be equal");
-        }
         self.secret = seed.secret;
         self.next_secret = seed.next_secret;
+        self.check();
     }
 
     pub fn load(buf: &[u8; 64]) -> IoResult<Self> {
