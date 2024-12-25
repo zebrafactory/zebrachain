@@ -88,13 +88,13 @@ impl Seed {
         Self::new(self.next_secret, next_next_secret)
     }
 
-    /// Mutate this seed state to match `seed`.
-    pub fn commit(&mut self, seed: Seed) {
-        if seed.secret != self.next_secret {
+    /// Mutate seed state to match `next`.
+    pub fn commit(&mut self, next: Seed) {
+        if next.secret != self.next_secret {
             panic!("cannot commit out of sequence seed");
         }
-        self.secret = seed.secret;
-        self.next_secret = seed.next_secret;
+        self.secret = next.secret;
+        self.next_secret = next.next_secret;
         self.check();
     }
 
