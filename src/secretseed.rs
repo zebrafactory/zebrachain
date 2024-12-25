@@ -1,8 +1,8 @@
 //! Entropy accumulating chain of secrets (in-memory).
 //!
-//! Note there is a lot secret comparison in this module that relies on the constant time comparison
-//! of [blake3::Hash] to be secure. Once the hash in configurable, we need to make sure whatever
-//! abstraction we use likewise ensures constant time comparison.
+//! Note there is a lot of secret comparison in this module that relies on the constant time
+//! comparison of [blake3::Hash] to be secure. Once the hash in configurable, we need to make sure
+//! whatever abstraction we use likewise ensures constant time comparison.
 
 use blake3::{keyed_hash, Hash, Hasher};
 use std::fs::File;
@@ -27,9 +27,12 @@ pub fn derive(context: &str, secret: &[u8]) -> Hash {
 /// use zebrachain::secretseed::Seed;
 /// let initial_entropy = [42u8; 32];
 /// let new_entropy = [69u8; 32];
-/// let seed = Seed::create(&initial_entropy);
+/// let mut seed = Seed::create(&initial_entropy);
 /// let next = seed.advance(&new_entropy);
 /// assert_eq!(next.secret, seed.next_secret);
+/// assert_ne!(seed, next);
+/// seed.commit(next.clone());
+/// assert_eq!(seed, next);
 /// ```
 #[derive(Clone, Debug, PartialEq)]
 pub struct Seed {
@@ -53,6 +56,7 @@ impl Seed {
         }
     }
 
+    /// Create a new seed by deriving [Seed::secret], [Seed::next_secret] from `initial_entropy`.
     pub fn create(initial_entropy: &[u8; 32]) -> Self {
         let secret = derive(SECRET_CONTEXT, initial_entropy);
         let next_secret = derive(NEXT_SECRET_CONTEXT, initial_entropy);
@@ -84,6 +88,7 @@ impl Seed {
         Self::new(self.next_secret, next_next_secret)
     }
 
+    /// Mutate this seed state to match `seed`.
     pub fn commit(&mut self, seed: Seed) {
         if seed.secret != self.next_secret {
             panic!("cannot commit out of sequence seed");
