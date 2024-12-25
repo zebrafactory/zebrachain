@@ -1,19 +1,13 @@
 //! Abstraction over public key signature algorithms.
 
 use crate::block::{Block, BlockState, MutBlock};
-use crate::secrets::Seed;
+use crate::secrets::{derive, Seed};
 use crate::tunable::*;
 use blake3;
 use blake3::Hash;
 use ed25519_dalek::{Signature, Signer, SigningKey, VerifyingKey};
 
 static ED25519_CONTEXT: &str = "win.zebrachain.sign.ed25519";
-
-fn derive(context: &str, secret: &[u8]) -> blake3::Hash {
-    let mut hasher = blake3::Hasher::new_derive_key(context);
-    hasher.update(secret);
-    hasher.finalize()
-}
 
 /// Abstraction over specific public key algorithms (and hybrid combinations thereof).
 ///
@@ -137,49 +131,6 @@ mod tests {
         let sm = dilithium3::sign(msg, &sk);
         let vmsg = dilithium3::open(&sm, &pk).unwrap();
         assert_eq!(vmsg, msg);
-    }
-
-    #[test]
-    fn derive_key() {
-        let secret = [7; 32];
-
-        let h = derive("example0", &secret);
-        assert_eq!(
-            h.as_bytes(),
-            &[
-                201, 197, 207, 85, 251, 50, 175, 230, 93, 166, 135, 151, 254, 182, 137, 72, 247,
-                158, 154, 71, 13, 107, 98, 185, 50, 220, 200, 223, 244, 224, 121, 36
-            ]
-        );
-
-        let h = derive("example1", &secret);
-        assert_eq!(
-            h.as_bytes(),
-            &[
-                12, 255, 43, 240, 22, 55, 198, 18, 190, 243, 159, 226, 207, 193, 9, 243, 40, 12,
-                148, 123, 160, 138, 63, 163, 136, 72, 203, 47, 243, 111, 81, 122
-            ]
-        );
-
-        let secret = [8; 32];
-
-        let h = derive("example0", &secret);
-        assert_eq!(
-            h.as_bytes(),
-            &[
-                85, 20, 18, 22, 96, 47, 74, 31, 16, 135, 2, 135, 147, 82, 64, 78, 92, 122, 8, 72,
-                237, 33, 68, 119, 115, 195, 18, 171, 140, 184, 186, 101
-            ]
-        );
-
-        let h = derive("example1", &secret);
-        assert_eq!(
-            h.as_bytes(),
-            &[
-                168, 183, 42, 224, 55, 249, 54, 53, 86, 216, 99, 36, 116, 156, 36, 118, 92, 240,
-                132, 61, 243, 141, 196, 154, 196, 167, 54, 161, 134, 248, 4, 201
-            ]
-        );
     }
 
     #[test]
