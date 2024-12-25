@@ -7,5 +7,6 @@ pub mod chain;
 pub mod misc;
 pub mod pksign;
 pub mod secretblock;
+pub mod secretchain;
 pub mod secretseed;
 pub mod tunable;
