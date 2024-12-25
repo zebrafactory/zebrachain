@@ -1,7 +1,8 @@
 //! Entropy accumulating chain of secrets (in-memory).
 //!
-//! Note that we capare secrets a lot here and rely on the constant time comparison of
-//! [blake3::Hash].
+//! Note there is a lot secret comparison in this module that relies on the constant time comparison
+//! of [blake3::Hash] to be secure. Once the hash in configurable, we need to make sure whatever
+//! abstraction we use likewise ensures constant time comparison.
 
 use blake3::{keyed_hash, Hash, Hasher};
 use std::fs::File;
