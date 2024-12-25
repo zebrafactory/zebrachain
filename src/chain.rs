@@ -82,7 +82,7 @@ mod tests {
     use super::*;
     use crate::block::MutBlock;
     use crate::pksign::SecretSigner;
-    use crate::secrets::Seed;
+    use crate::secretseed::Seed;
     use crate::tunable::*;
     use tempfile;
 

@@ -1,6 +1,6 @@
 //! Entropy accumulating chain of secrets.
 
-use crate::secrets::Seed;
+use crate::secretseed::Seed;
 use crate::tunable::*;
 use blake3::{hash, Hash};
 use std::ops::Range;

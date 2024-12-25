@@ -226,7 +226,7 @@ mod tests {
     use super::*;
     use crate::misc::BitFlipper;
     use crate::pksign::SecretSigner;
-    use crate::secrets::Seed;
+    use crate::secretseed::Seed;
 
     const EXPECTED: &str = "1235a30e9a3086fa131087c5683eeaa5e4733dfa28fe610d4ed2b76e114011c7";
 
