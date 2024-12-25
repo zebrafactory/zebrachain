@@ -79,6 +79,9 @@ impl Seed {
         if seed.secret != self.next_secret {
             panic!("cannot commit out of sequence seed");
         }
+        if seed.secret == seed.next_secret {
+            panic!("secret and next_secret cannot be equal");
+        }
         self.secret = seed.secret;
         self.next_secret = seed.next_secret;
     }
@@ -265,11 +268,24 @@ mod tests {
 
     #[test]
     #[should_panic(expected = "cannot commit out of sequence seed")]
-    fn test_seed_commit_panic() {
+    fn test_seed_commit_panic1() {
         let entropy = [69; 32];
         let mut seed = Seed::create(&entropy);
         let a1 = seed.advance(&entropy);
         let a2 = a1.advance(&entropy);
+        seed.commit(a2);
+    }
+
+    #[test]
+    #[should_panic(expected = "secret and next_secret cannot be equal")]
+    fn test_seed_commit_panic2() {
+        let entropy = [69; 32];
+        let mut seed = Seed::create(&entropy);
+        let a1 = seed.advance(&entropy);
+        let a2 = Seed {
+            secret: a1.secret,
+            next_secret: a1.secret,
+        };
         seed.commit(a2);
     }
 
