@@ -1,4 +1,4 @@
-//! Entropy accumulating chain of secrets.
+//! Wire format for secret seeds when written to nonvolatile storage.
 
 use crate::secretseed::Seed;
 use crate::tunable::*;

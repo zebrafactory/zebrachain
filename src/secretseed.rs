@@ -1,4 +1,4 @@
-//! Manages chain of secrets.
+//! Entropy accumulating chain of secrets (in-memory).
 
 use blake3::{keyed_hash, Hash, Hasher};
 use std::fs::File;
@@ -75,6 +75,14 @@ impl Seed {
         Self::new(self.next_secret, next_next_secret)
     }
 
+    pub fn commit(&mut self, seed: Seed) {
+        if seed.secret != self.next_secret {
+            panic!("cannot commit out of sequence seed");
+        }
+        self.secret = seed.secret;
+        self.next_secret = seed.next_secret;
+    }
+
     pub fn load(buf: &[u8; 64]) -> IoResult<Self> {
         let secret = Hash::from_bytes(buf[0..32].try_into().unwrap());
         let next_secret = Hash::from_bytes(buf[32..64].try_into().unwrap());
@@ -127,11 +135,8 @@ impl SecretStore {
     }
 
     pub fn commit(&mut self, seed: Seed) -> IoResult<()> {
-        if seed.secret != self.seed.next_secret {
-            panic!("cannot commit out of sequence seed");
-        }
-        self.file.write_all(seed.next_secret.as_bytes())?;
-        self.seed = seed;
+        self.seed.commit(seed);
+        self.file.write_all(self.seed.next_secret.as_bytes())?;
         Ok(())
     }
 
@@ -246,6 +251,26 @@ mod tests {
             assert!(hset.insert(seed.next_secret));
         }
         assert_eq!(hset.len(), count + 2);
+    }
+
+    #[test]
+    fn test_seed_commit() {
+        let entropy = [69; 32];
+        let mut seed = Seed::create(&entropy);
+        let next = seed.advance(&entropy);
+        assert_ne!(seed, next);
+        seed.commit(next.clone());
+        assert_eq!(seed, next);
+    }
+
+    #[test]
+    #[should_panic(expected = "cannot commit out of sequence seed")]
+    fn test_seed_commit_panic() {
+        let entropy = [69; 32];
+        let mut seed = Seed::create(&entropy);
+        let a1 = seed.advance(&entropy);
+        let a2 = a1.advance(&entropy);
+        seed.commit(a2);
     }
 
     #[test]
