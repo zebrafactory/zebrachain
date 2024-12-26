@@ -46,8 +46,8 @@ impl SecretStore {
     }
 
     pub fn commit(&mut self, seed: Seed) -> IoResult<()> {
+        self.file.write_all(seed.next_secret.as_bytes())?;
         self.seed.commit(seed);
-        self.file.write_all(self.seed.next_secret.as_bytes())?;
         Ok(())
     }
 
