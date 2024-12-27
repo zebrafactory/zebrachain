@@ -39,6 +39,12 @@ pub struct SecretBlockInfo {
     pub previous_hash: Hash,
 }
 
+impl SecretBlockInfo {
+    pub fn get_seed(&self) -> Seed {
+        Seed::new(self.secret, self.next_secret)
+    }
+}
+
 #[derive(Debug, PartialEq)]
 pub enum SecretBlockError {
     Content,

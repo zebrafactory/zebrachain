@@ -39,7 +39,7 @@ pub struct Seed {
 }
 
 impl Seed {
-    fn new(secret: Hash, next_secret: Hash) -> Self {
+    pub fn new(secret: Hash, next_secret: Hash) -> Self {
         let seed = Self {
             secret,
             next_secret,

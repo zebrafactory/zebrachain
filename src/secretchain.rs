@@ -1,6 +1,8 @@
 //! Read and write secret blocks in a chain.
 
 use crate::secretseed::Seed;
+use crate::secretblock::{SecretBlock, MutSecretBlock};
+use crate::tunable::*;
 use std::fs::File;
 use std::io::Result as IoResult;
 use std::io::{Read, Seek, SeekFrom, Write};
@@ -35,6 +37,17 @@ impl SecretStore {
         file.read_exact(&mut buf)?;
         let seed = Seed::load(&buf)?;
         Ok(Self { file, seed })
+    }
+
+    pub fn open2(mut file: File) -> IoResult<Self> {
+        let mut buf = [0; SECRET_BLOCK];
+        file.read_exact(&mut buf)?;
+        let mut info = SecretBlock::open(&buf).unwrap().info;
+        while file.read_exact(&mut buf).is_ok() {
+            info = SecretBlock::from_previous(&buf, &info).unwrap().info;
+        }
+        let seed = info.get_seed();
+        Ok(Self { file, seed})
     }
 
     pub fn current_seed(&self) -> Seed {
