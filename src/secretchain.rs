@@ -3,6 +3,7 @@
 use crate::secretblock::{MutSecretBlock, SecretBlock, SecretBlockInfo};
 use crate::secretseed::Seed;
 use crate::tunable::*;
+use blake3::Hash;
 use std::fs::File;
 use std::io::Result as IoResult;
 use std::io::{Read, Seek, SeekFrom, Write};
@@ -63,10 +64,11 @@ impl SecretChain {
         self.seed.advance(new_entropy)
     }
 
-    pub fn commit(&mut self, seed: Seed) -> IoResult<()> {
+    pub fn commit(&mut self, seed: Seed, state_hash: &Hash) -> IoResult<()> {
         let mut buf = [0; SECRET_BLOCK];
         let mut block = MutSecretBlock::new(&mut buf);
         block.set_seed(&seed);
+        block.set_state_hash(state_hash);
         block.set_previous_hash(&self.tail.block_hash);
         let block_hash = block.finalize();
         self.file.write_all(&buf)?;
@@ -124,7 +126,8 @@ mod tests {
         let mut chain = SecretChain::create(file, seed).unwrap();
         for i in 0u8..=255 {
             let next = chain.advance(&entropy);
-            chain.commit(next).unwrap();
+            let state_hash = Hash::from_bytes([i; DIGEST]);
+            chain.commit(next, &state_hash).unwrap();
         }
         let mut file = chain.into_file();
         file.rewind().unwrap();
@@ -140,6 +143,7 @@ mod tests {
         let mut chain = SecretChain::create(file, seed).unwrap();
         let next = chain.advance(&entropy);
         let next_next = next.advance(&entropy);
-        chain.commit(next_next);
+        let state_hash = Hash::from_bytes([42; DIGEST]);
+        chain.commit(next_next, &state_hash);
     }
 }

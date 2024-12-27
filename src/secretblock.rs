@@ -132,7 +132,7 @@ impl<'a> MutSecretBlock<'a> {
         set_hash(self.buf, NEXT_SECRET_INDEX, &seed.next_secret);
     }
 
-    fn set_state_hash(&mut self, state_hash: &Hash) {
+    pub fn set_state_hash(&mut self, state_hash: &Hash) {
         set_hash(self.buf, STATE_INDEX, state_hash);
     }
 
