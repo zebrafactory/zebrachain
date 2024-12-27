@@ -31,7 +31,7 @@ fn set_hash(buf: &mut [u8], index: usize, value: &Hash) {
 }
 
 #[derive(Debug, PartialEq)]
-pub struct SecretBlockInfo {
+pub struct SecretBlock {
     pub block_hash: Hash,
     pub secret: Hash,
     pub next_secret: Hash,
@@ -39,31 +39,31 @@ pub struct SecretBlockInfo {
     pub previous_hash: Hash,
 }
 
-impl SecretBlockInfo {
+impl SecretBlock {
     pub fn get_seed(&self) -> Seed {
         Seed::new(self.secret, self.next_secret)
     }
 
-    pub fn open(buf: &[u8]) -> Result<SecretBlockInfo, SecretBlockError> {
+    pub fn open(buf: &[u8]) -> SecretBlockResult {
         check_secret_buf(buf);
         let computed_hash = hash(&buf[DIGEST..]);
-        let info = SecretBlockInfo {
+        let block = SecretBlock {
             block_hash: get_hash(buf, 0),
             secret: get_hash(buf, SECRET_INDEX),
             next_secret: get_hash(buf, NEXT_SECRET_INDEX),
             state_hash: get_hash(buf, STATE_INDEX),
             previous_hash: get_hash(buf, PREVIOUS_INDEX),
         };
-        if computed_hash != info.block_hash {
+        if computed_hash != block.block_hash {
             Err(SecretBlockError::Content)
-        } else if info.secret == info.next_secret {
+        } else if block.secret == block.next_secret {
             Err(SecretBlockError::Seed)
         } else {
-            Ok(info)
+            Ok(block)
         }
     }
 
-    pub fn from_hash(buf: &[u8], block_hash: &Hash) -> Result<SecretBlockInfo, SecretBlockError> {
+    pub fn from_hash(buf: &[u8], block_hash: &Hash) -> SecretBlockResult {
         let block = Self::open(buf)?;
         if block_hash != &block.block_hash {
             Err(SecretBlockError::Hash)
@@ -72,10 +72,7 @@ impl SecretBlockInfo {
         }
     }
 
-    pub fn from_previous(
-        buf: &[u8],
-        prev: &SecretBlockInfo,
-    ) -> Result<SecretBlockInfo, SecretBlockError> {
+    pub fn from_previous(buf: &[u8], prev: &SecretBlock) -> SecretBlockResult {
         let block = Self::open(buf)?;
         if block.previous_hash != prev.block_hash {
             Err(SecretBlockError::PreviousHash)
@@ -96,66 +93,7 @@ pub enum SecretBlockError {
     PreviousHash,
 }
 
-pub type SecretBlockResult<'a> = Result<SecretBlock<'a>, SecretBlockError>;
-
-#[derive(Debug, PartialEq)]
-pub struct SecretBlock<'a> {
-    buf: &'a [u8],
-    pub info: SecretBlockInfo,
-}
-
-impl<'a> SecretBlock<'a> {
-    fn new(buf: &'a [u8]) -> Self {
-        check_secret_buf(buf);
-        let info = SecretBlockInfo {
-            block_hash: get_hash(buf, 0),
-            secret: get_hash(buf, SECRET_INDEX),
-            next_secret: get_hash(buf, NEXT_SECRET_INDEX),
-            state_hash: get_hash(buf, STATE_INDEX),
-            previous_hash: get_hash(buf, PREVIOUS_INDEX),
-        };
-        Self { buf, info }
-    }
-
-    fn compute_hash(&self) -> Hash {
-        hash(&self.buf[DIGEST..])
-    }
-
-    fn content_is_valid(&self) -> bool {
-        self.info.block_hash == self.compute_hash()
-    }
-
-    pub fn open(buf: &'a [u8]) -> SecretBlockResult<'a> {
-        let block = Self::new(buf);
-        if !block.content_is_valid() {
-            Err(SecretBlockError::Content)
-        } else if block.info.secret == block.info.next_secret {
-            Err(SecretBlockError::Seed)
-        } else {
-            Ok(block)
-        }
-    }
-
-    pub fn from_hash(buf: &'a [u8], block_hash: &Hash) -> SecretBlockResult<'a> {
-        let block = Self::open(buf)?;
-        if block_hash != &block.info.block_hash {
-            Err(SecretBlockError::Hash)
-        } else {
-            Ok(block)
-        }
-    }
-
-    pub fn from_previous(buf: &'a [u8], prev: &SecretBlockInfo) -> SecretBlockResult<'a> {
-        let block = Self::open(buf)?;
-        if block.info.previous_hash != prev.block_hash {
-            Err(SecretBlockError::PreviousHash)
-        } else if block.info.secret != prev.next_secret {
-            Err(SecretBlockError::SeedSequence)
-        } else {
-            Ok(block)
-        }
-    }
-}
+pub type SecretBlockResult = Result<SecretBlock, SecretBlockError>;
 
 #[derive(Debug)]
 pub struct MutSecretBlock<'a> {
@@ -232,14 +170,14 @@ mod tests {
         let buf = valid_secret_block();
         let block = SecretBlock::open(&buf).unwrap();
         assert_eq!(
-            block.info.block_hash,
+            block.block_hash,
             Hash::from_hex("cf003f3cff7ebdbc562c85b6735046a094ed68e2708b6a253d234ed2f273ede6")
                 .unwrap()
         );
-        assert_eq!(block.info.secret, Hash::from_bytes([1; DIGEST]));
-        assert_eq!(block.info.next_secret, Hash::from_bytes([2; DIGEST]));
-        assert_eq!(block.info.state_hash, Hash::from_bytes([3; DIGEST]));
-        assert_eq!(block.info.previous_hash, Hash::from_bytes([4; DIGEST]));
+        assert_eq!(block.secret, Hash::from_bytes([1; DIGEST]));
+        assert_eq!(block.next_secret, Hash::from_bytes([2; DIGEST]));
+        assert_eq!(block.state_hash, Hash::from_bytes([3; DIGEST]));
+        assert_eq!(block.previous_hash, Hash::from_bytes([4; DIGEST]));
         for bad in BitFlipper::new(&buf) {
             assert_eq!(SecretBlock::open(&bad[..]), Err(SecretBlockError::Content));
         }
@@ -297,7 +235,7 @@ mod tests {
     #[test]
     fn test_block_from_previous() {
         let buf = valid_secret_block();
-        let prev = SecretBlockInfo {
+        let prev = SecretBlock {
             block_hash: get_hash(&buf, PREVIOUS_INDEX),
             secret: Hash::from_bytes([0; 32]),
             next_secret: get_hash(&buf, SECRET_INDEX),
@@ -308,7 +246,7 @@ mod tests {
 
         // Test errors specific to SecretBlock::from_previous():
         for bad_block_hash in HashBitFlipper::new(&prev.block_hash) {
-            let bad_prev = SecretBlockInfo {
+            let bad_prev = SecretBlock {
                 block_hash: bad_block_hash,
                 secret: prev.secret,
                 next_secret: prev.next_secret,
@@ -321,7 +259,7 @@ mod tests {
             );
         }
         for bad_next_secret in HashBitFlipper::new(&prev.next_secret) {
-            let bad_prev = SecretBlockInfo {
+            let bad_prev = SecretBlock {
                 block_hash: prev.block_hash,
                 secret: prev.secret,
                 next_secret: bad_next_secret,

@@ -1,6 +1,6 @@
 //! Read and write secret blocks in a chain.
 
-use crate::secretblock::{MutSecretBlock, SecretBlock, SecretBlockInfo};
+use crate::secretblock::{MutSecretBlock, SecretBlock};
 use crate::secretseed::Seed;
 use crate::tunable::*;
 use blake3::Hash;
@@ -23,7 +23,7 @@ use std::io::{Read, Seek, SeekFrom, Write};
 pub struct SecretChain {
     file: File,
     seed: Seed,
-    tail: SecretBlockInfo,
+    tail: SecretBlock,
 }
 
 impl SecretChain {
@@ -38,22 +38,22 @@ impl SecretChain {
         Ok(Self {
             file,
             seed,
-            tail: block.info,
+            tail: block,
         })
     }
 
     pub fn open(mut file: File) -> IoResult<Self> {
         let mut buf = [0; SECRET_BLOCK];
         file.read_exact(&mut buf)?;
-        let mut info = SecretBlock::open(&buf).unwrap().info;
+        let mut block = SecretBlock::open(&buf).unwrap();
         while file.read_exact(&mut buf).is_ok() {
-            info = SecretBlock::from_previous(&buf, &info).unwrap().info;
+            block = SecretBlock::from_previous(&buf, &block).unwrap();
         }
-        let seed = info.get_seed();
+        let seed = block.get_seed();
         Ok(Self {
             file,
             seed,
-            tail: info,
+            tail: block,
         })
     }
 
@@ -74,7 +74,7 @@ impl SecretChain {
         let block_hash = block.finalize();
         self.file.write_all(&buf)?;
         self.seed.commit(seed);
-        self.tail = SecretBlock::from_hash(&buf, &block_hash).unwrap().info;
+        self.tail = SecretBlock::from_hash(&buf, &block_hash).unwrap();
         Ok(())
     }
 
@@ -102,8 +102,8 @@ mod tests {
         file.rewind().unwrap();
         let mut buf = [0; SECRET_BLOCK];
         file.read_exact(&mut buf).unwrap();
-        let info = SecretBlock::open(&buf).unwrap().info;
-        assert_eq!(seed, info.get_seed());
+        let block = SecretBlock::open(&buf).unwrap();
+        assert_eq!(seed, block.get_seed());
     }
 
     #[test]
