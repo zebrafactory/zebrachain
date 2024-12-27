@@ -62,6 +62,29 @@ impl SecretBlockInfo {
             Ok(info)
         }
     }
+
+    pub fn from_hash(buf: &[u8], block_hash: &Hash) -> Result<SecretBlockInfo, SecretBlockError> {
+        let block = Self::open(buf)?;
+        if block_hash != &block.block_hash {
+            Err(SecretBlockError::Hash)
+        } else {
+            Ok(block)
+        }
+    }
+
+    pub fn from_previous(
+        buf: &[u8],
+        prev: &SecretBlockInfo,
+    ) -> Result<SecretBlockInfo, SecretBlockError> {
+        let block = Self::open(buf)?;
+        if block.previous_hash != prev.block_hash {
+            Err(SecretBlockError::PreviousHash)
+        } else if block.secret != prev.next_secret {
+            Err(SecretBlockError::SeedSequence)
+        } else {
+            Ok(block)
+        }
+    }
 }
 
 #[derive(Debug, PartialEq)]
