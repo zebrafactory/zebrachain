@@ -1,5 +1,13 @@
 //! Some test fixtures that should really be split out into another crate.
 
+use blake3::Hash;
+
+fn flip_bit(buf: &mut [u8], counter: usize) {
+    let i = counter / 8;
+    let b = (counter % 8) as u8;
+    buf[i] ^= 1 << b; // Flip bit `b` in byte `i`
+}
+
 /// Create test permutations with 1 bit flipped at a time.
 ///
 /// # Examples
@@ -21,14 +29,6 @@
 ///     ]
 /// );
 /// ```
-use blake3::Hash;
-
-fn flip_bit(buf: &mut [u8], counter: usize) {
-    let i = counter / 8;
-    let b = (counter % 8) as u8;
-    buf[i] ^= 1 << b; // Flip bit `b` in byte `i`
-}
-
 #[derive(Debug)]
 pub struct BitFlipper {
     good: Vec<u8>,
