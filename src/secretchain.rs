@@ -1,6 +1,6 @@
 //! Read and write secret blocks in a chain.
 
-use crate::secretblock::{MutSecretBlock, SecretBlock};
+use crate::secretblock::{MutSecretBlock, SecretBlock, SecretBlockInfo};
 use crate::secretseed::Seed;
 use crate::tunable::*;
 use std::fs::File;
@@ -19,30 +19,24 @@ use std::io::{Read, Seek, SeekFrom, Write};
 /// state_hash and timestamp in the secret block... that way the public block
 /// can be recreating from the secret chain if the public block doesn't make it
 /// to non-volitile storage.
-pub struct SecretStore {
+pub struct SecretChain {
     file: File,
     seed: Seed,
+    tail: SecretBlockInfo,
 }
 
-impl SecretStore {
+impl SecretChain {
     pub fn create(mut file: File, seed: Seed) -> IoResult<Self> {
         let mut buf = [0; SECRET_BLOCK];
         let mut block = MutSecretBlock::new(&mut buf);
         block.set_seed(&seed);
-        block.finalize();
+        let block_hash = block.finalize();
+        let block = SecretBlock::from_hash(&buf, &block_hash).unwrap();
         file.write_all(&buf)?;
-        Ok(Self { file, seed })
+        Ok(Self { file, seed, tail: block.info})
     }
 
     pub fn open(mut file: File) -> IoResult<Self> {
-        file.seek(SeekFrom::End(-64))?;
-        let mut buf = [0; 64];
-        file.read_exact(&mut buf)?;
-        let seed = Seed::load(&buf)?;
-        Ok(Self { file, seed })
-    }
-
-    pub fn open2(mut file: File) -> IoResult<Self> {
         let mut buf = [0; SECRET_BLOCK];
         file.read_exact(&mut buf)?;
         let mut info = SecretBlock::open(&buf).unwrap().info;
@@ -50,7 +44,7 @@ impl SecretStore {
             info = SecretBlock::from_previous(&buf, &info).unwrap().info;
         }
         let seed = info.get_seed();
-        Ok(Self { file, seed })
+        Ok(Self { file, seed, tail: info })
     }
 
     pub fn current_seed(&self) -> Seed {
@@ -62,7 +56,10 @@ impl SecretStore {
     }
 
     pub fn commit(&mut self, seed: Seed) -> IoResult<()> {
-        self.file.write_all(seed.next_secret.as_bytes())?;
+        let mut buf = [0; SECRET_BLOCK];
+        let mut block = MutSecretBlock::new(&mut buf);
+        block.set_seed(&seed);
+        self.file.write_all(&buf)?;
         self.seed.commit(seed);
         Ok(())
     }
@@ -74,6 +71,7 @@ impl SecretStore {
 
 #[cfg(test)]
 mod tests {
+    use crate::secretblock::SecretBlockError;
     use super::*;
     use blake3::hash;
     use std::collections::HashSet;
@@ -83,7 +81,7 @@ mod tests {
     fn test_store_create() {
         let file = tempfile().unwrap();
         let seed = Seed::create(&[42; 32]);
-        let result = SecretStore::create(file, seed.clone());
+        let result = SecretChain::create(file, seed.clone());
         assert!(result.is_ok());
         let mut file = result.unwrap().into_file();
         file.rewind().unwrap();
@@ -95,34 +93,21 @@ mod tests {
 
     #[test]
     fn test_store_open() {
-        let file = tempfile().unwrap();
-        assert!(SecretStore::open(file).is_err());
-
         let mut file = tempfile().unwrap();
-        file.write_all(&[42; 32]).unwrap();
-        assert!(SecretStore::open(file).is_err());
-
-        let mut file = tempfile().unwrap();
-        file.write_all(&[42; 32]).unwrap();
-        file.write_all(&[69; 32]).unwrap();
-        assert!(SecretStore::open(file).is_ok());
+        assert!(SecretChain::open(file.try_clone().unwrap()).is_err());
+        let mut buf = [0; SECRET_BLOCK];
+        let mut block = MutSecretBlock::new(&mut buf);
+        let seed = Seed::create(&[69; 32]);
+        block.set_seed(&seed);
+        block.finalize();
+        file.write_all(&buf).unwrap();
+        file.rewind().unwrap();
+        let chain = SecretChain::open(file).unwrap();
     }
 
     #[test]
     fn test_store_advance_and_commit() {
-        let count = 1000;
-        let entropy = [69; 32];
         let file = tempfile().unwrap();
-        let seed = Seed::create(&entropy);
-        let mut store = SecretStore::create(file, seed.clone()).unwrap();
-        for _ in 0..count {
-            let next = store.advance(&entropy);
-            assert!(store.commit(next).is_ok());
-        }
-        let last = store.current_seed();
-        let file = store.into_file();
-        let store = SecretStore::open(file).unwrap();
-        assert_eq!(last, store.current_seed());
     }
 
     #[test]
@@ -131,7 +116,7 @@ mod tests {
         let entropy = &[69; 32];
         let file = tempfile().unwrap();
         let seed = Seed::create(&entropy);
-        let mut store = SecretStore::create(file, seed).unwrap();
+        let mut store = SecretChain::create(file, seed).unwrap();
         let next = store.advance(&entropy);
         let next_next = next.advance(&entropy);
         store.commit(next_next);

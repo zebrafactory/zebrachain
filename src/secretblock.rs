@@ -136,7 +136,7 @@ impl<'a> MutSecretBlock<'a> {
         set_hash(self.buf, STATE_INDEX, state_hash);
     }
 
-    fn set_previous_hash(&mut self, previous_hash: &Hash) {
+    pub fn set_previous_hash(&mut self, previous_hash: &Hash) {
         set_hash(self.buf, PREVIOUS_INDEX, previous_hash)
     }
 
