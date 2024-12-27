@@ -120,10 +120,14 @@ impl<'a> MutSecretBlock<'a> {
         set_hash(self.buf, PREVIOUS_INDEX, &prev.block_hash)
     }
 
-    pub fn finalize(mut self) -> Hash {
+    fn finalize_hash(&mut self) -> Hash {
         let block_hash = hash(&self.buf[DIGEST..]);
         set_hash(self.buf, 0, &block_hash);
         block_hash
+    }
+
+    pub fn finalize(mut self) -> Hash {
+        self.finalize_hash()
     }
 }
 
@@ -190,7 +194,7 @@ mod tests {
                 next_secret: Hash::from_bytes([i; DIGEST]),
             };
             block.set_seed(&seed);
-            block.finalize();
+            block.finalize_hash();
             assert_eq!(SecretBlock::open(&buf), Err(SecretBlockError::Seed));
         }
     }
@@ -224,7 +228,7 @@ mod tests {
                 next_secret: Hash::from_bytes([i; DIGEST]),
             };
             block.set_seed(&seed);
-            block.finalize();
+            block.finalize_hash();
             assert_eq!(
                 SecretBlock::from_hash(&buf, &block_hash),
                 Err(SecretBlockError::Seed)
@@ -287,7 +291,7 @@ mod tests {
                 next_secret: Hash::from_bytes([i; DIGEST]),
             };
             block.set_seed(&seed);
-            block.finalize();
+            block.finalize_hash();
             assert_eq!(
                 SecretBlock::from_previous(&buf, &prev),
                 Err(SecretBlockError::Seed)
