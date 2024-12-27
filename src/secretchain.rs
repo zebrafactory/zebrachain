@@ -1,7 +1,7 @@
 //! Read and write secret blocks in a chain.
 
+use crate::secretblock::{MutSecretBlock, SecretBlock};
 use crate::secretseed::Seed;
-use crate::secretblock::{SecretBlock, MutSecretBlock};
 use crate::tunable::*;
 use std::fs::File;
 use std::io::Result as IoResult;
@@ -26,8 +26,11 @@ pub struct SecretStore {
 
 impl SecretStore {
     pub fn create(mut file: File, seed: Seed) -> IoResult<Self> {
-        file.write_all(seed.secret.as_bytes())?;
-        file.write_all(seed.next_secret.as_bytes())?;
+        let mut buf = [0; SECRET_BLOCK];
+        let mut block = MutSecretBlock::new(&mut buf);
+        block.set_seed(&seed);
+        block.finalize();
+        file.write_all(&buf)?;
         Ok(Self { file, seed })
     }
 
@@ -47,7 +50,7 @@ impl SecretStore {
             info = SecretBlock::from_previous(&buf, &info).unwrap().info;
         }
         let seed = info.get_seed();
-        Ok(Self { file, seed})
+        Ok(Self { file, seed })
     }
 
     pub fn current_seed(&self) -> Seed {
@@ -84,10 +87,10 @@ mod tests {
         assert!(result.is_ok());
         let mut file = result.unwrap().into_file();
         file.rewind().unwrap();
-        let mut buf = [0; 64];
+        let mut buf = [0; SECRET_BLOCK];
         file.read_exact(&mut buf).unwrap();
-        let seed2 = Seed::load(&buf).unwrap();
-        assert_eq!(seed, seed2);
+        let info = SecretBlock::open(&buf).unwrap().info;
+        assert_eq!(seed, info.get_seed());
     }
 
     #[test]

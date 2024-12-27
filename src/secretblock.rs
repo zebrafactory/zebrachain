@@ -127,7 +127,7 @@ impl<'a> MutSecretBlock<'a> {
         Self { buf }
     }
 
-    fn set_seed(&mut self, seed: &Seed) {
+    pub fn set_seed(&mut self, seed: &Seed) {
         set_hash(self.buf, SECRET_INDEX, &seed.secret);
         set_hash(self.buf, NEXT_SECRET_INDEX, &seed.next_secret);
     }
@@ -140,7 +140,7 @@ impl<'a> MutSecretBlock<'a> {
         set_hash(self.buf, PREVIOUS_INDEX, previous_hash)
     }
 
-    fn finalize(mut self) -> Hash {
+    pub fn finalize(mut self) -> Hash {
         let block_hash = hash(&self.buf[DIGEST..]);
         set_hash(self.buf, 0, &block_hash);
         block_hash
