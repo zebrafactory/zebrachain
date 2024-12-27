@@ -27,10 +27,11 @@ pub struct SecretChain {
 }
 
 impl SecretChain {
-    pub fn create(mut file: File, seed: Seed) -> IoResult<Self> {
+    pub fn create(mut file: File, seed: Seed, state_hash: &Hash) -> IoResult<Self> {
         let mut buf = [0; SECRET_BLOCK];
         let mut block = MutSecretBlock::new(&mut buf);
         block.set_seed(&seed);
+        block.set_state_hash(state_hash);
         let block_hash = block.finalize();
         let block = SecretBlock::from_hash(&buf, &block_hash).unwrap();
         file.write_all(&buf)?;
@@ -94,7 +95,8 @@ mod tests {
     fn test_chain_create() {
         let file = tempfile().unwrap();
         let seed = Seed::create(&[42; 32]);
-        let result = SecretChain::create(file, seed.clone());
+        let state_hash = Hash::from_bytes([69; DIGEST]);
+        let result = SecretChain::create(file, seed.clone(), &state_hash);
         assert!(result.is_ok());
         let mut file = result.unwrap().into_file();
         file.rewind().unwrap();
@@ -123,7 +125,8 @@ mod tests {
         let entropy = [69; 32];
         let mut file = tempfile().unwrap();
         let seed = Seed::create(&entropy);
-        let mut chain = SecretChain::create(file, seed).unwrap();
+        let state_hash = Hash::from_bytes([42; DIGEST]);
+        let mut chain = SecretChain::create(file, seed, &state_hash).unwrap();
         for i in 0u8..=255 {
             let next = chain.advance(&entropy);
             let state_hash = Hash::from_bytes([i; DIGEST]);
@@ -140,10 +143,10 @@ mod tests {
         let entropy = &[69; 32];
         let file = tempfile().unwrap();
         let seed = Seed::create(&entropy);
-        let mut chain = SecretChain::create(file, seed).unwrap();
+        let state_hash = Hash::from_bytes([42; DIGEST]);
+        let mut chain = SecretChain::create(file, seed, &state_hash).unwrap();
         let next = chain.advance(&entropy);
         let next_next = next.advance(&entropy);
-        let state_hash = Hash::from_bytes([42; DIGEST]);
         chain.commit(next_next, &state_hash);
     }
 }
