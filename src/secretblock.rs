@@ -126,8 +126,9 @@ impl<'a> MutSecretBlock<'a> {
         block_hash
     }
 
-    pub fn finalize(mut self) -> Hash {
-        self.finalize_hash()
+    pub fn finalize(mut self) -> SecretBlock {
+        let block_hash = self.finalize_hash();
+        SecretBlock::from_hash(self.buf, &block_hash).unwrap()
     }
 }
 

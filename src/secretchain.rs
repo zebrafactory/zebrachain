@@ -32,8 +32,7 @@ impl SecretChain {
         let mut block = MutSecretBlock::new(&mut buf);
         block.set_seed(&seed);
         block.set_state_hash(state_hash);
-        let block_hash = block.finalize();
-        let block = SecretBlock::from_hash(&buf, &block_hash).unwrap();
+        let block = block.finalize();
         file.write_all(&buf)?;
         Ok(Self {
             file,
@@ -71,10 +70,10 @@ impl SecretChain {
         block.set_seed(&seed);
         block.set_state_hash(state_hash);
         block.set_previous(&self.tail);
-        let block_hash = block.finalize();
+        let block = block.finalize();
         self.file.write_all(&buf)?;
         self.seed.commit(seed);
-        self.tail = SecretBlock::from_hash(&buf, &block_hash).unwrap();
+        self.tail = block;
         Ok(())
     }
 
