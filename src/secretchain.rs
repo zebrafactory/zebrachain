@@ -33,7 +33,11 @@ impl SecretChain {
         let block_hash = block.finalize();
         let block = SecretBlock::from_hash(&buf, &block_hash).unwrap();
         file.write_all(&buf)?;
-        Ok(Self { file, seed, tail: block.info})
+        Ok(Self {
+            file,
+            seed,
+            tail: block.info,
+        })
     }
 
     pub fn open(mut file: File) -> IoResult<Self> {
@@ -44,7 +48,11 @@ impl SecretChain {
             info = SecretBlock::from_previous(&buf, &info).unwrap().info;
         }
         let seed = info.get_seed();
-        Ok(Self { file, seed, tail: info })
+        Ok(Self {
+            file,
+            seed,
+            tail: info,
+        })
     }
 
     pub fn current_seed(&self) -> Seed {
@@ -59,8 +67,11 @@ impl SecretChain {
         let mut buf = [0; SECRET_BLOCK];
         let mut block = MutSecretBlock::new(&mut buf);
         block.set_seed(&seed);
+        block.set_previous_hash(&self.tail.block_hash);
+        let block_hash = block.finalize();
         self.file.write_all(&buf)?;
         self.seed.commit(seed);
+        self.tail = SecretBlock::from_hash(&buf, &block_hash).unwrap().info;
         Ok(())
     }
 
@@ -71,8 +82,8 @@ impl SecretChain {
 
 #[cfg(test)]
 mod tests {
-    use crate::secretblock::SecretBlockError;
     use super::*;
+    use crate::secretblock::SecretBlockError;
     use blake3::hash;
     use std::collections::HashSet;
     use tempfile::tempfile;
@@ -107,7 +118,16 @@ mod tests {
 
     #[test]
     fn test_store_advance_and_commit() {
-        let file = tempfile().unwrap();
+        let entropy = [69; 32];
+        let mut file = tempfile().unwrap();
+        let mut chain =
+            SecretChain::create(file.try_clone().unwrap(), Seed::create(&entropy)).unwrap();
+        for i in 0u8..=255 {
+            let next = chain.advance(&entropy);
+            chain.commit(next).unwrap();
+        }
+        file.rewind().unwrap();
+        let chain = SecretChain::open(file.try_clone().unwrap()).unwrap();
     }
 
     #[test]
