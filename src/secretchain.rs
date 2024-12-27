@@ -70,7 +70,7 @@ impl SecretChain {
         let mut block = MutSecretBlock::new(&mut buf);
         block.set_seed(&seed);
         block.set_state_hash(state_hash);
-        block.set_previous_hash(&self.tail.block_hash);
+        block.set_previous(&self.tail);
         let block_hash = block.finalize();
         self.file.write_all(&buf)?;
         self.seed.commit(seed);
