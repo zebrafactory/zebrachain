@@ -43,6 +43,25 @@ impl SecretBlockInfo {
     pub fn get_seed(&self) -> Seed {
         Seed::new(self.secret, self.next_secret)
     }
+
+    pub fn open(buf: &[u8]) -> Result<SecretBlockInfo, SecretBlockError> {
+        check_secret_buf(buf);
+        let computed_hash = hash(&buf[DIGEST..]);
+        let info = SecretBlockInfo {
+            block_hash: get_hash(buf, 0),
+            secret: get_hash(buf, SECRET_INDEX),
+            next_secret: get_hash(buf, NEXT_SECRET_INDEX),
+            state_hash: get_hash(buf, STATE_INDEX),
+            previous_hash: get_hash(buf, PREVIOUS_INDEX),
+        };
+        if computed_hash != info.block_hash {
+            Err(SecretBlockError::Content)
+        } else if info.secret == info.next_secret {
+            Err(SecretBlockError::Seed)
+        } else {
+            Ok(info)
+        }
+    }
 }
 
 #[derive(Debug, PartialEq)]
