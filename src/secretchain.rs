@@ -89,7 +89,7 @@ mod tests {
     use tempfile::tempfile;
 
     #[test]
-    fn test_store_create() {
+    fn test_chain_create() {
         let file = tempfile().unwrap();
         let seed = Seed::create(&[42; 32]);
         let result = SecretChain::create(file, seed.clone());
@@ -103,7 +103,7 @@ mod tests {
     }
 
     #[test]
-    fn test_store_open() {
+    fn test_chain_open() {
         let mut file = tempfile().unwrap();
         assert!(SecretChain::open(file.try_clone().unwrap()).is_err());
         let mut buf = [0; SECRET_BLOCK];
@@ -117,28 +117,29 @@ mod tests {
     }
 
     #[test]
-    fn test_store_advance_and_commit() {
+    fn test_chain_advance_and_commit() {
         let entropy = [69; 32];
         let mut file = tempfile().unwrap();
-        let mut chain =
-            SecretChain::create(file.try_clone().unwrap(), Seed::create(&entropy)).unwrap();
+        let seed = Seed::create(&entropy);
+        let mut chain = SecretChain::create(file, seed).unwrap();
         for i in 0u8..=255 {
             let next = chain.advance(&entropy);
             chain.commit(next).unwrap();
         }
+        let mut file = chain.into_file();
         file.rewind().unwrap();
-        let chain = SecretChain::open(file.try_clone().unwrap()).unwrap();
+        let chain = SecretChain::open(file).unwrap();
     }
 
     #[test]
     #[should_panic(expected = "cannot commit out of sequence seed")]
-    fn test_store_commit_panic() {
+    fn test_chain_commit_panic() {
         let entropy = &[69; 32];
         let file = tempfile().unwrap();
         let seed = Seed::create(&entropy);
-        let mut store = SecretChain::create(file, seed).unwrap();
-        let next = store.advance(&entropy);
+        let mut chain = SecretChain::create(file, seed).unwrap();
+        let next = chain.advance(&entropy);
         let next_next = next.advance(&entropy);
-        store.commit(next_next);
+        chain.commit(next_next);
     }
 }
