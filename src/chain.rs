@@ -58,10 +58,13 @@ impl Chain {
         self.file.read_exact(&mut self.buf)
     }
 
-    pub fn open_and_validate(mut file: File) -> io::Result<Self> {
-        let mut chain = Chain::open(file)?;
-        while chain.read_next().is_ok() {}
-        Ok(chain)
+    fn validate(&mut self) -> io::Result<()> {
+        while self.read_next().is_ok() {
+            if self.state.append(&self.buf).is_err() {
+                return Err(io::Error::other("block is bad"));
+            }
+        }
+        Ok(())
     }
 
     pub fn append(&mut self, buf: &[u8]) -> io::Result<&BlockState> {
@@ -111,7 +114,6 @@ mod tests {
         block.finalize();
         buf
     }
-
 
     #[test]
     fn test_chainstate_open() {

@@ -30,7 +30,7 @@ pub enum BlockError {
 pub type BlockResult<'a> = Result<Block<'a>, BlockError>;
 
 /// Contains state from current block needed to validate next block.
-#[derive(Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct BlockState {
     pub counter: u128,
     pub block_hash: Hash,

@@ -1,6 +1,6 @@
 //! Abstraction over public key signature algorithms.
 
-use crate::block::{Block, MutBlock};
+use crate::block::{Block, BlockError, BlockState, MutBlock};
 use crate::secretseed::{derive, Seed};
 use crate::tunable::*;
 use blake3;
@@ -97,12 +97,60 @@ impl SecretSigner {
     }
 }
 
+pub struct SigningChain {
+    buf: [u8; BLOCK],
+    tail: BlockState,
+}
+
+impl SigningChain {
+    pub fn as_buf(&self) -> &[u8] {
+        &self.buf
+    }
+
+    pub fn start(seed: &Seed, state_hash: &Hash) -> Self {
+        let mut buf = [0; BLOCK];
+        let mut block = MutBlock::new(&mut buf, state_hash);
+        let secsign = SecretSigner::new(seed);
+        secsign.sign(&mut block);
+        let block_hash = block.finalize();
+        let block = Block::from_hash(&buf, block_hash).unwrap();
+        let tail = block.state();
+        Self { buf, tail }
+    }
+
+    pub fn resume(tail: BlockState) -> Self {
+        Self {
+            buf: [0; BLOCK],
+            tail,
+        }
+    }
+
+    pub fn sign(&mut self, seed: &Seed, state_hash: &Hash) {
+        let mut block = MutBlock::new(&mut self.buf, state_hash);
+        block.set_previous(&self.tail);
+        let secsign = SecretSigner::new(seed);
+        secsign.sign(&mut block);
+        let block_hash = block.finalize();
+        let block = Block::from_hash(&self.buf, block_hash).unwrap();
+        self.tail = block.state();
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
     use pqcrypto_dilithium::dilithium3;
 
     static HEX0: &str = "27ed25c29cfa0c0b5667f9e1bdd6eec1385e815776a4dc8379141da13afa98e1";
+
+    fn dummy_block_state() -> BlockState {
+        BlockState {
+            counter: 0,
+            block_hash: Hash::from_bytes([1; DIGEST]),
+            chain_hash: Hash::from_bytes([2; DIGEST]),
+            next_pubkey_hash: Hash::from_bytes([3; DIGEST]),
+        }
+    }
 
     #[test]
     fn test_dilithium() {
@@ -153,5 +201,34 @@ mod tests {
     fn test_keypair_pubkey_hash() {
         let pair = KeyPair::new(&[69; 32]);
         assert_eq!(pair.pubkey_hash(), blake3::Hash::from_hex(HEX0).unwrap());
+    }
+
+    #[test]
+    fn test_signingchain_start() {
+        let seed = Seed::create(&[69; 32]);
+        let state_hash = Hash::from_bytes([42; DIGEST]);
+        let s = SigningChain::start(&seed, &state_hash);
+        assert_eq!(s.tail.counter, 0);
+        assert_eq!(s.buf[0..DIGEST], s.tail.block_hash.as_bytes()[..]);
+        assert_eq!(s.buf[BLOCK - DIGEST..], s.tail.chain_hash.as_bytes()[..]);
+        assert_eq!(
+            s.tail.next_pubkey_hash,
+            SecretSigner::new(&seed).next_pubkey_hash
+        );
+    }
+
+    #[test]
+    fn test_signingchain_resume() {
+        let bs = dummy_block_state();
+        let sc = SigningChain::resume(bs.clone());
+        assert_eq!(sc.tail, bs);
+    }
+
+    #[test]
+    fn test_signingchain_sign() {
+        let mut sc = SigningChain::resume(dummy_block_state());
+        let seed = Seed::create(&[69; 32]);
+        let state_hash = Hash::from_bytes([42; DIGEST]);
+        sc.sign(&seed, &state_hash);
     }
 }
