@@ -5,7 +5,7 @@ use crate::secretseed::Seed;
 use crate::tunable::*;
 use blake3::Hash;
 use std::fs::File;
-use std::io::Result as IoResult;
+use std::io;
 use std::io::{Read, Seek, SeekFrom, Write};
 
 /// Save secret chain to non-volitile storage.
@@ -27,7 +27,7 @@ pub struct SecretChain {
 }
 
 impl SecretChain {
-    pub fn create(mut file: File, seed: Seed, state_hash: &Hash) -> IoResult<Self> {
+    pub fn create(mut file: File, seed: Seed, state_hash: &Hash) -> io::Result<Self> {
         let mut buf = [0; SECRET_BLOCK];
         let mut block = MutSecretBlock::new(&mut buf);
         block.set_seed(&seed);
@@ -41,7 +41,7 @@ impl SecretChain {
         })
     }
 
-    pub fn open(mut file: File) -> IoResult<Self> {
+    pub fn open(mut file: File) -> io::Result<Self> {
         let mut buf = [0; SECRET_BLOCK];
         file.read_exact(&mut buf)?;
         let mut block = SecretBlock::open(&buf).unwrap();
@@ -64,7 +64,7 @@ impl SecretChain {
         self.seed.advance(new_entropy)
     }
 
-    pub fn commit(&mut self, seed: Seed, state_hash: &Hash) -> IoResult<()> {
+    pub fn commit(&mut self, seed: Seed, state_hash: &Hash) -> io::Result<()> {
         let mut buf = [0; SECRET_BLOCK];
         let mut block = MutSecretBlock::new(&mut buf);
         block.set_seed(&seed);

@@ -4,8 +4,7 @@ use crate::block::{Block, BlockError, BlockState};
 use crate::tunable::*;
 use blake3::Hash;
 use std::fs::File;
-use std::io::Error as IoError;
-use std::io::Result as IoResult;
+use std::io;
 use std::io::{Read, Write};
 
 /*
@@ -46,33 +45,33 @@ struct Chain {
 }
 
 impl Chain {
-    pub fn open(mut file: File) -> IoResult<Self> {
+    pub fn open(mut file: File) -> io::Result<Self> {
         let mut buf = [0; BLOCK];
         file.read_exact(&mut buf)?;
         if let Ok(state) = ChainState::open(&buf) {
             Ok(Self { file, buf, state })
         } else {
-            Err(IoError::other("first block is bad"))
+            Err(io::Error::other("first block is bad"))
         }
     }
 
-    pub fn read_next(&mut self) -> IoResult<()> {
+    pub fn read_next(&mut self) -> io::Result<()> {
         self.file.read_exact(&mut self.buf)?;
         Ok(())
     }
 
-    pub fn open_and_validate(mut file: File) -> IoResult<Self> {
+    pub fn open_and_validate(mut file: File) -> io::Result<Self> {
         let mut chain = Chain::open(file)?;
         while chain.read_next().is_ok() && chain.state.append(&chain.buf).is_ok() {}
         Ok(chain)
     }
 
-    pub fn append(&mut self, buf: &[u8]) -> IoResult<&BlockState> {
+    pub fn append(&mut self, buf: &[u8]) -> io::Result<&BlockState> {
         if self.state.append(buf).is_ok() {
             self.file.write_all(buf)?;
             Ok(&self.state.tail)
         } else {
-            Err(IoError::other("appended block is bad"))
+            Err(io::Error::other("appended block is bad"))
         }
     }
 }
