@@ -97,25 +97,6 @@ impl SecretSigner {
     }
 }
 
-pub struct SecretChain {
-    tail: BlockState,
-    seed: Seed,
-}
-
-impl SecretChain {
-    pub fn sign_next(&mut self, buf: &mut [u8], state_hash: &Hash, new_entropy: &[u8; 32]) {
-        let mut block = MutBlock::new(buf, state_hash);
-        block.set_previous(&self.tail);
-        let next = self.seed.advance(new_entropy);
-        let signer = SecretSigner::new(&next);
-        signer.sign(&mut block);
-        let block_hash = block.finalize();
-        let block = Block::from_hash(buf, block_hash).unwrap();
-        self.tail = block.state();
-        self.seed = next;
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
