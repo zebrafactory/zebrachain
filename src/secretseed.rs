@@ -5,8 +5,6 @@
 //! whatever abstraction we use likewise ensures constant time comparison.
 
 use blake3::{keyed_hash, Hash, Hasher};
-use std::io::Error as IoError;
-use std::io::Result as IoResult;
 
 static SECRET_CONTEXT: &str = "foo";
 static NEXT_SECRET_CONTEXT: &str = "bar";
@@ -90,16 +88,6 @@ impl Seed {
         self.next_secret = next.next_secret;
         self.check();
     }
-
-    pub fn load(buf: &[u8; 64]) -> IoResult<Self> {
-        let secret = Hash::from_bytes(buf[0..32].try_into().unwrap());
-        let next_secret = Hash::from_bytes(buf[32..64].try_into().unwrap());
-        if secret == next_secret {
-            Err(IoError::other("secret and next_secret match"))
-        } else {
-            Ok(Self::new(secret, next_secret))
-        }
-    }
 }
 
 #[cfg(test)]
@@ -166,19 +154,6 @@ mod tests {
         let secret = hash(&[42; 32]);
         let next_secret = hash(&[42; 32]);
         let seed = Seed::new(secret, next_secret);
-    }
-
-    #[test]
-    fn test_seed_load() {
-        let mut buf: [u8; 64] = [0; 64];
-        buf[0..32].copy_from_slice(&[42; 32]);
-        buf[32..64].copy_from_slice(&[69; 32]);
-        let seed = Seed::load(&buf).unwrap();
-        assert_eq!(seed.secret.as_bytes(), &[42; 32]);
-        assert_eq!(seed.next_secret.as_bytes(), &[69; 32]);
-
-        let buf = [69; 64];
-        assert!(Seed::load(&buf).is_err());
     }
 
     #[test]
