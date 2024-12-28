@@ -4,6 +4,7 @@ use crate::pksign::verify_signature;
 use crate::tunable::*;
 use blake3::{hash, Hash};
 
+/// Expresses different error conditions hit during block validation.
 #[derive(Debug, PartialEq)]
 pub enum BlockError {
     /// Hash of block content does not match hash in block.
@@ -15,7 +16,7 @@ pub enum BlockError {
     /// Hash in block does not match expected external value.
     Hash,
 
-    /// Public Key hash does not match expected external value.
+    /// Hash of public key bytes does not match expected external value.
     PubKeyHash,
 
     /// Previous hash does not match expected external value.
@@ -25,6 +26,7 @@ pub enum BlockError {
     ChainHash,
 }
 
+/// Alias for `Result<Block<'a>, BlockError>`.
 pub type BlockResult<'a> = Result<Block<'a>, BlockError>;
 
 /// Contains state from current block needed to validate next block.
@@ -47,6 +49,7 @@ impl BlockState {
     }
 }
 
+/// Validate block wire format, extract items from the same.
 #[derive(Debug, PartialEq)]
 pub struct Block<'a> {
     buf: &'a [u8],
@@ -170,6 +173,7 @@ impl<'a> Block<'a> {
     }
 }
 
+/// Build a new block.
 pub struct MutBlock<'a> {
     buf: &'a mut [u8],
 }
