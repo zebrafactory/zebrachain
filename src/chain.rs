@@ -37,7 +37,7 @@ impl ChainState {
     }
 }
 
-struct Chain {
+pub struct Chain {
     file: File,
     buf: [u8; BLOCK],
     state: ChainState,
@@ -54,14 +54,13 @@ impl Chain {
         }
     }
 
-    pub fn read_next(&mut self) -> io::Result<()> {
-        self.file.read_exact(&mut self.buf)?;
-        Ok(())
+    fn read_next(&mut self) -> io::Result<()> {
+        self.file.read_exact(&mut self.buf)
     }
 
     pub fn open_and_validate(mut file: File) -> io::Result<Self> {
         let mut chain = Chain::open(file)?;
-        while chain.read_next().is_ok() && chain.state.append(&chain.buf).is_ok() {}
+        while chain.read_next().is_ok() {}
         Ok(chain)
     }
 
@@ -83,7 +82,36 @@ mod tests {
     use crate::secretseed::Seed;
     use crate::tunable::*;
     use blake3::Hash;
-    use tempfile;
+    use std::io::Seek;
+    use tempfile::tempfile;
+
+    fn dummy_block_state() -> BlockState {
+        BlockState {
+            counter: 0,
+            block_hash: Hash::from_bytes([1; DIGEST]),
+            chain_hash: Hash::from_bytes([2; DIGEST]),
+            next_pubkey_hash: Hash::from_bytes([3; DIGEST]),
+        }
+    }
+
+    fn dummy_chain_state() -> ChainState {
+        ChainState {
+            head: dummy_block_state(),
+            tail: dummy_block_state(),
+        }
+    }
+
+    fn new_valid_first_block() -> [u8; BLOCK] {
+        let mut buf = [0; BLOCK];
+        let seed = Seed::create(&[69; 32]);
+        let secsign = SecretSigner::new(&seed);
+        let state_hash = Hash::from_bytes([2; 32]);
+        let mut block = MutBlock::new(&mut buf, &state_hash);
+        secsign.sign(&mut block);
+        block.finalize();
+        buf
+    }
+
 
     #[test]
     fn test_chainstate_open() {
@@ -103,5 +131,37 @@ mod tests {
         assert_eq!(chain.tail.chain_hash, block.chain_hash());
         assert_eq!(chain.tail.block_hash, block.hash());
         assert_eq!(chain.tail.next_pubkey_hash, block.next_pubkey_hash());
+    }
+
+    #[test]
+    fn test_chain_open() {
+        let mut file = tempfile().unwrap();
+        assert!(Chain::open(file.try_clone().unwrap()).is_err());
+        file.write_all(&[69; BLOCK]).unwrap();
+        file.rewind().unwrap();
+        assert!(Chain::open(file.try_clone().unwrap()).is_err());
+
+        let mut file = tempfile().unwrap();
+        file.write_all(&new_valid_first_block()).unwrap();
+        file.rewind().unwrap();
+        let chain = Chain::open(file).unwrap();
+    }
+
+    #[test]
+    fn test_chain_read_next() {
+        let mut file = tempfile().unwrap();
+        let mut chain = Chain {
+            file: file.try_clone().unwrap(),
+            buf: [0; BLOCK],
+            state: dummy_chain_state(),
+        };
+        assert!(chain.read_next().is_err());
+        assert_eq!(chain.buf, [0; BLOCK]);
+        file.write_all(&[69; BLOCK]).unwrap();
+        file.rewind().unwrap();
+        assert!(chain.read_next().is_ok());
+        assert_eq!(chain.buf, [69; BLOCK]);
+        assert!(chain.read_next().is_err());
+        assert_eq!(chain.buf, [69; BLOCK]);
     }
 }
