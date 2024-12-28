@@ -6,7 +6,7 @@ use crate::tunable::*;
 use blake3::Hash;
 use std::fs::File;
 use std::io;
-use std::io::{Read, Seek, SeekFrom, Write};
+use std::io::{Read, Write};
 
 /// Save secret chain to non-volitile storage.
 ///
@@ -88,6 +88,7 @@ mod tests {
     use crate::secretblock::SecretBlockError;
     use blake3::hash;
     use std::collections::HashSet;
+    use std::io::Seek;
     use tempfile::tempfile;
 
     #[test]

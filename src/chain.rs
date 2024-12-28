@@ -2,7 +2,6 @@
 
 use crate::block::{Block, BlockError, BlockState};
 use crate::tunable::*;
-use blake3::Hash;
 use std::fs::File;
 use std::io;
 use std::io::{Read, Write};
@@ -83,6 +82,7 @@ mod tests {
     use crate::pksign::SecretSigner;
     use crate::secretseed::Seed;
     use crate::tunable::*;
+    use blake3::Hash;
     use tempfile;
 
     #[test]

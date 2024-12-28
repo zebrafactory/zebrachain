@@ -1,6 +1,6 @@
 //! Abstraction over public key signature algorithms.
 
-use crate::block::{Block, BlockState, MutBlock};
+use crate::block::{Block, MutBlock};
 use crate::secretseed::{derive, Seed};
 use crate::tunable::*;
 use blake3;
