@@ -32,7 +32,7 @@ impl ChainState {
     pub fn append(&mut self, buf: &[u8]) -> Result<(), BlockError> {
         let block = Block::from_previous(buf, &self.tail)?;
         self.tail = block.state();
-        assert_eq!(self.tail.chain_hash, self.head.chain_hash);
+        assert_eq!(self.tail.chain_hash, self.head.block_hash);
         Ok(())
     }
 }

@@ -47,6 +47,14 @@ impl BlockState {
             next_pubkey_hash,
         }
     }
+
+    pub fn effective_chain_hash(&self) -> Hash {
+        if self.chain_hash == Hash::from_bytes([0; 32]) {
+            self.block_hash // Block 0
+        } else {
+            self.chain_hash // Block >
+        }
+    }
 }
 
 /// Validate block wire format, extract items from the same.
@@ -89,7 +97,7 @@ impl<'a> Block<'a> {
             Err(BlockError::PubKeyHash)
         } else if block.previous_hash() != last.block_hash {
             Err(BlockError::PreviousHash)
-        } else if block.chain_hash() != last.chain_hash {
+        } else if block.chain_hash() != last.effective_chain_hash() {
             Err(BlockError::ChainHash)
         } else {
             Ok(block)
@@ -199,7 +207,8 @@ impl<'a> MutBlock<'a> {
     pub fn set_previous(&mut self, last: &BlockState) {
         // Either both of these get set or, in the case of the first block, neither are set.
         self.buf[PREVIOUS_HASH_RANGE].copy_from_slice(last.block_hash.as_bytes());
-        self.buf[CHAIN_HASH_RANGE].copy_from_slice(last.chain_hash.as_bytes());
+        let chain_hash = last.effective_chain_hash();
+        self.buf[CHAIN_HASH_RANGE].copy_from_slice(chain_hash.as_bytes());
     }
 
     pub fn as_mut_signature(&mut self) -> &mut [u8] {

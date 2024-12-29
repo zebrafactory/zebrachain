@@ -60,7 +60,7 @@ impl Seed {
         Self::new(secret, next_secret)
     }
 
-    /// Creates seed using entropy from [getrandom::getrandom()].
+    /// Creates a new seed using entropy from [getrandom::getrandom()].
     pub fn auto_create() -> Self {
         let mut initial_entropy = [0; 32];
         getrandom(&mut initial_entropy).unwrap();
