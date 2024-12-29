@@ -16,8 +16,8 @@ Walk chain till last block.
 */
 
 pub struct ChainState {
-    head: BlockState,
-    tail: BlockState,
+    pub head: BlockState,
+    pub tail: BlockState,
 }
 
 impl ChainState {
@@ -40,7 +40,7 @@ impl ChainState {
 pub struct Chain {
     file: File,
     buf: [u8; BLOCK],
-    state: ChainState,
+    pub state: ChainState,
 }
 
 impl Chain {
@@ -66,6 +66,7 @@ impl Chain {
         }
         Ok(())
     }
+
 
     pub fn append(&mut self, buf: &[u8]) -> io::Result<&BlockState> {
         if self.state.append(buf).is_ok() {
