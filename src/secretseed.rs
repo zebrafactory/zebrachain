@@ -9,7 +9,7 @@ use blake3::{keyed_hash, Hash, Hasher};
 static SECRET_CONTEXT: &str = "foo";
 static NEXT_SECRET_CONTEXT: &str = "bar";
 
-pub fn derive(context: &str, secret: &[u8]) -> Hash {
+pub fn derive(context: &str, secret: &[u8; 32]) -> Hash {
     let mut hasher = Hasher::new_derive_key(context);
     hasher.update(secret);
     hasher.finalize()
