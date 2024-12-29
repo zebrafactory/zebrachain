@@ -9,6 +9,7 @@ rust-version = "1.81"
 [dependencies]
 blake3 = "1.5.4"
 ed25519-dalek = "2.1.1"
+getrandom = "0.2.15"
 
 [dev-dependencies]
 pqcrypto-dilithium = "0.5.0"

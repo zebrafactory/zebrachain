@@ -67,7 +67,6 @@ impl Chain {
         Ok(())
     }
 
-
     pub fn append(&mut self, buf: &[u8]) -> io::Result<&BlockState> {
         if self.state.append(buf).is_ok() {
             self.file.write_all(buf)?;
