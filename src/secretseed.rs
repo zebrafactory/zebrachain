@@ -5,6 +5,7 @@
 //! whatever abstraction we use likewise ensures constant time comparison.
 
 use blake3::{keyed_hash, Hash, Hasher};
+use getrandom::getrandom;
 
 static SECRET_CONTEXT: &str = "foo";
 static NEXT_SECRET_CONTEXT: &str = "bar";
@@ -59,6 +60,13 @@ impl Seed {
         Self::new(secret, next_secret)
     }
 
+    /// Creates seed using entropy from [getrandom::getrandom()].
+    pub fn auto_create() -> Self {
+        let mut initial_entropy = [0; 32];
+        getrandom(&mut initial_entropy).unwrap();
+        Self::create(&initial_entropy)
+    }
+
     /// Create next seed by mixing `new_entropy` into the entropy chain.
     ///
     /// This is a critical part of the ZebraChain design.  If we simply created the next secret
@@ -77,6 +85,13 @@ impl Seed {
         // little overhead, so we might as well do that (feedback encouraged).
         let next_next_secret = keyed_hash(self.next_secret.as_bytes(), new_entropy);
         Self::new(self.next_secret, next_next_secret)
+    }
+
+    /// Advance chain by mixing in new entropy from [getrandom::getrandom()].
+    pub fn auto_advance(&self) -> Self {
+        let mut new_entropy = [0; 32];
+        getrandom(&mut new_entropy).unwrap();
+        self.advance(&new_entropy)
     }
 
     /// Mutate seed state to match `next`.
