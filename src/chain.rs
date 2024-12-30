@@ -2,9 +2,11 @@
 
 use crate::always::*;
 use crate::block::{Block, BlockError, BlockState};
+use blake3::Hash;
 use std::fs::File;
 use std::io;
 use std::io::{Read, Write};
+use std::path::{Path, PathBuf};
 
 /*
 For now we will fully validate all chains when opening them.
@@ -78,6 +80,40 @@ impl Chain {
 
     pub fn into_file(self) -> File {
         self.file
+    }
+}
+
+pub fn create_for_append(path: &Path) -> io::Result<File> {
+    File::options()
+        .read(true)
+        .append(true)
+        .create_new(true)
+        .open(path)
+}
+
+pub fn open_for_append(path: &Path) -> io::Result<File> {
+    File::options().read(true).append(true).open(path)
+}
+
+pub struct ChainStore {
+    dir: PathBuf,
+}
+
+impl ChainStore {
+    fn chain_filename(&self, chain_hash: &Hash) -> PathBuf {
+        let mut filename = self.dir.clone();
+        filename.push(format!("{chain_hash}"));
+        filename
+    }
+
+    pub fn open_chain_file(&self, chain_hash: &Hash) -> io::Result<File> {
+        let filename = self.chain_filename(chain_hash);
+        open_for_append(&filename)
+    }
+
+    pub fn create_chain_file(&self, chain_hash: &Hash) -> io::Result<File> {
+        let filename = self.chain_filename(chain_hash);
+        create_for_append(&filename)
     }
 }
 
@@ -169,5 +205,18 @@ mod tests {
         assert_eq!(chain.buf, [69; BLOCK]);
         assert!(chain.read_next().is_err());
         assert_eq!(chain.buf, [69; BLOCK]);
+    }
+
+    #[test]
+    fn test_chainstore_chain_filename() {
+        let dir = PathBuf::from("/tmp/stuff/junk");
+        let chainstore = ChainStore { dir };
+        let chain_hash = Hash::from_bytes([42; 32]);
+        assert_eq!(
+            chainstore.chain_filename(&chain_hash),
+            PathBuf::from(
+                "/tmp/stuff/junk/2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a"
+            )
+        );
     }
 }
