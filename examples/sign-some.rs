@@ -19,7 +19,10 @@ fn main() {
     file.write_all(sc.as_buf()).unwrap();
     file.rewind().unwrap();
     let mut chain = Chain::open(file).unwrap();
-    println!("{} {} {}", chain.state.tail.chain_hash, chain.state.tail.block_hash, &states[0]);
+    println!(
+        "{} {} {}",
+        chain.state.tail.chain_hash, chain.state.tail.block_hash, &states[0]
+    );
     for state_hash in &states[1..] {
         let next = seed.auto_advance();
         sc.sign(&next, &state_hash);

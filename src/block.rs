@@ -4,6 +4,8 @@ use crate::pksign::verify_signature;
 use crate::tunable::*;
 use blake3::{hash, Hash};
 
+static ZERO_HASH: Hash = Hash::from_bytes([0; 32]);
+
 /// Expresses different error conditions hit during block validation.
 #[derive(Debug, PartialEq)]
 pub enum BlockError {
@@ -49,10 +51,12 @@ impl BlockState {
     }
 
     pub fn effective_chain_hash(&self) -> Hash {
-        if self.chain_hash == Hash::from_bytes([0; 32]) {
+        if self.chain_hash == ZERO_HASH {
+            assert_eq!(self.counter, 0);
+            assert_ne!(self.block_hash, ZERO_HASH);
             self.block_hash // Block 0
         } else {
-            self.chain_hash // Block >
+            self.chain_hash // Block > 0
         }
     }
 }
@@ -207,8 +211,9 @@ impl<'a> MutBlock<'a> {
     pub fn set_previous(&mut self, last: &BlockState) {
         // Either both of these get set or, in the case of the first block, neither are set.
         self.buf[PREVIOUS_HASH_RANGE].copy_from_slice(last.block_hash.as_bytes());
-        let chain_hash = last.effective_chain_hash();
+        let chain_hash = last.effective_chain_hash(); // Don't use last.chain_hash !
         self.buf[CHAIN_HASH_RANGE].copy_from_slice(chain_hash.as_bytes());
+        // FIXME: Set counter to last.counter + 1
     }
 
     pub fn as_mut_signature(&mut self) -> &mut [u8] {
@@ -242,6 +247,17 @@ mod tests {
     use crate::secretseed::Seed;
 
     const EXPECTED: &str = "1235a30e9a3086fa131087c5683eeaa5e4733dfa28fe610d4ed2b76e114011c7";
+
+    #[test]
+    fn test_blockstate_effective_chain_hash() {
+        let zero = Hash::from_bytes([0; 32]);
+        let one = Hash::from_bytes([1; 32]);
+        let two = Hash::from_bytes([2; 32]);
+        let bs = BlockState::new(one, zero, two);
+        assert_eq!(bs.effective_chain_hash(), one);
+        let bs = BlockState::new(one, two, zero);
+        assert_eq!(bs.effective_chain_hash(), two);
+    }
 
     fn new_expected() -> Hash {
         Hash::from_hex(EXPECTED).unwrap()
