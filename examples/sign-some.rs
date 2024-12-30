@@ -33,4 +33,17 @@ fn main() {
         );
         seed.commit(next);
     }
+    let mut file = chain.into_file();
+    file.rewind().unwrap();
+    let mut chain = Chain::open(file).unwrap();
+    chain.validate().unwrap();
 }
+
+/*
+Create new chain:
+1. create seed
+2. construct first block in memory (sign and hash)
+3. use block hash hex to name chain file
+4. open file
+5. write first block
+*/

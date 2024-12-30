@@ -58,7 +58,7 @@ impl Chain {
         self.file.read_exact(&mut self.buf)
     }
 
-    fn validate(&mut self) -> io::Result<()> {
+    pub fn validate(&mut self) -> io::Result<()> {
         while self.read_next().is_ok() {
             if self.state.append(&self.buf).is_err() {
                 return Err(io::Error::other("block is bad"));
@@ -74,6 +74,10 @@ impl Chain {
         } else {
             Err(io::Error::other("appended block is bad"))
         }
+    }
+
+    pub fn into_file(self) -> File {
+        self.file
     }
 }
 

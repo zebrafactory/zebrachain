@@ -51,9 +51,9 @@ impl BlockState {
     }
 
     pub fn effective_chain_hash(&self) -> Hash {
+        assert_ne!(self.block_hash, ZERO_HASH);
         if self.chain_hash == ZERO_HASH {
             assert_eq!(self.counter, 0);
-            assert_ne!(self.block_hash, ZERO_HASH);
             self.block_hash // Block 0
         } else {
             self.chain_hash // Block > 0
