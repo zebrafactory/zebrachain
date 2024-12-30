@@ -49,10 +49,9 @@ impl Chain {
     pub fn open(mut file: File) -> io::Result<Self> {
         let mut buf = [0; BLOCK];
         file.read_exact(&mut buf)?;
-        if let Ok(state) = ChainState::open(&buf) {
-            Ok(Self { file, buf, state })
-        } else {
-            Err(io::Error::other("first block is bad"))
+        match ChainState::open(&buf) {
+            Ok(state) => Ok(Self { file, buf, state }),
+            Err(err) => Err(io::Error::other(format!("{err:?}"))),
         }
     }
 
@@ -70,11 +69,12 @@ impl Chain {
     }
 
     pub fn append(&mut self, buf: &[u8]) -> io::Result<&BlockState> {
-        if self.state.append(buf).is_ok() {
-            self.file.write_all(buf)?;
-            Ok(&self.state.tail)
-        } else {
-            Err(io::Error::other("appended block is bad"))
+        match self.state.append(buf) {
+            Ok(_) => {
+                self.file.write_all(buf)?;
+                Ok(&self.state.tail)
+            }
+            Err(err) => Err(io::Error::other(format!("{err:?}"))),
         }
     }
 
