@@ -1,8 +1,8 @@
 //! Read and write secret blocks in a chain.
 
+use crate::always::*;
 use crate::secretblock::{MutSecretBlock, SecretBlock};
 use crate::secretseed::Seed;
-use crate::tunable::*;
 use blake3::Hash;
 use std::fs::File;
 use std::io;

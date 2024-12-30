@@ -1,7 +1,7 @@
 //! Wire format for secret seeds when written to nonvolatile storage.
 
+use crate::always::*;
 use crate::secretseed::Seed;
-use crate::tunable::*;
 use blake3::{hash, Hash};
 use std::ops::Range;
 

@@ -1,7 +1,7 @@
 //! Block construction, validation, and wire format.
 
+use crate::always::*;
 use crate::pksign::verify_signature;
-use crate::tunable::*;
 use blake3::{hash, Hash};
 
 static ZERO_HASH: Hash = Hash::from_bytes([0; 32]);

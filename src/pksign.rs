@@ -1,8 +1,8 @@
 //! Abstraction over public key signature algorithms.
 
+use crate::always::*;
 use crate::block::{Block, BlockError, BlockState, MutBlock};
 use crate::secretseed::{derive, Seed};
-use crate::tunable::*;
 use blake3;
 use blake3::Hash;
 use ed25519_dalek::{Signature, Signer, SigningKey, VerifyingKey};

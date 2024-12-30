@@ -2,6 +2,7 @@
 //!
 //! [nist.gov]: https://www.nist.gov/news-events/news/2024/08/nist-releases-first-3-finalized-post-quantum-encryption-standards
 
+pub mod always;
 pub mod block;
 pub mod chain;
 pub mod pksign;
@@ -11,5 +12,3 @@ pub mod secretseed;
 
 #[cfg(test)]
 pub mod testhelpers;
-
-pub mod tunable;

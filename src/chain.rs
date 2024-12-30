@@ -1,7 +1,7 @@
 //! Writes/reads blocks to/from non-volitile storage and network.
 
+use crate::always::*;
 use crate::block::{Block, BlockError, BlockState};
-use crate::tunable::*;
 use std::fs::File;
 use std::io;
 use std::io::{Read, Write};
@@ -84,10 +84,10 @@ impl Chain {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::always::*;
     use crate::block::MutBlock;
     use crate::pksign::SecretSigner;
     use crate::secretseed::Seed;
-    use crate::tunable::*;
     use blake3::Hash;
     use std::io::Seek;
     use tempfile::tempfile;
