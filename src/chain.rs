@@ -100,6 +100,14 @@ pub struct ChainStore {
 }
 
 impl ChainStore {
+    pub fn new(dir: PathBuf) -> Self {
+        Self { dir }
+    }
+
+    fn store_dir(&self) -> &Path {
+        &self.dir
+    }
+
     fn chain_filename(&self, chain_hash: &Hash) -> PathBuf {
         let mut filename = self.dir.clone();
         filename.push(format!("{chain_hash}"));
@@ -115,6 +123,11 @@ impl ChainStore {
         let filename = self.chain_filename(chain_hash);
         create_for_append(&filename)
     }
+
+    pub fn open_chain(&self, chain_hash: &Hash) -> io::Result<Chain> {
+        let filename = self.open_chain_file(chain_hash)?;
+        Err(io::Error::other("zounds"))
+    }
 }
 
 #[cfg(test)]
@@ -126,7 +139,7 @@ mod tests {
     use crate::secretseed::Seed;
     use blake3::Hash;
     use std::io::Seek;
-    use tempfile::tempfile;
+    use tempfile;
 
     fn dummy_block_state() -> BlockState {
         BlockState {
@@ -177,13 +190,13 @@ mod tests {
 
     #[test]
     fn test_chain_open() {
-        let mut file = tempfile().unwrap();
+        let mut file = tempfile::tempfile().unwrap();
         assert!(Chain::open(file.try_clone().unwrap()).is_err());
         file.write_all(&[69; BLOCK]).unwrap();
         file.rewind().unwrap();
         assert!(Chain::open(file.try_clone().unwrap()).is_err());
 
-        let mut file = tempfile().unwrap();
+        let mut file = tempfile::tempfile().unwrap();
         file.write_all(&new_valid_first_block()).unwrap();
         file.rewind().unwrap();
         let chain = Chain::open(file).unwrap();
@@ -191,7 +204,7 @@ mod tests {
 
     #[test]
     fn test_chain_read_next() {
-        let mut file = tempfile().unwrap();
+        let mut file = tempfile::tempfile().unwrap();
         let mut chain = Chain {
             file: file.try_clone().unwrap(),
             buf: [0; BLOCK],
@@ -210,7 +223,7 @@ mod tests {
     #[test]
     fn test_chainstore_chain_filename() {
         let dir = PathBuf::from("/tmp/stuff/junk");
-        let chainstore = ChainStore { dir };
+        let chainstore = ChainStore::new(dir);
         let chain_hash = Hash::from_bytes([42; 32]);
         assert_eq!(
             chainstore.chain_filename(&chain_hash),
@@ -218,5 +231,26 @@ mod tests {
                 "/tmp/stuff/junk/2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a"
             )
         );
+    }
+
+    #[test]
+    fn test_chainstore_open_chain_file() {
+        let tmpdir = tempfile::TempDir::new().unwrap();
+        let chainstore = ChainStore::new(tmpdir.path().to_owned());
+        let chain_hash = Hash::from_bytes([42; 32]);
+        assert!(chainstore.open_chain_file(&chain_hash).is_err()); // File does not exist yet
+
+        let filename = chainstore.chain_filename(&chain_hash);
+        create_for_append(&filename).unwrap();
+        assert!(chainstore.open_chain_file(&chain_hash).is_ok());
+    }
+
+    #[test]
+    fn test_chainstore_create_chain_file() {
+        let tmpdir = tempfile::TempDir::new().unwrap();
+        let chainstore = ChainStore::new(tmpdir.path().to_owned());
+        let chain_hash = Hash::from_bytes([42; 32]);
+        assert!(chainstore.create_chain_file(&chain_hash).is_ok());
+        assert!(chainstore.create_chain_file(&chain_hash).is_err()); // File already exists
     }
 }
