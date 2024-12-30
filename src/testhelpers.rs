@@ -1,6 +1,13 @@
 //! Some test fixtures that should really be split out into another crate.
 
 use blake3::Hash;
+use getrandom::getrandom;
+
+pub fn random_hash() -> Hash {
+    let mut buf = [0; 32];
+    getrandom(&mut buf).unwrap();
+    Hash::from_bytes(buf)
+}
 
 fn flip_bit(buf: &mut [u8], counter: usize) {
     let i = counter / 8;

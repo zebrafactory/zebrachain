@@ -125,18 +125,18 @@ impl ChainStore {
     }
 
     pub fn open_chain(&self, chain_hash: &Hash) -> io::Result<Chain> {
-        let filename = self.open_chain_file(chain_hash)?;
-        Err(io::Error::other("zounds"))
+        let file = self.open_chain_file(chain_hash)?;
+        Chain::open(file)
     }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::always::*;
     use crate::block::MutBlock;
     use crate::pksign::SecretSigner;
     use crate::secretseed::Seed;
+    use crate::testhelpers::random_hash;
     use blake3::Hash;
     use std::io::Seek;
     use tempfile;
@@ -237,7 +237,7 @@ mod tests {
     fn test_chainstore_open_chain_file() {
         let tmpdir = tempfile::TempDir::new().unwrap();
         let chainstore = ChainStore::new(tmpdir.path().to_owned());
-        let chain_hash = Hash::from_bytes([42; 32]);
+        let chain_hash = random_hash();
         assert!(chainstore.open_chain_file(&chain_hash).is_err()); // File does not exist yet
 
         let filename = chainstore.chain_filename(&chain_hash);
@@ -249,8 +249,16 @@ mod tests {
     fn test_chainstore_create_chain_file() {
         let tmpdir = tempfile::TempDir::new().unwrap();
         let chainstore = ChainStore::new(tmpdir.path().to_owned());
-        let chain_hash = Hash::from_bytes([42; 32]);
+        let chain_hash = random_hash();
         assert!(chainstore.create_chain_file(&chain_hash).is_ok());
         assert!(chainstore.create_chain_file(&chain_hash).is_err()); // File already exists
+    }
+
+    #[test]
+    fn test_chainstore_open_chain() {
+        let tmpdir = tempfile::TempDir::new().unwrap();
+        let chainstore = ChainStore::new(tmpdir.path().to_path_buf());
+        let chain_hash = random_hash();
+        assert!(chainstore.open_chain(&chain_hash).is_err());
     }
 }
