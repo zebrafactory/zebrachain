@@ -136,7 +136,7 @@ impl<'a> MutSecretBlock<'a> {
 mod tests {
 
     use super::*;
-    use crate::misc::{BitFlipper, HashBitFlipper};
+    use crate::testhelpers::{BitFlipper, HashBitFlipper};
 
     fn valid_secret_block() -> [u8; SECRET_BLOCK] {
         let mut buf = [0; SECRET_BLOCK];
