@@ -118,10 +118,6 @@ impl ChainStore {
         Self { dir }
     }
 
-    fn store_dir(&self) -> &Path {
-        &self.dir
-    }
-
     fn chain_filename(&self, chain_hash: &Hash) -> PathBuf {
         let mut filename = self.dir.clone();
         filename.push(format!("{chain_hash}"));
