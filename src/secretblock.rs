@@ -30,6 +30,7 @@ fn set_hash(buf: &mut [u8], index: usize, value: &Hash) {
     buf[range].copy_from_slice(value.as_bytes());
 }
 
+/// Wire format for saving secret chain to nonvolatile storage.
 #[derive(Debug, PartialEq)]
 pub struct SecretBlock {
     pub block_hash: Hash,
@@ -84,17 +85,30 @@ impl SecretBlock {
     }
 }
 
+/// Expresses different error conditions hit when validating a [SecretBlock].
 #[derive(Debug, PartialEq)]
 pub enum SecretBlockError {
+    /// Hash of block content does not match hash in block.
     Content,
+
+    /// Block contains a bad seed where `secret == next_secret`.
     Seed,
+
+    /// Block is out of sequence (`seed.secret != previous.next_secret`).
     SeedSequence,
+
+    /// Hash in block does not match expected external value.
     Hash,
+
+    /// Previous hash does not match expected external value.
     PreviousHash,
 }
 
+/// Alias for `Result<SecretBlock, SecretBlockError`.
 pub type SecretBlockResult = Result<SecretBlock, SecretBlockError>;
 
+
+/// Builds a new [SecretBlock] up in a buffer.
 #[derive(Debug)]
 pub struct MutSecretBlock<'a> {
     buf: &'a mut [u8],

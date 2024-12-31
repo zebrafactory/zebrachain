@@ -11,7 +11,9 @@ use std::path::Path;
 
 /// Create a new file for read + append.
 ///
-/// This will return an `Err` if this path already exists.
+/// # Errors
+///
+/// This will return an `Err` if the path already exists.
 pub fn create_for_append(path: &Path) -> io::Result<File> {
     File::options()
         .read(true)
@@ -22,7 +24,9 @@ pub fn create_for_append(path: &Path) -> io::Result<File> {
 
 /// Open an existing file for read + append.
 ///
-/// This will return an `Err` if the path does not exist.
+/// # Errors
+///
+/// This will return an `Err` if the path is not a file.
 pub fn open_for_append(path: &Path) -> io::Result<File> {
     File::options().read(true).append(true).open(path)
 }

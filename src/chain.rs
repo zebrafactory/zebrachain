@@ -18,6 +18,7 @@ Walk chain till last block.
 
 */
 
+/// Stores state of starting and and ending block.
 pub struct ChainState {
     pub head: BlockState,
     pub tail: BlockState,
@@ -47,6 +48,7 @@ impl ChainState {
     }
 }
 
+/// Read and write blocks to a file.
 pub struct Chain {
     file: File,
     buf: [u8; BLOCK],
@@ -98,6 +100,7 @@ impl Chain {
     }
 }
 
+/// Organizes [Chain] files in a directory.
 pub struct ChainStore {
     dir: PathBuf,
 }
