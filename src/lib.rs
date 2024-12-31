@@ -5,6 +5,7 @@
 pub mod always;
 pub mod block;
 pub mod chain;
+pub mod fsutil;
 pub mod pksign;
 pub mod secretblock;
 pub mod secretchain;

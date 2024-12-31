@@ -24,7 +24,7 @@ pub enum BlockError {
     /// Previous hash does not match expected external value.
     PreviousHash,
 
-    /// Hash of chain namespace is wrong
+    /// Chain hash does not match expected external value.
     ChainHash,
 }
 

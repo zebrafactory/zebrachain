@@ -2,6 +2,7 @@
 
 use crate::always::*;
 use crate::block::{Block, BlockError, BlockState};
+use crate::fsutil::{create_for_append, open_for_append};
 use blake3::Hash;
 use std::fs::File;
 use std::io;
@@ -97,18 +98,6 @@ impl Chain {
     }
 }
 
-pub fn create_for_append(path: &Path) -> io::Result<File> {
-    File::options()
-        .read(true)
-        .append(true)
-        .create_new(true)
-        .open(path)
-}
-
-pub fn open_for_append(path: &Path) -> io::Result<File> {
-    File::options().read(true).append(true).open(path)
-}
-
 pub struct ChainStore {
     dir: PathBuf,
 }
@@ -140,6 +129,7 @@ impl ChainStore {
     }
 
     pub fn create_chain(&self, block: &Block) -> io::Result<Chain> {
+        // FIXME: check that this is a valid first block (counter=0)
         let chain_hash = block.state().effective_chain_hash();
         let file = self.create_chain_file(&chain_hash)?;
         Chain::create(file, block)
