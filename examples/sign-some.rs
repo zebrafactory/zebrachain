@@ -1,24 +1,30 @@
 use blake3::Hash;
 use std::io::prelude::*;
 use tempfile;
-use zebrachain::chain::Chain;
-use zebrachain::pksign::SigningChain;
+use zebrachain::always::*;
+use zebrachain::chain::{Chain, ChainStore};
+use zebrachain::pksign::{create_first_block, SigningChain};
 use zebrachain::secretseed::Seed;
 
-fn main() {
-    let mut states: Vec<Hash> = Vec::new();
+fn build_state_hashes() -> Vec<Hash> {
+    let mut states = Vec::new();
     for i in 0u8..=255 {
         states.push(Hash::from_bytes([i; 32]));
     }
+    states
+}
 
-    let states = states;
+fn main() {
+    let states = build_state_hashes();
+    let tmpdir = tempfile::TempDir::new().unwrap();
+    let cs = ChainStore::new(tmpdir.path().to_path_buf());
 
     let mut seed = Seed::auto_create();
-    let mut file = tempfile::tempfile().unwrap();
-    let mut sc = SigningChain::start(&seed, &states[0]);
-    file.write_all(sc.as_buf()).unwrap();
-    file.rewind().unwrap();
-    let mut chain = Chain::open(file).unwrap();
+    let mut buf = [0; BLOCK];
+    let block = create_first_block(&mut buf, &seed, &states[0]);
+    let mut chain = cs.create_chain(&block).unwrap();
+    let mut sc = SigningChain::resume(block.state());
+
     println!(
         "{} {} {}",
         chain.state.tail.chain_hash, chain.state.tail.block_hash, &states[0]

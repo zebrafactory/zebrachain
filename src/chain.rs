@@ -31,6 +31,13 @@ impl ChainState {
         })
     }
 
+    pub fn from_block(block: &Block) -> Self {
+        Self {
+            head: block.state(),
+            tail: block.state(),
+        }
+    }
+
     pub fn append(&mut self, buf: &[u8]) -> Result<(), BlockError> {
         let block = Block::from_previous(buf, &self.tail)?;
         self.tail = block.state();
@@ -53,6 +60,13 @@ impl Chain {
             Ok(state) => Ok(Self { file, buf, state }),
             Err(err) => Err(io::Error::other(format!("{err:?}"))),
         }
+    }
+
+    pub fn create(mut file: File, block: &Block) -> io::Result<Self> {
+        file.write_all(block.as_buf())?;
+        let buf = [0; BLOCK];
+        let state = ChainState::from_block(block);
+        Ok(Self { file, buf, state })
     }
 
     fn read_next(&mut self) -> io::Result<()> {
@@ -127,6 +141,12 @@ impl ChainStore {
     pub fn open_chain(&self, chain_hash: &Hash) -> io::Result<Chain> {
         let file = self.open_chain_file(chain_hash)?;
         Chain::open(file)
+    }
+
+    pub fn create_chain(&self, block: &Block) -> io::Result<Chain> {
+        let chain_hash = block.state().effective_chain_hash();
+        let file = self.create_chain_file(&chain_hash)?;
+        Chain::create(file, block)
     }
 }
 

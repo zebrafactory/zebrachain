@@ -88,7 +88,7 @@ impl SecretSigner {
         Finally, the byte representation of the signature is copied into
         SIGNATURE_RANGE.
 
-        The SecrectSignner should not compute or set the block hash.
+        The SecrectSigner should not compute or set the block hash.
     */
 
     pub fn sign(self, block: &mut MutBlock) {
@@ -134,6 +134,14 @@ impl SigningChain {
         let block = Block::from_hash(&self.buf, block_hash).unwrap();
         self.tail = block.state();
     }
+}
+
+pub fn create_first_block<'a>(buf: &'a mut [u8], seed: &Seed, state_hash: &Hash) -> Block<'a> {
+    let mut block = MutBlock::new(buf, state_hash);
+    let secsign = SecretSigner::new(seed);
+    secsign.sign(&mut block);
+    let block_hash = block.finalize();
+    Block::from_hash(buf, block_hash).unwrap()
 }
 
 #[cfg(test)]

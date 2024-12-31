@@ -75,6 +75,10 @@ impl<'a> Block<'a> {
         Self { buf }
     }
 
+    pub fn as_buf(&self) -> &[u8] {
+        self.buf
+    }
+
     pub fn open(buf: &'a [u8]) -> BlockResult<'a> {
         let block = Block::new(buf);
         if !block.content_is_valid() {
