@@ -39,9 +39,8 @@ fn main() {
         );
         seed.commit(next);
     }
-    let mut file = chain.into_file();
-    file.rewind().unwrap();
-    let mut chain = Chain::open(file).unwrap();
+    let chain_hash = chain.state.head.block_hash;
+    let mut chain = cs.open_chain(&chain_hash).unwrap();
     chain.validate().unwrap();
 }
 

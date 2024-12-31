@@ -31,7 +31,7 @@ impl ChainState {
         })
     }
 
-    pub fn from_block(block: &Block) -> Self {
+    pub fn from_first_block(block: &Block) -> Self {
         Self {
             head: block.state(),
             tail: block.state(),
@@ -65,7 +65,7 @@ impl Chain {
     pub fn create(mut file: File, block: &Block) -> io::Result<Self> {
         file.write_all(block.as_buf())?;
         let buf = [0; BLOCK];
-        let state = ChainState::from_block(block);
+        let state = ChainState::from_first_block(block);
         Ok(Self { file, buf, state })
     }
 
