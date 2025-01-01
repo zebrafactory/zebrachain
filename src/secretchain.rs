@@ -1,12 +1,14 @@
 //! Read and write secret blocks in a chain.
 
 use crate::always::*;
+use crate::fsutil::{build_filename, create_for_append, open_for_append};
 use crate::secretblock::{MutSecretBlock, SecretBlock};
 use crate::secretseed::Seed;
 use blake3::Hash;
 use std::fs::File;
 use std::io;
 use std::io::{Read, Write};
+use std::path::{Path, PathBuf};
 
 /// Save secret chain to non-volitile storage.
 ///
@@ -79,6 +81,23 @@ impl SecretChain {
 
     pub fn into_file(self) -> File {
         self.file
+    }
+}
+
+/// Organizes [SecretChain] files in a directory.
+pub struct SecretChainStore {
+    dir: PathBuf,
+}
+
+impl SecretChainStore {
+    pub fn new(dir: PathBuf) -> Self {
+        Self { dir }
+    }
+
+    pub fn open_chain(&self, chain_hash: &Hash) -> io::Result<SecretChain> {
+        let filename = build_filename(&self.dir, chain_hash);
+        let file = open_for_append(&filename)?;
+        SecretChain::open(file)
     }
 }
 

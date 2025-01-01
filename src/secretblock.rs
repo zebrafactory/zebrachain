@@ -107,7 +107,6 @@ pub enum SecretBlockError {
 /// Alias for `Result<SecretBlock, SecretBlockError`.
 pub type SecretBlockResult = Result<SecretBlock, SecretBlockError>;
 
-
 /// Builds a new [SecretBlock] up in a buffer.
 #[derive(Debug)]
 pub struct MutSecretBlock<'a> {
