@@ -100,7 +100,7 @@ pub enum SecretBlockError {
     /// Hash in block does not match expected external value.
     Hash,
 
-    /// Previous hash does not match expected external value.
+    /// Previous hash in block does not match expected external value.
     PreviousHash,
 }
 

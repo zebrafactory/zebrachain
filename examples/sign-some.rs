@@ -4,6 +4,7 @@ use tempfile;
 use zebrachain::always::*;
 use zebrachain::chain::{Chain, ChainStore};
 use zebrachain::pksign::{create_first_block, SigningChain};
+use zebrachain::secretchain::SecretChainStore;
 use zebrachain::secretseed::Seed;
 
 fn build_state_hashes() -> Vec<Hash> {
@@ -22,6 +23,7 @@ fn main() {
     let mut seed = Seed::auto_create();
     let mut buf = [0; BLOCK];
     let block = create_first_block(&mut buf, &seed, &states[0]);
+    let chain_hash = block.chain_hash();
     let mut chain = cs.create_chain(&block).unwrap();
     let mut sc = SigningChain::resume(block.state());
 
@@ -42,6 +44,17 @@ fn main() {
     let chain_hash = chain.state.head.block_hash;
     let mut chain = cs.open_chain(&chain_hash).unwrap();
     chain.validate().unwrap();
+
+    let tmpdir2 = tempfile::TempDir::new().unwrap();
+    let scs = SecretChainStore::new(tmpdir2.path().to_path_buf());
+    let seed = Seed::auto_create();
+    let chain_hash = Hash::from_bytes([42; 32]);
+    let state_hash = Hash::from_bytes([69; 32]);
+    let mut secretchain = scs.create_chain(&chain_hash, seed, &state_hash).unwrap();
+    for state_hash in states {
+        let next = secretchain.auto_advance();
+        secretchain.commit(next, &state_hash).unwrap();
+    }
 }
 
 /*

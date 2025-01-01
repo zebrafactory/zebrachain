@@ -66,6 +66,10 @@ impl SecretChain {
         self.seed.advance(new_entropy)
     }
 
+    pub fn auto_advance(&self) -> Seed {
+        self.seed.auto_advance()
+    }
+
     pub fn commit(&mut self, seed: Seed, state_hash: &Hash) -> io::Result<()> {
         let mut buf = [0; SECRET_BLOCK];
         let mut block = MutSecretBlock::new(&mut buf);
@@ -98,6 +102,17 @@ impl SecretChainStore {
         let filename = build_filename(&self.dir, chain_hash);
         let file = open_for_append(&filename)?;
         SecretChain::open(file)
+    }
+
+    pub fn create_chain(
+        &self,
+        chain_hash: &Hash,
+        seed: Seed,
+        state_hash: &Hash,
+    ) -> io::Result<SecretChain> {
+        let filename = build_filename(&self.dir, chain_hash);
+        let file = create_for_append(&filename)?;
+        SecretChain::create(file, seed, state_hash)
     }
 }
 
