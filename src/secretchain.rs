@@ -8,7 +8,7 @@ use blake3::Hash;
 use std::fs::File;
 use std::io;
 use std::io::{Read, Write};
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 
 /// Save secret chain to non-volitile storage.
 ///

@@ -7,15 +7,14 @@ use blake3::Hash;
 use std::fs::File;
 use std::io;
 use std::io::{Read, Write};
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 
 /*
 For now we will fully validate all chains when opening them.
 
 Validate first block
-Check againts external first block hash
+Check againt external first block hash
 Walk chain till last block.
-
 */
 
 /// Stores state of starting and and ending block.

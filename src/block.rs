@@ -6,6 +6,12 @@ use blake3::{hash, Hash};
 
 static ZERO_HASH: Hash = Hash::from_bytes([0; 32]);
 
+fn check_block_buf(buf: &[u8]) {
+    if buf.len() != BLOCK {
+        panic!("Need a {BLOCK} byte slice; got {} bytes", buf.len());
+    }
+}
+
 /// Expresses different error conditions hit during block validation.
 #[derive(Debug, PartialEq)]
 pub enum BlockError {
@@ -69,9 +75,7 @@ pub struct Block<'a> {
 
 impl<'a> Block<'a> {
     fn new(buf: &'a [u8]) -> Self {
-        if buf.len() != BLOCK {
-            panic!("Need a {BLOCK} byte slice; got {} bytes", buf.len());
-        }
+        check_block_buf(buf);
         Self { buf }
     }
 
@@ -196,9 +200,7 @@ pub struct MutBlock<'a> {
 
 impl<'a> MutBlock<'a> {
     pub fn new(buf: &'a mut [u8], state_hash: &Hash) -> Self {
-        if buf.len() != BLOCK {
-            panic!("Need a {BLOCK} byte slice; got {} bytes", buf.len());
-        }
+        check_block_buf(buf);
         buf.fill(0);
         buf[STATE_HASH_RANGE].copy_from_slice(state_hash.as_bytes());
         Self { buf }

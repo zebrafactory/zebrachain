@@ -10,7 +10,7 @@ const NEXT_SECRET_INDEX: usize = 2;
 const STATE_INDEX: usize = 3;
 const PREVIOUS_INDEX: usize = 4;
 
-fn check_secret_buf(buf: &[u8]) {
+fn check_secretblock_buf(buf: &[u8]) {
     if buf.len() != SECRET_BLOCK {
         panic!("Need a {SECRET_BLOCK} byte slice; got {} bytes", buf.len());
     }
@@ -46,7 +46,7 @@ impl SecretBlock {
     }
 
     pub fn open(buf: &[u8]) -> SecretBlockResult {
-        check_secret_buf(buf);
+        check_secretblock_buf(buf);
         let computed_hash = hash(&buf[DIGEST..]);
         let block = SecretBlock {
             block_hash: get_hash(buf, 0),
@@ -115,7 +115,7 @@ pub struct MutSecretBlock<'a> {
 
 impl<'a> MutSecretBlock<'a> {
     pub fn new(buf: &'a mut [u8]) -> Self {
-        check_secret_buf(buf);
+        check_secretblock_buf(buf);
         buf.fill(0);
         Self { buf }
     }
@@ -163,24 +163,24 @@ mod tests {
     }
 
     #[test]
-    fn test_check_secret_buf() {
+    fn test_check_secretblock_buf() {
         let buf = [0; SECRET_BLOCK];
-        check_secret_buf(&buf);
+        check_secretblock_buf(&buf);
         assert_eq!(buf, [0; SECRET_BLOCK]);
     }
 
     #[test]
     #[should_panic(expected = "Need a 160 byte slice; got 159 bytes")]
-    fn test_check_secret_buf_panic_low() {
+    fn test_check_secretblock_buf_panic_low() {
         let buf = [0; SECRET_BLOCK - 1];
-        check_secret_buf(&buf);
+        check_secretblock_buf(&buf);
     }
 
     #[test]
     #[should_panic(expected = "Need a 160 byte slice; got 161 bytes")]
-    fn test_check_secret_buf_panic_high() {
+    fn test_check_secretblock_buf_panic_high() {
         let buf = [0; SECRET_BLOCK + 1];
-        check_secret_buf(&buf);
+        check_secretblock_buf(&buf);
     }
 
     #[test]
