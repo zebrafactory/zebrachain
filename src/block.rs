@@ -463,6 +463,7 @@ mod tests {
                 assert!(!block.signature_is_valid());
             } else {
                 assert!(block.signature_is_valid());
+                assert!(!block.content_is_valid());
             }
         }
     }

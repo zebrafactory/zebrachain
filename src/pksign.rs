@@ -147,7 +147,8 @@ pub fn create_first_block<'a>(buf: &'a mut [u8], seed: &Seed, state_hash: &Hash)
 #[cfg(test)]
 mod tests {
     use super::*;
-    use pqcrypto_dilithium::dilithium3;
+    use pqc_dilithium;
+    use pqcrypto_dilithium;
 
     static HEX0: &str = "27ed25c29cfa0c0b5667f9e1bdd6eec1385e815776a4dc8379141da13afa98e1";
 
@@ -161,13 +162,20 @@ mod tests {
     }
 
     #[test]
-    fn test_dilithium() {
-        // FIXME: We need an API that allows us to generate from a seed
-        let msg = b"hello";
-        let (pk, sk) = dilithium3::keypair();
-        let sm = dilithium3::sign(msg, &sk);
-        let vmsg = dilithium3::open(&sm, &pk).unwrap();
+    fn test_pqcrypto_dilithium() {
+        let msg = b"Wish this API let me provide the entropy used to generate the key";
+        let (pk, sk) = pqcrypto_dilithium::dilithium3::keypair();
+        let sm = pqcrypto_dilithium::dilithium3::sign(msg, &sk);
+        let vmsg = pqcrypto_dilithium::dilithium3::open(&sm, &pk).unwrap();
         assert_eq!(vmsg, msg);
+    }
+
+    #[test]
+    fn test_pqc_dilithium() {
+        let msg = b"Wish this API let me provide the entropy used to generate the key";
+        let kp = pqc_dilithium::Keypair::generate();
+        let sig = kp.sign(msg);
+        assert!(pqc_dilithium::verify(&sig, msg, &kp.public).is_ok());
     }
 
     #[test]
