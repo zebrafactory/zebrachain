@@ -250,7 +250,7 @@ mod tests {
     use super::*;
     use crate::pksign::SecretSigner;
     use crate::secretseed::Seed;
-    use crate::testhelpers::BitFlipper;
+    use crate::testhelpers::{BitFlipper, HashBitFlipper};
 
     const EXPECTED: &str = "1235a30e9a3086fa131087c5683eeaa5e4733dfa28fe610d4ed2b76e114011c7";
 
@@ -353,10 +353,8 @@ mod tests {
         let buf = new_valid_block();
         let good = Block::open(&buf[..]).unwrap().hash();
         assert!(Block::from_hash(&buf[..], good).is_ok());
-        for bad in BitFlipper::new(good.as_bytes()) {
-            let bytes: [u8; 32] = bad[..].try_into().unwrap();
-            let h = Hash::from_bytes(bytes);
-            assert_eq!(Block::from_hash(&buf[..], h), Err(BlockError::Hash));
+        for bad in HashBitFlipper::new(&good) {
+            assert_eq!(Block::from_hash(&buf[..], bad), Err(BlockError::Hash));
         }
     }
 
@@ -375,19 +373,15 @@ mod tests {
 
         let next_pubkey_hash = block.compute_pubkey_hash();
         let previous_hash = block.previous_hash();
-        for bad in BitFlipper::new(next_pubkey_hash.as_bytes()) {
-            let bytes: [u8; 32] = bad[..].try_into().unwrap();
-            let h = Hash::from_bytes(bytes);
-            let state = BlockState::new(previous_hash, block.chain_hash(), h);
+        for bad in HashBitFlipper::new(&next_pubkey_hash) {
+            let state = BlockState::new(previous_hash, block.chain_hash(), bad);
             assert_eq!(
                 Block::from_previous(&buf[..], &state),
                 Err(BlockError::PubKeyHash)
             );
         }
-        for bad in BitFlipper::new(previous_hash.as_bytes()) {
-            let bytes: [u8; 32] = bad[..].try_into().unwrap();
-            let h = Hash::from_bytes(bytes);
-            let state = BlockState::new(h, block.chain_hash(), next_pubkey_hash);
+        for bad in HashBitFlipper::new(&previous_hash) {
+            let state = BlockState::new(bad, block.chain_hash(), next_pubkey_hash);
             assert_eq!(
                 Block::from_previous(&buf[..], &state),
                 Err(BlockError::PreviousHash)
