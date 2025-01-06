@@ -353,6 +353,25 @@ mod tests {
         let buf = new_valid_block();
         let good = Block::open(&buf[..]).unwrap().hash();
         assert!(Block::from_hash(&buf[..], good).is_ok());
+
+        // Make sure Block::open() is getting called
+        for bad in BitFlipper::new(&buf[..]) {
+            assert_eq!(
+                Block::from_hash(&bad[..], good.clone()),
+                Err(BlockError::Content)
+            );
+        }
+        for badend in BitFlipper::new(&buf[DIGEST..]) {
+            let mut badbuf = [0; BLOCK];
+            badbuf[0..DIGEST].copy_from_slice(hash(&badend).as_bytes());
+            badbuf[DIGEST..].copy_from_slice(&badend);
+            assert_eq!(
+                Block::from_hash(&badbuf, good.clone()),
+                Err(BlockError::Signature)
+            );
+        }
+
+        // Block::from_hash() specific error
         for bad in HashBitFlipper::new(&good) {
             assert_eq!(Block::from_hash(&buf[..], bad), Err(BlockError::Hash));
         }
