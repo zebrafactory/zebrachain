@@ -113,7 +113,7 @@ impl SigningChain {
         let secsign = SecretSigner::new(seed);
         secsign.sign(&mut block);
         let block_hash = block.finalize();
-        let block = Block::from_hash(&buf, block_hash).unwrap();
+        let block = Block::from_hash(&buf, &block_hash).unwrap();
         let tail = block.state();
         Self { buf, tail }
     }
@@ -131,7 +131,7 @@ impl SigningChain {
         let secsign = SecretSigner::new(seed);
         secsign.sign(&mut block);
         let block_hash = block.finalize();
-        let block = Block::from_hash(&self.buf, block_hash).unwrap();
+        let block = Block::from_hash(&self.buf, &block_hash).unwrap();
         self.tail = block.state();
     }
 }
@@ -141,7 +141,7 @@ pub fn create_first_block<'a>(buf: &'a mut [u8], seed: &Seed, state_hash: &Hash)
     let secsign = SecretSigner::new(seed);
     secsign.sign(&mut block);
     let block_hash = block.finalize();
-    Block::from_hash(buf, block_hash).unwrap()
+    Block::from_hash(buf, &block_hash).unwrap()
 }
 
 #[cfg(test)]

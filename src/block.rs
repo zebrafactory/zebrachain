@@ -94,9 +94,9 @@ impl<'a> Block<'a> {
         }
     }
 
-    pub fn from_hash(buf: &'a [u8], h: Hash) -> BlockResult<'a> {
+    pub fn from_hash(buf: &'a [u8], block_hash: &Hash) -> BlockResult<'a> {
         let block = Block::open(buf)?;
-        if h != block.hash() {
+        if block_hash != &block.hash() {
             Err(BlockError::Hash)
         } else {
             Ok(block)
@@ -352,28 +352,22 @@ mod tests {
     fn test_block_from_hash() {
         let buf = new_valid_block();
         let good = Block::open(&buf[..]).unwrap().hash();
-        assert!(Block::from_hash(&buf[..], good).is_ok());
+        assert!(Block::from_hash(&buf[..], &good).is_ok());
 
         // Make sure Block::open() is getting called
         for bad in BitFlipper::new(&buf[..]) {
-            assert_eq!(
-                Block::from_hash(&bad[..], good.clone()),
-                Err(BlockError::Content)
-            );
+            assert_eq!(Block::from_hash(&bad[..], &good), Err(BlockError::Content));
         }
         for badend in BitFlipper::new(&buf[DIGEST..]) {
             let mut badbuf = [0; BLOCK];
             badbuf[0..DIGEST].copy_from_slice(hash(&badend).as_bytes());
             badbuf[DIGEST..].copy_from_slice(&badend);
-            assert_eq!(
-                Block::from_hash(&badbuf, good.clone()),
-                Err(BlockError::Signature)
-            );
+            assert_eq!(Block::from_hash(&badbuf, &good), Err(BlockError::Signature));
         }
 
         // Block::from_hash() specific error
         for bad in HashBitFlipper::new(&good) {
-            assert_eq!(Block::from_hash(&buf[..], bad), Err(BlockError::Hash));
+            assert_eq!(Block::from_hash(&buf[..], &bad), Err(BlockError::Hash));
         }
     }
 
