@@ -387,6 +387,13 @@ mod tests {
                 Err(BlockError::PreviousHash)
             );
         }
+        for bad in HashBitFlipper::new(&block.chain_hash()) {
+            let state = BlockState::new(previous_hash, bad, next_pubkey_hash);
+            assert_eq!(
+                Block::from_previous(&buf[..], &state),
+                Err(BlockError::ChainHash)
+            );
+        }
     }
 
     #[test]
