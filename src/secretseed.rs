@@ -4,11 +4,9 @@
 //! comparison of [blake3::Hash] to be secure. Once the hash in configurable, we need to make sure
 //! whatever abstraction we use likewise ensures constant time comparison.
 
+use crate::always::*;
 use blake3::{keyed_hash, Hash, Hasher};
 use getrandom::getrandom;
-
-static SECRET_CONTEXT: &str = "foo";
-static NEXT_SECRET_CONTEXT: &str = "bar";
 
 pub fn random_hash() -> Hash {
     let mut buf = [0; 32];

@@ -42,6 +42,21 @@ A SecretBlock currently has 5 fields:
 
 pub const SECRET_BLOCK: usize = DIGEST * 5;
 
+pub static SECRET_CONTEXT: &str =
+    "ed149ef77826374035fd3a1e2c1bf3b39539333d5a8bc1f7e788736430efc7f2";
+
+pub static NEXT_SECRET_CONTEXT: &str =
+    "a0ec84dd51dabc0cfb7f61c936c8577c15982715b77ed5d6582cb01108769831";
+
+pub static ED25519_CONTEXT: &str =
+    "e3481172dcedab349a13152e9d002494f1ae292c868e049d93926c3a58a48408";
+
+pub static DILITHIUM_CONTEXT: &str =
+    "e665ee96123e46d74e76dc53bdc64df06d72c238d574b7c153305f5e63063350";
+
+pub static SPHINCSPLUS_CONTEXT: &str =
+    "b5de7bead4cac0fb4fe60cbb2ef31cb2c0590adb10f0764769cd5b0e0d7d11c1";
+
 #[cfg(test)]
 mod tests {
     use super::*;
