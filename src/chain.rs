@@ -141,8 +141,7 @@ mod tests {
     use super::*;
     use crate::block::MutBlock;
     use crate::pksign::SecretSigner;
-    use crate::secretseed::Seed;
-    use crate::testhelpers::random_hash;
+    use crate::secretseed::{random_hash, Seed};
     use blake3::Hash;
     use std::io::Seek;
     use tempfile;

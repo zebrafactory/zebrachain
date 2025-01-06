@@ -10,6 +10,12 @@ use getrandom::getrandom;
 static SECRET_CONTEXT: &str = "foo";
 static NEXT_SECRET_CONTEXT: &str = "bar";
 
+pub fn random_hash() -> Hash {
+    let mut buf = [0; 32];
+    getrandom(&mut buf).unwrap();
+    Hash::from_bytes(buf)
+}
+
 pub fn derive(context: &str, secret: &[u8; 32]) -> Hash {
     let mut hasher = Hasher::new_derive_key(context);
     hasher.update(secret);

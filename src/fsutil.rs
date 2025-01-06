@@ -54,7 +54,7 @@ pub fn open_for_append(path: &Path) -> io::Result<File> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::testhelpers::random_hash;
+    use crate::secretseed::random_hash;
     use tempfile;
 
     #[test]

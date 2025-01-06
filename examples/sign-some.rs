@@ -5,12 +5,13 @@ use zebrachain::always::*;
 use zebrachain::chain::{Chain, ChainStore};
 use zebrachain::pksign::{create_first_block, SigningChain};
 use zebrachain::secretchain::SecretChainStore;
-use zebrachain::secretseed::Seed;
+use zebrachain::secretseed::{random_hash, Seed};
 
 fn build_state_hashes() -> Vec<Hash> {
-    let mut states = Vec::new();
-    for i in 0u8..=255 {
-        states.push(Hash::from_bytes([i; 32]));
+    let count = 10000;
+    let mut states = Vec::with_capacity(count);
+    for i in 0..count {
+        states.push(random_hash());
     }
     states
 }
