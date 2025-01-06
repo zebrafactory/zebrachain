@@ -371,6 +371,23 @@ mod tests {
         );
         assert!(Block::from_previous(&buf[..], &state).is_ok());
 
+        // Make sure Block::open() is getting called
+        for bad in BitFlipper::new(&buf[..]) {
+            assert_eq!(
+                Block::from_previous(&bad[..], &state),
+                Err(BlockError::Content)
+            );
+        }
+        for badend in BitFlipper::new(&buf[DIGEST..]) {
+            let mut badbuf = [0; BLOCK];
+            badbuf[0..DIGEST].copy_from_slice(hash(&badend).as_bytes());
+            badbuf[DIGEST..].copy_from_slice(&badend);
+            assert_eq!(
+                Block::from_previous(&badbuf, &state),
+                Err(BlockError::Signature)
+            );
+        }
+
         let next_pubkey_hash = block.compute_pubkey_hash();
         let previous_hash = block.previous_hash();
         for bad in HashBitFlipper::new(&next_pubkey_hash) {
