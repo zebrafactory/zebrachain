@@ -116,7 +116,17 @@ mod tests {
     use std::collections::HashSet;
 
     #[test]
-    fn derive_key() {
+    fn test_random_hash() {
+        let count = 1024;
+        let mut hset = HashSet::new();
+        for _ in 0..count {
+            assert!(hset.insert(random_hash()));
+        }
+        assert_eq!(hset.len(), count);
+    }
+
+    #[test]
+    fn test_derive() {
         let secret = [7; 32];
 
         let h = derive("example0", &secret);
