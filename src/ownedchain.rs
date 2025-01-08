@@ -30,9 +30,18 @@ impl OwnedChainStore {
         }
     }
 
-    fn create_secret_chain(&self, seed: &Seed, chain_hash: &Hash, state_hash: &Hash) -> io::Result<Option<SecretChain>> {
+    fn create_secret_chain(
+        &self,
+        seed: &Seed,
+        chain_hash: &Hash,
+        state_hash: &Hash,
+    ) -> io::Result<Option<SecretChain>> {
         if let Some(secret_store) = self.secret_store.as_ref() {
-            Ok(Some(secret_store.create_chain(&chain_hash, &seed, state_hash)?))
+            Ok(Some(secret_store.create_chain(
+                &chain_hash,
+                &seed,
+                state_hash,
+            )?))
         } else {
             Ok(None)
         }
