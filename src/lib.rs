@@ -6,6 +6,7 @@ pub mod always;
 pub mod block;
 pub mod chain;
 pub mod fsutil;
+pub mod ownedchain;
 pub mod pksign;
 pub mod secretblock;
 pub mod secretchain;
