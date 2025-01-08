@@ -54,12 +54,11 @@ impl OwnedChain {
 
     pub fn sign_next(&mut self, state_hash: &Hash) -> io::Result<&BlockState> {
         let seed = self.secret_chain.auto_advance();
-        let state = &self.chain.state.tail;
         let mut buf = [0; BLOCK];
-        create_next_block(&mut buf, &seed, state_hash, state);
-        let ret = self.chain.append(&buf);
+        create_next_block(&mut buf, &seed, state_hash, self.tail());
+        let ret = self.chain.append(&buf)?;
         self.secret_chain.commit(seed, state_hash)?;
-        ret
+        Ok(ret)
     }
 
     pub fn tail(&self) -> &BlockState {

@@ -183,6 +183,6 @@ mod tests {
         let mut chain = SecretChain::create(file, seed, &state_hash).unwrap();
         let next = chain.advance(&entropy);
         let next_next = next.advance(&entropy);
-        chain.commit(next_next, &state_hash);
+        chain.commit(next_next, &state_hash).unwrap();
     }
 }
