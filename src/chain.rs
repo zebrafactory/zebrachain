@@ -7,7 +7,7 @@ use blake3::Hash;
 use std::fs::File;
 use std::io;
 use std::io::{Read, Write};
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 /*
 For now we will fully validate all chains when opening them.
@@ -105,8 +105,10 @@ pub struct ChainStore {
 }
 
 impl ChainStore {
-    pub fn new(dir: PathBuf) -> Self {
-        Self { dir }
+    pub fn new(dir: &Path) -> Self {
+        Self {
+            dir: dir.to_path_buf(),
+        }
     }
 
     fn chain_filename(&self, chain_hash: &Hash) -> PathBuf {
@@ -228,7 +230,7 @@ mod tests {
     #[test]
     fn test_chainstore_chain_filename() {
         let dir = PathBuf::from("/tmp/stuff/junk");
-        let chainstore = ChainStore::new(dir);
+        let chainstore = ChainStore::new(&dir);
         let chain_hash = Hash::from_bytes([42; 32]);
         assert_eq!(
             chainstore.chain_filename(&chain_hash),
@@ -241,7 +243,7 @@ mod tests {
     #[test]
     fn test_chainstore_open_chain_file() {
         let tmpdir = tempfile::TempDir::new().unwrap();
-        let chainstore = ChainStore::new(tmpdir.path().to_owned());
+        let chainstore = ChainStore::new(tmpdir.path());
         let chain_hash = random_hash();
         assert!(chainstore.open_chain_file(&chain_hash).is_err()); // File does not exist yet
 
@@ -253,7 +255,7 @@ mod tests {
     #[test]
     fn test_chainstore_create_chain_file() {
         let tmpdir = tempfile::TempDir::new().unwrap();
-        let chainstore = ChainStore::new(tmpdir.path().to_owned());
+        let chainstore = ChainStore::new(tmpdir.path());
         let chain_hash = random_hash();
         assert!(chainstore.create_chain_file(&chain_hash).is_ok());
         assert!(chainstore.create_chain_file(&chain_hash).is_err()); // File already exists
@@ -262,7 +264,7 @@ mod tests {
     #[test]
     fn test_chainstore_open_chain() {
         let tmpdir = tempfile::TempDir::new().unwrap();
-        let chainstore = ChainStore::new(tmpdir.path().to_path_buf());
+        let chainstore = ChainStore::new(tmpdir.path());
         let chain_hash = random_hash();
         assert!(chainstore.open_chain(&chain_hash).is_err());
     }

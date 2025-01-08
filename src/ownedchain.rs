@@ -18,7 +18,7 @@ pub struct SignerMajig {
 impl SignerMajig {
     pub fn new(dir: &Path) -> Self {
         Self {
-            store: ChainStore::new(dir.to_path_buf()),
+            store: ChainStore::new(dir),
         }
     }
 
