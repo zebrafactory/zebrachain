@@ -19,14 +19,9 @@ pub struct OwnedChainStore {
 
 impl OwnedChainStore {
     pub fn new(chain_dir: &Path, secret_chain_dir: Option<&Path>) -> Self {
-        let secret_store = if let Some(dir) = secret_chain_dir {
-            Some(SecretChainStore::new(dir))
-        } else {
-            None
-        };
         Self {
             store: ChainStore::new(chain_dir),
-            secret_store,
+            secret_store: secret_chain_dir.map(SecretChainStore::new),
         }
     }
 
