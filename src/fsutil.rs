@@ -55,7 +55,21 @@ pub fn open_for_append(path: &Path) -> io::Result<File> {
 mod tests {
     use super::*;
     use crate::secretseed::random_hash;
+    use std::collections::HashSet;
     use tempfile;
+
+    #[test]
+    fn test_build_filename() {
+        let count = 1776;
+        let mut names = HashSet::new();
+        let dir = PathBuf::from("/stuff/junk");
+        for _ in 0..count {
+            let pb = build_filename(&dir, &random_hash());
+            assert!(names.insert(pb));
+        }
+        assert!(names.insert(dir));
+        assert_eq!(names.len(), count + 1);
+    }
 
     #[test]
     fn test_create_for_append() {
