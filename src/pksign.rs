@@ -135,7 +135,7 @@ impl SigningChain {
     }
 }
 
-pub fn create_first_block<'a>(buf: &'a mut [u8], seed: &Seed, state_hash: &Hash) -> Block<'a> {
+pub fn sign_first_block<'a>(buf: &'a mut [u8], seed: &Seed, state_hash: &Hash) -> Block<'a> {
     let mut block = MutBlock::new(buf, state_hash);
     let secsign = SecretSigner::new(seed);
     secsign.sign(&mut block);
@@ -143,7 +143,7 @@ pub fn create_first_block<'a>(buf: &'a mut [u8], seed: &Seed, state_hash: &Hash)
     Block::from_hash(buf, &block_hash).unwrap()
 }
 
-pub fn create_next_block<'a>(
+pub fn sign_next_block<'a>(
     buf: &'a mut [u8],
     seed: &Seed,
     state_hash: &Hash,
