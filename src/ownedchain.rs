@@ -33,34 +33,32 @@ impl OwnedChainStore {
         let chain_hash = block.hash();
         let secret_chain = self
             .secret_store
-            .create_chain(&chain_hash, seed.clone(), state_hash)?;
-        Ok(OwnedChain::new(seed, chain, secret_chain))
+            .create_chain(&chain_hash, seed, state_hash)?;
+        Ok(OwnedChain::new(chain, secret_chain))
     }
 }
 
 /// Sign new blocks in an owned chain.
 pub struct OwnedChain {
-    seed: Seed,
     chain: Chain,
     secret_chain: SecretChain,
 }
 
 impl OwnedChain {
-    pub fn new(seed: Seed, chain: Chain, secret_chain: SecretChain) -> Self {
+    pub fn new(chain: Chain, secret_chain: SecretChain) -> Self {
         Self {
-            seed,
             chain,
             secret_chain,
         }
     }
 
     pub fn sign_next(&mut self, state_hash: &Hash) -> io::Result<&BlockState> {
-        let seed = self.seed.auto_advance();
+        let seed = self.secret_chain.auto_advance();
         let state = &self.chain.state.tail;
         let mut buf = [0; BLOCK];
         create_next_block(&mut buf, &seed, state_hash, state);
         let ret = self.chain.append(&buf);
-        self.seed.commit(seed);
+        self.secret_chain.commit(seed, state_hash)?;
         ret
     }
 
