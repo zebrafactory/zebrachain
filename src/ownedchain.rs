@@ -34,7 +34,7 @@ impl OwnedChainStore {
         let secret_chain = self
             .secret_store
             .create_chain(&chain_hash, &seed, state_hash)?;
-        Ok(OwnedChain::new(seed, chain, secret_chain))
+        Ok(OwnedChain::new(seed, chain, Some(secret_chain)))
     }
 }
 
@@ -42,11 +42,11 @@ impl OwnedChainStore {
 pub struct OwnedChain {
     seed: Seed,
     chain: Chain,
-    secret_chain: SecretChain,
+    secret_chain: Option<SecretChain>,
 }
 
 impl OwnedChain {
-    pub fn new(seed: Seed, chain: Chain, secret_chain: SecretChain) -> Self {
+    pub fn new(seed: Seed, chain: Chain, secret_chain: Option<SecretChain>) -> Self {
         Self {
             seed,
             chain,
@@ -58,8 +58,10 @@ impl OwnedChain {
         let seed = self.seed.auto_advance();
         let mut buf = [0; BLOCK];
         sign_next_block(&mut buf, &seed, state_hash, self.tail());
+        if let Some(secret_chain) = self.secret_chain.as_mut() {
+            secret_chain.commit(&seed, state_hash)?;
+        }
         let ret = self.chain.append(&buf)?;
-        self.secret_chain.commit(&seed, state_hash)?;
         self.seed.commit(seed);
         Ok(ret)
     }

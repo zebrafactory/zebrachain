@@ -35,10 +35,7 @@ impl SecretChain {
         block.set_state_hash(state_hash);
         let block = block.finalize();
         file.write_all(&buf)?;
-        Ok(Self {
-            file,
-            tail: block,
-        })
+        Ok(Self { file, tail: block })
     }
 
     pub fn open(mut file: File) -> io::Result<Self> {
@@ -48,10 +45,7 @@ impl SecretChain {
         while file.read_exact(&mut buf).is_ok() {
             block = SecretBlock::from_previous(&buf, &block).unwrap();
         }
-        Ok(Self {
-            file,
-            tail: block,
-        })
+        Ok(Self { file, tail: block })
     }
 
     pub fn tail(&self) -> &SecretBlock {
