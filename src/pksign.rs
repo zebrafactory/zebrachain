@@ -143,6 +143,20 @@ pub fn create_first_block<'a>(buf: &'a mut [u8], seed: &Seed, state_hash: &Hash)
     Block::from_hash(buf, &block_hash).unwrap()
 }
 
+pub fn create_next_block<'a>(
+    buf: &'a mut [u8],
+    seed: &Seed,
+    state_hash: &Hash,
+    last: &BlockState,
+) -> Block<'a> {
+    let mut block = MutBlock::new(buf, state_hash);
+    block.set_previous(last);
+    let secsign = SecretSigner::new(seed);
+    secsign.sign(&mut block);
+    let block_hash = block.finalize();
+    Block::from_hash(buf, &block_hash).unwrap()
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
