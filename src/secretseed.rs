@@ -182,7 +182,7 @@ mod tests {
     fn test_seed_new_panic() {
         let secret = hash(&[42; 32]);
         let next_secret = hash(&[42; 32]);
-        let seed = Seed::new(secret, next_secret);
+        Seed::new(secret, next_secret);
     }
 
     #[test]

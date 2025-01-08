@@ -206,7 +206,7 @@ mod tests {
         let mut file = tempfile::tempfile().unwrap();
         file.write_all(&new_valid_first_block()).unwrap();
         file.rewind().unwrap();
-        let chain = Chain::open(file).unwrap();
+        let _chain = Chain::open(file).unwrap();
     }
 
     #[test]

@@ -503,7 +503,7 @@ mod tests {
     fn test_mutblock_new() {
         let mut buf = [42; BLOCK];
         let state_hash = Hash::from_bytes([69; DIGEST]);
-        let mut block = MutBlock::new(&mut buf, &state_hash);
+        MutBlock::new(&mut buf, &state_hash);
         assert_eq!(
             buf,
             [

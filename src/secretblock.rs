@@ -217,7 +217,7 @@ mod tests {
     fn test_block_from_hash() {
         let buf = valid_secret_block();
         let block_hash = hash(&buf[DIGEST..]);
-        let block = SecretBlock::from_hash(&buf, &block_hash).unwrap();
+        SecretBlock::from_hash(&buf, &block_hash).unwrap();
 
         // Test error specific to SecretBlock::from_hash():
         for bad in HashBitFlipper::new(&block_hash) {
@@ -260,7 +260,7 @@ mod tests {
             state_hash: Hash::from_bytes([0; 32]),
             previous_hash: Hash::from_bytes([0; 32]),
         };
-        let block = SecretBlock::from_previous(&buf, &prev).unwrap();
+        SecretBlock::from_previous(&buf, &prev).unwrap();
 
         // Test errors specific to SecretBlock::from_previous():
         for bad_block_hash in HashBitFlipper::new(&prev.block_hash) {
@@ -316,7 +316,7 @@ mod tests {
     #[test]
     fn test_mut_block_new() {
         let mut buf = [69; SECRET_BLOCK];
-        let mut block = MutSecretBlock::new(&mut buf);
+        MutSecretBlock::new(&mut buf);
         assert_eq!(buf, [0; SECRET_BLOCK]);
     }
 

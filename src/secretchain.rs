@@ -121,9 +121,6 @@ impl SecretChainStore {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::secretblock::SecretBlockError;
-    use blake3::hash;
-    use std::collections::HashSet;
     use std::io::Seek;
     use tempfile::tempfile;
 
@@ -153,13 +150,13 @@ mod tests {
         block.finalize();
         file.write_all(&buf).unwrap();
         file.rewind().unwrap();
-        let chain = SecretChain::open(file).unwrap();
+        SecretChain::open(file).unwrap();
     }
 
     #[test]
     fn test_chain_advance_and_commit() {
         let entropy = [69; 32];
-        let mut file = tempfile().unwrap();
+        let file = tempfile().unwrap();
         let seed = Seed::create(&entropy);
         let state_hash = Hash::from_bytes([42; DIGEST]);
         let mut chain = SecretChain::create(file, seed, &state_hash).unwrap();
@@ -170,7 +167,7 @@ mod tests {
         }
         let mut file = chain.into_file();
         file.rewind().unwrap();
-        let chain = SecretChain::open(file).unwrap();
+        SecretChain::open(file).unwrap();
     }
 
     #[test]

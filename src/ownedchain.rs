@@ -77,6 +77,6 @@ mod tests {
         let tmpdir1 = tempfile::TempDir::new().unwrap();
         let tmpdir2 = tempfile::TempDir::new().unwrap();
         let ocs = OwnedChainStore::new(tmpdir1.path(), tmpdir2.path());
-        let chainsigner = ocs.create_owned_chain(&random_hash()).unwrap();
+        let _chainsigner = ocs.create_owned_chain(&random_hash()).unwrap();
     }
 }
