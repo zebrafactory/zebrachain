@@ -3,13 +3,14 @@
 //! An owned chain is one you p
 
 use crate::always::*;
+use crate::block::BlockState;
 use crate::chain::{Chain, ChainStore};
-use crate::pksign::create_first_block;
+use crate::pksign::{create_first_block, create_next_block};
 use crate::secretseed::Seed;
 use blake3::Hash;
 use std::io;
 
-struct SignerMajig {
+pub struct SignerMajig {
     store: ChainStore,
 }
 
@@ -18,7 +19,7 @@ impl SignerMajig {
         Self { store }
     }
 
-    fn create_chain_signer(&self, state_hash: &Hash) -> io::Result<OwnedChain> {
+    pub fn create_owned_chain(&self, state_hash: &Hash) -> io::Result<OwnedChain> {
         let seed = Seed::auto_create();
         let mut buf = [0; BLOCK];
         let block = create_first_block(&mut buf, &seed, state_hash);
@@ -28,7 +29,7 @@ impl SignerMajig {
 }
 
 /// Sign new blocks in an owned chain.
-struct OwnedChain {
+pub struct OwnedChain {
     chain: Chain,
     seed: Seed,
 }
@@ -38,7 +39,19 @@ impl OwnedChain {
         Self { chain, seed }
     }
 
-    pub fn sign_next(&mut self, state_hash: &Hash) {}
+    pub fn sign_next(&mut self, state_hash: &Hash) -> io::Result<&BlockState> {
+        let seed = self.seed.auto_advance();
+        let state = &self.chain.state.tail;
+        let mut buf = [0; BLOCK];
+        create_next_block(&mut buf, &seed, state_hash, state);
+        let ret = self.chain.append(&buf);
+        self.seed.commit(seed);
+        ret
+    }
+
+    pub fn tail(&self) -> &BlockState {
+        &self.chain.state.tail
+    }
 }
 
 #[cfg(test)]
@@ -52,6 +65,6 @@ mod tests {
         let tmpdir = tempfile::TempDir::new().unwrap();
         let cs = ChainStore::new(tmpdir.path().to_path_buf());
         let smajig = SignerMajig::new(cs);
-        let chainsigner = smajig.create_chain_signer(&random_hash()).unwrap();
+        let chainsigner = smajig.create_owned_chain(&random_hash()).unwrap();
     }
 }
