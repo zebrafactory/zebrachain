@@ -16,9 +16,9 @@ pub struct OwnedChainStore {
 }
 
 impl OwnedChainStore {
-    pub fn new(dir: &Path) -> Self {
+    pub fn new(chain_dir: &Path, secret_chain_dir: &Path) -> Self {
         Self {
-            store: ChainStore::new(dir),
+            store: ChainStore::new(chain_dir),
         }
     }
 
@@ -64,9 +64,10 @@ mod tests {
     use tempfile;
 
     #[test]
-    fn test_signermajig() {
-        let tmpdir = tempfile::TempDir::new().unwrap();
-        let smajig = OwnedChainStore::new(tmpdir.path());
-        let chainsigner = smajig.create_owned_chain(&random_hash()).unwrap();
+    fn test_ownedchainstore() {
+        let tmpdir1 = tempfile::TempDir::new().unwrap();
+        let tmpdir2 = tempfile::TempDir::new().unwrap();
+        let ocs = OwnedChainStore::new(tmpdir1.path(), tmpdir2.path());
+        let chainsigner = ocs.create_owned_chain(&random_hash()).unwrap();
     }
 }

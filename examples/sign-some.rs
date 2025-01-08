@@ -16,9 +16,10 @@ fn build_state_hashes() -> Vec<Hash> {
 
 fn main() {
     let states = build_state_hashes();
-    let tmpdir = tempfile::TempDir::new().unwrap();
-    let sigmajig = OwnedChainStore::new(tmpdir.path());
-    let mut chain = sigmajig.create_owned_chain(&states[0]).unwrap();
+    let tmpdir1 = tempfile::TempDir::new().unwrap();
+    let tmpdir2 = tempfile::TempDir::new().unwrap();
+    let ocs = OwnedChainStore::new(tmpdir1.path(), tmpdir2.path());
+    let mut chain = ocs.create_owned_chain(&states[0]).unwrap();
 
     println!(
         "{} {} {}",
