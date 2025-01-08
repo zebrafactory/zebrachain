@@ -9,14 +9,17 @@ use crate::pksign::{create_first_block, create_next_block};
 use crate::secretseed::Seed;
 use blake3::Hash;
 use std::io;
+use std::path::Path;
 
 pub struct SignerMajig {
     store: ChainStore,
 }
 
 impl SignerMajig {
-    pub fn new(store: ChainStore) -> Self {
-        Self { store }
+    pub fn new(dir: &Path) -> Self {
+        Self {
+            store: ChainStore::new(dir.to_path_buf()),
+        }
     }
 
     pub fn create_owned_chain(&self, state_hash: &Hash) -> io::Result<OwnedChain> {
@@ -63,8 +66,7 @@ mod tests {
     #[test]
     fn test_signermajig() {
         let tmpdir = tempfile::TempDir::new().unwrap();
-        let cs = ChainStore::new(tmpdir.path().to_path_buf());
-        let smajig = SignerMajig::new(cs);
+        let smajig = SignerMajig::new(tmpdir.path());
         let chainsigner = smajig.create_owned_chain(&random_hash()).unwrap();
     }
 }
