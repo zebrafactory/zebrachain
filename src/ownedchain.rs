@@ -6,6 +6,7 @@ use crate::always::*;
 use crate::block::BlockState;
 use crate::chain::{Chain, ChainStore};
 use crate::pksign::{create_first_block, create_next_block};
+use crate::secretchain::SecretChainStore;
 use crate::secretseed::Seed;
 use blake3::Hash;
 use std::io;
@@ -13,12 +14,14 @@ use std::path::Path;
 
 pub struct OwnedChainStore {
     store: ChainStore,
+    secret_store: SecretChainStore,
 }
 
 impl OwnedChainStore {
     pub fn new(chain_dir: &Path, secret_chain_dir: &Path) -> Self {
         Self {
             store: ChainStore::new(chain_dir),
+            secret_store: SecretChainStore::new(secret_chain_dir),
         }
     }
 

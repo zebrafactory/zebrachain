@@ -8,7 +8,7 @@ use blake3::Hash;
 use std::fs::File;
 use std::io;
 use std::io::{Read, Write};
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 /// Save secret chain to non-volitile storage.
 ///
@@ -94,8 +94,10 @@ pub struct SecretChainStore {
 }
 
 impl SecretChainStore {
-    pub fn new(dir: PathBuf) -> Self {
-        Self { dir }
+    pub fn new(dir: &Path) -> Self {
+        Self {
+            dir: dir.to_path_buf(),
+        }
     }
 
     pub fn open_chain(&self, chain_hash: &Hash) -> io::Result<SecretChain> {
