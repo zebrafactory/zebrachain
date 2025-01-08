@@ -11,11 +11,11 @@ use blake3::Hash;
 use std::io;
 use std::path::Path;
 
-pub struct SignerMajig {
+pub struct OwnedChainStore {
     store: ChainStore,
 }
 
-impl SignerMajig {
+impl OwnedChainStore {
     pub fn new(dir: &Path) -> Self {
         Self {
             store: ChainStore::new(dir),
@@ -66,7 +66,7 @@ mod tests {
     #[test]
     fn test_signermajig() {
         let tmpdir = tempfile::TempDir::new().unwrap();
-        let smajig = SignerMajig::new(tmpdir.path());
+        let smajig = OwnedChainStore::new(tmpdir.path());
         let chainsigner = smajig.create_owned_chain(&random_hash()).unwrap();
     }
 }

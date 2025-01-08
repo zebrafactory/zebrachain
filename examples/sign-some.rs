@@ -2,7 +2,7 @@
 
 use blake3::Hash;
 use tempfile;
-use zebrachain::ownedchain::SignerMajig;
+use zebrachain::ownedchain::OwnedChainStore;
 use zebrachain::secretseed::random_hash;
 
 fn build_state_hashes() -> Vec<Hash> {
@@ -17,7 +17,7 @@ fn build_state_hashes() -> Vec<Hash> {
 fn main() {
     let states = build_state_hashes();
     let tmpdir = tempfile::TempDir::new().unwrap();
-    let sigmajig = SignerMajig::new(tmpdir.path());
+    let sigmajig = OwnedChainStore::new(tmpdir.path());
     let mut chain = sigmajig.create_owned_chain(&states[0]).unwrap();
 
     println!(
