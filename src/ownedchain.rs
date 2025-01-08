@@ -26,7 +26,7 @@ impl OwnedChainStore {
         };
         Self {
             store: ChainStore::new(chain_dir),
-            secret_store: secret_store,
+            secret_store,
         }
     }
 

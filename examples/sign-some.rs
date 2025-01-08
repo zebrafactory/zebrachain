@@ -18,7 +18,7 @@ fn main() {
     let states = build_state_hashes();
     let tmpdir1 = tempfile::TempDir::new().unwrap();
     let tmpdir2 = tempfile::TempDir::new().unwrap();
-    let ocs = OwnedChainStore::new(tmpdir1.path(), None); //Some(tmpdir2.path()));
+    let ocs = OwnedChainStore::new(tmpdir1.path(), Some(tmpdir2.path()));
     let mut chain = ocs.create_owned_chain(&states[0]).unwrap();
 
     println!(
