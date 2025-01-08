@@ -14,14 +14,27 @@ use std::path::Path;
 
 pub struct OwnedChainStore {
     store: ChainStore,
-    secret_store: SecretChainStore,
+    secret_store: Option<SecretChainStore>,
 }
 
 impl OwnedChainStore {
-    pub fn new(chain_dir: &Path, secret_chain_dir: &Path) -> Self {
+    pub fn new(chain_dir: &Path, secret_chain_dir: Option<&Path>) -> Self {
+        let secret_store = if let Some(dir) = secret_chain_dir {
+            Some(SecretChainStore::new(dir))
+        } else {
+            None
+        };
         Self {
             store: ChainStore::new(chain_dir),
-            secret_store: SecretChainStore::new(secret_chain_dir),
+            secret_store: secret_store,
+        }
+    }
+
+    fn create_secret_chain(&self, seed: &Seed, chain_hash: &Hash, state_hash: &Hash) -> io::Result<Option<SecretChain>> {
+        if let Some(secret_store) = self.secret_store.as_ref() {
+            Ok(Some(secret_store.create_chain(&chain_hash, &seed, state_hash)?))
+        } else {
+            Ok(None)
         }
     }
 
@@ -31,10 +44,8 @@ impl OwnedChainStore {
         let block = sign_first_block(&mut buf, &seed, state_hash);
         let chain = self.store.create_chain(&block)?;
         let chain_hash = block.hash();
-        let secret_chain = self
-            .secret_store
-            .create_chain(&chain_hash, &seed, state_hash)?;
-        Ok(OwnedChain::new(seed, chain, Some(secret_chain)))
+        let secret_chain = self.create_secret_chain(&seed, &chain_hash, state_hash)?;
+        Ok(OwnedChain::new(seed, chain, secret_chain))
     }
 }
 
@@ -81,7 +92,7 @@ mod tests {
     fn test_ownedchainstore() {
         let tmpdir1 = tempfile::TempDir::new().unwrap();
         let tmpdir2 = tempfile::TempDir::new().unwrap();
-        let ocs = OwnedChainStore::new(tmpdir1.path(), tmpdir2.path());
+        let ocs = OwnedChainStore::new(tmpdir1.path(), Some(tmpdir2.path()));
         let _chainsigner = ocs.create_owned_chain(&random_hash()).unwrap();
     }
 }
