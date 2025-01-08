@@ -24,21 +24,19 @@ use std::path::{Path, PathBuf};
 /// to non-volitile storage.
 pub struct SecretChain {
     file: File,
-    seed: Seed,
     tail: SecretBlock,
 }
 
 impl SecretChain {
-    pub fn create(mut file: File, seed: Seed, state_hash: &Hash) -> io::Result<Self> {
+    pub fn create(mut file: File, seed: &Seed, state_hash: &Hash) -> io::Result<Self> {
         let mut buf = [0; SECRET_BLOCK];
         let mut block = MutSecretBlock::new(&mut buf);
-        block.set_seed(&seed);
+        block.set_seed(seed);
         block.set_state_hash(state_hash);
         let block = block.finalize();
         file.write_all(&buf)?;
         Ok(Self {
             file,
-            seed,
             tail: block,
         })
     }
@@ -50,40 +48,17 @@ impl SecretChain {
         while file.read_exact(&mut buf).is_ok() {
             block = SecretBlock::from_previous(&buf, &block).unwrap();
         }
-        let seed = block.get_seed();
         Ok(Self {
             file,
-            seed,
             tail: block,
         })
     }
 
-    pub fn current_seed(&self) -> Seed {
-        self.seed.clone()
+    pub fn tail(&self) -> &SecretBlock {
+        &self.tail
     }
 
-    pub fn advance(&self, new_entropy: &[u8; 32]) -> Seed {
-        self.seed.advance(new_entropy)
-    }
-
-    pub fn auto_advance(&self) -> Seed {
-        self.seed.auto_advance()
-    }
-
-    pub fn commit(&mut self, seed: Seed, state_hash: &Hash) -> io::Result<()> {
-        let mut buf = [0; SECRET_BLOCK];
-        let mut block = MutSecretBlock::new(&mut buf);
-        block.set_seed(&seed);
-        block.set_state_hash(state_hash);
-        block.set_previous(&self.tail);
-        let block = block.finalize();
-        self.file.write_all(&buf)?;
-        self.seed.commit(seed);
-        self.tail = block;
-        Ok(())
-    }
-
-    pub fn commit2(&mut self, seed: &Seed, state_hash: &Hash) -> io::Result<()> {
+    pub fn commit(&mut self, seed: &Seed, state_hash: &Hash) -> io::Result<()> {
         let mut buf = [0; SECRET_BLOCK];
         let mut block = MutSecretBlock::new(&mut buf);
         block.set_seed(seed);
@@ -121,7 +96,7 @@ impl SecretChainStore {
     pub fn create_chain(
         &self,
         chain_hash: &Hash,
-        seed: Seed,
+        seed: &Seed,
         state_hash: &Hash,
     ) -> io::Result<SecretChain> {
         let filename = build_filename(&self.dir, chain_hash);
@@ -141,7 +116,7 @@ mod tests {
         let file = tempfile().unwrap();
         let seed = Seed::create(&[42; 32]);
         let state_hash = Hash::from_bytes([69; DIGEST]);
-        let result = SecretChain::create(file, seed.clone(), &state_hash);
+        let result = SecretChain::create(file, &seed, &state_hash);
         assert!(result.is_ok());
         let mut file = result.unwrap().into_file();
         file.rewind().unwrap();
@@ -169,29 +144,17 @@ mod tests {
     fn test_chain_advance_and_commit() {
         let entropy = [69; 32];
         let file = tempfile().unwrap();
-        let seed = Seed::create(&entropy);
+        let mut seed = Seed::create(&entropy);
         let state_hash = Hash::from_bytes([42; DIGEST]);
-        let mut chain = SecretChain::create(file, seed, &state_hash).unwrap();
+        let mut chain = SecretChain::create(file, &seed, &state_hash).unwrap();
         for i in 0u8..=255 {
-            let next = chain.advance(&entropy);
+            let next = seed.advance(&entropy);
             let state_hash = Hash::from_bytes([i; DIGEST]);
-            chain.commit(next, &state_hash).unwrap();
+            chain.commit(&next, &state_hash).unwrap();
+            seed.commit(next);
         }
         let mut file = chain.into_file();
         file.rewind().unwrap();
         SecretChain::open(file).unwrap();
-    }
-
-    #[test]
-    #[should_panic(expected = "cannot commit out of sequence seed")]
-    fn test_chain_commit_panic() {
-        let entropy = &[69; 32];
-        let file = tempfile().unwrap();
-        let seed = Seed::create(&entropy);
-        let state_hash = Hash::from_bytes([42; DIGEST]);
-        let mut chain = SecretChain::create(file, seed, &state_hash).unwrap();
-        let next = chain.advance(&entropy);
-        let next_next = next.advance(&entropy);
-        chain.commit(next_next, &state_hash).unwrap();
     }
 }

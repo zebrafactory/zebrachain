@@ -33,7 +33,7 @@ impl OwnedChainStore {
         let chain_hash = block.hash();
         let secret_chain = self
             .secret_store
-            .create_chain(&chain_hash, seed.clone(), state_hash)?;
+            .create_chain(&chain_hash, &seed, state_hash)?;
         Ok(OwnedChain::new(seed, chain, secret_chain))
     }
 }
@@ -59,7 +59,7 @@ impl OwnedChain {
         let mut buf = [0; BLOCK];
         sign_next_block(&mut buf, &seed, state_hash, self.tail());
         let ret = self.chain.append(&buf)?;
-        self.secret_chain.commit2(&seed, state_hash)?;
+        self.secret_chain.commit(&seed, state_hash)?;
         self.seed.commit(seed);
         Ok(ret)
     }
