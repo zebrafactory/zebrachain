@@ -135,12 +135,24 @@ impl SigningChain {
     }
 }
 
-pub fn sign_first_block<'a>(buf: &'a mut [u8], seed: &Seed, state_hash: &Hash) -> Block<'a> {
+pub fn sign_block<'a>(
+    buf: &'a mut [u8],
+    seed: &Seed,
+    state_hash: &Hash,
+    last: Option<&BlockState>,
+) -> Block<'a> {
     let mut block = MutBlock::new(buf, state_hash);
+    if let Some(last) = last {
+        block.set_previous(last);
+    }
     let secsign = SecretSigner::new(seed);
     secsign.sign(&mut block);
     let block_hash = block.finalize();
     Block::from_hash(buf, &block_hash).unwrap()
+}
+
+pub fn sign_first_block<'a>(buf: &'a mut [u8], seed: &Seed, state_hash: &Hash) -> Block<'a> {
+    sign_block(buf, seed, state_hash, None)
 }
 
 pub fn sign_next_block<'a>(
@@ -149,12 +161,7 @@ pub fn sign_next_block<'a>(
     state_hash: &Hash,
     last: &BlockState,
 ) -> Block<'a> {
-    let mut block = MutBlock::new(buf, state_hash);
-    block.set_previous(last);
-    let secsign = SecretSigner::new(seed);
-    secsign.sign(&mut block);
-    let block_hash = block.finalize();
-    Block::from_hash(buf, &block_hash).unwrap()
+    sign_block(buf, seed, state_hash, Some(last))
 }
 
 #[cfg(test)]
