@@ -96,45 +96,6 @@ impl SecretSigner {
     }
 }
 
-pub struct SigningChain {
-    buf: [u8; BLOCK],
-    tail: BlockState,
-}
-
-impl SigningChain {
-    pub fn as_buf(&self) -> &[u8] {
-        &self.buf
-    }
-
-    pub fn start(seed: &Seed, state_hash: &Hash) -> Self {
-        let mut buf = [0; BLOCK];
-        let mut block = MutBlock::new(&mut buf, state_hash);
-        let secsign = SecretSigner::new(seed);
-        secsign.sign(&mut block);
-        let block_hash = block.finalize();
-        let block = Block::from_hash(&buf, &block_hash).unwrap();
-        let tail = block.state();
-        Self { buf, tail }
-    }
-
-    pub fn resume(tail: BlockState) -> Self {
-        Self {
-            buf: [0; BLOCK],
-            tail,
-        }
-    }
-
-    pub fn sign(&mut self, seed: &Seed, state_hash: &Hash) {
-        let mut block = MutBlock::new(&mut self.buf, state_hash);
-        block.set_previous(&self.tail);
-        let secsign = SecretSigner::new(seed);
-        secsign.sign(&mut block);
-        let block_hash = block.finalize();
-        let block = Block::from_hash(&self.buf, &block_hash).unwrap();
-        self.tail = block.state();
-    }
-}
-
 pub fn sign_block<'a>(
     buf: &'a mut [u8],
     seed: &Seed,
@@ -238,34 +199,5 @@ mod tests {
     fn test_keypair_pubkey_hash() {
         let pair = KeyPair::new(&[69; 32]);
         assert_eq!(pair.pubkey_hash(), blake3::Hash::from_hex(HEX0).unwrap());
-    }
-
-    #[test]
-    fn test_signingchain_start() {
-        let seed = Seed::create(&[69; 32]);
-        let state_hash = Hash::from_bytes([42; DIGEST]);
-        let s = SigningChain::start(&seed, &state_hash);
-        assert_eq!(s.tail.counter, 0);
-        assert_eq!(s.buf[0..DIGEST], s.tail.block_hash.as_bytes()[..]);
-        assert_eq!(s.buf[BLOCK - DIGEST..], s.tail.chain_hash.as_bytes()[..]);
-        assert_eq!(
-            s.tail.next_pubkey_hash,
-            SecretSigner::new(&seed).next_pubkey_hash
-        );
-    }
-
-    #[test]
-    fn test_signingchain_resume() {
-        let bs = dummy_block_state();
-        let sc = SigningChain::resume(bs.clone());
-        assert_eq!(sc.tail, bs);
-    }
-
-    #[test]
-    fn test_signingchain_sign() {
-        let mut sc = SigningChain::resume(dummy_block_state());
-        let seed = Seed::create(&[69; 32]);
-        let state_hash = Hash::from_bytes([42; DIGEST]);
-        sc.sign(&seed, &state_hash);
     }
 }
