@@ -65,7 +65,7 @@ pub fn verify_signature(block: &Block) -> bool {
     }
 }
 
-/// Use to get current KeyPair and next PubKey hash from a Seed.
+/// Used to get current KeyPair and next PubKey hash from a Seed.
 pub struct SecretSigner {
     keypair: KeyPair,
     next_pubkey_hash: Hash,
