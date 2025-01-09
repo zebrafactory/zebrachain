@@ -133,15 +133,6 @@ mod tests {
 
     static HEX0: &str = "450f17b763621657bf0757a314a2162107a4e526950ca22785dc9fdeb0e5ac69";
 
-    fn dummy_block_state() -> BlockState {
-        BlockState {
-            counter: 0,
-            block_hash: Hash::from_bytes([1; DIGEST]),
-            chain_hash: Hash::from_bytes([2; DIGEST]),
-            next_pubkey_hash: Hash::from_bytes([3; DIGEST]),
-        }
-    }
-
     #[test]
     fn test_pqcrypto_dilithium() {
         let msg = b"Wish this API let me provide the entropy used to generate the key";
