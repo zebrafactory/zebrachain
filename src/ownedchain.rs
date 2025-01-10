@@ -79,7 +79,7 @@ impl OwnedChain {
     }
 
     pub fn tail(&self) -> &BlockState {
-        &self.chain.state.tail
+        &self.chain.tail
     }
 }
 

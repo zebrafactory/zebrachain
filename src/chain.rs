@@ -17,67 +17,49 @@ Check againt external first block hash
 Walk chain till last block.
 */
 
-/// Stores state of starting and and ending block.
-pub struct ChainState {
+/// Read and write blocks to a file.
+pub struct Chain {
+    buf: [u8; BLOCK],
+    file: File,
     pub head: BlockState,
     pub tail: BlockState,
 }
 
-impl ChainState {
-    pub fn open(buf: &[u8]) -> Result<Self, BlockError> {
-        let block = Block::open(buf)?;
-        Ok(Self {
-            head: block.state(),
-            tail: block.state(),
-        })
-    }
-
-    pub fn from_first_block(block: &Block) -> Self {
+impl Chain {
+    fn new(file: File, head: BlockState, tail: BlockState) -> Self {
         Self {
-            head: block.state(),
-            tail: block.state(),
+            buf: [0; BLOCK],
+            file,
+            head,
+            tail,
         }
     }
 
-    pub fn append(&mut self, buf: &[u8]) -> Result<(), BlockError> {
-        let block = Block::from_previous(buf, &self.tail)?;
-        self.tail = block.state();
-        assert_eq!(self.tail.chain_hash, self.head.block_hash);
-        Ok(())
-    }
-}
-
-/// Read and write blocks to a file.
-pub struct Chain {
-    file: File,
-    buf: [u8; BLOCK],
-    pub state: ChainState,
-}
-
-impl Chain {
     pub fn open(mut file: File) -> io::Result<Self> {
         let mut buf = [0; BLOCK];
         file.read_exact(&mut buf)?;
-        match ChainState::open(&buf) {
-            Ok(state) => Ok(Self { file, buf, state }),
+        match Block::open(&buf) {
+            Ok(block) => Ok(Self {
+                file,
+                buf,
+                head: block.state(),
+                tail: block.state(),
+            }),
             Err(err) => Err(io::Error::other(format!("{err:?}"))),
         }
     }
 
-    pub fn create(mut file: File, block: &Block) -> io::Result<Self> {
-        file.write_all(block.as_buf())?;
-        let buf = [0; BLOCK];
-        let state = ChainState::from_first_block(block);
-        Ok(Self { file, buf, state })
-    }
-
-    pub fn create2(mut file: File, buf: &[u8], chain_hash: &Hash) -> io::Result<Self> {
+    pub fn create(mut file: File, buf: &[u8], chain_hash: &Hash) -> io::Result<Self> {
         match Block::from_hash(buf, chain_hash) {
             Ok(block) => {
                 file.write_all(buf)?;
                 let buf = [0; BLOCK];
-                let state = ChainState::from_first_block(&block);
-                Ok(Self { file, buf, state })
+                Ok(Self {
+                    file,
+                    buf,
+                    head: block.state(),
+                    tail: block.state(),
+                })
             }
             Err(err) => Err(io::Error::other(format!("{err:?}"))),
         }
@@ -89,18 +71,24 @@ impl Chain {
 
     pub fn validate(&mut self) -> io::Result<()> {
         while self.read_next().is_ok() {
-            if self.state.append(&self.buf).is_err() {
-                return Err(io::Error::other("block is bad"));
+            match Block::from_previous(&self.buf, &self.tail) {
+                Ok(block) => {
+                    self.tail = block.state();
+                }
+                Err(err) => {
+                    return Err(io::Error::other(format!("{err:?}")));
+                }
             }
         }
         Ok(())
     }
 
     pub fn append(&mut self, buf: &[u8]) -> io::Result<&BlockState> {
-        match self.state.append(buf) {
-            Ok(_) => {
+        match Block::from_previous(buf, &self.tail) {
+            Ok(block) => {
                 self.file.write_all(buf)?;
-                Ok(&self.state.tail)
+                self.tail = block.state();
+                Ok(&self.tail)
             }
             Err(err) => Err(io::Error::other(format!("{err:?}"))),
         }
@@ -142,16 +130,9 @@ impl ChainStore {
         Chain::open(file)
     }
 
-    pub fn create_chain(&self, block: &Block) -> io::Result<Chain> {
-        // FIXME: check that this is a valid first block (counter=0)
-        let chain_hash = block.state().effective_chain_hash();
-        let file = self.create_chain_file(&chain_hash)?;
-        Chain::create(file, block)
-    }
-
     pub fn create_chain2(&self, buf: &[u8], chain_hash: &Hash) -> io::Result<Chain> {
         let file = self.create_chain_file(chain_hash)?;
-        Chain::create2(file, buf, chain_hash)
+        Chain::create(file, buf, chain_hash)
     }
 }
 
@@ -175,13 +156,6 @@ mod tests {
         }
     }
 
-    fn dummy_chain_state() -> ChainState {
-        ChainState {
-            head: dummy_block_state(),
-            tail: dummy_block_state(),
-        }
-    }
-
     fn new_valid_first_block() -> [u8; BLOCK] {
         let mut buf = [0; BLOCK];
         let seed = Seed::create(&[69; 32]);
@@ -191,26 +165,6 @@ mod tests {
         secsign.sign(&mut block);
         block.finalize();
         buf
-    }
-
-    #[test]
-    fn test_chainstate_open() {
-        let mut buf = [0; BLOCK];
-        assert!(ChainState::open(&buf).is_err());
-        {
-            let seed = Seed::create(&[69; 32]);
-            let signer = SecretSigner::new(&seed);
-            let state_hash = Hash::from_bytes([42; 32]);
-            let mut block = MutBlock::new(&mut buf, &state_hash);
-            signer.sign(&mut block);
-            block.finalize();
-        }
-        let block = Block::open(&buf).unwrap();
-        let chain = ChainState::open(&buf).unwrap();
-        assert_eq!(chain.tail.counter, 0);
-        assert_eq!(chain.tail.chain_hash, block.chain_hash());
-        assert_eq!(chain.tail.block_hash, block.hash());
-        assert_eq!(chain.tail.next_pubkey_hash, block.next_pubkey_hash());
     }
 
     #[test]
@@ -242,7 +196,8 @@ mod tests {
         let mut chain = Chain {
             file: file.try_clone().unwrap(),
             buf: [0; BLOCK],
-            state: dummy_chain_state(),
+            head: dummy_block_state(),
+            tail: dummy_block_state(),
         };
         assert!(chain.read_next().is_err());
         assert_eq!(chain.buf, [0; BLOCK]);
