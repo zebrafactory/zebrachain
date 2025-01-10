@@ -144,6 +144,7 @@ mod tests {
     use crate::block::MutBlock;
     use crate::pksign::SecretSigner;
     use crate::secretseed::{random_hash, Seed};
+    use crate::testhelpers::BitFlipper;
     use blake3::Hash;
     use std::io::Seek;
     use tempfile;
@@ -204,9 +205,18 @@ mod tests {
         assert!(Chain::open(file.try_clone().unwrap()).is_err());
 
         let mut file = tempfile::tempfile().unwrap();
-        file.write_all(&new_valid_first_block()).unwrap();
+        let good = new_valid_first_block();
+        file.write_all(&good).unwrap();
         file.rewind().unwrap();
-        let _chain = Chain::open(file).unwrap();
+        let mut chain = Chain::open(file).unwrap();
+        assert!(chain.validate().is_ok());
+
+        for bad in BitFlipper::new(&good) {
+            let mut file = tempfile::tempfile().unwrap();
+            file.write_all(&bad).unwrap();
+            file.rewind().unwrap();
+            assert!(Chain::open(file).is_err());
+        }
     }
 
     #[test]
