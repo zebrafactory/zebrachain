@@ -71,6 +71,18 @@ impl Chain {
         Ok(Self { file, buf, state })
     }
 
+    pub fn create2(mut file: File, buf: &[u8], chain_hash: &Hash) -> io::Result<Self> {
+        match Block::from_hash(buf, chain_hash) {
+            Ok(block) => {
+                file.write_all(buf)?;
+                let buf = [0; BLOCK];
+                let state = ChainState::from_first_block(&block);
+                Ok(Self { file, buf, state })
+            }
+            Err(err) => Err(io::Error::other(format!("{err:?}"))),
+        }
+    }
+
     fn read_next(&mut self) -> io::Result<()> {
         self.file.read_exact(&mut self.buf)
     }
@@ -135,6 +147,11 @@ impl ChainStore {
         let chain_hash = block.state().effective_chain_hash();
         let file = self.create_chain_file(&chain_hash)?;
         Chain::create(file, block)
+    }
+
+    pub fn create_chain2(&self, buf: &[u8], chain_hash: &Hash) -> io::Result<Chain> {
+        let file = self.create_chain_file(chain_hash)?;
+        Chain::create2(file, buf, chain_hash)
     }
 }
 

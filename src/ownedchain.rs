@@ -43,9 +43,8 @@ impl OwnedChainStore {
     pub fn create_owned_chain(&self, state_hash: &Hash) -> io::Result<OwnedChain> {
         let seed = Seed::auto_create();
         let mut buf = [0; BLOCK];
-        let block = sign_first_block(&mut buf, &seed, state_hash);
-        let chain = self.store.create_chain(&block)?;
-        let chain_hash = block.hash();
+        let chain_hash = sign_first_block(&mut buf, &seed, state_hash);
+        let chain = self.store.create_chain2(&buf, &chain_hash)?;
         let secret_chain = self.create_secret_chain(&seed, &chain_hash, state_hash)?;
         Ok(OwnedChain::new(seed, chain, secret_chain))
     }

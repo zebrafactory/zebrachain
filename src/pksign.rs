@@ -96,32 +96,26 @@ impl SecretSigner {
     }
 }
 
-pub fn sign_block<'a>(
-    buf: &'a mut [u8],
+pub fn sign_block(
+    buf: &mut [u8],
     seed: &Seed,
     state_hash: &Hash,
     last: Option<&BlockState>,
-) -> Block<'a> {
+) -> Hash {
     let mut block = MutBlock::new(buf, state_hash);
     if let Some(last) = last {
         block.set_previous(last);
     }
     let secsign = SecretSigner::new(seed);
     secsign.sign(&mut block);
-    let block_hash = block.finalize();
-    Block::from_hash(buf, &block_hash).unwrap()
+    block.finalize()
 }
 
-pub fn sign_first_block<'a>(buf: &'a mut [u8], seed: &Seed, state_hash: &Hash) -> Block<'a> {
+pub fn sign_first_block(buf: &mut [u8], seed: &Seed, state_hash: &Hash) -> Hash {
     sign_block(buf, seed, state_hash, None)
 }
 
-pub fn sign_next_block<'a>(
-    buf: &'a mut [u8],
-    seed: &Seed,
-    state_hash: &Hash,
-    last: &BlockState,
-) -> Block<'a> {
+pub fn sign_next_block(buf: &mut [u8], seed: &Seed, state_hash: &Hash, last: &BlockState) -> Hash {
     sign_block(buf, seed, state_hash, Some(last))
 }
 
