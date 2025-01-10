@@ -36,7 +36,7 @@ impl Chain {
                 head: block.state(),
                 tail: block.state(),
             }),
-            Err(err) => Err(io::Error::other(format!("{err:?}"))),
+            Err(err) => Err(err.to_io_error()),
         }
     }
 
@@ -50,7 +50,7 @@ impl Chain {
                 head: block.state(),
                 tail: block.state(),
             }),
-            Err(err) => Err(io::Error::other(format!("{err:?}"))),
+            Err(err) => Err(err.to_io_error()),
         }
     }
 
@@ -66,7 +66,7 @@ impl Chain {
                     tail: block.state(),
                 })
             }
-            Err(err) => Err(io::Error::other(format!("{err:?}"))),
+            Err(err) => Err(err.to_io_error()),
         }
     }
 
@@ -81,7 +81,7 @@ impl Chain {
                     self.tail = block.state();
                 }
                 Err(err) => {
-                    return Err(io::Error::other(format!("{err:?}")));
+                    return Err(err.to_io_error());
                 }
             }
         }
@@ -95,7 +95,7 @@ impl Chain {
                 self.tail = block.state();
                 Ok(&self.tail)
             }
-            Err(err) => Err(io::Error::other(format!("{err:?}"))),
+            Err(err) => Err(err.to_io_error()),
         }
     }
 

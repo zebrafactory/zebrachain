@@ -3,6 +3,7 @@
 use crate::always::*;
 use crate::pksign::verify_signature;
 use blake3::{hash, Hash};
+use std::io;
 
 static ZERO_HASH: Hash = Hash::from_bytes([0; 32]);
 
@@ -32,6 +33,12 @@ pub enum BlockError {
 
     /// Chain hash does not match expected external value.
     ChainHash,
+}
+
+impl BlockError {
+    pub fn to_io_error(&self) -> io::Error {
+        io::Error::other(format!("BlockError::{self:?}"))
+    }
 }
 
 /// Alias for `Result<Block<'a>, BlockError>`.
@@ -253,6 +260,18 @@ mod tests {
     use crate::testhelpers::{BitFlipper, HashBitFlipper};
 
     const EXPECTED: &str = "1235a30e9a3086fa131087c5683eeaa5e4733dfa28fe610d4ed2b76e114011c7";
+
+    #[test]
+    fn test_blockerror_to_io_error() {
+        assert_eq!(
+            format!("{:?}", BlockError::Content.to_io_error()),
+            "Custom { kind: Other, error: \"BlockError::Content\" }"
+        );
+        assert_eq!(
+            format!("{:?}", BlockError::Signature.to_io_error()),
+            "Custom { kind: Other, error: \"BlockError::Signature\" }"
+        );
+    }
 
     #[test]
     fn test_blockstate_effective_chain_hash() {
