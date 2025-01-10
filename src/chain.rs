@@ -1,7 +1,7 @@
 //! Writes/reads blocks to/from non-volitile storage and network.
 
 use crate::always::*;
-use crate::block::{Block, BlockError, BlockState};
+use crate::block::{Block, BlockState};
 use crate::fsutil::{build_filename, create_for_append, open_for_append};
 use blake3::Hash;
 use std::fs::File;
@@ -26,19 +26,24 @@ pub struct Chain {
 }
 
 impl Chain {
-    fn new(file: File, head: BlockState, tail: BlockState) -> Self {
-        Self {
-            buf: [0; BLOCK],
-            file,
-            head,
-            tail,
-        }
-    }
-
-    pub fn open(mut file: File) -> io::Result<Self> {
+    pub fn open_unknown(mut file: File) -> io::Result<Self> {
         let mut buf = [0; BLOCK];
         file.read_exact(&mut buf)?;
         match Block::open(&buf) {
+            Ok(block) => Ok(Self {
+                file,
+                buf,
+                head: block.state(),
+                tail: block.state(),
+            }),
+            Err(err) => Err(io::Error::other(format!("{err:?}"))),
+        }
+    }
+
+    pub fn open(mut file: File, chain_hash: &Hash) -> io::Result<Self> {
+        let mut buf = [0; BLOCK];
+        file.read_exact(&mut buf)?;
+        match Block::from_hash(&buf, chain_hash) {
             Ok(block) => Ok(Self {
                 file,
                 buf,
@@ -127,7 +132,7 @@ impl ChainStore {
 
     pub fn open_chain(&self, chain_hash: &Hash) -> io::Result<Chain> {
         let file = self.open_chain_file(chain_hash)?;
-        Chain::open(file)
+        Chain::open(file, chain_hash)
     }
 
     pub fn create_chain2(&self, buf: &[u8], chain_hash: &Hash) -> io::Result<Chain> {
@@ -168,25 +173,25 @@ mod tests {
     }
 
     #[test]
-    fn test_chain_open() {
+    fn test_chain_open_unknown() {
         let mut file = tempfile::tempfile().unwrap();
-        assert!(Chain::open(file.try_clone().unwrap()).is_err());
+        assert!(Chain::open_unknown(file.try_clone().unwrap()).is_err());
         file.write_all(&[69; BLOCK]).unwrap();
         file.rewind().unwrap();
-        assert!(Chain::open(file.try_clone().unwrap()).is_err());
+        assert!(Chain::open_unknown(file.try_clone().unwrap()).is_err());
 
         let mut file = tempfile::tempfile().unwrap();
         let good = new_valid_first_block();
         file.write_all(&good).unwrap();
         file.rewind().unwrap();
-        let mut chain = Chain::open(file).unwrap();
+        let mut chain = Chain::open_unknown(file).unwrap();
         assert!(chain.validate().is_ok());
 
         for bad in BitFlipper::new(&good) {
             let mut file = tempfile::tempfile().unwrap();
             file.write_all(&bad).unwrap();
             file.rewind().unwrap();
-            assert!(Chain::open(file).is_err());
+            assert!(Chain::open_unknown(file).is_err());
         }
     }
 
