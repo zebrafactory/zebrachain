@@ -127,7 +127,7 @@ impl<'a> ChainIter<'a> {
     }
 }
 
-impl<'a> Iterator for ChainIter<'a> {
+impl Iterator for ChainIter<'_> {
     type Item = io::Result<BlockState>;
 
     fn next(&mut self) -> Option<Self::Item> {
