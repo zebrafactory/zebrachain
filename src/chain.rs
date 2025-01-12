@@ -104,30 +104,30 @@ impl Chain {
     }
 
     pub fn iter(&self) -> ChainIter {
-        ChainIter::new(self.file.try_clone().unwrap())
+        ChainIter::new(self)
     }
 }
 
-impl IntoIterator for &Chain {
+impl<'a> IntoIterator for &'a Chain {
     type Item = io::Result<BlockState>;
-    type IntoIter = ChainIter;
+    type IntoIter = ChainIter<'a>;
 
     fn into_iter(self) -> Self::IntoIter {
         self.iter()
     }
 }
 
-pub struct ChainIter {
-    file: File,
+pub struct ChainIter<'a> {
+    chain: &'a Chain,
 }
 
-impl ChainIter {
-    pub fn new(file: File) -> Self {
-        Self { file }
+impl<'a> ChainIter<'a> {
+    pub fn new(chain: &'a Chain) -> Self {
+        Self { chain }
     }
 }
 
-impl Iterator for ChainIter {
+impl<'a> Iterator for ChainIter<'a> {
     type Item = io::Result<BlockState>;
 
     fn next(&mut self) -> Option<Self::Item> {
@@ -136,9 +136,7 @@ impl Iterator for ChainIter {
 }
 
 fn demo(chain: Chain) {
-    for result in &chain {
-
-    }
+    for result in &chain {}
 }
 
 /// Organizes [Chain] files in a directory.
