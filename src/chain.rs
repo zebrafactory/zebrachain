@@ -125,7 +125,6 @@ impl<'a> IntoIterator for &'a Chain {
 
 pub struct ChainIter<'a> {
     chain: &'a Chain,
-    buf: [u8; BLOCK],
     index: usize,
     count: usize,
     tail: Option<BlockState>,
@@ -135,11 +134,18 @@ impl<'a> ChainIter<'a> {
     pub fn new(chain: &'a Chain) -> Self {
         Self {
             chain,
-            buf: [0; BLOCK],
             index: 0,
             count: 0,
             tail: None,
         }
+    }
+
+    fn next_inner(&mut self) -> io::Result<BlockState> {
+        assert!(self.index < self.count);
+        let mut buf = [0; BLOCK];
+        self.chain.read_block(&mut buf, self.index);
+        self.index += 1;
+        Err(io::Error::other("yo"))
     }
 }
 
@@ -148,10 +154,10 @@ impl Iterator for ChainIter<'_> {
 
     fn next(&mut self) -> Option<Self::Item> {
         if self.index < self.count {
-            self.chain.read_block(&mut self.buf, self.index).unwrap();
-            self.index += 1;
+            Some(self.next_inner())
+        } else {
+            None
         }
-        None
     }
 }
 
