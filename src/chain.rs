@@ -7,6 +7,7 @@ use blake3::Hash;
 use std::fs::File;
 use std::io;
 use std::io::{Read, Write};
+use std::os::unix::fs::FileExt;
 use std::path::{Path, PathBuf};
 
 /*
@@ -74,6 +75,11 @@ impl Chain {
         self.file.read_exact(&mut self.buf)
     }
 
+    fn read_block(&self, buf: &mut [u8], index: usize) -> io::Result<()> {
+        let offset = index as u64 * BLOCK as u64;
+        self.file.read_exact_at(buf, offset)
+    }
+
     pub fn validate(&mut self) -> io::Result<()> {
         while self.read_next().is_ok() {
             match Block::from_previous(&self.buf, &self.tail) {
@@ -119,11 +125,21 @@ impl<'a> IntoIterator for &'a Chain {
 
 pub struct ChainIter<'a> {
     chain: &'a Chain,
+    buf: [u8; BLOCK],
+    index: usize,
+    count: usize,
+    tail: Option<BlockState>,
 }
 
 impl<'a> ChainIter<'a> {
     pub fn new(chain: &'a Chain) -> Self {
-        Self { chain }
+        Self {
+            chain,
+            buf: [0; BLOCK],
+            index: 0,
+            count: 0,
+            tail: None,
+        }
     }
 }
 
@@ -131,6 +147,10 @@ impl Iterator for ChainIter<'_> {
     type Item = io::Result<BlockState>;
 
     fn next(&mut self) -> Option<Self::Item> {
+        if self.index < self.count {
+            self.chain.read_block(&mut self.buf, self.index).unwrap();
+            self.index += 1;
+        }
         None
     }
 }
