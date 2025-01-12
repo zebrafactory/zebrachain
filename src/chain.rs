@@ -102,6 +102,43 @@ impl Chain {
     pub fn into_file(self) -> File {
         self.file
     }
+
+    pub fn iter(&self) -> ChainIter {
+        ChainIter::new(self.file.try_clone().unwrap())
+    }
+}
+
+impl IntoIterator for &Chain {
+    type Item = io::Result<BlockState>;
+    type IntoIter = ChainIter;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.iter()
+    }
+}
+
+pub struct ChainIter {
+    file: File,
+}
+
+impl ChainIter {
+    pub fn new(file: File) -> Self {
+        Self { file }
+    }
+}
+
+impl Iterator for ChainIter {
+    type Item = io::Result<BlockState>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        None
+    }
+}
+
+fn demo(chain: Chain) {
+    for result in &chain {
+
+    }
 }
 
 /// Organizes [Chain] files in a directory.
@@ -135,7 +172,7 @@ impl ChainStore {
         Chain::open(file, chain_hash)
     }
 
-    pub fn create_chain2(&self, buf: &[u8], chain_hash: &Hash) -> io::Result<Chain> {
+    pub fn create_chain(&self, buf: &[u8], chain_hash: &Hash) -> io::Result<Chain> {
         let file = self.create_chain_file(chain_hash)?;
         Chain::create(file, buf, chain_hash)
     }

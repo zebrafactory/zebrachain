@@ -44,7 +44,7 @@ impl OwnedChainStore {
         let seed = Seed::auto_create();
         let mut buf = [0; BLOCK];
         let chain_hash = sign_first_block(&mut buf, &seed, state_hash);
-        let chain = self.store.create_chain2(&buf, &chain_hash)?;
+        let chain = self.store.create_chain(&buf, &chain_hash)?;
         let secret_chain = self.create_secret_chain(&seed, &chain_hash, state_hash)?;
         Ok(OwnedChain::new(seed, chain, secret_chain))
     }
@@ -94,6 +94,6 @@ mod tests {
         let tmpdir1 = tempfile::TempDir::new().unwrap();
         let tmpdir2 = tempfile::TempDir::new().unwrap();
         let ocs = OwnedChainStore::new(tmpdir1.path(), Some(tmpdir2.path()));
-        let _chainsigner = ocs.create_owned_chain(&random_hash()).unwrap();
+        let chain = ocs.create_owned_chain(&random_hash()).unwrap();
     }
 }
