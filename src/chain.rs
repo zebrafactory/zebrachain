@@ -151,7 +151,7 @@ impl<'a> ChainIter<'a> {
         self.index += 1;
 
         let blockresult = if let Some(tail) = self.tail.as_ref() {
-            Block::from_previous(&buf, &tail)
+            Block::from_previous(&buf, tail)
         } else {
             Block::from_hash(&buf, self.chain.chain_hash())
         };
