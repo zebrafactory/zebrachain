@@ -271,18 +271,42 @@ mod tests {
 
     #[test]
     fn test_validate_chain() {
-        let seed = Seed::auto_create();
-        let mut buf = [0; BLOCK];
-        let chain_hash = sign_block(&mut buf, &seed, &random_hash(), None);
-        let buf = buf; // Don't want it mutable anymore
         let file = tempfile::tempfile().unwrap();
-        file.write_all_at(&buf, 0).unwrap(); // Haha, file doesn't need to be mut
+
+        // Generate 1st block
+        let seed = Seed::auto_create();
+        let mut buf1 = [0; BLOCK];
+        let chain_hash = sign_block(&mut buf1, &seed, &random_hash(), None);
+        let buf1 = buf1; // Doesn't need to be mutable anymore
+        let block1 = Block::from_hash(&buf1, &chain_hash).unwrap();
+
+        // Write to file, test with a single block
+        file.write_all_at(&buf1, 0).unwrap(); // Haha, file doesn't need to be mut
         let (head, tail, count) = validate_chain(&file, &chain_hash).unwrap();
-        let block = Block::from_hash(&buf, &chain_hash).unwrap();
-        assert_eq!(head, block.state());
+        let block1 = Block::from_hash(&buf1, &chain_hash).unwrap();
+        assert_eq!(head, block1.state());
         assert_eq!(tail, head);
         assert_eq!(count, 1);
-        let (head, tail, count) = validate_chain(&file, &chain_hash).unwrap();
+
+        // Open a 2nd time, should work the same (file cursor position plays no part)
+        assert_eq!(
+            validate_chain(&file, &chain_hash).unwrap(),
+            (block1.state(), block1.state(), 1)
+        );
+
+        // Generate the 2nd block
+        let next = seed.auto_advance();
+        let mut buf2 = [0; BLOCK];
+        let block_hash = sign_block(&mut buf2, &next, &random_hash(), Some(&tail));
+        let buf2 = buf2; // Doesn't need to be mutable anymore
+        let block2 = Block::from_previous(&buf2, &tail).unwrap();
+
+        // Write to file, test with 2 blocks
+        file.write_all_at(&buf2, BLOCK as u64).unwrap();
+        assert_eq!(
+            validate_chain(&file, &chain_hash).unwrap(),
+            (block1.state(), block2.state(), 2)
+        );
     }
 
     #[test]
