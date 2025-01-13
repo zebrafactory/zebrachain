@@ -79,8 +79,8 @@ impl Chain {
         self.file.read_exact(&mut self.buf)
     }
 
-    fn read_block(&self, buf: &mut [u8], index: usize) -> io::Result<()> {
-        let offset = index as u64 * BLOCK as u64;
+    fn read_block(&self, buf: &mut [u8], index: u64) -> io::Result<()> {
+        let offset = index * BLOCK as u64;
         self.file.read_exact_at(buf, offset)
     }
 
@@ -129,8 +129,8 @@ impl<'a> IntoIterator for &'a Chain {
 
 pub struct ChainIter<'a> {
     chain: &'a Chain,
-    index: usize,
-    count: usize,
+    index: u64,
+    count: u64,
     tail: Option<BlockState>,
 }
 
