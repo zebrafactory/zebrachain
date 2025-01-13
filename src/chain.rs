@@ -242,7 +242,7 @@ impl ChainStore {
 mod tests {
     use super::*;
     use crate::block::MutBlock;
-    use crate::pksign::SecretSigner;
+    use crate::pksign::{sign_block, SecretSigner};
     use crate::secretseed::{random_hash, Seed};
     use crate::testhelpers::BitFlipper;
     use blake3::Hash;
@@ -267,6 +267,21 @@ mod tests {
         secsign.sign(&mut block);
         block.finalize();
         buf
+    }
+
+    #[test]
+    fn test_validate_chain() {
+        let seed = Seed::auto_create();
+        let mut buf = [0; BLOCK];
+        let chain_hash = sign_block(&mut buf, &seed, &random_hash(), None);
+        let buf = buf; // Don't want it mutable anymore
+        let file = tempfile::tempfile().unwrap();
+        file.write_all_at(&buf, 0).unwrap(); // Haha, file doesn't need to be mut
+        let (head, tail, count) = validate_chain(file, &chain_hash).unwrap();
+        let block = Block::from_hash(&buf, &chain_hash).unwrap();
+        assert_eq!(head, block.state());
+        assert_eq!(tail, block.state());
+        assert_eq!(count, 1);
     }
 
     #[test]
