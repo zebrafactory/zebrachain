@@ -143,7 +143,7 @@ impl<'a> ChainIter<'a> {
     fn next_inner(&mut self) -> io::Result<BlockState> {
         assert!(self.index < self.count);
         let mut buf = [0; BLOCK];
-        self.chain.read_block(&mut buf, self.index);
+        self.chain.read_block(&mut buf, self.index)?;
         self.index += 1;
         Err(io::Error::other("yo"))
     }
