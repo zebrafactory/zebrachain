@@ -274,7 +274,7 @@ mod tests {
         let file = tempfile::tempfile().unwrap();
 
         // Generate 1st block
-        let seed = Seed::auto_create();
+        let mut seed = Seed::auto_create();
         let mut buf1 = [0; BLOCK];
         let chain_hash = sign_block(&mut buf1, &seed, &random_hash(), None);
         let buf1 = buf1; // Doesn't need to be mutable anymore
@@ -294,10 +294,11 @@ mod tests {
             (block1.state(), block1.state(), 1)
         );
 
-        // Generate the 2nd block
+        // Generate a 2nd block
         let next = seed.auto_advance();
         let mut buf2 = [0; BLOCK];
         let block_hash = sign_block(&mut buf2, &next, &random_hash(), Some(&tail));
+        seed.commit(next);
         let buf2 = buf2; // Doesn't need to be mutable anymore
         let block2 = Block::from_previous(&buf2, &tail).unwrap();
 
@@ -307,6 +308,32 @@ mod tests {
             validate_chain(&file, &chain_hash).unwrap(),
             (block1.state(), block2.state(), 2)
         );
+
+        for bad in BitFlipper::new(&buf1) {
+            file.write_all_at(&bad, 0).unwrap();
+            assert!(validate_chain(&file, &chain_hash).is_err());
+        }
+
+        for bad in BitFlipper::new(&buf2) {
+            file.write_all_at(&bad, BLOCK as u64).unwrap();
+            assert!(validate_chain(&file, &chain_hash).is_err());
+        }
+
+        file.write_all_at(&buf1, 0).unwrap();
+        file.write_all_at(&buf2, BLOCK as u64).unwrap();
+        assert!(validate_chain(&file, &chain_hash).is_ok());
+
+        // FIXME: We aren't currently handling truncation
+        let length = (BLOCK * 2) as u64;
+        for reduce in 1..=length {
+            assert!(reduce > 0);
+            file.set_len(length - reduce).unwrap();
+            if reduce > BLOCK as u64 {
+                assert!(validate_chain(&file, &chain_hash).is_err());
+            } else {
+                assert!(validate_chain(&file, &chain_hash).is_ok());
+            }
+        }
     }
 
     #[test]
