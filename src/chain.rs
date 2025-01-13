@@ -71,6 +71,10 @@ impl Chain {
         }
     }
 
+    pub fn chain_hash(&self) -> &Hash {
+        &self.head.block_hash
+    }
+
     fn read_next(&mut self) -> io::Result<()> {
         self.file.read_exact(&mut self.buf)
     }
@@ -145,7 +149,20 @@ impl<'a> ChainIter<'a> {
         let mut buf = [0; BLOCK];
         self.chain.read_block(&mut buf, self.index)?;
         self.index += 1;
-        Err(io::Error::other("yo"))
+
+        let blockresult = if let Some(tail) = self.tail.as_ref() {
+            Block::from_previous(&buf, &tail)
+        } else {
+            Block::from_hash(&buf, self.chain.chain_hash())
+        };
+
+        match blockresult {
+            Ok(block) => {
+                self.tail = Some(block.state());
+                Ok(block.state())
+            }
+            Err(err) => Err(err.to_io_error()),
+        }
     }
 }
 
