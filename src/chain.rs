@@ -18,7 +18,7 @@ Check againt external first block hash
 Walk chain till last block.
 */
 
-fn validate_chain(file: File, chain_hash: &Hash) -> io::Result<(BlockState, BlockState)> {
+fn validate_chain(file: File, chain_hash: &Hash) -> io::Result<(BlockState, BlockState, u64)> {
     let mut buf = [0; BLOCK];
     file.read_exact_at(&mut buf, 0)?;
     let head = match Block::from_hash(&buf, chain_hash) {
@@ -28,13 +28,13 @@ fn validate_chain(file: File, chain_hash: &Hash) -> io::Result<(BlockState, Bloc
     let mut tail = head.clone();
     let mut index = 1;
     while file.read_exact_at(&mut buf, index * BLOCK as u64).is_ok() {
+        index += 1;
         tail = match Block::from_previous(&buf, &tail) {
             Ok(block) => block.state(),
             Err(err) => return Err(err.to_io_error()),
         };
-        index += 1;
     }
-    Ok((head, tail))
+    Ok((head, tail, index))
 }
 
 /// Read and write blocks to a file.
