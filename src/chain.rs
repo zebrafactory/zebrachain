@@ -18,7 +18,7 @@ Check againt external first block hash
 Walk chain till last block.
 */
 
-fn validate_chain(file: File, chain_hash: &Hash) -> io::Result<(BlockState, BlockState, u64)> {
+fn validate_chain(file: &File, chain_hash: &Hash) -> io::Result<(BlockState, BlockState, u64)> {
     let mut buf = [0; BLOCK];
     file.read_exact_at(&mut buf, 0)?;
     let head = match Block::from_hash(&buf, chain_hash) {
@@ -277,11 +277,12 @@ mod tests {
         let buf = buf; // Don't want it mutable anymore
         let file = tempfile::tempfile().unwrap();
         file.write_all_at(&buf, 0).unwrap(); // Haha, file doesn't need to be mut
-        let (head, tail, count) = validate_chain(file, &chain_hash).unwrap();
+        let (head, tail, count) = validate_chain(&file, &chain_hash).unwrap();
         let block = Block::from_hash(&buf, &chain_hash).unwrap();
         assert_eq!(head, block.state());
-        assert_eq!(tail, block.state());
+        assert_eq!(tail, head);
         assert_eq!(count, 1);
+        let (head, tail, count) = validate_chain(&file, &chain_hash).unwrap();
     }
 
     #[test]
