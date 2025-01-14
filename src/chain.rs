@@ -79,10 +79,6 @@ impl Chain {
         &self.head.block_hash
     }
 
-    fn read_next(&mut self) -> io::Result<()> {
-        self.file.read_exact(&mut self.buf)
-    }
-
     fn read_block(&self, buf: &mut [u8], index: u64) -> io::Result<()> {
         let offset = index * BLOCK as u64;
         self.file.read_exact_at(buf, offset)
@@ -305,26 +301,6 @@ mod tests {
                 assert!(validate_chain(&file, &chain_hash).is_ok());
             }
         }
-    }
-
-    #[test]
-    fn test_chain_read_next() {
-        let mut file = tempfile::tempfile().unwrap();
-        let mut chain = Chain {
-            file: file.try_clone().unwrap(),
-            buf: [0; BLOCK],
-            head: dummy_block_state(),
-            tail: dummy_block_state(),
-            count: 1,
-        };
-        assert!(chain.read_next().is_err());
-        assert_eq!(chain.buf, [0; BLOCK]);
-        file.write_all(&[69; BLOCK]).unwrap();
-        file.rewind().unwrap();
-        assert!(chain.read_next().is_ok());
-        assert_eq!(chain.buf, [69; BLOCK]);
-        assert!(chain.read_next().is_err());
-        assert_eq!(chain.buf, [69; BLOCK]);
     }
 
     #[test]
