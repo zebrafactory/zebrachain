@@ -47,7 +47,7 @@ pub struct Chain {
 }
 
 impl Chain {
-    pub fn open(mut file: File, chain_hash: &Hash) -> io::Result<Self> {
+    pub fn open(file: File, chain_hash: &Hash) -> io::Result<Self> {
         let (head, tail, count) = validate_chain(&file, chain_hash)?;
         Ok(Self {
             buf: [0; BLOCK],
@@ -58,10 +58,10 @@ impl Chain {
         })
     }
 
-    pub fn create(mut file: File, buf: &[u8], chain_hash: &Hash) -> io::Result<Self> {
+    pub fn create(file: File, buf: &[u8], chain_hash: &Hash) -> io::Result<Self> {
         match Block::from_hash(buf, chain_hash) {
             Ok(block) => {
-                file.write_all(buf)?;
+                file.write_all_at(buf, 0)?;
                 let buf = [0; BLOCK];
                 Ok(Self {
                     file,
