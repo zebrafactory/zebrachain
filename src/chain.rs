@@ -88,20 +88,6 @@ impl Chain {
         self.file.read_exact_at(buf, offset)
     }
 
-    pub fn validate(&mut self) -> io::Result<()> {
-        while self.read_next().is_ok() {
-            match Block::from_previous(&self.buf, &self.tail) {
-                Ok(block) => {
-                    self.tail = block.state();
-                }
-                Err(err) => {
-                    return Err(err.to_io_error());
-                }
-            }
-        }
-        Ok(())
-    }
-
     pub fn append(&mut self, buf: &[u8]) -> io::Result<&BlockState> {
         match Block::from_previous(buf, &self.tail) {
             Ok(block) => {
