@@ -2,6 +2,8 @@
 
 use blake3::Hash;
 use tempfile;
+use zebrachain::chain::validate_chain;
+use zebrachain::fsutil::{build_filename, open_for_append};
 use zebrachain::ownedchain::OwnedChainStore;
 use zebrachain::secretseed::random_hash;
 
@@ -37,4 +39,10 @@ fn main() {
             state_hash
         );
     }
+
+    let chain_hash = chain.tail().chain_hash;
+    let filename = build_filename(tmpdir1.path(), &chain_hash);
+    println!("{:?}", filename);
+    let file = open_for_append(&filename).unwrap();
+    let (head, tail, count) = validate_chain(&file, &chain_hash).unwrap();
 }
