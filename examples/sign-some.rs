@@ -2,13 +2,13 @@
 
 use blake3::Hash;
 use tempfile;
-use zebrachain::chain::validate_chain;
+use zebrachain::chain::Chain;
 use zebrachain::fsutil::{build_filename, open_for_append};
 use zebrachain::ownedchain::OwnedChainStore;
 use zebrachain::secretseed::random_hash;
 
 fn build_state_hashes() -> Vec<Hash> {
-    let count = 10000;
+    let count = 100_000;
     let mut states = Vec::with_capacity(count);
     for _ in 0..count {
         states.push(random_hash());
@@ -44,5 +44,5 @@ fn main() {
     let filename = build_filename(tmpdir1.path(), &chain_hash);
     println!("{:?}", filename);
     let file = open_for_append(&filename).unwrap();
-    let (_head, _tail, _count) = validate_chain(&file, &chain_hash).unwrap();
+    let _chain = Chain::open(file, &chain_hash).unwrap();
 }

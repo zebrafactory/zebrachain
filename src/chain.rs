@@ -18,7 +18,7 @@ Check againt external first block hash
 Walk chain till last block.
 */
 
-pub fn validate_chain(file: &File, chain_hash: &Hash) -> io::Result<(BlockState, BlockState, u64)> {
+fn validate_chain(file: &File, chain_hash: &Hash) -> io::Result<(BlockState, BlockState, u64)> {
     let mut buf = [0; BLOCK];
     file.read_exact_at(&mut buf, 0)?;
     let head = match Block::from_hash(&buf, chain_hash) {
