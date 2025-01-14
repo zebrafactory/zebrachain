@@ -6,7 +6,7 @@ use crate::fsutil::{build_filename, create_for_append, open_for_append};
 use blake3::Hash;
 use std::fs::File;
 use std::io;
-use std::io::{Read, Write};
+use std::io::Write;
 use std::os::unix::fs::FileExt;
 use std::path::{Path, PathBuf};
 
@@ -39,22 +39,20 @@ pub fn validate_chain(file: &File, chain_hash: &Hash) -> io::Result<(BlockState,
 
 /// Read and write blocks to a file.
 pub struct Chain {
-    buf: [u8; BLOCK],
     file: File,
     pub head: BlockState,
     pub tail: BlockState,
-    count: u64,
+    _count: u64,
 }
 
 impl Chain {
     pub fn open(file: File, chain_hash: &Hash) -> io::Result<Self> {
-        let (head, tail, count) = validate_chain(&file, chain_hash)?;
+        let (head, tail, _count) = validate_chain(&file, chain_hash)?;
         Ok(Self {
-            buf: [0; BLOCK],
             file,
             head,
             tail,
-            count,
+            _count,
         })
     }
 
@@ -62,13 +60,11 @@ impl Chain {
         match Block::from_hash(buf, chain_hash) {
             Ok(block) => {
                 file.write_all_at(buf, 0)?;
-                let buf = [0; BLOCK];
                 Ok(Self {
                     file,
-                    buf,
                     head: block.state(),
                     tail: block.state(),
-                    count: 1,
+                    _count: 1,
                 })
             }
             Err(err) => Err(err.to_io_error()),
@@ -164,10 +160,6 @@ impl Iterator for ChainIter<'_> {
     }
 }
 
-fn demo(chain: Chain) {
-    for result in &chain {}
-}
-
 /// Organizes [Chain] files in a directory.
 pub struct ChainStore {
     dir: PathBuf,
@@ -208,33 +200,11 @@ impl ChainStore {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::block::MutBlock;
-    use crate::pksign::{sign_block, SecretSigner};
+    use crate::pksign::sign_block;
     use crate::secretseed::{random_hash, Seed};
     use crate::testhelpers::BitFlipper;
     use blake3::Hash;
-    use std::io::Seek;
     use tempfile;
-
-    fn dummy_block_state() -> BlockState {
-        BlockState {
-            counter: 0,
-            block_hash: Hash::from_bytes([1; DIGEST]),
-            chain_hash: Hash::from_bytes([2; DIGEST]),
-            next_pubkey_hash: Hash::from_bytes([3; DIGEST]),
-        }
-    }
-
-    fn new_valid_first_block() -> [u8; BLOCK] {
-        let mut buf = [0; BLOCK];
-        let seed = Seed::create(&[69; 32]);
-        let secsign = SecretSigner::new(&seed);
-        let state_hash = Hash::from_bytes([2; 32]);
-        let mut block = MutBlock::new(&mut buf, &state_hash);
-        secsign.sign(&mut block);
-        block.finalize();
-        buf
-    }
 
     #[test]
     fn test_validate_chain() {
@@ -250,7 +220,6 @@ mod tests {
         // Write to file, test with a single block
         file.write_all_at(&buf1, 0).unwrap(); // Haha, file doesn't need to be mut
         let (head, tail, count) = validate_chain(&file, &chain_hash).unwrap();
-        let block1 = Block::from_hash(&buf1, &chain_hash).unwrap();
         assert_eq!(head, block1.state());
         assert_eq!(tail, head);
         assert_eq!(count, 1);
@@ -264,7 +233,7 @@ mod tests {
         // Generate a 2nd block
         let next = seed.auto_advance();
         let mut buf2 = [0; BLOCK];
-        let block_hash = sign_block(&mut buf2, &next, &random_hash(), Some(&tail));
+        let _block_hash = sign_block(&mut buf2, &next, &random_hash(), Some(&tail));
         seed.commit(next);
         let buf2 = buf2; // Doesn't need to be mutable anymore
         let block2 = Block::from_previous(&buf2, &tail).unwrap();

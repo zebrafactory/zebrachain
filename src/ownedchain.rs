@@ -94,6 +94,6 @@ mod tests {
         let tmpdir1 = tempfile::TempDir::new().unwrap();
         let tmpdir2 = tempfile::TempDir::new().unwrap();
         let ocs = OwnedChainStore::new(tmpdir1.path(), Some(tmpdir2.path()));
-        let chain = ocs.create_owned_chain(&random_hash()).unwrap();
+        let _chain = ocs.create_owned_chain(&random_hash()).unwrap();
     }
 }

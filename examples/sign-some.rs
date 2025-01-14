@@ -44,5 +44,5 @@ fn main() {
     let filename = build_filename(tmpdir1.path(), &chain_hash);
     println!("{:?}", filename);
     let file = open_for_append(&filename).unwrap();
-    let (head, tail, count) = validate_chain(&file, &chain_hash).unwrap();
+    let (_head, _tail, _count) = validate_chain(&file, &chain_hash).unwrap();
 }
