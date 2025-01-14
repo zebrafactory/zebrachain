@@ -43,35 +43,19 @@ pub struct Chain {
     file: File,
     pub head: BlockState,
     pub tail: BlockState,
+    count: u64,
 }
 
 impl Chain {
-    pub fn open_unknown(mut file: File) -> io::Result<Self> {
-        let mut buf = [0; BLOCK];
-        file.read_exact(&mut buf)?;
-        match Block::open(&buf) {
-            Ok(block) => Ok(Self {
-                file,
-                buf,
-                head: block.state(),
-                tail: block.state(),
-            }),
-            Err(err) => Err(err.to_io_error()),
-        }
-    }
-
     pub fn open(mut file: File, chain_hash: &Hash) -> io::Result<Self> {
-        let mut buf = [0; BLOCK];
-        file.read_exact(&mut buf)?;
-        match Block::from_hash(&buf, chain_hash) {
-            Ok(block) => Ok(Self {
-                file,
-                buf,
-                head: block.state(),
-                tail: block.state(),
-            }),
-            Err(err) => Err(err.to_io_error()),
-        }
+        let (head, tail, count) = validate_chain(&file, chain_hash)?;
+        Ok(Self {
+            buf: [0; BLOCK],
+            file,
+            head,
+            tail,
+            count,
+        })
     }
 
     pub fn create(mut file: File, buf: &[u8], chain_hash: &Hash) -> io::Result<Self> {
@@ -84,6 +68,7 @@ impl Chain {
                     buf,
                     head: block.state(),
                     tail: block.state(),
+                    count: 1,
                 })
             }
             Err(err) => Err(err.to_io_error()),
@@ -337,29 +322,6 @@ mod tests {
     }
 
     #[test]
-    fn test_chain_open_unknown() {
-        let mut file = tempfile::tempfile().unwrap();
-        assert!(Chain::open_unknown(file.try_clone().unwrap()).is_err());
-        file.write_all(&[69; BLOCK]).unwrap();
-        file.rewind().unwrap();
-        assert!(Chain::open_unknown(file.try_clone().unwrap()).is_err());
-
-        let mut file = tempfile::tempfile().unwrap();
-        let good = new_valid_first_block();
-        file.write_all(&good).unwrap();
-        file.rewind().unwrap();
-        let mut chain = Chain::open_unknown(file).unwrap();
-        assert!(chain.validate().is_ok());
-
-        for bad in BitFlipper::new(&good) {
-            let mut file = tempfile::tempfile().unwrap();
-            file.write_all(&bad).unwrap();
-            file.rewind().unwrap();
-            assert!(Chain::open_unknown(file).is_err());
-        }
-    }
-
-    #[test]
     fn test_chain_read_next() {
         let mut file = tempfile::tempfile().unwrap();
         let mut chain = Chain {
@@ -367,6 +329,7 @@ mod tests {
             buf: [0; BLOCK],
             head: dummy_block_state(),
             tail: dummy_block_state(),
+            count: 1,
         };
         assert!(chain.read_next().is_err());
         assert_eq!(chain.buf, [0; BLOCK]);
