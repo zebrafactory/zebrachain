@@ -6,7 +6,7 @@
 use crate::always::*;
 use crate::block::{Block, BlockState};
 use crate::chain::{Chain, ChainStore};
-use crate::pksign::{sign_first_block, sign_next_block, sign_block};
+use crate::pksign::sign_block;
 use crate::secretchain::{SecretChain, SecretChainStore};
 use crate::secretseed::Seed;
 use blake3::Hash;
@@ -44,7 +44,7 @@ impl OwnedChainStore {
     pub fn create_owned_chain(&self, state_hash: &Hash) -> io::Result<OwnedChain> {
         let seed = Seed::auto_create();
         let mut buf = [0; BLOCK];
-        let chain_hash = sign_first_block(&mut buf, &seed, state_hash);
+        let chain_hash = sign_block(&mut buf, &seed, state_hash, None);
         let chain = self.store.create_chain(&buf, &chain_hash)?;
         let secret_chain = self.create_secret_chain(&seed, &chain_hash, state_hash)?;
         Ok(OwnedChain::new(seed, chain, secret_chain))
@@ -82,7 +82,7 @@ impl OwnedChain {
     pub fn sign_next(&mut self, state_hash: &Hash) -> io::Result<&BlockState> {
         let seed = self.seed.auto_advance();
         let mut buf = [0; BLOCK];
-        sign_next_block(&mut buf, &seed, state_hash, self.tail());
+        sign_block(&mut buf, &seed, state_hash, Some(self.tail()));
         if let Some(secret_chain) = self.secret_chain.as_mut() {
             secret_chain.commit(&seed, state_hash)?;
         }

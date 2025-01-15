@@ -111,14 +111,6 @@ pub fn sign_block(
     block.finalize()
 }
 
-pub fn sign_first_block(buf: &mut [u8], seed: &Seed, state_hash: &Hash) -> Hash {
-    sign_block(buf, seed, state_hash, None)
-}
-
-pub fn sign_next_block(buf: &mut [u8], seed: &Seed, state_hash: &Hash, last: &BlockState) -> Hash {
-    sign_block(buf, seed, state_hash, Some(last))
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
