@@ -67,6 +67,45 @@ impl SecretChain {
     pub fn into_file(self) -> File {
         self.file
     }
+
+    pub fn iter(&self) -> SecretChainIter {
+        SecretChainIter::new(self, 0)
+    }
+}
+
+impl<'a> IntoIterator for &'a SecretChain {
+    type Item = io::Result<SecretBlock>;
+    type IntoIter = SecretChainIter<'a>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.iter()
+    }
+}
+
+pub struct SecretChainIter<'a> {
+    secretchain: &'a SecretChain,
+    index: u64,
+    count: u64,
+    tail: Option<SecretBlock>,
+}
+
+impl<'a> SecretChainIter<'a> {
+    pub fn new(secretchain: &'a SecretChain, count: u64) -> Self {
+        Self {
+            secretchain,
+            index: 0,
+            count,
+            tail: None,
+        }
+    }
+}
+
+impl Iterator for SecretChainIter<'_> {
+    type Item = io::Result<SecretBlock>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        None
+    }
 }
 
 /// Organizes [SecretChain] files in a directory.
