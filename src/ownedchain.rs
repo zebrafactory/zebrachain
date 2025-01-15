@@ -4,9 +4,9 @@
 //! blocks for.
 
 use crate::always::*;
-use crate::block::BlockState;
+use crate::block::{Block, BlockState};
 use crate::chain::{Chain, ChainStore};
-use crate::pksign::{sign_first_block, sign_next_block};
+use crate::pksign::{sign_first_block, sign_next_block, sign_block};
 use crate::secretchain::{SecretChain, SecretChainStore};
 use crate::secretseed::Seed;
 use blake3::Hash;
@@ -48,6 +48,18 @@ impl OwnedChainStore {
         let chain = self.store.create_chain(&buf, &chain_hash)?;
         let secret_chain = self.create_secret_chain(&seed, &chain_hash, state_hash)?;
         Ok(OwnedChain::new(seed, chain, secret_chain))
+    }
+
+    pub fn secret_to_public(&self, secret_chain: SecretChain) -> io::Result<Chain> {
+        let mut tail = None;
+        let mut buf = [0; BLOCK];
+        for result in &secret_chain {
+            let sb = result?;
+            let seed = sb.get_seed();
+            let block_hash = sign_block(&mut buf, &seed, &sb.state_hash, tail);
+            let tail = Some(Block::from_hash(&buf, &block_hash).unwrap());
+        }
+        Err(io::Error::other("yo"))
     }
 }
 
