@@ -42,17 +42,17 @@ pub struct Chain {
     file: File,
     pub head: BlockState,
     pub tail: BlockState,
-    _count: u64,
+    count: u64,
 }
 
 impl Chain {
     pub fn open(file: File, chain_hash: &Hash) -> io::Result<Self> {
-        let (head, tail, _count) = validate_chain(&file, chain_hash)?;
+        let (head, tail, count) = validate_chain(&file, chain_hash)?;
         Ok(Self {
             file,
             head,
             tail,
-            _count,
+            count,
         })
     }
 
@@ -64,7 +64,7 @@ impl Chain {
                     file,
                     head: block.state(),
                     tail: block.state(),
-                    _count: 1,
+                    count: 1,
                 })
             }
             Err(err) => Err(err.to_io_error()),
@@ -96,7 +96,7 @@ impl Chain {
     }
 
     pub fn iter(&self) -> ChainIter {
-        ChainIter::new(self)
+        ChainIter::new(self, self.count)
     }
 }
 
@@ -117,11 +117,11 @@ pub struct ChainIter<'a> {
 }
 
 impl<'a> ChainIter<'a> {
-    pub fn new(chain: &'a Chain) -> Self {
+    pub fn new(chain: &'a Chain, count: u64) -> Self {
         Self {
             chain,
             index: 0,
-            count: 0,
+            count,
             tail: None,
         }
     }

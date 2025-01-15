@@ -44,5 +44,9 @@ fn main() {
     let filename = build_filename(tmpdir1.path(), &chain_hash);
     println!("{:?}", filename);
     let file = open_for_append(&filename).unwrap();
-    let _chain = Chain::open(file, &chain_hash).unwrap();
+    let chain = Chain::open(file, &chain_hash).unwrap();
+    for result in &chain {
+        let state = result.unwrap();
+        println!("{}", state.block_hash);
+    }
 }
