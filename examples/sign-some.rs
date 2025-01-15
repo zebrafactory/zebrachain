@@ -5,10 +5,11 @@ use tempfile;
 use zebrachain::chain::Chain;
 use zebrachain::fsutil::{build_filename, open_for_append};
 use zebrachain::ownedchain::OwnedChainStore;
+use zebrachain::secretchain::SecretChain;
 use zebrachain::secretseed::random_hash;
 
 fn build_state_hashes() -> Vec<Hash> {
-    let count = 100_000;
+    let count = 10_000;
     let mut states = Vec::with_capacity(count);
     for _ in 0..count {
         states.push(random_hash());
@@ -48,5 +49,14 @@ fn main() {
     for result in &chain {
         let state = result.unwrap();
         println!("{}", state.block_hash);
+    }
+
+    let filename = build_filename(tmpdir2.path(), &chain_hash);
+    let file = open_for_append(&filename).unwrap();
+    let secchain = SecretChain::open(file).unwrap();
+
+    for result in &secchain {
+        let secblock = result.unwrap();
+        println!("state_hash: {}", secblock.state_hash);
     }
 }

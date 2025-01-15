@@ -25,6 +25,7 @@ use std::path::{Path, PathBuf};
 pub struct SecretChain {
     file: File,
     tail: SecretBlock,
+    count: u64,
 }
 
 impl SecretChain {
@@ -35,17 +36,23 @@ impl SecretChain {
         block.set_state_hash(state_hash);
         let block = block.finalize();
         file.write_all(&buf)?;
-        Ok(Self { file, tail: block })
+        Ok(Self {
+            file,
+            tail: block,
+            count: 1,
+        })
     }
 
     pub fn open(mut file: File) -> io::Result<Self> {
         let mut buf = [0; SECRET_BLOCK];
         file.read_exact(&mut buf)?;
-        let mut block = SecretBlock::open(&buf).unwrap();
+        let mut tail = SecretBlock::open(&buf).unwrap();
+        let mut count = 1;
         while file.read_exact(&mut buf).is_ok() {
-            block = SecretBlock::from_previous(&buf, &block).unwrap();
+            tail = SecretBlock::from_previous(&buf, &tail).unwrap();
+            count += 1;
         }
-        Ok(Self { file, tail: block })
+        Ok(Self { file, tail, count })
     }
 
     pub fn tail(&self) -> &SecretBlock {
@@ -69,7 +76,7 @@ impl SecretChain {
     }
 
     pub fn iter(&self) -> SecretChainIter {
-        SecretChainIter::new(self, 0)
+        SecretChainIter::new(self, self.count)
     }
 }
 
@@ -91,6 +98,9 @@ pub struct SecretChainIter<'a> {
 
 impl<'a> SecretChainIter<'a> {
     pub fn new(secretchain: &'a SecretChain, count: u64) -> Self {
+        if count == 0 {
+            panic!("count cannot be 0");
+        }
         Self {
             secretchain,
             index: 0,

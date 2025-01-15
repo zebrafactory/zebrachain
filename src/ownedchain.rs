@@ -1,6 +1,7 @@
 //! High level API for signing new blocks.
 //!
-//! An owned chain is one you p
+//! An owned chain is one you have the secret seed state for, a chain you can generate new valid
+//! blocks for.
 
 use crate::always::*;
 use crate::block::BlockState;
