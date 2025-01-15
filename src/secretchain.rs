@@ -8,6 +8,7 @@ use blake3::Hash;
 use std::fs::File;
 use std::io;
 use std::io::{Read, Write};
+use std::os::unix::fs::FileExt;
 use std::path::{Path, PathBuf};
 
 /// Save secret chain to non-volitile storage.
@@ -53,6 +54,11 @@ impl SecretChain {
             count += 1;
         }
         Ok(Self { file, tail, count })
+    }
+
+    fn read_block(&self, buf: &mut [u8], index: u64) -> io::Result<()> {
+        let offset = index * SECRET_BLOCK as u64;
+        self.file.read_exact_at(buf, offset)
     }
 
     pub fn tail(&self) -> &SecretBlock {
@@ -108,13 +114,38 @@ impl<'a> SecretChainIter<'a> {
             tail: None,
         }
     }
+
+    fn next_inner(&mut self) -> io::Result<SecretBlock> {
+        assert!(self.index < self.count);
+        let mut buf = [0; SECRET_BLOCK];
+        self.secretchain.read_block(&mut buf, self.index)?;
+        self.index += 1;
+
+        let result = if let Some(tail) = self.tail.as_ref() {
+            SecretBlock::from_previous(&buf, tail)
+        } else {
+            SecretBlock::open(&buf)
+        };
+
+        match result {
+            Ok(block) => {
+                self.tail = Some(block.clone());
+                Ok(block)
+            }
+            Err(err) => Err(io::Error::other("yo")),
+        }
+    }
 }
 
 impl Iterator for SecretChainIter<'_> {
     type Item = io::Result<SecretBlock>;
 
     fn next(&mut self) -> Option<Self::Item> {
-        None
+        if self.index < self.count {
+            Some(self.next_inner())
+        } else {
+            None
+        }
     }
 }
 

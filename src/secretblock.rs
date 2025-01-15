@@ -53,7 +53,7 @@ pub enum SecretBlockError {
 pub type SecretBlockResult = Result<SecretBlock, SecretBlockError>;
 
 /// Wire format for saving secret chain to nonvolatile storage.
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct SecretBlock {
     pub block_hash: Hash,
     pub secret: Hash,
