@@ -1,6 +1,7 @@
 //! Create a new chain and some signatures.
 
 use blake3::Hash;
+use std::fs;
 use tempfile;
 use zebrachain::chain::Chain;
 use zebrachain::fsutil::{build_filename, open_for_append};
@@ -50,6 +51,7 @@ fn main() {
         let state = result.unwrap();
         println!("{}", state.block_hash);
     }
+    fs::remove_file(&filename);
 
     let filename = build_filename(tmpdir2.path(), &chain_hash);
     let file = open_for_append(&filename).unwrap();
@@ -59,4 +61,6 @@ fn main() {
         let secblock = result.unwrap();
         println!("state_hash: {}", secblock.state_hash);
     }
+
+    let chain = ocs.secret_to_public(&secchain).unwrap();
 }
