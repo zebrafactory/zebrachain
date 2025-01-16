@@ -79,7 +79,7 @@ impl SecretBlock {
     }
 
     pub fn get_signing_request(&self) -> SigningRequest {
-        SigningRequest::new(self.state_hash)
+        SigningRequest::new(self.permission_hash, self.state_hash)
     }
 
     pub fn open(buf: &[u8]) -> SecretBlockResult {

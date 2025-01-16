@@ -215,9 +215,9 @@ pub struct SigningRequest {
 }
 
 impl SigningRequest {
-    pub fn new(state_hash: Hash) -> Self {
+    pub fn new(permission_hash: Hash, state_hash: Hash) -> Self {
         Self {
-            permission_hash: Hash::from_bytes([0; DIGEST]),
+            permission_hash,
             state_hash,
         }
     }
@@ -316,7 +316,7 @@ mod tests {
         let mut buf = vec![0; BLOCK];
         let seed = Seed::create(&[69; 32]);
         let secsign = SecretSigner::new(&seed);
-        let req = SigningRequest::new(Hash::from_bytes([2; 32]));
+        let req = SigningRequest::new(Hash::from_bytes([1; 32]), Hash::from_bytes([2; 32]));
         let mut block = MutBlock::new(&mut buf, &req);
         let last = BlockState::new(
             Hash::from_bytes([3; 32]),
@@ -549,7 +549,10 @@ mod tests {
     #[test]
     fn test_mutblock_new() {
         let mut buf = [42; BLOCK];
-        let req = SigningRequest::new(Hash::from_bytes([69; DIGEST]));
+        let req = SigningRequest::new(
+            Hash::from_bytes([42; DIGEST]),
+            Hash::from_bytes([69; DIGEST]),
+        );
         MutBlock::new(&mut buf, &req);
         assert_eq!(
             buf,
@@ -559,12 +562,13 @@ mod tests {
                 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
                 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
                 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 42, 42, 42, 42, 42, 42,
+                42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42,
+                42, 42, 42, 42, 42, 69, 69, 69, 69, 69, 69, 69, 69, 69, 69, 69, 69, 69, 69, 69, 69,
+                69, 69, 69, 69, 69, 69, 69, 69, 69, 69, 69, 69, 69, 69, 69, 69, 0, 0, 0, 0, 0, 0,
                 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 69, 69, 69,
-                69, 69, 69, 69, 69, 69, 69, 69, 69, 69, 69, 69, 69, 69, 69, 69, 69, 69, 69, 69, 69,
-                69, 69, 69, 69, 69, 69, 69, 69, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
                 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+                0, 0
             ]
         );
     }

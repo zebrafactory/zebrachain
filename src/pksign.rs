@@ -152,8 +152,8 @@ mod tests {
         );
 
         let mut buf = vec![0; BLOCK];
-        let sigreq = SigningRequest::new(Hash::from_bytes([0; 32]));
-        pair.sign(&mut MutBlock::new(&mut buf[..], &sigreq));
+        let request = SigningRequest::new(Hash::from_bytes([0; 32]), Hash::from_bytes([0; 32]));
+        pair.sign(&mut MutBlock::new(&mut buf[..], &request));
         assert_eq!(
             buf,
             [

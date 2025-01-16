@@ -185,6 +185,7 @@ impl SecretChainStore {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::secretseed::random_hash;
     use std::io::Seek;
     use tempfile::tempfile;
 
@@ -192,7 +193,7 @@ mod tests {
     fn test_chain_create() {
         let file = tempfile().unwrap();
         let seed = Seed::create(&[42; 32]);
-        let request = SigningRequest::new(Hash::from_bytes([69; DIGEST]));
+        let request = SigningRequest::new(random_hash(), Hash::from_bytes([69; DIGEST]));
         let result = SecretChain::create(file, &seed, &request);
         assert!(result.is_ok());
         let mut file = result.unwrap().into_file();
@@ -222,12 +223,15 @@ mod tests {
         let entropy = [69; 32];
         let file = tempfile().unwrap();
         let mut seed = Seed::create(&entropy);
-        let request = SigningRequest::new(Hash::from_bytes([42; DIGEST]));
+        let request = SigningRequest::new(
+            Hash::from_bytes([69; DIGEST]),
+            Hash::from_bytes([42; DIGEST]),
+        );
         let mut chain = SecretChain::create(file, &seed, &request).unwrap();
         assert_eq!(chain.count, 1);
         for i in 0u8..=255 {
             let next = seed.advance(&entropy);
-            let request = SigningRequest::new(Hash::from_bytes([i; DIGEST]));
+            let request = SigningRequest::new(random_hash(), Hash::from_bytes([i; DIGEST]));
             chain.commit(&next, &request).unwrap();
             assert_eq!(chain.count, i as u64 + 2);
             seed.commit(next);
