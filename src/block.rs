@@ -270,7 +270,7 @@ mod tests {
     use crate::secretseed::Seed;
     use crate::testhelpers::{BitFlipper, HashBitFlipper};
 
-    const EXPECTED: &str = "1235a30e9a3086fa131087c5683eeaa5e4733dfa28fe610d4ed2b76e114011c7";
+    const EXPECTED: &str = "7dab7c2168fb03afb2e92ac88c878ab13a0c11945daac194a429eb2f07965990";
 
     #[test]
     fn test_blockerror_to_io_error() {
@@ -322,9 +322,10 @@ mod tests {
         buf.extend_from_slice(&[2; SIGNATURE]);
         buf.extend_from_slice(&[3; PUBKEY]);
         buf.extend_from_slice(&[4; DIGEST]); // NEXT_PUBKEY_HASH
-        buf.extend_from_slice(&[5; DIGEST]); // STATE_HASH
-        buf.extend_from_slice(&[6; DIGEST]); // PREVIOUS_HASH
-        buf.extend_from_slice(&[7; DIGEST]); // CHAIN_HASH
+        buf.extend_from_slice(&[5; DIGEST]); // PERMISSION_HASH
+        buf.extend_from_slice(&[6; DIGEST]); // STATE_HASH
+        buf.extend_from_slice(&[7; DIGEST]); // PREVIOUS_HASH
+        buf.extend_from_slice(&[8; DIGEST]); // CHAIN_HASH
         buf
     }
 
@@ -335,28 +336,28 @@ mod tests {
     }
 
     #[test]
-    #[should_panic(expected = "Need a 256 byte slice; got 255 bytes")]
+    #[should_panic(expected = "Need a 288 byte slice; got 287 bytes")]
     fn test_block_new_short_panic() {
         let buf: Vec<u8> = vec![0; BLOCK - 1];
         let _block = Block::new(&buf[..]);
     }
 
     #[test]
-    #[should_panic(expected = "Need a 256 byte slice; got 257 bytes")]
+    #[should_panic(expected = "Need a 288 byte slice; got 289 bytes")]
     fn test_block_new_long_panic() {
         let buf: Vec<u8> = vec![0; BLOCK + 1];
         let _block = Block::new(&buf[..]);
     }
 
     #[test]
-    #[should_panic(expected = "Need a 256 byte slice; got 255 bytes")]
+    #[should_panic(expected = "Need a 288 byte slice; got 287 bytes")]
     fn test_block_open_short_panic() {
         let buf: Vec<u8> = vec![0; BLOCK - 1];
         let _block = Block::open(&buf[..]);
     }
 
     #[test]
-    #[should_panic(expected = "Need a 256 byte slice; got 257 bytes")]
+    #[should_panic(expected = "Need a 288 byte slice; got 289 bytes")]
     fn test_block_open_long_panic() {
         let buf: Vec<u8> = vec![0; BLOCK + 1];
         let _block = Block::open(&buf[..]);
@@ -465,9 +466,9 @@ mod tests {
         assert_eq!(block.as_signature(), [2; SIGNATURE]);
         assert_eq!(block.as_pubkey(), [3; PUBKEY]);
         assert_eq!(block.as_next_pubkey_hash(), [4; DIGEST]);
-        assert_eq!(block.as_state_hash(), [5; DIGEST]);
-        assert_eq!(block.as_previous_hash(), [6; DIGEST]);
-        assert_eq!(block.as_chain_hash(), [7; DIGEST]);
+        assert_eq!(block.as_state_hash(), [6; DIGEST]);
+        assert_eq!(block.as_previous_hash(), [7; DIGEST]);
+        assert_eq!(block.as_chain_hash(), [8; DIGEST]);
     }
 
     #[test]
@@ -476,9 +477,9 @@ mod tests {
         let block = Block::new(&buf[..]);
         assert_eq!(block.hash(), Hash::from_bytes([1; DIGEST]));
         assert_eq!(block.next_pubkey_hash(), Hash::from_bytes([4; DIGEST]));
-        assert_eq!(block.state_hash(), Hash::from_bytes([5; DIGEST]));
-        assert_eq!(block.previous_hash(), Hash::from_bytes([6; DIGEST]));
-        assert_eq!(block.chain_hash(), Hash::from_bytes([7; DIGEST]));
+        assert_eq!(block.state_hash(), Hash::from_bytes([6; DIGEST]));
+        assert_eq!(block.previous_hash(), Hash::from_bytes([7; DIGEST]));
+        assert_eq!(block.chain_hash(), Hash::from_bytes([8; DIGEST]));
     }
 
     #[test]
@@ -543,11 +544,12 @@ mod tests {
                 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
                 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
                 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 69, 69, 69, 69, 69, 69,
-                69, 69, 69, 69, 69, 69, 69, 69, 69, 69, 69, 69, 69, 69, 69, 69, 69, 69, 69, 69, 69,
-                69, 69, 69, 69, 69, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
                 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 69, 69, 69,
+                69, 69, 69, 69, 69, 69, 69, 69, 69, 69, 69, 69, 69, 69, 69, 69, 69, 69, 69, 69, 69,
+                69, 69, 69, 69, 69, 69, 69, 69, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
             ]
         );
     }
