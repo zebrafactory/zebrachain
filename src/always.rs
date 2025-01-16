@@ -37,12 +37,12 @@ pub const PREVIOUS_HASH_RANGE: Range<usize> = BLOCK - DIGEST * 2..BLOCK - DIGEST
 pub const CHAIN_HASH_RANGE: Range<usize> = BLOCK - DIGEST..BLOCK;
 
 /*
-A SecretBlock currently has 5 fields:
+A SecretBlock currently has 6 fields:
 
-    HASH || SECRET || NEXT_SECRET || STATE_HASH || PREVIOUS_HASH
+    HASH || SECRET || NEXT_SECRET || PERMISSION_HASH || STATE_HASH || PREVIOUS_HASH
 */
 
-pub const SECRET_BLOCK: usize = DIGEST * 5;
+pub const SECRET_BLOCK: usize = DIGEST * 6;
 
 pub static SECRET_CONTEXT: &str =
     "ed149ef77826374035fd3a1e2c1bf3b39539333d5a8bc1f7e788736430efc7f2";

@@ -9,8 +9,9 @@ use std::ops::Range;
 
 const SECRET_INDEX: usize = 1;
 const NEXT_SECRET_INDEX: usize = 2;
-const STATE_INDEX: usize = 3;
-const PREVIOUS_INDEX: usize = 4;
+const PERMISSION_INDEX: usize = 3;
+const STATE_INDEX: usize = 4;
+const PREVIOUS_INDEX: usize = 5;
 
 fn check_secretblock_buf(buf: &[u8]) {
     if buf.len() != SECRET_BLOCK {
@@ -67,6 +68,7 @@ pub struct SecretBlock {
     pub block_hash: Hash,
     pub secret: Hash,
     pub next_secret: Hash,
+    pub permission_hash: Hash,
     pub state_hash: Hash,
     pub previous_hash: Hash,
 }
@@ -87,6 +89,7 @@ impl SecretBlock {
             block_hash: get_hash(buf, 0),
             secret: get_hash(buf, SECRET_INDEX),
             next_secret: get_hash(buf, NEXT_SECRET_INDEX),
+            permission_hash: get_hash(buf, PERMISSION_INDEX),
             state_hash: get_hash(buf, STATE_INDEX),
             previous_hash: get_hash(buf, PREVIOUS_INDEX),
         };
@@ -168,8 +171,9 @@ mod tests {
         let mut buf = [0; SECRET_BLOCK];
         set_hash(&mut buf, SECRET_INDEX, &Hash::from_bytes([1; DIGEST]));
         set_hash(&mut buf, NEXT_SECRET_INDEX, &Hash::from_bytes([2; DIGEST]));
-        set_hash(&mut buf, STATE_INDEX, &Hash::from_bytes([3; DIGEST]));
-        set_hash(&mut buf, PREVIOUS_INDEX, &Hash::from_bytes([4; DIGEST]));
+        set_hash(&mut buf, PERMISSION_INDEX, &Hash::from_bytes([3; DIGEST]));
+        set_hash(&mut buf, STATE_INDEX, &Hash::from_bytes([4; DIGEST]));
+        set_hash(&mut buf, PREVIOUS_INDEX, &Hash::from_bytes([5; DIGEST]));
         let block_hash = hash(&buf[DIGEST..]);
         set_hash(&mut buf, 0, &block_hash);
         buf
@@ -183,14 +187,14 @@ mod tests {
     }
 
     #[test]
-    #[should_panic(expected = "Need a 160 byte slice; got 159 bytes")]
+    #[should_panic(expected = "Need a 192 byte slice; got 191 bytes")]
     fn test_check_secretblock_buf_panic_low() {
         let buf = [0; SECRET_BLOCK - 1];
         check_secretblock_buf(&buf);
     }
 
     #[test]
-    #[should_panic(expected = "Need a 160 byte slice; got 161 bytes")]
+    #[should_panic(expected = "Need a 192 byte slice; got 193 bytes")]
     fn test_check_secretblock_buf_panic_high() {
         let buf = [0; SECRET_BLOCK + 1];
         check_secretblock_buf(&buf);
@@ -202,13 +206,14 @@ mod tests {
         let block = SecretBlock::open(&buf).unwrap();
         assert_eq!(
             block.block_hash,
-            Hash::from_hex("cf003f3cff7ebdbc562c85b6735046a094ed68e2708b6a253d234ed2f273ede6")
+            Hash::from_hex("2973f346ecdae71fa8bc58a31969b9868bd9a8dfe34e93298b85584695e6df55")
                 .unwrap()
         );
         assert_eq!(block.secret, Hash::from_bytes([1; DIGEST]));
         assert_eq!(block.next_secret, Hash::from_bytes([2; DIGEST]));
-        assert_eq!(block.state_hash, Hash::from_bytes([3; DIGEST]));
-        assert_eq!(block.previous_hash, Hash::from_bytes([4; DIGEST]));
+        assert_eq!(block.permission_hash, Hash::from_bytes([3; DIGEST]));
+        assert_eq!(block.state_hash, Hash::from_bytes([4; DIGEST]));
+        assert_eq!(block.previous_hash, Hash::from_bytes([5; DIGEST]));
         for bad in BitFlipper::new(&buf) {
             assert_eq!(SecretBlock::open(&bad[..]), Err(SecretBlockError::Content));
         }
@@ -270,6 +275,7 @@ mod tests {
             block_hash: get_hash(&buf, PREVIOUS_INDEX),
             secret: Hash::from_bytes([0; 32]),
             next_secret: get_hash(&buf, SECRET_INDEX),
+            permission_hash: Hash::from_bytes([0; 32]),
             state_hash: Hash::from_bytes([0; 32]),
             previous_hash: Hash::from_bytes([0; 32]),
         };
@@ -281,6 +287,7 @@ mod tests {
                 block_hash: bad_block_hash,
                 secret: prev.secret,
                 next_secret: prev.next_secret,
+                permission_hash: prev.permission_hash,
                 state_hash: prev.state_hash,
                 previous_hash: prev.previous_hash,
             };
@@ -294,6 +301,7 @@ mod tests {
                 block_hash: prev.block_hash,
                 secret: prev.secret,
                 next_secret: bad_next_secret,
+                permission_hash: prev.permission_hash,
                 state_hash: prev.state_hash,
                 previous_hash: prev.previous_hash,
             };
@@ -348,7 +356,8 @@ mod tests {
                 176, 21, 151, 8, 29, 122, 107, 144, 241, 142, 43, 193, 43, 176, 152, 50, 175, 128,
                 168, 219, 8, 72, 38, 149, 74, 180, 245, 26, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
                 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
             ]
         );
     }
