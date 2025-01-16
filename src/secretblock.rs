@@ -141,8 +141,9 @@ impl<'a> MutSecretBlock<'a> {
         set_hash(self.buf, NEXT_SECRET_INDEX, &seed.next_secret);
     }
 
-    pub fn set_state_hash(&mut self, state_hash: &Hash) {
-        set_hash(self.buf, STATE_INDEX, state_hash);
+    pub fn set_request(&mut self, request: &SigningRequest) {
+        set_hash(self.buf, PERMISSION_INDEX, &request.permission_hash);
+        set_hash(self.buf, STATE_INDEX, &request.state_hash);
     }
 
     pub fn set_previous(&mut self, prev: &SecretBlock) {
