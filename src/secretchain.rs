@@ -47,7 +47,10 @@ impl SecretChain {
     pub fn open(mut file: File) -> io::Result<Self> {
         let mut buf = [0; SECRET_BLOCK];
         file.read_exact(&mut buf)?;
-        let mut tail = SecretBlock::open(&buf).unwrap();
+        let mut tail = match SecretBlock::open(&buf) {
+            Ok(block) => block,
+            Err(err) => return Err(err.to_io_error()),
+        };
         let mut count = 1;
         while file.read_exact(&mut buf).is_ok() {
             tail = match SecretBlock::from_previous(&buf, &tail) {
