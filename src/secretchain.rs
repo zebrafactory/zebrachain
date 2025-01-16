@@ -135,7 +135,7 @@ impl<'a> SecretChainIter<'a> {
                 self.tail = Some(block.clone());
                 Ok(block)
             }
-            Err(err) => Err(io::Error::other("yo")),
+            Err(err) => Err(err.to_io_error()),
         }
     }
 }
