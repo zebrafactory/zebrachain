@@ -28,9 +28,7 @@ pub struct SecretChain {
 impl SecretChain {
     pub fn create(mut file: File, seed: &Seed, request: &SigningRequest) -> io::Result<Self> {
         let mut buf = [0; SECRET_BLOCK];
-        let mut block = MutSecretBlock::new(&mut buf);
-        block.set_seed(seed);
-        block.set_request(&request);
+        let mut block = MutSecretBlock::new(&mut buf, seed, request);
         let block = block.finalize();
         file.write_all(&buf)?;
         Ok(Self {
@@ -69,9 +67,7 @@ impl SecretChain {
 
     pub fn commit(&mut self, seed: &Seed, request: &SigningRequest) -> io::Result<()> {
         let mut buf = [0; SECRET_BLOCK];
-        let mut block = MutSecretBlock::new(&mut buf);
-        block.set_seed(seed);
-        block.set_request(&request);
+        let mut block = MutSecretBlock::new(&mut buf, seed, request);
         block.set_previous(&self.tail);
         let block = block.finalize();
         self.file.write_all(&buf)?;
@@ -185,6 +181,7 @@ impl SecretChainStore {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::block::SigningRequest;
     use crate::secretseed::random_hash;
     use std::io::Seek;
     use tempfile::tempfile;
@@ -209,10 +206,12 @@ mod tests {
         let mut file = tempfile().unwrap();
         assert!(SecretChain::open(file.try_clone().unwrap()).is_err());
         let mut buf = [0; SECRET_BLOCK];
-        let mut block = MutSecretBlock::new(&mut buf);
-        let seed = Seed::create(&[69; 32]);
-        block.set_seed(&seed);
+
+        let seed = Seed::auto_create();
+        let request = SigningRequest::new(random_hash(), random_hash());
+        let block = MutSecretBlock::new(&mut buf, &seed, &request);
         block.finalize();
+
         file.write_all(&buf).unwrap();
         file.rewind().unwrap();
         SecretChain::open(file).unwrap();

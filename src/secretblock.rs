@@ -130,20 +130,17 @@ pub struct MutSecretBlock<'a> {
 }
 
 impl<'a> MutSecretBlock<'a> {
-    pub fn new(buf: &'a mut [u8]) -> Self {
+    pub fn new(buf: &'a mut [u8], seed: &Seed, request: &SigningRequest) -> Self {
         check_secretblock_buf(buf);
         buf.fill(0);
+
+        set_hash(buf, SECRET_INDEX, &seed.secret);
+        set_hash(buf, NEXT_SECRET_INDEX, &seed.next_secret);
+
+        set_hash(buf, PERMISSION_INDEX, &request.permission_hash);
+        set_hash(buf, STATE_INDEX, &request.state_hash);
+
         Self { buf }
-    }
-
-    pub fn set_seed(&mut self, seed: &Seed) {
-        set_hash(self.buf, SECRET_INDEX, &seed.secret);
-        set_hash(self.buf, NEXT_SECRET_INDEX, &seed.next_secret);
-    }
-
-    pub fn set_request(&mut self, request: &SigningRequest) {
-        set_hash(self.buf, PERMISSION_INDEX, &request.permission_hash);
-        set_hash(self.buf, STATE_INDEX, &request.state_hash);
     }
 
     pub fn set_previous(&mut self, prev: &SecretBlock) {
@@ -166,6 +163,7 @@ impl<'a> MutSecretBlock<'a> {
 mod tests {
 
     use super::*;
+    use crate::secretseed::random_hash;
     use crate::testhelpers::{BitFlipper, HashBitFlipper};
 
     fn valid_secret_block() -> [u8; SECRET_BLOCK] {
@@ -221,12 +219,12 @@ mod tests {
 
         let mut buf = valid_secret_block();
         for i in 0..=255 {
-            let mut block = MutSecretBlock::new(&mut buf);
             let seed = Seed {
                 secret: Hash::from_bytes([i; DIGEST]),
                 next_secret: Hash::from_bytes([i; DIGEST]),
             };
-            block.set_seed(&seed);
+            let request = SigningRequest::new(random_hash(), random_hash());
+            let mut block = MutSecretBlock::new(&mut buf, &seed, &request);
             block.finalize_hash();
             assert_eq!(SecretBlock::open(&buf), Err(SecretBlockError::Seed));
         }
@@ -255,12 +253,12 @@ mod tests {
         }
         let mut buf = valid_secret_block();
         for i in 0..=255 {
-            let mut block = MutSecretBlock::new(&mut buf);
             let seed = Seed {
                 secret: Hash::from_bytes([i; DIGEST]),
                 next_secret: Hash::from_bytes([i; DIGEST]),
             };
-            block.set_seed(&seed);
+            let request = SigningRequest::new(random_hash(), random_hash());
+            let mut block = MutSecretBlock::new(&mut buf, &seed, &request);
             block.finalize_hash();
             assert_eq!(
                 SecretBlock::from_hash(&buf, &block_hash),
@@ -321,12 +319,12 @@ mod tests {
         }
         let mut buf = valid_secret_block();
         for i in 0..=255 {
-            let mut block = MutSecretBlock::new(&mut buf);
             let seed = Seed {
                 secret: Hash::from_bytes([i; DIGEST]),
                 next_secret: Hash::from_bytes([i; DIGEST]),
             };
-            block.set_seed(&seed);
+            let request = SigningRequest::new(random_hash(), random_hash());
+            let mut block = MutSecretBlock::new(&mut buf, &seed, &request);
             block.finalize_hash();
             assert_eq!(
                 SecretBlock::from_previous(&buf, &prev),
@@ -338,16 +336,13 @@ mod tests {
     #[test]
     fn test_mut_block_new() {
         let mut buf = [69; SECRET_BLOCK];
-        MutSecretBlock::new(&mut buf);
-        assert_eq!(buf, [0; SECRET_BLOCK]);
-    }
-
-    #[test]
-    fn test_mut_block_set_seed() {
         let seed = Seed::create(&[69; 32]);
-        let mut buf = [0; SECRET_BLOCK];
-        let mut block = MutSecretBlock::new(&mut buf);
-        block.set_seed(&seed);
+        let request = SigningRequest::new(
+            Hash::from_bytes([13; DIGEST]),
+            Hash::from_bytes([42; DIGEST]),
+        );
+        MutSecretBlock::new(&mut buf, &seed, &request);
+        assert_ne!(buf, [69; SECRET_BLOCK]);
         assert_eq!(
             buf,
             [
@@ -355,10 +350,11 @@ mod tests {
                 0, 0, 0, 0, 9, 253, 30, 6, 249, 18, 171, 84, 19, 62, 24, 21, 201, 205, 86, 68, 150,
                 57, 60, 28, 90, 199, 222, 217, 117, 98, 117, 95, 85, 68, 13, 139, 81, 71, 83, 252,
                 176, 21, 151, 8, 29, 122, 107, 144, 241, 142, 43, 193, 43, 176, 152, 50, 175, 128,
-                168, 219, 8, 72, 38, 149, 74, 180, 245, 26, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+                168, 219, 8, 72, 38, 149, 74, 180, 245, 26, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13,
+                13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13,
+                13, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42,
+                42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
             ]
         );
     }
