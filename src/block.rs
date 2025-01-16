@@ -210,12 +210,16 @@ impl<'a> Block<'a> {
 }
 
 pub struct SigningRequest {
+    pub permission_hash: Hash,
     pub state_hash: Hash,
 }
 
 impl SigningRequest {
     pub fn new(state_hash: Hash) -> Self {
-        Self { state_hash }
+        Self {
+            permission_hash: Hash::from_bytes([0; DIGEST]),
+            state_hash,
+        }
     }
 }
 
@@ -225,10 +229,11 @@ pub struct MutBlock<'a> {
 }
 
 impl<'a> MutBlock<'a> {
-    pub fn new(buf: &'a mut [u8], signing_request: &SigningRequest) -> Self {
+    pub fn new(buf: &'a mut [u8], request: &SigningRequest) -> Self {
         check_block_buf(buf);
         buf.fill(0);
-        buf[STATE_HASH_RANGE].copy_from_slice(signing_request.state_hash.as_bytes());
+        buf[STATE_HASH_RANGE].copy_from_slice(request.state_hash.as_bytes());
+        buf[PERMISSION_HASH_RANGE].copy_from_slice(request.permission_hash.as_bytes());
         Self { buf }
     }
 
