@@ -80,6 +80,7 @@ impl SecretChain {
         let block = block.finalize();
         self.file.write_all(&buf)?;
         self.tail = block;
+        self.count += 1;
         Ok(())
     }
 
@@ -227,10 +228,12 @@ mod tests {
         let mut seed = Seed::create(&entropy);
         let state_hash = Hash::from_bytes([42; DIGEST]);
         let mut chain = SecretChain::create(file, &seed, &state_hash).unwrap();
+        assert_eq!(chain.count, 1);
         for i in 0u8..=255 {
             let next = seed.advance(&entropy);
             let state_hash = Hash::from_bytes([i; DIGEST]);
             chain.commit(&next, &state_hash).unwrap();
+            assert_eq!(chain.count, i as u64 + 2);
             seed.commit(next);
         }
         let mut file = chain.into_file();
