@@ -43,6 +43,9 @@ fn main() {
     }
 
     let chain_hash = chain.tail().chain_hash;
+    let head = chain.head().clone();
+    let tail = chain.tail().clone();
+
     let filename = build_filename(tmpdir1.path(), &chain_hash);
     println!("{:?}", filename);
     let file = open_for_append(&filename).unwrap();
@@ -63,4 +66,6 @@ fn main() {
     }
 
     let chain = ocs.secret_to_public(&secchain).unwrap();
+    assert_eq!(&head, chain.head());
+    assert_eq!(&tail, chain.tail());
 }

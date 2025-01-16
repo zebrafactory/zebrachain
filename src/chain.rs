@@ -75,6 +75,10 @@ impl Chain {
         &self.head
     }
 
+    pub fn tail(&self) -> &BlockState {
+        &self.tail
+    }
+
     pub fn chain_hash(&self) -> &Hash {
         &self.head.block_hash
     }

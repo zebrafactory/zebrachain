@@ -94,8 +94,12 @@ impl OwnedChain {
         Ok(ret)
     }
 
+    pub fn head(&self) -> &BlockState {
+        self.chain.head()
+    }
+
     pub fn tail(&self) -> &BlockState {
-        &self.chain.tail
+        self.chain.tail()
     }
 }
 
