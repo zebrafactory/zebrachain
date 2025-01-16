@@ -1,6 +1,5 @@
 //! Create a new chain and some signatures.
 
-use blake3::Hash;
 use std::fs;
 use tempfile;
 use zebrachain::block::SigningRequest;

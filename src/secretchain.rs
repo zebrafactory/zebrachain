@@ -28,7 +28,7 @@ pub struct SecretChain {
 impl SecretChain {
     pub fn create(mut file: File, seed: &Seed, request: &SigningRequest) -> io::Result<Self> {
         let mut buf = [0; SECRET_BLOCK];
-        let mut block = MutSecretBlock::new(&mut buf, seed, request);
+        let block = MutSecretBlock::new(&mut buf, seed, request);
         let block = block.finalize();
         file.write_all(&buf)?;
         Ok(Self {
