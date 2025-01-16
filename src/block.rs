@@ -152,6 +152,10 @@ impl<'a> Block<'a> {
         &self.buf[NEXT_PUBKEY_HASH_RANGE]
     }
 
+    fn as_permission_hash(&self) -> &[u8] {
+        &self.buf[PERMISSION_HASH_RANGE]
+    }
+
     fn as_state_hash(&self) -> &[u8] {
         &self.buf[STATE_HASH_RANGE]
     }
@@ -170,6 +174,10 @@ impl<'a> Block<'a> {
 
     pub fn next_pubkey_hash(&self) -> Hash {
         Hash::from_bytes(self.as_next_pubkey_hash().try_into().expect("oops"))
+    }
+
+    pub fn permission_hash(&self) -> Hash {
+        Hash::from_bytes(self.as_permission_hash().try_into().expect("oops"))
     }
 
     pub fn state_hash(&self) -> Hash {
@@ -466,6 +474,7 @@ mod tests {
         assert_eq!(block.as_signature(), [2; SIGNATURE]);
         assert_eq!(block.as_pubkey(), [3; PUBKEY]);
         assert_eq!(block.as_next_pubkey_hash(), [4; DIGEST]);
+        assert_eq!(block.as_permission_hash(), [5; DIGEST]);
         assert_eq!(block.as_state_hash(), [6; DIGEST]);
         assert_eq!(block.as_previous_hash(), [7; DIGEST]);
         assert_eq!(block.as_chain_hash(), [8; DIGEST]);
@@ -477,6 +486,7 @@ mod tests {
         let block = Block::new(&buf[..]);
         assert_eq!(block.hash(), Hash::from_bytes([1; DIGEST]));
         assert_eq!(block.next_pubkey_hash(), Hash::from_bytes([4; DIGEST]));
+        assert_eq!(block.permission_hash(), Hash::from_bytes([5; DIGEST]));
         assert_eq!(block.state_hash(), Hash::from_bytes([6; DIGEST]));
         assert_eq!(block.previous_hash(), Hash::from_bytes([7; DIGEST]));
         assert_eq!(block.chain_hash(), Hash::from_bytes([8; DIGEST]));
