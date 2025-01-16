@@ -50,7 +50,10 @@ impl SecretChain {
         let mut tail = SecretBlock::open(&buf).unwrap();
         let mut count = 1;
         while file.read_exact(&mut buf).is_ok() {
-            tail = SecretBlock::from_previous(&buf, &tail).unwrap();
+            tail = match SecretBlock::from_previous(&buf, &tail) {
+                Ok(block) => block,
+                Err(err) => return Err(err.to_io_error()),
+            };
             count += 1;
         }
         Ok(Self { file, tail, count })

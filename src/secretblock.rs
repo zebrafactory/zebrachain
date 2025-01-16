@@ -3,6 +3,7 @@
 use crate::always::*;
 use crate::secretseed::Seed;
 use blake3::{hash, Hash};
+use std::io;
 use std::ops::Range;
 
 const SECRET_INDEX: usize = 1;
@@ -47,6 +48,13 @@ pub enum SecretBlockError {
 
     /// Previous hash in block does not match expected external value.
     PreviousHash,
+}
+
+impl SecretBlockError {
+    // FIXME: Is there is a Rustier way of doing this [feedback encouraged].
+    pub fn to_io_error(&self) -> io::Error {
+        io::Error::other(format!("SecretBlockError::{self:?}"))
+    }
 }
 
 /// Alias for `Result<SecretBlock, SecretBlockError`.

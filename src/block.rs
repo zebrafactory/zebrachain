@@ -36,6 +36,7 @@ pub enum BlockError {
 }
 
 impl BlockError {
+    // FIXME: Is there is a Rustier way of doing this [feedback encouraged].
     pub fn to_io_error(&self) -> io::Error {
         io::Error::other(format!("BlockError::{self:?}"))
     }
