@@ -4,7 +4,7 @@ use crate::always::*;
 use crate::block::{Block, BlockState};
 use crate::fsutil::{build_filename, create_for_append, open_for_append};
 use blake3::Hash;
-use std::fs::File;
+use std::fs::{remove_file, File};
 use std::io;
 use std::io::Write;
 use std::os::unix::fs::FileExt;
@@ -194,6 +194,11 @@ impl ChainStore {
         create_for_append(&filename)
     }
 
+    pub fn remove_chain_file(&self, chain_hash: &Hash) -> io::Result<()> {
+        let filename = self.chain_filename(chain_hash);
+        remove_file(&filename)
+    }
+
     pub fn open_chain(&self, chain_hash: &Hash) -> io::Result<Chain> {
         let file = self.open_chain_file(chain_hash)?;
         Chain::open(file, chain_hash)
@@ -315,6 +320,17 @@ mod tests {
         let chain_hash = random_hash();
         assert!(chainstore.create_chain_file(&chain_hash).is_ok());
         assert!(chainstore.create_chain_file(&chain_hash).is_err()); // File already exists
+    }
+
+    #[test]
+    fn test_chainstore_remove_chain_file() {
+        let tmpdir = tempfile::TempDir::new().unwrap();
+        let store = ChainStore::new(tmpdir.path());
+        let chain_hash = random_hash();
+        assert!(store.remove_chain_file(&chain_hash).is_err()); // File does not exist
+        assert!(store.create_chain_file(&chain_hash).is_ok());
+        assert!(store.remove_chain_file(&chain_hash).is_ok());
+        assert!(store.remove_chain_file(&chain_hash).is_err()); // Gone again
     }
 
     #[test]

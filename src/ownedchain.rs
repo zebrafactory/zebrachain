@@ -26,6 +26,10 @@ impl OwnedChainStore {
         }
     }
 
+    pub fn store(&self) -> &ChainStore {
+        &self.store
+    }
+
     fn create_secret_chain(
         &self,
         seed: &Seed,

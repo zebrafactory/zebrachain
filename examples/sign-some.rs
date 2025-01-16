@@ -1,6 +1,5 @@
 //! Create a new chain and some signatures.
 
-use std::fs;
 use tempfile;
 use zebrachain::block::SigningRequest;
 use zebrachain::chain::Chain;
@@ -54,7 +53,7 @@ fn main() {
         let state = result.unwrap();
         println!("{}", state.block_hash);
     }
-    fs::remove_file(&filename).unwrap();
+    ocs.store().remove_chain_file(&chain_hash).unwrap();
 
     let filename = build_filename(tmpdir2.path(), &chain_hash);
     let file = open_for_append(&filename).unwrap();
