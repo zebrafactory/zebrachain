@@ -40,8 +40,8 @@ fn validate_chain(file: &File, chain_hash: &Hash) -> io::Result<(BlockState, Blo
 /// Read and write blocks to a file.
 pub struct Chain {
     file: File,
-    pub head: BlockState,
-    pub tail: BlockState,
+    head: BlockState,
+    tail: BlockState,
     count: u64,
 }
 
