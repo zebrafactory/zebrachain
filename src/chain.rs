@@ -1,7 +1,7 @@
 //! Writes/reads blocks to/from non-volitile storage and network.
 
 use crate::always::*;
-use crate::block::{Block, BlockState};
+use crate::block::{Block, BlockState, SigningRequest};
 use crate::fsutil::{build_filename, create_for_append, open_for_append};
 use blake3::Hash;
 use std::fs::File;
@@ -221,7 +221,8 @@ mod tests {
         // Generate 1st block
         let mut seed = Seed::auto_create();
         let mut buf1 = [0; BLOCK];
-        let chain_hash = sign_block(&mut buf1, &seed, &random_hash(), None);
+        let req1 = &SigningRequest::new(random_hash());
+        let chain_hash = sign_block(&mut buf1, &seed, &req1, None);
         let buf1 = buf1; // Doesn't need to be mutable anymore
         let block1 = Block::from_hash(&buf1, &chain_hash).unwrap();
 
@@ -241,7 +242,8 @@ mod tests {
         // Generate a 2nd block
         let next = seed.auto_advance();
         let mut buf2 = [0; BLOCK];
-        let _block_hash = sign_block(&mut buf2, &next, &random_hash(), Some(&tail));
+        let req2 = &SigningRequest::new(random_hash());
+        let _block_hash = sign_block(&mut buf2, &next, &req2, Some(&tail));
         seed.commit(next);
         let buf2 = buf2; // Doesn't need to be mutable anymore
         let block2 = Block::from_previous(&buf2, &tail).unwrap();

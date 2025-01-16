@@ -1,6 +1,7 @@
 //! Read and write secret blocks in a chain.
 
 use crate::always::*;
+use crate::block::SigningRequest;
 use crate::fsutil::{build_filename, create_for_append, open_for_append};
 use crate::secretblock::{MutSecretBlock, SecretBlock};
 use crate::secretseed::Seed;
@@ -30,11 +31,11 @@ pub struct SecretChain {
 }
 
 impl SecretChain {
-    pub fn create(mut file: File, seed: &Seed, state_hash: &Hash) -> io::Result<Self> {
+    pub fn create(mut file: File, seed: &Seed, request: &SigningRequest) -> io::Result<Self> {
         let mut buf = [0; SECRET_BLOCK];
         let mut block = MutSecretBlock::new(&mut buf);
         block.set_seed(seed);
-        block.set_state_hash(state_hash);
+        block.set_state_hash(&request.state_hash);
         let block = block.finalize();
         file.write_all(&buf)?;
         Ok(Self {
@@ -71,11 +72,11 @@ impl SecretChain {
         &self.tail
     }
 
-    pub fn commit(&mut self, seed: &Seed, state_hash: &Hash) -> io::Result<()> {
+    pub fn commit(&mut self, seed: &Seed, request: &SigningRequest) -> io::Result<()> {
         let mut buf = [0; SECRET_BLOCK];
         let mut block = MutSecretBlock::new(&mut buf);
         block.set_seed(seed);
-        block.set_state_hash(state_hash);
+        block.set_state_hash(&request.state_hash);
         block.set_previous(&self.tail);
         let block = block.finalize();
         self.file.write_all(&buf)?;
@@ -178,11 +179,11 @@ impl SecretChainStore {
         &self,
         chain_hash: &Hash,
         seed: &Seed,
-        state_hash: &Hash,
+        request: &SigningRequest,
     ) -> io::Result<SecretChain> {
         let filename = build_filename(&self.dir, chain_hash);
         let file = create_for_append(&filename)?;
-        SecretChain::create(file, seed, state_hash)
+        SecretChain::create(file, seed, request)
     }
 }
 
@@ -196,8 +197,8 @@ mod tests {
     fn test_chain_create() {
         let file = tempfile().unwrap();
         let seed = Seed::create(&[42; 32]);
-        let state_hash = Hash::from_bytes([69; DIGEST]);
-        let result = SecretChain::create(file, &seed, &state_hash);
+        let request = SigningRequest::new(Hash::from_bytes([69; DIGEST]));
+        let result = SecretChain::create(file, &seed, &request);
         assert!(result.is_ok());
         let mut file = result.unwrap().into_file();
         file.rewind().unwrap();
@@ -226,13 +227,13 @@ mod tests {
         let entropy = [69; 32];
         let file = tempfile().unwrap();
         let mut seed = Seed::create(&entropy);
-        let state_hash = Hash::from_bytes([42; DIGEST]);
-        let mut chain = SecretChain::create(file, &seed, &state_hash).unwrap();
+        let request = SigningRequest::new(Hash::from_bytes([42; DIGEST]));
+        let mut chain = SecretChain::create(file, &seed, &request).unwrap();
         assert_eq!(chain.count, 1);
         for i in 0u8..=255 {
             let next = seed.advance(&entropy);
-            let state_hash = Hash::from_bytes([i; DIGEST]);
-            chain.commit(&next, &state_hash).unwrap();
+            let request = SigningRequest::new(Hash::from_bytes([i; DIGEST]));
+            chain.commit(&next, &request).unwrap();
             assert_eq!(chain.count, i as u64 + 2);
             seed.commit(next);
         }

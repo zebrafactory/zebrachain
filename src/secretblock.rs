@@ -1,6 +1,7 @@
 //! Wire format for secret seeds when written to nonvolatile storage.
 
 use crate::always::*;
+use crate::block::SigningRequest;
 use crate::secretseed::Seed;
 use blake3::{hash, Hash};
 use std::io;
@@ -73,6 +74,10 @@ pub struct SecretBlock {
 impl SecretBlock {
     pub fn get_seed(&self) -> Seed {
         Seed::new(self.secret, self.next_secret)
+    }
+
+    pub fn get_signing_request(&self) -> SigningRequest {
+        SigningRequest::new(self.state_hash)
     }
 
     pub fn open(buf: &[u8]) -> SecretBlockResult {

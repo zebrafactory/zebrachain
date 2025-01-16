@@ -3,42 +3,43 @@
 use blake3::Hash;
 use std::fs;
 use tempfile;
+use zebrachain::block::SigningRequest;
 use zebrachain::chain::Chain;
 use zebrachain::fsutil::{build_filename, open_for_append};
 use zebrachain::ownedchain::OwnedChainStore;
 use zebrachain::secretchain::SecretChain;
 use zebrachain::secretseed::random_hash;
 
-fn build_state_hashes() -> Vec<Hash> {
+fn build_requests() -> Vec<SigningRequest> {
     let count = 10_000;
     let mut states = Vec::with_capacity(count);
     for _ in 0..count {
-        states.push(random_hash());
+        states.push(SigningRequest::new(random_hash()));
     }
     states
 }
 
 fn main() {
-    let states = build_state_hashes();
+    let requests = build_requests();
     let tmpdir1 = tempfile::TempDir::new().unwrap();
     let tmpdir2 = tempfile::TempDir::new().unwrap();
     let ocs = OwnedChainStore::new(tmpdir1.path(), Some(tmpdir2.path()));
-    let mut chain = ocs.create_owned_chain(&states[0]).unwrap();
+    let mut chain = ocs.create_owned_chain(&requests[0]).unwrap();
 
     println!(
         "{} {} {}",
         chain.tail().chain_hash,
         chain.tail().block_hash,
-        &states[0]
+        &requests[0].state_hash,
     );
 
-    for state_hash in &states[1..] {
-        chain.sign_next(&state_hash).unwrap();
+    for request in &requests[1..] {
+        chain.sign_next(&request).unwrap();
         println!(
             "{} {} {}",
             chain.tail().chain_hash,
             chain.tail().block_hash,
-            state_hash
+            request.state_hash
         );
     }
 

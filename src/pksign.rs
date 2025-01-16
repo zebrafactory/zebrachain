@@ -1,7 +1,7 @@
 //! Abstraction over public key signature algorithms.
 
 use crate::always::*;
-use crate::block::{Block, BlockState, MutBlock};
+use crate::block::{Block, BlockState, MutBlock, SigningRequest};
 use crate::secretseed::{derive, Seed};
 use blake3;
 use blake3::Hash;
@@ -99,10 +99,10 @@ impl SecretSigner {
 pub fn sign_block(
     buf: &mut [u8],
     seed: &Seed,
-    state_hash: &Hash,
+    signing_request: &SigningRequest,
     last: Option<&BlockState>,
 ) -> Hash {
-    let mut block = MutBlock::new(buf, state_hash);
+    let mut block = MutBlock::new(buf, signing_request);
     if let Some(last) = last {
         block.set_previous(last);
     }
@@ -152,7 +152,8 @@ mod tests {
         );
 
         let mut buf = vec![0; BLOCK];
-        pair.sign(&mut MutBlock::new(&mut buf[..], &Hash::from_bytes([0; 32])));
+        let sigreq = SigningRequest::new(Hash::from_bytes([0; 32]));
+        pair.sign(&mut MutBlock::new(&mut buf[..], &sigreq));
         assert_eq!(
             buf,
             [

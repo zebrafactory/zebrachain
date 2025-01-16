@@ -4,7 +4,7 @@
 //! blocks for.
 
 use crate::always::*;
-use crate::block::{Block, BlockState};
+use crate::block::{BlockState, SigningRequest};
 use crate::chain::{Chain, ChainStore};
 use crate::pksign::sign_block;
 use crate::secretchain::{SecretChain, SecretChainStore};
@@ -30,23 +30,21 @@ impl OwnedChainStore {
         &self,
         seed: &Seed,
         chain_hash: &Hash,
-        state_hash: &Hash,
+        request: &SigningRequest,
     ) -> io::Result<Option<SecretChain>> {
         if let Some(secret_store) = self.secret_store.as_ref() {
-            Ok(Some(
-                secret_store.create_chain(chain_hash, seed, state_hash)?,
-            ))
+            Ok(Some(secret_store.create_chain(chain_hash, seed, request)?))
         } else {
             Ok(None)
         }
     }
 
-    pub fn create_owned_chain(&self, state_hash: &Hash) -> io::Result<OwnedChain> {
+    pub fn create_owned_chain(&self, request: &SigningRequest) -> io::Result<OwnedChain> {
         let seed = Seed::auto_create();
         let mut buf = [0; BLOCK];
-        let chain_hash = sign_block(&mut buf, &seed, state_hash, None);
+        let chain_hash = sign_block(&mut buf, &seed, request, None);
         let chain = self.store.create_chain(&buf, &chain_hash)?;
-        let secret_chain = self.create_secret_chain(&seed, &chain_hash, state_hash)?;
+        let secret_chain = self.create_secret_chain(&seed, &chain_hash, request)?;
         Ok(OwnedChain::new(seed, chain, secret_chain))
     }
 
@@ -54,12 +52,17 @@ impl OwnedChainStore {
         let mut buf = [0; BLOCK];
         let mut iter = secret_chain.iter();
         let sec = iter.nth(0).unwrap()?;
-        let chain_hash = sign_block(&mut buf, &sec.get_seed(), &sec.state_hash, None);
+        let chain_hash = sign_block(&mut buf, &sec.get_seed(), &sec.get_signing_request(), None);
         let mut chain = self.store.create_chain(&buf, &chain_hash)?;
         let mut tail = chain.head().clone();
         for result in iter {
             let sec = result?;
-            sign_block(&mut buf, &sec.get_seed(), &sec.state_hash, Some(&tail));
+            sign_block(
+                &mut buf,
+                &sec.get_seed(),
+                &sec.get_signing_request(),
+                Some(&tail),
+            );
             tail = chain.append(&buf)?.clone();
         }
         Ok(chain)
@@ -82,12 +85,12 @@ impl OwnedChain {
         }
     }
 
-    pub fn sign_next(&mut self, state_hash: &Hash) -> io::Result<&BlockState> {
+    pub fn sign_next(&mut self, signing_request: &SigningRequest) -> io::Result<&BlockState> {
         let seed = self.seed.auto_advance();
         let mut buf = [0; BLOCK];
-        sign_block(&mut buf, &seed, state_hash, Some(self.tail()));
+        sign_block(&mut buf, &seed, signing_request, Some(self.tail()));
         if let Some(secret_chain) = self.secret_chain.as_mut() {
-            secret_chain.commit(&seed, state_hash)?;
+            secret_chain.commit(&seed, signing_request)?;
         }
         let ret = self.chain.append(&buf)?;
         self.seed.commit(seed);
@@ -114,6 +117,7 @@ mod tests {
         let tmpdir1 = tempfile::TempDir::new().unwrap();
         let tmpdir2 = tempfile::TempDir::new().unwrap();
         let ocs = OwnedChainStore::new(tmpdir1.path(), Some(tmpdir2.path()));
-        let _chain = ocs.create_owned_chain(&random_hash()).unwrap();
+        let req = SigningRequest::new(random_hash());
+        let _chain = ocs.create_owned_chain(&req).unwrap();
     }
 }

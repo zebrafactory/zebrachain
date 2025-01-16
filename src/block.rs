@@ -201,16 +201,26 @@ impl<'a> Block<'a> {
     }
 }
 
+pub struct SigningRequest {
+    pub state_hash: Hash,
+}
+
+impl SigningRequest {
+    pub fn new(state_hash: Hash) -> Self {
+        Self { state_hash }
+    }
+}
+
 /// Build a new block.
 pub struct MutBlock<'a> {
     buf: &'a mut [u8],
 }
 
 impl<'a> MutBlock<'a> {
-    pub fn new(buf: &'a mut [u8], state_hash: &Hash) -> Self {
+    pub fn new(buf: &'a mut [u8], signing_request: &SigningRequest) -> Self {
         check_block_buf(buf);
         buf.fill(0);
-        buf[STATE_HASH_RANGE].copy_from_slice(state_hash.as_bytes());
+        buf[STATE_HASH_RANGE].copy_from_slice(signing_request.state_hash.as_bytes());
         Self { buf }
     }
 
@@ -293,8 +303,8 @@ mod tests {
         let mut buf = vec![0; BLOCK];
         let seed = Seed::create(&[69; 32]);
         let secsign = SecretSigner::new(&seed);
-        let state_hash = Hash::from_bytes([2; 32]);
-        let mut block = MutBlock::new(&mut buf, &state_hash);
+        let req = SigningRequest::new(Hash::from_bytes([2; 32]));
+        let mut block = MutBlock::new(&mut buf, &req);
         let last = BlockState::new(
             Hash::from_bytes([3; 32]),
             Hash::from_bytes([4; 32]),
@@ -523,8 +533,8 @@ mod tests {
     #[test]
     fn test_mutblock_new() {
         let mut buf = [42; BLOCK];
-        let state_hash = Hash::from_bytes([69; DIGEST]);
-        MutBlock::new(&mut buf, &state_hash);
+        let req = SigningRequest::new(Hash::from_bytes([69; DIGEST]));
+        MutBlock::new(&mut buf, &req);
         assert_eq!(
             buf,
             [
