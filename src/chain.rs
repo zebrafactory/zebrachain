@@ -1,7 +1,7 @@
 //! Writes/reads blocks to/from non-volitile storage and network.
 
 use crate::always::*;
-use crate::block::{Block, BlockState, SigningRequest};
+use crate::block::{Block, BlockState};
 use crate::fsutil::{build_filename, create_for_append, open_for_append};
 use blake3::Hash;
 use std::fs::File;
@@ -208,6 +208,7 @@ impl ChainStore {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::block::SigningRequest;
     use crate::pksign::sign_block;
     use crate::secretseed::{random_hash, Seed};
     use crate::testhelpers::BitFlipper;
