@@ -421,6 +421,7 @@ mod tests {
             );
         }
 
+        // Block::from_previous() specific errors
         let next_pubkey_hash = block.compute_pubkey_hash();
         let previous_hash = block.previous_hash();
         for bad in HashBitFlipper::new(&next_pubkey_hash) {

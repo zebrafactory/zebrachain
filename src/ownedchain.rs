@@ -50,16 +50,19 @@ impl OwnedChainStore {
         Ok(OwnedChain::new(seed, chain, secret_chain))
     }
 
-    pub fn secret_to_public(&self, secret_chain: SecretChain) -> io::Result<Chain> {
-        let mut tail = None;
+    pub fn secret_to_public(&self, secret_chain: &SecretChain) -> io::Result<Chain> {
         let mut buf = [0; BLOCK];
-        for result in &secret_chain {
-            let sb = result?;
-            let seed = sb.get_seed();
-            let block_hash = sign_block(&mut buf, &seed, &sb.state_hash, tail);
-            let tail = Some(Block::from_hash(&buf, &block_hash).unwrap());
+        let mut iter = secret_chain.iter();
+        let sec = iter.nth(0).unwrap()?;
+        let chain_hash = sign_block(&mut buf, &sec.get_seed(), &sec.state_hash, None);
+        let mut chain = self.store.create_chain(&buf, &chain_hash)?;
+        let mut tail = chain.head().clone();
+        for result in iter {
+            let sec = result?;
+            sign_block(&mut buf, &sec.get_seed(), &sec.state_hash, Some(&tail));
+            tail = chain.append(&buf)?.clone();
         }
-        Err(io::Error::other("yo"))
+        Ok(chain)
     }
 }
 
