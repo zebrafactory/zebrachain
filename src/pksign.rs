@@ -3,8 +3,7 @@
 use crate::always::*;
 use crate::block::{Block, BlockState, MutBlock, SigningRequest};
 use crate::secretseed::{derive, Seed};
-use blake3;
-use blake3::Hash;
+use blake3::{hash, Hash};
 use ed25519_dalek::{Signature, Signer, SigningKey, VerifyingKey};
 
 /// Abstraction over specific public key algorithms (and hybrid combinations thereof).
@@ -40,10 +39,10 @@ impl KeyPair {
     /// Returns hash of public key byte representation.
     ///
     /// Consumes instance becase we should either make a signature or hash the pubkey, not both.
-    pub fn pubkey_hash(self) -> blake3::Hash {
+    pub fn pubkey_hash(self) -> Hash {
         let mut buf = [0; PUBKEY];
         self.write_pubkey(&mut buf);
-        blake3::hash(&buf)
+        hash(&buf)
     }
 
     /// Sign a block being built up.
@@ -181,7 +180,7 @@ mod tests {
     #[test]
     fn test_keypair_pubkey_hash() {
         let pair = KeyPair::new(&[69; 32]);
-        assert_eq!(pair.pubkey_hash(), blake3::Hash::from_hex(HEX0).unwrap());
+        assert_eq!(pair.pubkey_hash(), Hash::from_hex(HEX0).unwrap());
     }
 
     #[test]
