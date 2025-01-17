@@ -27,6 +27,7 @@ impl KeyPair {
     pub fn new(secret: &[u8; 32]) -> Self {
         let h1 = derive(ED25519_CONTEXT, secret);
         let _h2 = derive(DILITHIUM_CONTEXT, secret); // Once doing hybrid singing
+        assert_ne!(h1, _h2);
         let key = SigningKey::from_bytes(h1.as_bytes());
         Self { key }
     }
@@ -95,6 +96,9 @@ impl SecretSigner {
     }
 }
 
+/// Sign a block.
+///
+/// Honestly, this fn could be the API for the whole module. We will see.
 pub fn sign_block(
     buf: &mut [u8],
     seed: &Seed,
@@ -211,7 +215,7 @@ mod tests {
         // Sign 3rd block
         let tail2 = Block::from_hash(&buf, &block_hash).unwrap().state();
         buf.fill(69);
-        let seed = seed.auto_advance(); //.auto_advance(); // <-- Will break
+        let seed = seed.auto_advance(); //.auto_advance(); // <-- Will break (cuz it's supposed to)
         let request = SigningRequest::new(random_hash(), random_hash());
         let block2_hash = sign_block(&mut buf, &seed, &request, Some(&tail2));
         assert_ne!(block_hash, block2_hash);
@@ -222,5 +226,21 @@ mod tests {
             &buf[BLOCK - DIGEST * 2..BLOCK - DIGEST],
             block_hash.as_bytes()
         );
+    }
+
+    #[test]
+    #[should_panic]
+    fn test_sign_block_panic() {
+        // Sign first block
+        let mut buf = [69; BLOCK]; // 69 to make sure block gets zeroed first
+        let seed = Seed::auto_create();
+        let request = SigningRequest::new(random_hash(), random_hash());
+        let chain_hash = sign_block(&mut buf, &seed, &request, None);
+
+        // Sign 2nd block, but double advance the seed:
+        let tail = Block::from_hash(&buf, &chain_hash).unwrap().state();
+        let seed = seed.auto_advance().auto_advance();
+        let request = SigningRequest::new(random_hash(), random_hash());
+        let _block_hash = sign_block(&mut buf, &seed, &request, Some(&tail));
     }
 }
