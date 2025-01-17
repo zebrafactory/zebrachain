@@ -198,7 +198,7 @@ mod tests {
         let mut buf = [0; SECRET_BLOCK];
         file.read_exact(&mut buf).unwrap();
         let block = SecretBlock::open(&buf).unwrap();
-        assert_eq!(seed, block.get_seed());
+        assert_eq!(seed, block.seed());
     }
 
     #[test]

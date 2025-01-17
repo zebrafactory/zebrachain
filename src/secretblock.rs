@@ -74,11 +74,11 @@ pub struct SecretBlock {
 }
 
 impl SecretBlock {
-    pub fn get_seed(&self) -> Seed {
+    pub fn seed(&self) -> Seed {
         Seed::new(self.secret, self.next_secret)
     }
 
-    pub fn get_signing_request(&self) -> SigningRequest {
+    pub fn signing_request(&self) -> SigningRequest {
         SigningRequest::new(self.permission_hash, self.state_hash)
     }
 
