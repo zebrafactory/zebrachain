@@ -114,6 +114,7 @@ pub fn sign_block(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::secretseed::random_hash;
     use pqc_dilithium;
     use pqcrypto_dilithium;
 
@@ -178,5 +179,46 @@ mod tests {
     fn test_keypair_pubkey_hash() {
         let pair = KeyPair::new(&[69; 32]);
         assert_eq!(pair.pubkey_hash(), blake3::Hash::from_hex(HEX0).unwrap());
+    }
+
+    #[test]
+    fn test_sign_block() {
+        // Sign first block
+        let mut buf = [69; BLOCK]; // 69 to make sure block gets zeroed first
+        let seed = Seed::auto_create();
+        let request = SigningRequest::new(random_hash(), random_hash());
+        let chain_hash = sign_block(&mut buf, &seed, &request, None);
+        assert_eq!(&buf[0..DIGEST], chain_hash.as_bytes());
+        assert_eq!(&buf[BLOCK - DIGEST * 2..], &[0; DIGEST * 2]); // previous_hash, chain_hash == 0
+
+        // Sign 2nd block
+        let tail = Block::from_hash(&buf, &chain_hash).unwrap().state();
+        buf.fill(69);
+        let seed = seed.auto_advance();
+        let request = SigningRequest::new(random_hash(), random_hash());
+        let block_hash = sign_block(&mut buf, &seed, &request, Some(&tail));
+        assert_ne!(chain_hash, block_hash);
+        assert_eq!(&buf[0..DIGEST], block_hash.as_bytes());
+        // chain_hash and previous_hash are always == in the 2nd block:
+        assert_eq!(&buf[BLOCK - DIGEST..], chain_hash.as_bytes());
+        assert_eq!(
+            &buf[BLOCK - DIGEST * 2..BLOCK - DIGEST],
+            chain_hash.as_bytes()
+        );
+
+        // Sign 3rd block
+        let tail2 = Block::from_hash(&buf, &block_hash).unwrap().state();
+        buf.fill(69);
+        let seed = seed.auto_advance();
+        let request = SigningRequest::new(random_hash(), random_hash());
+        let block2_hash = sign_block(&mut buf, &seed, &request, Some(&tail2));
+        assert_ne!(block_hash, block2_hash);
+        assert_ne!(chain_hash, block2_hash);
+        assert_eq!(&buf[0..DIGEST], block2_hash.as_bytes());
+        assert_eq!(&buf[BLOCK - DIGEST..], chain_hash.as_bytes());
+        assert_eq!(
+            &buf[BLOCK - DIGEST * 2..BLOCK - DIGEST],
+            block_hash.as_bytes()
+        );
     }
 }
