@@ -108,6 +108,9 @@ pub fn sign_block(
     }
     let secsign = SecretSigner::new(seed);
     secsign.sign(&mut block);
+    if let Some(last) = last {
+        assert_eq!(last.next_pubkey_hash, block.compute_pubkey_hash());
+    }
     block.finalize()
 }
 
@@ -209,7 +212,7 @@ mod tests {
         // Sign 3rd block
         let tail2 = Block::from_hash(&buf, &block_hash).unwrap().state();
         buf.fill(69);
-        let seed = seed.auto_advance();
+        let seed = seed.auto_advance(); //.auto_advance(); // <-- Will break
         let request = SigningRequest::new(random_hash(), random_hash());
         let block2_hash = sign_block(&mut buf, &seed, &request, Some(&tail2));
         assert_ne!(block_hash, block2_hash);

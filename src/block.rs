@@ -269,6 +269,10 @@ impl<'a> MutBlock<'a> {
         &self.buf[SIGNABLE_RANGE]
     }
 
+    pub fn compute_pubkey_hash(&self) -> Hash {
+        hash(&self.buf[PUBKEY_RANGE])
+    }
+
     pub fn finalize(mut self) -> Hash {
         let block_hash = hash(self.as_hashable());
         self.set_hash(&block_hash);
