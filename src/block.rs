@@ -316,8 +316,8 @@ mod tests {
         let mut buf = vec![0; BLOCK];
         let seed = Seed::create(&[69; 32]);
         let secsign = SecretSigner::new(&seed);
-        let req = SigningRequest::new(Hash::from_bytes([1; 32]), Hash::from_bytes([2; 32]));
-        let mut block = MutBlock::new(&mut buf, &req);
+        let request = SigningRequest::new(Hash::from_bytes([1; 32]), Hash::from_bytes([2; 32]));
+        let mut block = MutBlock::new(&mut buf, &request);
         let last = BlockState::new(
             Hash::from_bytes([3; 32]),
             Hash::from_bytes([4; 32]),
@@ -549,11 +549,11 @@ mod tests {
     #[test]
     fn test_mutblock_new() {
         let mut buf = [42; BLOCK];
-        let req = SigningRequest::new(
+        let request = SigningRequest::new(
             Hash::from_bytes([42; DIGEST]),
             Hash::from_bytes([69; DIGEST]),
         );
-        MutBlock::new(&mut buf, &req);
+        MutBlock::new(&mut buf, &request);
         assert_eq!(
             buf,
             [

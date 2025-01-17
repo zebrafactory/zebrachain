@@ -99,10 +99,10 @@ impl SecretSigner {
 pub fn sign_block(
     buf: &mut [u8],
     seed: &Seed,
-    signing_request: &SigningRequest,
+    request: &SigningRequest,
     last: Option<&BlockState>,
 ) -> Hash {
-    let mut block = MutBlock::new(buf, signing_request);
+    let mut block = MutBlock::new(buf, request);
     if let Some(last) = last {
         block.set_previous(last);
     }

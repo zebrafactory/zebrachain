@@ -84,16 +84,16 @@ impl OwnedChain {
         }
     }
 
-    pub fn sign_next(&mut self, signing_request: &SigningRequest) -> io::Result<&BlockState> {
+    pub fn sign_next(&mut self, request: &SigningRequest) -> io::Result<&BlockState> {
         let seed = self.seed.auto_advance();
         let mut buf = [0; BLOCK];
-        sign_block(&mut buf, &seed, signing_request, Some(self.tail()));
+        sign_block(&mut buf, &seed, request, Some(self.tail()));
         if let Some(secret_chain) = self.secret_chain.as_mut() {
-            secret_chain.commit(&seed, signing_request)?;
+            secret_chain.commit(&seed, request)?;
         }
-        let ret = self.chain.append(&buf)?;
+        let result = self.chain.append(&buf)?;
         self.seed.commit(seed);
-        Ok(ret)
+        Ok(result)
     }
 
     pub fn head(&self) -> &BlockState {
@@ -116,7 +116,7 @@ mod tests {
         let tmpdir1 = tempfile::TempDir::new().unwrap();
         let tmpdir2 = tempfile::TempDir::new().unwrap();
         let ocs = OwnedChainStore::new(tmpdir1.path(), Some(tmpdir2.path()));
-        let req = SigningRequest::new(random_hash(), random_hash());
-        let _chain = ocs.create_owned_chain(&req).unwrap();
+        let request = SigningRequest::new(random_hash(), random_hash());
+        let _chain = ocs.create_owned_chain(&request).unwrap();
     }
 }
