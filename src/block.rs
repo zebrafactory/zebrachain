@@ -1,7 +1,7 @@
 //! Block construction, validation, and wire format.
 
 use crate::always::*;
-use crate::pksign::verify_signature;
+use crate::pksign::verify_block_signature;
 use blake3::{hash, Hash};
 use std::io;
 
@@ -205,7 +205,7 @@ impl<'a> Block<'a> {
     }
 
     fn signature_is_valid(&self) -> bool {
-        verify_signature(self)
+        verify_block_signature(self)
     }
 }
 

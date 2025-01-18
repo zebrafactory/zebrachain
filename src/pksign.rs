@@ -1,4 +1,9 @@
-//! Abstraction over public key signature algorithms.
+//! Abstraction over specific public key algorithms (and hybrid combinations thereof).
+//!
+//! `pqc_dilithium` and `pqcrypto_dilithium` don't support providing the entropy used to generate
+//! the keypair, so for now this just signs with [ed25519_dalek]. See [Seed] for details, but the
+//! short is because ZebraChain does application level entropy accumulation, we need to be able to
+//! provide the entropy used to generate the keypairs.
 
 use crate::always::*;
 use crate::block::{Block, BlockState, MutBlock, SigningRequest};
@@ -14,9 +19,8 @@ use ed25519_dalek::{Signature, Signer, SigningKey, VerifyingKey};
 /// # Examples
 ///
 /// ```
-/// use zebrachain::pksign::KeyPair;
 /// let secret = [69u8; 32];
-/// let keypair = KeyPair::new(&secret);
+/// let keypair = zebrachain::pksign::KeyPair::new(&secret);
 /// ```
 #[derive(Debug)]
 pub struct KeyPair {
@@ -56,7 +60,8 @@ impl KeyPair {
     }
 }
 
-pub fn verify_signature(block: &Block) -> bool {
+/// Verify the signature of a [Block].
+pub fn verify_block_signature(block: &Block) -> bool {
     let sig = Signature::from_bytes(block.as_signature().try_into().unwrap());
     if let Ok(pubkey) = VerifyingKey::from_bytes(block.as_pubkey().try_into().unwrap()) {
         pubkey.verify_strict(block.as_signable(), &sig).is_ok()
@@ -66,6 +71,13 @@ pub fn verify_signature(block: &Block) -> bool {
 }
 
 /// Used to get current KeyPair and next PubKey hash from a Seed.
+///
+/// # Examples
+///
+/// ```
+/// let seed = zebrachain::secretseed::Seed::auto_create();
+/// let secsign = zebrachain::pksign::SecretSigner::new(&seed);
+/// ```
 pub struct SecretSigner {
     keypair: KeyPair,
     next_pubkey_hash: Hash,
@@ -73,11 +85,13 @@ pub struct SecretSigner {
 
 impl SecretSigner {
     pub fn new(seed: &Seed) -> Self {
+        assert_ne!(seed.secret, seed.next_secret);
         Self {
             keypair: KeyPair::new(seed.secret.as_bytes()),
             next_pubkey_hash: KeyPair::new(seed.next_secret.as_bytes()).pubkey_hash(),
         }
     }
+
     /*
         The SecretSigner must first copy the pubkey and next_pubkey_hash byte
         representations into the PUBKEY_RANGE and NEXT_PUBKEY_HASH_RANGE, respectively.
@@ -96,9 +110,11 @@ impl SecretSigner {
     }
 }
 
-/// Sign a block.
+/// Sign a block buffer.
 ///
-/// Honestly, this fn could be the API for the whole module. We will see.
+/// Internally, this builds a [MutBlock].
+///
+/// Honestly, this fn could be the signing API for the whole module. We will see.
 pub fn sign_block(
     buf: &mut [u8],
     seed: &Seed,
