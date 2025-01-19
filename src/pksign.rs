@@ -12,17 +12,9 @@ use blake3::{hash, Hash};
 use ed25519_dalek::{Signature, Signer, SigningKey, VerifyingKey};
 use pqc_sphincsplus;
 
-/*
-// So close, but this doesn't actually work.
 fn build_sphincsplus_keypair(secret: &Hash) -> pqc_sphincsplus::Keypair {
-    let mut kp = pqc_sphincsplus::Keypair {
-        public: [0; 48],
-        secret: [0; 96],
-    };
-    pqc_sphincsplus::sign::crypto_sign_keypair(&mut kp.public, &mut kp.secret, Some(secret.as_bytes()));
-    kp
+    pqc_sphincsplus::keypair_from_seed(secret.as_bytes())
 }
-*/
 
 /// Abstraction over specific public key algorithms (and hybrid combinations thereof).
 ///
