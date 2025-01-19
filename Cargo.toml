@@ -10,9 +10,10 @@ rust-version = "1.81"
 blake3 = "1.5.4"
 ed25519-dalek = "2.1.1"
 getrandom = "0.2.15"
+pqc_sphincsplus = { version = "0.2.0", features = ["haraka", "s192", "simple"] }
 
 [dev-dependencies]
 pqc_dilithium = "0.2.0"
 pqcrypto-dilithium = "0.5.0"
 tempfile = "3.14.0"
-pqc_sphincsplus = { version = "0.2.0", features = ["haraka", "s192", "simple"] }
+
