@@ -11,9 +11,14 @@ use crate::secretseed::{derive, Seed};
 use blake3::{hash, Hash};
 use ed25519_dalek::{Signature, Signer, SigningKey, VerifyingKey};
 use pqc_sphincsplus;
+use pqc_dilithium;
 
 fn build_sphincsplus_keypair(secret: &Hash) -> pqc_sphincsplus::Keypair {
     pqc_sphincsplus::keypair_from_seed(secret.as_bytes())
+}
+
+fn build_dilithium_keypair(secret: &Hash) -> pqc_dilithium::Keypair {
+    pqc_dilithium::Keypair::generate_from_seed(secret.as_bytes())
 }
 
 /// Abstraction over specific public key algorithms (and hybrid combinations thereof).
