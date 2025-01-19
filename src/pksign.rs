@@ -10,8 +10,8 @@ use crate::block::{Block, BlockState, MutBlock, SigningRequest};
 use crate::secretseed::{derive, Seed};
 use blake3::{hash, Hash};
 use ed25519_dalek::{Signature, Signer, SigningKey, VerifyingKey};
-use pqc_sphincsplus;
 use pqc_dilithium;
+use pqc_sphincsplus;
 
 fn build_sphincsplus_keypair(secret: &Hash) -> pqc_sphincsplus::Keypair {
     pqc_sphincsplus::keypair_from_seed(secret.as_bytes())
@@ -32,18 +32,26 @@ fn build_dilithium_keypair(secret: &Hash) -> pqc_dilithium::Keypair {
 /// let secret = [69u8; 32];
 /// let keypair = zebrachain::pksign::KeyPair::new(&secret);
 /// ```
-#[derive(Debug)]
 pub struct KeyPair {
     key: SigningKey,
+    //sphincsplus: pqc_sphincsplus::Keypair, // FIXME: We need a seed that is 48 bytes
+    dilithium: pqc_dilithium::Keypair,
 }
 
 impl KeyPair {
     pub fn new(secret: &[u8; 32]) -> Self {
         let h1 = derive(ED25519_CONTEXT, secret);
-        let _h2 = derive(DILITHIUM_CONTEXT, secret); // Once doing hybrid singing
-        assert_ne!(h1, _h2);
+        let h2 = derive(SPHINCSPLUS_CONTEXT, secret); // Once doing hybrid singing
+        let h3 = derive(DILITHIUM_CONTEXT, secret);
+        assert_ne!(h1, h2);
+        assert_ne!(h1, h3);
+        assert_ne!(h2, h3);
         let key = SigningKey::from_bytes(h1.as_bytes());
-        Self { key }
+        Self {
+            key,
+            //sphincsplus: build_sphincsplus_keypair(&h2),
+            dilithium: build_dilithium_keypair(&h3),
+        }
     }
 
     /// Write Public Key(s) into buffer (could be ed25519 + Dilithium).
