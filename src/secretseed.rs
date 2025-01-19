@@ -1,7 +1,7 @@
 //! Entropy accumulating chain of secrets (in-memory).
 //!
 //! Note there is a lot of secret comparison in this module that relies on the constant time
-//! comparison of [blake3::Hash] to be secure. Once the hash in configurable, we need to make sure
+//! comparison of [blake3::Hash] to be secure. Once the hash is configurable, we need to make sure
 //! whatever abstraction we use likewise ensures constant time comparison.
 
 use crate::always::*;

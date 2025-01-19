@@ -210,8 +210,10 @@ mod tests {
         let seed = Seed::auto_create();
         let request = SigningRequest::new(random_hash(), random_hash());
         let chain_hash = sign_block(&mut buf, &seed, &request, None);
+
+        // chain_hash and previous_hash are always zeros in 1st block:
         assert_eq!(&buf[0..DIGEST], chain_hash.as_bytes());
-        assert_eq!(&buf[BLOCK - DIGEST * 2..], &[0; DIGEST * 2]); // previous_hash, chain_hash == 0
+        assert_eq!(&buf[BLOCK - DIGEST * 2..], &[0; DIGEST * 2]);
 
         // Sign 2nd block
         let tail = Block::from_hash(&buf, &chain_hash).unwrap().state();
@@ -221,6 +223,7 @@ mod tests {
         let block_hash = sign_block(&mut buf, &seed, &request, Some(&tail));
         assert_ne!(chain_hash, block_hash);
         assert_eq!(&buf[0..DIGEST], block_hash.as_bytes());
+
         // chain_hash and previous_hash are always == in the 2nd block:
         assert_eq!(&buf[BLOCK - DIGEST..], chain_hash.as_bytes());
         assert_eq!(
@@ -248,7 +251,7 @@ mod tests {
     #[should_panic]
     fn test_sign_block_panic() {
         // Sign first block
-        let mut buf = [69; BLOCK]; // 69 to make sure block gets zeroed first
+        let mut buf = [0; BLOCK];
         let seed = Seed::auto_create();
         let request = SigningRequest::new(random_hash(), random_hash());
         let chain_hash = sign_block(&mut buf, &seed, &request, None);

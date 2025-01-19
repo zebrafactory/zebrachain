@@ -552,7 +552,7 @@ mod tests {
 
     #[test]
     fn test_mutblock_new() {
-        let mut buf = [42; BLOCK];
+        let mut buf = [27; BLOCK];
         let request = SigningRequest::new(
             Hash::from_bytes([42; DIGEST]),
             Hash::from_bytes([69; DIGEST]),
