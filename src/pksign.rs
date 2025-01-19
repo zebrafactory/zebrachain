@@ -138,6 +138,7 @@ mod tests {
     use super::*;
     use crate::secretseed::random_hash;
     use pqc_dilithium;
+    use pqc_sphincsplus;
     use pqcrypto_dilithium;
 
     static HEX0: &str = "450f17b763621657bf0757a314a2162107a4e526950ca22785dc9fdeb0e5ac69";
@@ -157,6 +158,14 @@ mod tests {
         let kp = pqc_dilithium::Keypair::generate();
         let sig = kp.sign(msg);
         assert!(pqc_dilithium::verify(&sig, msg, &kp.public).is_ok());
+    }
+
+    #[test]
+    fn test_pqc_sphincsplus() {
+        let msg = b"Wish this API let me provide the entropy used to generate the key";
+        let kp = pqc_sphincsplus::keypair();
+        let sig = pqc_sphincsplus::sign(msg, &kp);
+        assert!(pqc_sphincsplus::verify(&sig, msg, &kp).is_ok());
     }
 
     #[test]

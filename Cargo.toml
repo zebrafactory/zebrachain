@@ -15,3 +15,4 @@ getrandom = "0.2.15"
 pqc_dilithium = "0.2.0"
 pqcrypto-dilithium = "0.5.0"
 tempfile = "3.14.0"
+pqc_sphincsplus = { version = "0.2.0", features = ["haraka", "s192", "simple"] }
