@@ -234,7 +234,7 @@ mod tests {
     }
 
     #[test]
-    #[should_panic(expected = "cannot commit out of sequence seed")]
+    #[should_panic(expected = "commit(): cannot commit out of sequence seed")]
     fn test_seed_commit_panic1() {
         let entropy = Hash::from_bytes([69; 32]);
         let mut seed = Seed::create(&entropy);
@@ -244,7 +244,7 @@ mod tests {
     }
 
     #[test]
-    #[should_panic(expected = "secret and next_secret cannot be equal")]
+    #[should_panic(expected = "commit(): secret and next_secret cannot be equal")]
     fn test_seed_commit_panic2() {
         let entropy = Hash::from_bytes([69; 32]);
         let mut seed = Seed::create(&entropy);
