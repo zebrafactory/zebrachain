@@ -11,11 +11,13 @@ use crate::secretseed::{derive, Seed};
 use blake3::{hash, Hash};
 use ed25519_dalek::{Signature, Signer, SigningKey, VerifyingKey};
 use pqc_dilithium;
-use pqc_sphincsplus;
+//use pqc_sphincsplus;
 
+/*
 fn build_sphincsplus_keypair(secret: &Hash) -> pqc_sphincsplus::Keypair {
     pqc_sphincsplus::keypair_from_seed(secret.as_bytes())
 }
+*/
 
 fn build_dilithium_keypair(secret: &Hash) -> pqc_dilithium::Keypair {
     pqc_dilithium::Keypair::generate_from_seed(secret.as_bytes())
@@ -156,7 +158,7 @@ mod tests {
     use super::*;
     use crate::secretseed::random_hash;
     use pqc_dilithium;
-    use pqc_sphincsplus;
+    //use pqc_sphincsplus;
     use pqcrypto_dilithium;
 
     static HEX0: &str = "450f17b763621657bf0757a314a2162107a4e526950ca22785dc9fdeb0e5ac69";
@@ -182,14 +184,15 @@ mod tests {
         let kp = build_dilithium_keypair(&seed);
         assert_eq!(hash(&kp.public), Hash::from_hex(HEX1).unwrap());
     }
-
-    #[test]
-    fn test_pqc_sphincsplus() {
-        let msg = b"Wish this API let me provide the entropy used to generate the key";
-        let kp = pqc_sphincsplus::keypair();
-        let sig = pqc_sphincsplus::sign(msg, &kp);
-        assert!(pqc_sphincsplus::verify(&sig, msg, &kp).is_ok());
-    }
+    /*
+        #[test]
+        fn test_pqc_sphincsplus() {
+            let msg = b"Wish this API let me provide the entropy used to generate the key";
+            let kp = pqc_sphincsplus::keypair();
+            let sig = pqc_sphincsplus::sign(msg, &kp);
+            assert!(pqc_sphincsplus::verify(&sig, msg, &kp).is_ok());
+        }
+    */
 
     #[test]
     fn keypair_new() {
