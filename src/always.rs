@@ -28,9 +28,10 @@ pub const SIGNABLE_RANGE: Range<usize> = DIGEST + SIGNATURE..BLOCK;
 
 pub const HASH_RANGE: Range<usize> = 0..DIGEST;
 pub const SIGNATURE_RANGE: Range<usize> = DIGEST..DIGEST + SIGNATURE;
-pub const PUBKEY_RANGE: Range<usize> = DIGEST + SIGNATURE..DIGEST + SIGNATURE + PUBKEY;
+pub const PUBKEY_RANGE: Range<usize> = SIGNATURE_RANGE.end..SIGNATURE_RANGE.end + PUBKEY;
+pub const NEXT_PUBKEY_HASH_RANGE: Range<usize> = PUBKEY_RANGE.end..PUBKEY_RANGE.end + DIGEST;
+pub const INDEX_RANGE: Range<usize> = NEXT_PUBKEY_HASH_RANGE.end..NEXT_PUBKEY_HASH_RANGE.end + 16;
 
-pub const NEXT_PUBKEY_HASH_RANGE: Range<usize> = BLOCK - DIGEST * 5..BLOCK - DIGEST * 4;
 pub const PERMISSION_HASH_RANGE: Range<usize> = BLOCK - DIGEST * 4..BLOCK - DIGEST * 3;
 pub const STATE_HASH_RANGE: Range<usize> = BLOCK - DIGEST * 3..BLOCK - DIGEST * 2;
 pub const PREVIOUS_HASH_RANGE: Range<usize> = BLOCK - DIGEST * 2..BLOCK - DIGEST;
