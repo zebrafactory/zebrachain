@@ -31,7 +31,7 @@ fn build_dilithium_keypair(secret: &Hash) -> pqc_dilithium::Keypair {
 /// # Examples
 ///
 /// ```
-/// let secret = zebrachain::secretseed::random_hash();
+/// let secret = zebrachain::secretseed::random_secret();
 /// let keypair = zebrachain::pksign::KeyPair::new(&secret);
 /// ```
 pub struct KeyPair {
@@ -156,7 +156,7 @@ pub fn sign_block(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::secretseed::random_hash;
+    use crate::testhelpers::random_hash;
     use pqc_dilithium;
     //use pqc_sphincsplus;
     use pqcrypto_dilithium;

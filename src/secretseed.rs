@@ -11,7 +11,7 @@ use getrandom::getrandom;
 /// A secret buffer with constant time comparison and zeroize.
 pub type Secret = Hash;
 
-pub fn random_hash() -> Secret {
+pub fn random_secret() -> Secret {
     let mut buf = [0; 32];
     getrandom(&mut buf).unwrap();
     Secret::from_bytes(buf)
@@ -28,9 +28,9 @@ pub fn derive(context: &str, secret: &Secret) -> Secret {
 /// # Examples
 ///
 /// ```
-/// use zebrachain::secretseed::{Seed, random_hash};
-/// let initial_entropy = random_hash();
-/// let new_entropy = random_hash();
+/// use zebrachain::secretseed::{Seed, random_secret};
+/// let initial_entropy = random_secret();
+/// let new_entropy = random_secret();
 /// let mut seed = Seed::create(&initial_entropy);
 /// let next = seed.advance(&new_entropy);
 /// assert_eq!(next.secret, seed.next_secret);
@@ -69,7 +69,7 @@ impl Seed {
 
     /// Creates a new seed using entropy from [getrandom::getrandom()].
     pub fn auto_create() -> Self {
-        let initial_entropy = random_hash();
+        let initial_entropy = random_secret();
         Self::create(&initial_entropy)
     }
 
@@ -95,7 +95,7 @@ impl Seed {
 
     /// Advance chain by mixing in new entropy from [getrandom::getrandom()].
     pub fn auto_advance(&self) -> Self {
-        let new_entropy = random_hash();
+        let new_entropy = random_secret();
         self.advance(&new_entropy)
     }
 
@@ -117,11 +117,11 @@ mod tests {
     use std::collections::HashSet;
 
     #[test]
-    fn test_random_hash() {
+    fn test_random_secret() {
         let count = 1024;
         let mut hset = HashSet::new();
         for _ in 0..count {
-            assert!(hset.insert(random_hash()));
+            assert!(hset.insert(random_secret()));
         }
         assert_eq!(hset.len(), count);
     }

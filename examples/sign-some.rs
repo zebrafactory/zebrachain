@@ -6,13 +6,13 @@ use zebrachain::chain::Chain;
 use zebrachain::fsutil::{build_filename, open_for_append};
 use zebrachain::ownedchain::OwnedChainStore;
 use zebrachain::secretchain::SecretChain;
-use zebrachain::secretseed::random_hash;
+use zebrachain::secretseed::random_secret;
 
 fn build_requests() -> Vec<SigningRequest> {
     let count = 10_000;
     let mut states = Vec::with_capacity(count);
     for _ in 0..count {
-        states.push(SigningRequest::new(random_hash(), random_hash()));
+        states.push(SigningRequest::new(random_secret(), random_secret()));
     }
     states
 }

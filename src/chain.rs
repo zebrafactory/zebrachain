@@ -215,8 +215,8 @@ mod tests {
     use super::*;
     use crate::block::SigningRequest;
     use crate::pksign::sign_block;
-    use crate::secretseed::{random_hash, Seed};
-    use crate::testhelpers::BitFlipper;
+    use crate::secretseed::Seed;
+    use crate::testhelpers::{random_hash, BitFlipper};
     use blake3::Hash;
     use tempfile;
 

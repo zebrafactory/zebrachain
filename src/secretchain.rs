@@ -182,7 +182,7 @@ impl SecretChainStore {
 mod tests {
     use super::*;
     use crate::block::SigningRequest;
-    use crate::secretseed::random_hash;
+    use crate::testhelpers::random_hash;
     use std::io::Seek;
     use tempfile::tempfile;
 

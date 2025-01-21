@@ -108,7 +108,7 @@ impl OwnedChain {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::secretseed::random_hash;
+    use crate::testhelpers::random_hash;
     use tempfile;
 
     #[test]
