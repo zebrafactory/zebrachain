@@ -46,17 +46,12 @@ pub struct Seed {
 
 impl Seed {
     pub fn new(secret: Secret, next_secret: Secret) -> Self {
-        let seed = Self {
+        if secret == next_secret {
+            panic!("new(): secret and next_secret cannot be equal");
+        }
+        Self {
             secret,
             next_secret,
-        };
-        seed.check();
-        seed
-    }
-
-    fn check(&self) {
-        if self.secret == self.next_secret {
-            panic!("secret and next_secret cannot be equal");
         }
     }
 
@@ -101,12 +96,14 @@ impl Seed {
 
     /// Mutate seed state to match `next`.
     pub fn commit(&mut self, next: Seed) {
+        if next.secret == next.next_secret {
+            panic!("commit(): secret and next_secret cannot be equal");
+        }
         if next.secret != self.next_secret {
-            panic!("cannot commit out of sequence seed");
+            panic!("commit(): cannot commit out of sequence seed");
         }
         self.secret = next.secret;
         self.next_secret = next.next_secret;
-        self.check();
     }
 }
 
@@ -179,7 +176,7 @@ mod tests {
     }
 
     #[test]
-    #[should_panic(expected = "secret and next_secret cannot be equal")]
+    #[should_panic(expected = "new(): secret and next_secret cannot be equal")]
     fn test_seed_new_panic() {
         let secret = hash(&[42; 32]);
         let next_secret = hash(&[42; 32]);
