@@ -48,7 +48,7 @@ pub type BlockResult<'a> = Result<Block<'a>, BlockError>;
 /// Contains state from current block needed to validate next block.
 #[derive(Clone, Debug, PartialEq)]
 pub struct BlockState {
-    pub counter: u128,
+    pub index: u64,
     pub block_hash: Hash,
     pub chain_hash: Hash,
     pub next_pubkey_hash: Hash,
@@ -57,7 +57,7 @@ pub struct BlockState {
 impl BlockState {
     pub fn new(block_hash: Hash, chain_hash: Hash, next_pubkey_hash: Hash) -> Self {
         Self {
-            counter: 0, // FIXME: Add counter to block wire format
+            index: 0, // FIXME: Add counter to block wire format
             block_hash,
             chain_hash,
             next_pubkey_hash,
@@ -67,7 +67,7 @@ impl BlockState {
     pub fn effective_chain_hash(&self) -> Hash {
         assert_ne!(self.block_hash, ZERO_HASH);
         if self.chain_hash == ZERO_HASH {
-            assert_eq!(self.counter, 0);
+            assert_eq!(self.index, 0);
             self.block_hash // Block 0
         } else {
             self.chain_hash // Block > 0
@@ -125,7 +125,12 @@ impl<'a> Block<'a> {
     }
 
     pub fn state(&self) -> BlockState {
-        BlockState::new(self.hash(), self.chain_hash(), self.next_pubkey_hash())
+        BlockState {
+            index: self.index(),
+            block_hash: self.hash(),
+            chain_hash: self.chain_hash(),
+            next_pubkey_hash: self.next_pubkey_hash(),
+        }
     }
 
     fn as_hashable(&self) -> &[u8] {
@@ -152,6 +157,10 @@ impl<'a> Block<'a> {
         &self.buf[NEXT_PUBKEY_HASH_RANGE]
     }
 
+    fn as_index(&self) -> &[u8] {
+        &self.buf[INDEX_RANGE]
+    }
+
     fn as_permission_hash(&self) -> &[u8] {
         &self.buf[PERMISSION_HASH_RANGE]
     }
@@ -174,6 +183,10 @@ impl<'a> Block<'a> {
 
     pub fn next_pubkey_hash(&self) -> Hash {
         Hash::from_bytes(self.as_next_pubkey_hash().try_into().expect("oops"))
+    }
+
+    pub fn index(&self) -> u64 {
+        u64::from_le_bytes(self.as_index().try_into().unwrap())
     }
 
     pub fn permission_hash(&self) -> Hash {
@@ -246,11 +259,10 @@ impl<'a> MutBlock<'a> {
     }
 
     pub fn set_previous(&mut self, last: &BlockState) {
-        // Either both of these get set or, in the case of the first block, neither are set.
+        self.buf[INDEX_RANGE].copy_from_slice(&(last.index + 1).to_le_bytes());
         self.buf[PREVIOUS_HASH_RANGE].copy_from_slice(last.block_hash.as_bytes());
         let chain_hash = last.effective_chain_hash(); // Don't use last.chain_hash !
         self.buf[CHAIN_HASH_RANGE].copy_from_slice(chain_hash.as_bytes());
-        // FIXME: Set counter to last.counter + 1
     }
 
     pub fn as_mut_signature(&mut self) -> &mut [u8] {
@@ -484,6 +496,7 @@ mod tests {
         assert_eq!(block.as_signature(), [2; SIGNATURE]);
         assert_eq!(block.as_pubkey(), [3; PUBKEY]);
         assert_eq!(block.as_next_pubkey_hash(), [4; DIGEST]);
+        assert_eq!(block.as_index(), [5; 8]);
         assert_eq!(block.as_permission_hash(), [6; DIGEST]);
         assert_eq!(block.as_state_hash(), [7; DIGEST]);
         assert_eq!(block.as_previous_hash(), [8; DIGEST]);
@@ -496,6 +509,7 @@ mod tests {
         let block = Block::new(&buf[..]);
         assert_eq!(block.hash(), Hash::from_bytes([1; DIGEST]));
         assert_eq!(block.next_pubkey_hash(), Hash::from_bytes([4; DIGEST]));
+        assert_eq!(block.index(), 361700864190383365);
         assert_eq!(block.permission_hash(), Hash::from_bytes([6; DIGEST]));
         assert_eq!(block.state_hash(), Hash::from_bytes([7; DIGEST]));
         assert_eq!(block.previous_hash(), Hash::from_bytes([8; DIGEST]));
