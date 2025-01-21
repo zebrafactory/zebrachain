@@ -318,7 +318,7 @@ mod tests {
 
     fn new_valid_block() -> Vec<u8> {
         let mut buf = vec![0; BLOCK];
-        let seed = Seed::create(&[69; 32]);
+        let seed = Seed::create(&Hash::from_bytes([69; 32]));
         let secsign = SecretSigner::new(&seed);
         let request = SigningRequest::new(Hash::from_bytes([1; 32]), Hash::from_bytes([2; 32]));
         let mut block = MutBlock::new(&mut buf, &request);

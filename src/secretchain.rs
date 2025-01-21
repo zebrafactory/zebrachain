@@ -189,7 +189,7 @@ mod tests {
     #[test]
     fn test_chain_create() {
         let file = tempfile().unwrap();
-        let seed = Seed::create(&[42; 32]);
+        let seed = Seed::create(&Hash::from_bytes([42; 32]));
         let request = SigningRequest::new(random_hash(), Hash::from_bytes([69; DIGEST]));
         let result = SecretChain::create(file, &seed, &request);
         assert!(result.is_ok());
@@ -219,7 +219,7 @@ mod tests {
 
     #[test]
     fn test_chain_advance_and_commit() {
-        let entropy = [69; 32];
+        let entropy = Hash::from_bytes([69; 32]);
         let file = tempfile().unwrap();
         let mut seed = Seed::create(&entropy);
         let request = SigningRequest::new(

@@ -336,7 +336,7 @@ mod tests {
     #[test]
     fn test_mut_block_new() {
         let mut buf = [69; SECRET_BLOCK];
-        let seed = Seed::create(&[69; 32]);
+        let seed = Seed::create(&Hash::from_bytes([69; 32]));
         let request = SigningRequest::new(
             Hash::from_bytes([13; DIGEST]),
             Hash::from_bytes([42; DIGEST]),

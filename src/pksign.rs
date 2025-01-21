@@ -31,7 +31,7 @@ fn build_dilithium_keypair(secret: &Hash) -> pqc_dilithium::Keypair {
 /// # Examples
 ///
 /// ```
-/// let secret = [69u8; 32];
+/// let secret = zebrachain::secretseed::random_hash();
 /// let keypair = zebrachain::pksign::KeyPair::new(&secret);
 /// ```
 pub struct KeyPair {
@@ -41,7 +41,7 @@ pub struct KeyPair {
 }
 
 impl KeyPair {
-    pub fn new(secret: &[u8; 32]) -> Self {
+    pub fn new(secret: &Hash) -> Self {
         let h1 = derive(ED25519_CONTEXT, secret);
         let h2 = derive(SPHINCSPLUS_CONTEXT, secret); // Once doing hybrid singing
         let h3 = derive(DILITHIUM_CONTEXT, secret);
@@ -107,8 +107,8 @@ impl SecretSigner {
     pub fn new(seed: &Seed) -> Self {
         assert_ne!(seed.secret, seed.next_secret);
         Self {
-            keypair: KeyPair::new(seed.secret.as_bytes()),
-            next_pubkey_hash: KeyPair::new(seed.next_secret.as_bytes()).pubkey_hash(),
+            keypair: KeyPair::new(&seed.secret),
+            next_pubkey_hash: KeyPair::new(&seed.next_secret).pubkey_hash(),
         }
     }
 
@@ -196,7 +196,7 @@ mod tests {
 
     #[test]
     fn keypair_new() {
-        let secret = [7; 32];
+        let secret = Hash::from_bytes([7; 32]);
         let pair = KeyPair::new(&secret);
 
         let mut pubkey = [0u8; 32];
@@ -234,7 +234,7 @@ mod tests {
 
     #[test]
     fn test_keypair_pubkey_hash() {
-        let pair = KeyPair::new(&[69; 32]);
+        let pair = KeyPair::new(&Hash::from_bytes([69; 32]));
         assert_eq!(pair.pubkey_hash(), Hash::from_hex(HEX0).unwrap());
     }
 

@@ -14,9 +14,9 @@ pub fn random_hash() -> Hash {
     Hash::from_bytes(buf)
 }
 
-pub fn derive(context: &str, secret: &[u8; 32]) -> Hash {
+pub fn derive(context: &str, secret: &Hash) -> Hash {
     let mut hasher = Hasher::new_derive_key(context);
-    hasher.update(secret);
+    hasher.update(secret.as_bytes());
     hasher.finalize()
 }
 
@@ -25,9 +25,9 @@ pub fn derive(context: &str, secret: &[u8; 32]) -> Hash {
 /// # Examples
 ///
 /// ```
-/// use zebrachain::secretseed::Seed;
-/// let initial_entropy = [42u8; 32];
-/// let new_entropy = [69u8; 32];
+/// use zebrachain::secretseed::{Seed, random_hash};
+/// let initial_entropy = random_hash();
+/// let new_entropy = random_hash();
 /// let mut seed = Seed::create(&initial_entropy);
 /// let next = seed.advance(&new_entropy);
 /// assert_eq!(next.secret, seed.next_secret);
@@ -58,7 +58,7 @@ impl Seed {
     }
 
     /// Create a new seed by deriving [Seed::secret], [Seed::next_secret] from `initial_entropy`.
-    pub fn create(initial_entropy: &[u8; 32]) -> Self {
+    pub fn create(initial_entropy: &Hash) -> Self {
         let secret = derive(SECRET_CONTEXT, initial_entropy);
         let next_secret = derive(NEXT_SECRET_CONTEXT, initial_entropy);
         Self::new(secret, next_secret)
@@ -66,8 +66,7 @@ impl Seed {
 
     /// Creates a new seed using entropy from [getrandom::getrandom()].
     pub fn auto_create() -> Self {
-        let mut initial_entropy = [0; 32];
-        getrandom(&mut initial_entropy).unwrap();
+        let initial_entropy = random_hash();
         Self::create(&initial_entropy)
     }
 
@@ -82,19 +81,18 @@ impl Seed {
     /// robust.
     ///
     /// See the source code for sure because it's simple, but important to understand.
-    pub fn advance(&self, new_entropy: &[u8; 32]) -> Self {
+    pub fn advance(&self, new_entropy: &Hash) -> Self {
         // We need to securely mix the previous entropy with new_entropy.  Hashing the concatenation
         // hash(next_secret || new_entropy) should be sufficient (right?), but
         // keyed_hash(next_secret, new_entropy) is definitely a more conservative construction with
         // little overhead, so we might as well do that (feedback encouraged).
-        let next_next_secret = keyed_hash(self.next_secret.as_bytes(), new_entropy);
+        let next_next_secret = keyed_hash(self.next_secret.as_bytes(), new_entropy.as_bytes());
         Self::new(self.next_secret, next_next_secret)
     }
 
     /// Advance chain by mixing in new entropy from [getrandom::getrandom()].
     pub fn auto_advance(&self) -> Self {
-        let mut new_entropy = [0; 32];
-        getrandom(&mut new_entropy).unwrap();
+        let new_entropy = random_hash();
         self.advance(&new_entropy)
     }
 
@@ -127,7 +125,7 @@ mod tests {
 
     #[test]
     fn test_derive() {
-        let secret = [7; 32];
+        let secret = Hash::from_bytes([7; 32]);
 
         let h = derive("example0", &secret);
         assert_eq!(
@@ -147,7 +145,7 @@ mod tests {
             ]
         );
 
-        let secret = [8; 32];
+        let secret = Hash::from_bytes([8; 32]);
 
         let h = derive("example0", &secret);
         assert_eq!(
@@ -189,7 +187,7 @@ mod tests {
     fn test_seed_create() {
         let mut hset: HashSet<Hash> = HashSet::new();
         for i in 0..=255 {
-            let entropy = [i; 32];
+            let entropy = Hash::from_bytes([i; 32]);
             let seed = Seed::create(&entropy);
             assert!(hset.insert(seed.secret));
             assert!(hset.insert(seed.next_secret));
@@ -200,7 +198,7 @@ mod tests {
     #[test]
     fn test_seed_advance() {
         let count = 10000;
-        let entropy = [69; 32];
+        let entropy = Hash::from_bytes([69; 32]);
         let mut seed = Seed::create(&entropy);
         let mut hset: HashSet<Hash> = HashSet::new();
         assert!(hset.insert(seed.secret));
@@ -215,7 +213,7 @@ mod tests {
 
     #[test]
     fn test_seed_commit() {
-        let entropy = [69; 32];
+        let entropy = Hash::from_bytes([69; 32]);
         let mut seed = Seed::create(&entropy);
         let next = seed.advance(&entropy);
         assert_ne!(seed, next);
@@ -226,7 +224,7 @@ mod tests {
     #[test]
     #[should_panic(expected = "cannot commit out of sequence seed")]
     fn test_seed_commit_panic1() {
-        let entropy = [69; 32];
+        let entropy = Hash::from_bytes([69; 32]);
         let mut seed = Seed::create(&entropy);
         let a1 = seed.advance(&entropy);
         let a2 = a1.advance(&entropy);
@@ -236,7 +234,7 @@ mod tests {
     #[test]
     #[should_panic(expected = "secret and next_secret cannot be equal")]
     fn test_seed_commit_panic2() {
-        let entropy = [69; 32];
+        let entropy = Hash::from_bytes([69; 32]);
         let mut seed = Seed::create(&entropy);
         let a1 = seed.advance(&entropy);
         let a2 = Seed {
