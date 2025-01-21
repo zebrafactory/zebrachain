@@ -8,13 +8,16 @@ use crate::always::*;
 use blake3::{keyed_hash, Hash, Hasher};
 use getrandom::getrandom;
 
-pub fn random_hash() -> Hash {
+/// A secret buffer with constant time comparison and zeroize.
+pub type Secret = Hash;
+
+pub fn random_hash() -> Secret {
     let mut buf = [0; 32];
     getrandom(&mut buf).unwrap();
-    Hash::from_bytes(buf)
+    Secret::from_bytes(buf)
 }
 
-pub fn derive(context: &str, secret: &Hash) -> Hash {
+pub fn derive(context: &str, secret: &Secret) -> Secret {
     let mut hasher = Hasher::new_derive_key(context);
     hasher.update(secret.as_bytes());
     hasher.finalize()
@@ -37,12 +40,12 @@ pub fn derive(context: &str, secret: &Hash) -> Hash {
 /// ```
 #[derive(Clone, Debug, PartialEq)]
 pub struct Seed {
-    pub secret: Hash,
-    pub next_secret: Hash,
+    pub secret: Secret,
+    pub next_secret: Secret,
 }
 
 impl Seed {
-    pub fn new(secret: Hash, next_secret: Hash) -> Self {
+    pub fn new(secret: Secret, next_secret: Secret) -> Self {
         let seed = Self {
             secret,
             next_secret,
@@ -58,7 +61,7 @@ impl Seed {
     }
 
     /// Create a new seed by deriving [Seed::secret], [Seed::next_secret] from `initial_entropy`.
-    pub fn create(initial_entropy: &Hash) -> Self {
+    pub fn create(initial_entropy: &Secret) -> Self {
         let secret = derive(SECRET_CONTEXT, initial_entropy);
         let next_secret = derive(NEXT_SECRET_CONTEXT, initial_entropy);
         Self::new(secret, next_secret)
@@ -81,7 +84,7 @@ impl Seed {
     /// robust.
     ///
     /// See the source code for sure because it's simple, but important to understand.
-    pub fn advance(&self, new_entropy: &Hash) -> Self {
+    pub fn advance(&self, new_entropy: &Secret) -> Self {
         // We need to securely mix the previous entropy with new_entropy.  Hashing the concatenation
         // hash(next_secret || new_entropy) should be sufficient (right?), but
         // keyed_hash(next_secret, new_entropy) is definitely a more conservative construction with
