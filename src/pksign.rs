@@ -4,19 +4,27 @@ use crate::always::*;
 use crate::block::{Block, BlockState, MutBlock, SigningRequest};
 use crate::secretseed::{derive, Seed};
 use blake3::{hash, Hash};
-use ed25519_dalek::{Signature, Signer, SigningKey, VerifyingKey};
+use ed25519_dalek;
+use ed25519_dalek::Signer;
 use pqc_dilithium;
 //use pqc_sphincsplus;
 
+fn build_ed25519_keypair(secret: &Hash) -> ed25519_dalek::SigningKey {
+    let secret = derive(ED25519_CONTEXT, secret);
+    ed25519_dalek::SigningKey::from_bytes(secret.as_bytes())
+}
+
+fn build_dilithium_keypair(secret: &Hash) -> pqc_dilithium::Keypair {
+    let secret = derive(DILITHIUM_CONTEXT, secret);
+    pqc_dilithium::Keypair::generate_from_seed(secret.as_bytes())
+}
+
 /*
 fn build_sphincsplus_keypair(secret: &Hash) -> pqc_sphincsplus::Keypair {
+    let secret = derive(SPHINCSPLUS_CONTEXT, secret);
     pqc_sphincsplus::keypair_from_seed(secret.as_bytes())
 }
 */
-
-fn build_dilithium_keypair(secret: &Hash) -> pqc_dilithium::Keypair {
-    pqc_dilithium::Keypair::generate_from_seed(secret.as_bytes())
-}
 
 /// Abstraction over specific public key algorithms (and hybrid combinations thereof).
 ///
@@ -30,30 +38,22 @@ fn build_dilithium_keypair(secret: &Hash) -> pqc_dilithium::Keypair {
 /// let keypair = zebrachain::pksign::KeyPair::new(&secret);
 /// ```
 pub struct KeyPair {
-    key: SigningKey,
-    //sphincsplus: pqc_sphincsplus::Keypair, // FIXME: We need a seed that is 48 bytes
+    ed25519: ed25519_dalek::SigningKey,
     dilithium: pqc_dilithium::Keypair,
+    //sphincsplus: pqc_sphincsplus::Keypair, // FIXME: We need a seed that is 48 bytes
 }
 
 impl KeyPair {
     pub fn new(secret: &Hash) -> Self {
-        let h1 = derive(ED25519_CONTEXT, secret);
-        let h2 = derive(SPHINCSPLUS_CONTEXT, secret); // Once doing hybrid singing
-        let h3 = derive(DILITHIUM_CONTEXT, secret);
-        assert_ne!(h1, h2);
-        assert_ne!(h1, h3);
-        assert_ne!(h2, h3);
-        let key = SigningKey::from_bytes(h1.as_bytes());
         Self {
-            key,
-            //sphincsplus: build_sphincsplus_keypair(&h2),
-            dilithium: build_dilithium_keypair(&h3),
+            ed25519: build_ed25519_keypair(secret),
+            dilithium: build_dilithium_keypair(secret),
         }
     }
 
     /// Write Public Key(s) into buffer (could be ed25519 + Dilithium).
     pub fn write_pubkey(&self, dst: &mut [u8]) {
-        dst.copy_from_slice(self.key.verifying_key().as_bytes());
+        dst.copy_from_slice(self.ed25519.verifying_key().as_bytes());
     }
 
     /// Returns hash of public key byte representation.
@@ -70,15 +70,18 @@ impl KeyPair {
     /// Consumes instance because we should only make one signature per KeyPair.
     pub fn sign(self, block: &mut MutBlock) {
         self.write_pubkey(block.as_mut_pubkey());
-        let sig = self.key.sign(block.as_signable());
-        block.as_mut_signature().copy_from_slice(&sig.to_bytes());
+        let sig1 = self.ed25519.sign(block.as_signable());
+        let _sig2 = self.dilithium.sign(block.as_signable());
+        block.as_mut_signature().copy_from_slice(&sig1.to_bytes());
     }
 }
 
 /// Verify the signature of a [Block].
 pub fn verify_block_signature(block: &Block) -> bool {
-    let sig = Signature::from_bytes(block.as_signature().try_into().unwrap());
-    if let Ok(pubkey) = VerifyingKey::from_bytes(block.as_pubkey().try_into().unwrap()) {
+    let sig = ed25519_dalek::Signature::from_bytes(block.as_signature().try_into().unwrap());
+    if let Ok(pubkey) =
+        ed25519_dalek::VerifyingKey::from_bytes(block.as_pubkey().try_into().unwrap())
+    {
         pubkey.verify_strict(block.as_signable(), &sig).is_ok()
     } else {
         false
@@ -176,7 +179,7 @@ mod tests {
         assert!(pqc_dilithium::verify(&sig, msg, &kp.public).is_ok());
 
         let seed = Hash::from_bytes([69; DIGEST]);
-        let kp = build_dilithium_keypair(&seed);
+        let kp = pqc_dilithium::Keypair::generate_from_seed(seed.as_bytes());
         assert_eq!(hash(&kp.public), Hash::from_hex(HEX1).unwrap());
     }
     /*
