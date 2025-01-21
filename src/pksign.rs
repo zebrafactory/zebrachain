@@ -160,6 +160,7 @@ mod tests {
     use pqcrypto_dilithium;
 
     static HEX0: &str = "450f17b763621657bf0757a314a2162107a4e526950ca22785dc9fdeb0e5ac69";
+    static HEX1: &str = "260e8536e614fb20441ef43e5b1b2f87d0320b913dc0d3df4508372a2910ec2f";
 
     #[test]
     fn test_pqcrypto_dilithium() {
@@ -176,6 +177,10 @@ mod tests {
         let kp = pqc_dilithium::Keypair::generate();
         let sig = kp.sign(msg);
         assert!(pqc_dilithium::verify(&sig, msg, &kp.public).is_ok());
+
+        let seed = Hash::from_bytes([69; DIGEST]);
+        let kp = build_dilithium_keypair(&seed);
+        assert_eq!(hash(&kp.public), Hash::from_hex(HEX1).unwrap());
     }
 
     #[test]
