@@ -1,9 +1,4 @@
 //! Abstraction over specific public key algorithms (and hybrid combinations thereof).
-//!
-//! `pqc_dilithium` and `pqcrypto_dilithium` don't support providing the entropy used to generate
-//! the keypair, so for now this just signs with [ed25519_dalek]. See [Seed] for details, but the
-//! short is because ZebraChain does application level entropy accumulation, we need to be able to
-//! provide the entropy used to generate the keypairs.
 
 use crate::always::*;
 use crate::block::{Block, BlockState, MutBlock, SigningRequest};

@@ -2,21 +2,33 @@
 //!
 //! Note there is a lot of secret comparison in this module that relies on the constant time
 //! comparison of [blake3::Hash] to be secure. Once the hash is configurable, we need to make sure
-//! whatever abstraction we use likewise ensures constant time comparison.
+//! the [Secret] abstraction we use likewise ensures constant time comparison.
 
 use crate::always::*;
 use blake3::{keyed_hash, Hash, Hasher};
 use getrandom::getrandom;
 
 /// A secret buffer with constant time comparison and zeroize.
+///
+/// This currently is just an alias for [blake3::Hash] because it gives us the features we need.
+/// Eventually we should use separate types and abstractions for the notion of a Secret buffer vs
+/// a Hash buffer as they will almost certainly need to differ in some configurations.
 pub type Secret = Hash;
 
+/// Return a [Secret] buffer with entropy from [getrandom::getrandom()].
 pub fn random_secret() -> Secret {
     let mut buf = [0; 32];
     getrandom(&mut buf).unwrap();
     Secret::from_bytes(buf)
 }
 
+/// Derive a domain specific [Secret] from a context string and a root secret.
+///
+/// When doing hybrid signing, it is critical to derive a unique secret for each algorithm (say,
+/// one for ed25519 and another for Dilithium).
+///
+/// And even if signing with a single algorithm, we still should use a derived secret instead of the
+/// root secret directly.
 pub fn derive(context: &str, secret: &Secret) -> Secret {
     let mut hasher = Hasher::new_derive_key(context);
     hasher.update(secret.as_bytes());
@@ -30,8 +42,8 @@ pub fn derive(context: &str, secret: &Secret) -> Secret {
 /// ```
 /// use zebrachain::secretseed::{Seed, random_secret};
 /// let initial_entropy = random_secret();
-/// let new_entropy = random_secret();
 /// let mut seed = Seed::create(&initial_entropy);
+/// let new_entropy = random_secret();
 /// let next = seed.advance(&new_entropy);
 /// assert_eq!(next.secret, seed.next_secret);
 /// assert_ne!(seed, next);
@@ -62,7 +74,7 @@ impl Seed {
         Self::new(secret, next_secret)
     }
 
-    /// Creates a new seed using entropy from [getrandom::getrandom()].
+    /// Creates a new seed using entropy from [random_secret()].
     pub fn auto_create() -> Self {
         let initial_entropy = random_secret();
         Self::create(&initial_entropy)
@@ -88,7 +100,7 @@ impl Seed {
         Self::new(self.next_secret, next_next_secret)
     }
 
-    /// Advance chain by mixing in new entropy from [getrandom::getrandom()].
+    /// Advance chain by mixing in new entropy from [random_secret()].
     pub fn auto_advance(&self) -> Self {
         let new_entropy = random_secret();
         self.advance(&new_entropy)
