@@ -29,8 +29,8 @@ pub const SIG_DILITHIUM_RANGE: Range<usize> = 0..SIG_DILITHIUM;
 pub const SIG_ED25519_RANGE: Range<usize> = SIG_DILITHIUM..SIG_DILITHIUM + SIG_ED25519;
 
 pub const DIGEST: usize = 32;
-pub const SIGNATURE: usize = 64; // Need more Dilithium, Captian!
-pub const PUBKEY: usize = 32; // STILL need more Dilithium, Captian!!!
+pub const SIGNATURE: usize = SIG_ED25519 + SIG_DILITHIUM;
+pub const PUBKEY: usize = PUB_ED25519 + PUB_DILITHIUM;
 pub const BLOCK: usize = DIGEST * 6 + SIGNATURE + PUBKEY + 8;
 
 pub const HASHABLE_RANGE: Range<usize> = DIGEST..BLOCK;
@@ -76,17 +76,17 @@ mod tests {
 
     #[test]
     fn test_ranges() {
-        assert_eq!(HASHABLE_RANGE, 32..296);
-        assert_eq!(SIGNABLE_RANGE, 96..296);
+        assert_eq!(HASHABLE_RANGE, 32..5541);
+        assert_eq!(SIGNABLE_RANGE, 3389..5541);
 
         assert_eq!(HASH_RANGE, 0..32);
-        assert_eq!(SIGNATURE_RANGE, 32..96);
-        assert_eq!(PUBKEY_RANGE, 96..128);
-        assert_eq!(NEXT_PUBKEY_HASH_RANGE, 128..160);
-        assert_eq!(INDEX_RANGE, 160..168);
-        assert_eq!(PERMISSION_HASH_RANGE, 168..200);
-        assert_eq!(STATE_HASH_RANGE, 200..232);
-        assert_eq!(PREVIOUS_HASH_RANGE, 232..264);
-        assert_eq!(CHAIN_HASH_RANGE, 264..296);
+        assert_eq!(SIGNATURE_RANGE, 32..3389);
+        assert_eq!(PUBKEY_RANGE, 3389..5373);
+        assert_eq!(NEXT_PUBKEY_HASH_RANGE, 5373..5405);
+        assert_eq!(INDEX_RANGE, 5405..5413);
+        assert_eq!(PERMISSION_HASH_RANGE, 5413..5445);
+        assert_eq!(STATE_HASH_RANGE, 5445..5477);
+        assert_eq!(PREVIOUS_HASH_RANGE, 5477..5509);
+        assert_eq!(CHAIN_HASH_RANGE, 5509..5541);
     }
 }

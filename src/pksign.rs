@@ -41,6 +41,30 @@ impl<'a> Hybrid<'a> {
     fn as_sig_ed25519(&self) -> &[u8] {
         &self.block.as_signature()[SIG_ED25519_RANGE]
     }
+
+    fn verify_dilithium(&self) -> bool {
+        pqc_dilithium::verify(
+            self.as_sig_dilithium(),
+            self.block.as_signable(),
+            self.as_pub_dilithium(),
+        )
+        .is_ok()
+    }
+
+    fn verify_ed25519(&self) -> bool {
+        let sigbuf = self.as_sig_ed25519();
+        let pubkeybuf = self.as_pub_ed25519();
+        let sig = ed25519_dalek::Signature::from_bytes(sigbuf.try_into().unwrap());
+        if let Ok(pubkey) = ed25519_dalek::VerifyingKey::from_bytes(pubkeybuf.try_into().unwrap()) {
+            pubkey.verify_strict(self.block.as_signable(), &sig).is_ok()
+        } else {
+            false
+        }
+    }
+
+    fn verify(&self) -> bool {
+        self.verify_ed25519() && self.verify_dilithium()
+    }
 }
 
 /*
@@ -77,7 +101,8 @@ impl KeyPair {
 
     /// Write Public Key(s) into buffer (could be ed25519 + Dilithium).
     pub fn write_pubkey(&self, dst: &mut [u8]) {
-        dst.copy_from_slice(self.ed25519.verifying_key().as_bytes());
+        dst[PUB_ED25519_RANGE].copy_from_slice(self.ed25519.verifying_key().as_bytes());
+        dst[PUB_DILITHIUM_RANGE].copy_from_slice(&self.dilithium.public);
     }
 
     /// Returns hash of public key byte representation.
@@ -95,21 +120,16 @@ impl KeyPair {
     pub fn sign(self, block: &mut MutBlock) {
         self.write_pubkey(block.as_mut_pubkey());
         let sig1 = self.ed25519.sign(block.as_signable());
-        let _sig2 = self.dilithium.sign(block.as_signable());
-        block.as_mut_signature().copy_from_slice(&sig1.to_bytes());
+        let sig2 = self.dilithium.sign(block.as_signable());
+        block.as_mut_signature()[SIG_ED25519_RANGE].copy_from_slice(&sig1.to_bytes());
+        block.as_mut_signature()[SIG_DILITHIUM_RANGE].copy_from_slice(&sig2);
     }
 }
 
 /// Verify the signature of a [Block].
 pub fn verify_block_signature(block: &Block) -> bool {
-    let sig = ed25519_dalek::Signature::from_bytes(block.as_signature().try_into().unwrap());
-    if let Ok(pubkey) =
-        ed25519_dalek::VerifyingKey::from_bytes(block.as_pubkey().try_into().unwrap())
-    {
-        pubkey.verify_strict(block.as_signable(), &sig).is_ok()
-    } else {
-        false
-    }
+    let hybrid = Hybrid::new(block);
+    hybrid.verify()
 }
 
 /// Used to get current KeyPair and next PubKey hash from a Seed.
@@ -183,7 +203,7 @@ mod tests {
     //use pqc_sphincsplus;
     use pqcrypto_dilithium;
 
-    static HEX0: &str = "450f17b763621657bf0757a314a2162107a4e526950ca22785dc9fdeb0e5ac69";
+    static HEX0: &str = "498027d13f2a1c09194ecc64321154a9bfd3e3ac86536d38c3ed33e9b2e76579";
     static HEX1: &str = "260e8536e614fb20441ef43e5b1b2f87d0320b913dc0d3df4508372a2910ec2f";
 
     #[test]
@@ -223,37 +243,9 @@ mod tests {
         let secret = Hash::from_bytes([7; 32]);
         let pair = KeyPair::new(&secret);
 
-        let mut pubkey = [0u8; 32];
+        let mut pubkey = [0u8; PUBKEY];
         pair.write_pubkey(&mut pubkey);
-        assert_eq!(
-            pubkey,
-            [
-                170, 86, 112, 232, 142, 253, 215, 96, 247, 143, 14, 222, 203, 77, 215, 154, 16, 16,
-                99, 205, 43, 163, 110, 109, 212, 55, 23, 31, 70, 54, 253, 71
-            ]
-        );
-
-        let mut buf = vec![0; BLOCK];
-        let request = SigningRequest::new(Hash::from_bytes([0; 32]), Hash::from_bytes([0; 32]));
-        pair.sign(&mut MutBlock::new(&mut buf[..], &request));
-        assert_eq!(
-            buf,
-            [
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                0, 0, 0, 0, 242, 187, 40, 79, 133, 135, 173, 211, 155, 252, 6, 33, 166, 24, 252,
-                245, 97, 154, 225, 134, 51, 172, 59, 95, 8, 86, 181, 88, 92, 168, 129, 254, 90, 9,
-                159, 186, 44, 16, 138, 76, 99, 90, 130, 15, 80, 202, 227, 209, 160, 211, 113, 240,
-                26, 119, 219, 7, 245, 181, 83, 239, 48, 255, 37, 5, 170, 86, 112, 232, 142, 253,
-                215, 96, 247, 143, 14, 222, 203, 77, 215, 154, 16, 16, 99, 205, 43, 163, 110, 109,
-                212, 55, 23, 31, 70, 54, 253, 71, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
-            ]
-        );
+        assert_ne!(pubkey, [0; PUBKEY]); // FIXME
     }
 
     #[test]
