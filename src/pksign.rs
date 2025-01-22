@@ -17,56 +17,6 @@ fn build_dilithium_keypair(secret: &Hash) -> pqc_dilithium::Keypair {
     pqc_dilithium::Keypair::generate_from_seed(derive(DILITHIUM_CONTEXT, secret).as_bytes())
 }
 
-pub struct Hybrid<'a> {
-    block: &'a Block<'a>,
-}
-
-impl<'a> Hybrid<'a> {
-    fn new(block: &'a Block<'a>) -> Self {
-        Self { block }
-    }
-
-    fn as_pub_dilithium(&self) -> &[u8] {
-        &self.block.as_pubkey()[PUB_DILITHIUM_RANGE]
-    }
-
-    fn as_pub_ed25519(&self) -> &[u8] {
-        &self.block.as_pubkey()[PUB_ED25519_RANGE]
-    }
-
-    fn as_sig_dilithium(&self) -> &[u8] {
-        &self.block.as_signature()[SIG_DILITHIUM_RANGE]
-    }
-
-    fn as_sig_ed25519(&self) -> &[u8] {
-        &self.block.as_signature()[SIG_ED25519_RANGE]
-    }
-
-    fn verify_dilithium(&self) -> bool {
-        pqc_dilithium::verify(
-            self.as_sig_dilithium(),
-            self.block.as_signable(),
-            self.as_pub_dilithium(),
-        )
-        .is_ok()
-    }
-
-    fn verify_ed25519(&self) -> bool {
-        let sigbuf = self.as_sig_ed25519();
-        let pubkeybuf = self.as_pub_ed25519();
-        let sig = ed25519_dalek::Signature::from_bytes(sigbuf.try_into().unwrap());
-        if let Ok(pubkey) = ed25519_dalek::VerifyingKey::from_bytes(pubkeybuf.try_into().unwrap()) {
-            pubkey.verify_strict(self.block.as_signable(), &sig).is_ok()
-        } else {
-            false
-        }
-    }
-
-    fn verify(&self) -> bool {
-        self.verify_ed25519() && self.verify_dilithium()
-    }
-}
-
 /*
 fn build_sphincsplus_keypair(secret: &Hash) -> pqc_sphincsplus::Keypair {
     let secret = derive(SPHINCSPLUS_CONTEXT, secret);
@@ -124,12 +74,6 @@ impl KeyPair {
         block.as_mut_signature()[SIG_ED25519_RANGE].copy_from_slice(&sig1.to_bytes());
         block.as_mut_signature()[SIG_DILITHIUM_RANGE].copy_from_slice(&sig2);
     }
-}
-
-/// Verify the signature of a [Block].
-pub fn verify_block_signature(block: &Block) -> bool {
-    let hybrid = Hybrid::new(block);
-    hybrid.verify()
 }
 
 /// Used to get current KeyPair and next PubKey hash from a Seed.
@@ -193,6 +137,62 @@ pub fn sign_block(
         assert_eq!(last.next_pubkey_hash, block.compute_pubkey_hash());
     }
     block.finalize()
+}
+
+pub struct Hybrid<'a> {
+    block: &'a Block<'a>,
+}
+
+impl<'a> Hybrid<'a> {
+    fn new(block: &'a Block<'a>) -> Self {
+        Self { block }
+    }
+
+    fn as_pub_dilithium(&self) -> &[u8] {
+        &self.block.as_pubkey()[PUB_DILITHIUM_RANGE]
+    }
+
+    fn as_pub_ed25519(&self) -> &[u8] {
+        &self.block.as_pubkey()[PUB_ED25519_RANGE]
+    }
+
+    fn as_sig_dilithium(&self) -> &[u8] {
+        &self.block.as_signature()[SIG_DILITHIUM_RANGE]
+    }
+
+    fn as_sig_ed25519(&self) -> &[u8] {
+        &self.block.as_signature()[SIG_ED25519_RANGE]
+    }
+
+    fn verify_dilithium(&self) -> bool {
+        pqc_dilithium::verify(
+            self.as_sig_dilithium(),
+            self.block.as_signable(),
+            self.as_pub_dilithium(),
+        )
+        .is_ok()
+    }
+
+    fn verify_ed25519(&self) -> bool {
+        let sigbuf = self.as_sig_ed25519();
+        let pubkeybuf = self.as_pub_ed25519();
+        let sig = ed25519_dalek::Signature::from_bytes(sigbuf.try_into().unwrap());
+        if let Ok(pubkey) = ed25519_dalek::VerifyingKey::from_bytes(pubkeybuf.try_into().unwrap()) {
+            pubkey.verify_strict(self.block.as_signable(), &sig).is_ok()
+        } else {
+            false
+        }
+    }
+
+    fn verify(&self) -> bool {
+        self.verify_ed25519() && self.verify_dilithium()
+    }
+}
+
+/// Verify the signature of a [Block].
+pub fn verify_block_signature(block: &Block) -> bool {
+    let hybrid = Hybrid::new(block);
+    hybrid.verify()
 }
 
 #[cfg(test)]
