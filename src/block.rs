@@ -474,9 +474,9 @@ mod tests {
         let previous_hash = block.previous_hash();
         let chain_hash = block.chain_hash();
         for bad in HashBitFlipper::new(&next_pubkey_hash) {
-            let state = BlockState::new(0, previous_hash, block.chain_hash(), bad);
+            let prev = BlockState::new(0, previous_hash, block.chain_hash(), bad);
             assert_eq!(
-                Block::from_previous(&buf[..], &state),
+                Block::from_previous(&buf[..], &prev),
                 Err(BlockError::PubKeyHash)
             );
         }
@@ -494,7 +494,7 @@ mod tests {
                 Err(BlockError::ChainHash)
             );
         }
-        for bad in BitFlipper::new(block.as_index()) {
+        for bad in BitFlipper::new(&[0; 8]) {
             let bad_index = u64::from_le_bytes(bad.try_into().unwrap());
             let last = BlockState {
                 index: bad_index,
@@ -502,12 +502,10 @@ mod tests {
                 chain_hash,
                 next_pubkey_hash,
             };
-            /*
             assert_eq!(
                 Block::from_previous(&buf[..], &last),
                 Err(BlockError::Index)
             );
-            */
         }
     }
 
