@@ -3,7 +3,7 @@
 use std::ops::Range;
 
 /*
-A Block has 8 fields (currently):
+A Block has 9 fields (currently):
 
     HASH || SIG || PUBKEY || NEXT_PUBKEY_HASH || INDEX || PERMISSION_HASH || STATE_HASH || PREVIOUS_HASH  || CHAIN_HASH
 
@@ -17,6 +17,11 @@ And where:
 
 A TIMESTAMP will likely be added.
 */
+
+pub const PUB_ED25519: usize = 32;
+pub const SIG_ED25519: usize = 64;
+pub const PUB_DILITHIUM: usize = 1952;
+pub const SIG_DILITHIUM: usize = 3293;
 
 pub const DIGEST: usize = 32;
 pub const SIGNATURE: usize = 64; // Need more Dilithium, Captian!
