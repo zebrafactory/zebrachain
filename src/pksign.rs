@@ -205,6 +205,7 @@ mod tests {
 
     static HEX0: &str = "498027d13f2a1c09194ecc64321154a9bfd3e3ac86536d38c3ed33e9b2e76579";
     static HEX1: &str = "260e8536e614fb20441ef43e5b1b2f87d0320b913dc0d3df4508372a2910ec2f";
+    static HEX2: &str = "d65fcc64431cb837a4de1edb1957e0c8d0f9f844ddff7e2eb429e0c59962ac6a";
 
     #[test]
     fn test_pqcrypto_dilithium() {
@@ -245,7 +246,7 @@ mod tests {
 
         let mut pubkey = [0u8; PUBKEY];
         pair.write_pubkey(&mut pubkey);
-        assert_ne!(pubkey, [0; PUBKEY]); // FIXME
+        assert_eq!(hash(&pubkey), Hash::from_hex(HEX2).unwrap());
     }
 
     #[test]

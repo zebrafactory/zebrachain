@@ -304,7 +304,8 @@ mod tests {
     use crate::secretseed::Seed;
     use crate::testhelpers::{BitFlipper, HashBitFlipper};
 
-    const EXPECTED: &str = "21ad41a13a05568dd795e452ad0f080a78085ecaf5e05cc16aa85df2e2a9183a";
+    const HEX0: &str = "21ad41a13a05568dd795e452ad0f080a78085ecaf5e05cc16aa85df2e2a9183a";
+    const HEX1: &str = "33182aa896946c6864a9236518da9d3ff61001861932e8cbbf71dba90fc8d49f";
 
     #[test]
     fn test_blockerror_to_io_error() {
@@ -330,7 +331,7 @@ mod tests {
     }
 
     fn new_expected() -> Hash {
-        Hash::from_hex(EXPECTED).unwrap()
+        Hash::from_hex(HEX0).unwrap()
     }
 
     fn new_valid_block() -> Vec<u8> {
@@ -594,6 +595,6 @@ mod tests {
             Hash::from_bytes([69; DIGEST]),
         );
         MutBlock::new(&mut buf, &request);
-        assert_ne!(buf, [0; BLOCK]); // FIXME
+        assert_eq!(hash(&buf), Hash::from_hex(HEX1).unwrap());
     }
 }
