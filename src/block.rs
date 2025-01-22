@@ -58,9 +58,9 @@ pub struct BlockState {
 }
 
 impl BlockState {
-    pub fn new(block_hash: Hash, chain_hash: Hash, next_pubkey_hash: Hash) -> Self {
+    pub fn new(index: u64, block_hash: Hash, chain_hash: Hash, next_pubkey_hash: Hash) -> Self {
         Self {
-            index: 0, // FIXME: Add counter to block wire format
+            index,
             block_hash,
             chain_hash,
             next_pubkey_hash,
@@ -323,9 +323,9 @@ mod tests {
         let zero = Hash::from_bytes([0; 32]);
         let one = Hash::from_bytes([1; 32]);
         let two = Hash::from_bytes([2; 32]);
-        let bs = BlockState::new(one, zero, two);
+        let bs = BlockState::new(0, one, zero, two);
         assert_eq!(bs.effective_chain_hash(), one);
-        let bs = BlockState::new(one, two, zero);
+        let bs = BlockState::new(0, one, two, zero);
         assert_eq!(bs.effective_chain_hash(), two);
     }
 
@@ -340,6 +340,7 @@ mod tests {
         let request = SigningRequest::new(Hash::from_bytes([1; 32]), Hash::from_bytes([2; 32]));
         let mut block = MutBlock::new(&mut buf, &request);
         let last = BlockState::new(
+            0,
             Hash::from_bytes([3; 32]),
             Hash::from_bytes([4; 32]),
             Hash::from_bytes([5; 32]),
@@ -444,6 +445,7 @@ mod tests {
         let state = block.state(); // Cannot append from self
         assert!(Block::from_previous(&buf[..], &state).is_err());
         let state = BlockState::new(
+            0,
             block.previous_hash(),
             block.chain_hash(),
             block.compute_pubkey_hash(),
@@ -472,21 +474,21 @@ mod tests {
         let previous_hash = block.previous_hash();
         let chain_hash = block.chain_hash();
         for bad in HashBitFlipper::new(&next_pubkey_hash) {
-            let state = BlockState::new(previous_hash, block.chain_hash(), bad);
+            let state = BlockState::new(0, previous_hash, block.chain_hash(), bad);
             assert_eq!(
                 Block::from_previous(&buf[..], &state),
                 Err(BlockError::PubKeyHash)
             );
         }
         for bad in HashBitFlipper::new(&previous_hash) {
-            let state = BlockState::new(bad, block.chain_hash(), next_pubkey_hash);
+            let state = BlockState::new(0, bad, block.chain_hash(), next_pubkey_hash);
             assert_eq!(
                 Block::from_previous(&buf[..], &state),
                 Err(BlockError::PreviousHash)
             );
         }
         for bad in HashBitFlipper::new(&block.chain_hash()) {
-            let state = BlockState::new(previous_hash, bad, next_pubkey_hash);
+            let state = BlockState::new(0, previous_hash, bad, next_pubkey_hash);
             assert_eq!(
                 Block::from_previous(&buf[..], &state),
                 Err(BlockError::ChainHash)
