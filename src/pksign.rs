@@ -17,39 +17,29 @@ fn build_dilithium_keypair(secret: &Hash) -> pqc_dilithium::Keypair {
     pqc_dilithium::Keypair::generate_from_seed(derive(DILITHIUM_CONTEXT, secret).as_bytes())
 }
 
-pub struct HybridPubKey<'a> {
-    buf: &'a [u8],
+pub struct Hybrid<'a> {
+    block: &'a Block<'a>,
 }
 
-impl<'a> HybridPubKey<'a> {
-    fn new(buf: &'a [u8]) -> Self {
-        Self { buf }
+impl<'a> Hybrid<'a> {
+    fn new(block: &'a Block<'a>) -> Self {
+        Self { block }
     }
 
-    fn as_dilithium(&self) -> &[u8] {
-        &self.buf[PUB_DILITHIUM_RANGE]
+    fn as_pub_dilithium(&self) -> &[u8] {
+        &self.block.as_pubkey()[PUB_DILITHIUM_RANGE]
     }
 
-    fn as_ed25519(&self) -> &[u8] {
-        &self.buf[PUB_ED25519_RANGE]
-    }
-}
-
-pub struct HybridSignature<'a> {
-    buf: &'a [u8],
-}
-
-impl<'a> HybridSignature<'a> {
-    fn new(buf: &'a [u8]) -> Self {
-        Self { buf }
+    fn as_pub_ed25519(&self) -> &[u8] {
+        &self.block.as_pubkey()[PUB_ED25519_RANGE]
     }
 
-    fn as_dilithium(&self) -> &[u8] {
-        &self.buf[SIG_DILITHIUM_RANGE]
+    fn as_sig_dilithium(&self) -> &[u8] {
+        &self.block.as_signature()[SIG_DILITHIUM_RANGE]
     }
 
-    fn as_ed25519(&self) -> &[u8] {
-        &self.buf[SIG_ED25519_RANGE]
+    fn as_sig_ed25519(&self) -> &[u8] {
+        &self.block.as_signature()[SIG_ED25519_RANGE]
     }
 }
 
