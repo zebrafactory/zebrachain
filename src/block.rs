@@ -28,6 +28,9 @@ pub enum BlockError {
     /// Hash of public key bytes does not match expected external value.
     PubKeyHash,
 
+    /// Index does not match expected external value (previous block index + 1).
+    Index,
+
     /// Previous hash does not match expected external value.
     PreviousHash,
 
@@ -115,6 +118,8 @@ impl<'a> Block<'a> {
         let block = Block::open(buf)?;
         if block.compute_pubkey_hash() != last.next_pubkey_hash {
             Err(BlockError::PubKeyHash)
+        } else if block.index() != last.index + 1 {
+            Err(BlockError::Index)
         } else if block.previous_hash() != last.block_hash {
             Err(BlockError::PreviousHash)
         } else if block.chain_hash() != last.effective_chain_hash() {
@@ -465,6 +470,7 @@ mod tests {
         // Block::from_previous() specific errors
         let next_pubkey_hash = block.compute_pubkey_hash();
         let previous_hash = block.previous_hash();
+        let chain_hash = block.chain_hash();
         for bad in HashBitFlipper::new(&next_pubkey_hash) {
             let state = BlockState::new(previous_hash, block.chain_hash(), bad);
             assert_eq!(
@@ -485,6 +491,21 @@ mod tests {
                 Block::from_previous(&buf[..], &state),
                 Err(BlockError::ChainHash)
             );
+        }
+        for bad in BitFlipper::new(block.as_index()) {
+            let bad_index = u64::from_le_bytes(bad.try_into().unwrap());
+            let last = BlockState {
+                index: bad_index,
+                block_hash: previous_hash,
+                chain_hash,
+                next_pubkey_hash,
+            };
+            /*
+            assert_eq!(
+                Block::from_previous(&buf[..], &last),
+                Err(BlockError::Index)
+            );
+            */
         }
     }
 
