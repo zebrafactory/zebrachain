@@ -23,6 +23,11 @@ pub const SIG_ED25519: usize = 64;
 pub const PUB_DILITHIUM: usize = 1952;
 pub const SIG_DILITHIUM: usize = 3293;
 
+pub const PUB_DILITHIUM_RANGE: Range<usize> = 0..PUB_DILITHIUM;
+pub const PUB_ED25519_RANGE: Range<usize> = PUB_DILITHIUM..PUB_DILITHIUM + PUB_ED25519;
+pub const SIG_DILITHIUM_RANGE: Range<usize> = 0..SIG_DILITHIUM;
+pub const SIG_ED25519_RANGE: Range<usize> = SIG_DILITHIUM..SIG_DILITHIUM + SIG_ED25519;
+
 pub const DIGEST: usize = 32;
 pub const SIGNATURE: usize = 64; // Need more Dilithium, Captian!
 pub const PUBKEY: usize = 32; // STILL need more Dilithium, Captian!!!

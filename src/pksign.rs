@@ -17,6 +17,42 @@ fn build_dilithium_keypair(secret: &Hash) -> pqc_dilithium::Keypair {
     pqc_dilithium::Keypair::generate_from_seed(derive(DILITHIUM_CONTEXT, secret).as_bytes())
 }
 
+pub struct HybridPubKey<'a> {
+    buf: &'a [u8],
+}
+
+impl<'a> HybridPubKey<'a> {
+    fn new(buf: &'a [u8]) -> Self {
+        Self { buf }
+    }
+
+    fn as_dilithium(&self) -> &[u8] {
+        &self.buf[PUB_DILITHIUM_RANGE]
+    }
+
+    fn as_ed25519(&self) -> &[u8] {
+        &self.buf[PUB_ED25519_RANGE]
+    }
+}
+
+pub struct HybridSignature<'a> {
+    buf: &'a [u8],
+}
+
+impl<'a> HybridSignature<'a> {
+    fn new(buf: &'a [u8]) -> Self {
+        Self { buf }
+    }
+
+    fn as_dilithium(&self) -> &[u8] {
+        &self.buf[SIG_DILITHIUM_RANGE]
+    }
+
+    fn as_ed25519(&self) -> &[u8] {
+        &self.buf[SIG_ED25519_RANGE]
+    }
+}
+
 /*
 fn build_sphincsplus_keypair(secret: &Hash) -> pqc_sphincsplus::Keypair {
     let secret = derive(SPHINCSPLUS_CONTEXT, secret);
