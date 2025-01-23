@@ -22,7 +22,7 @@ fn main() {
     let tmpdir1 = tempfile::TempDir::new().unwrap();
     let tmpdir2 = tempfile::TempDir::new().unwrap();
     let ocs = OwnedChainStore::new(tmpdir1.path(), Some(tmpdir2.path()));
-    let mut chain = ocs.create_owned_chain(&requests[0]).unwrap();
+    let mut chain = ocs.create_chain(&requests[0]).unwrap();
 
     println!(
         "{} {} {}",
@@ -68,5 +68,5 @@ fn main() {
     assert_eq!(&head, chain.head());
     assert_eq!(&tail, chain.tail());
 
-    let chain = ocs.open_owned_chain(&chain_hash).unwrap();
+    let chain = ocs.open_chain(&chain_hash).unwrap();
 }

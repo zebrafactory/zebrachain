@@ -51,7 +51,7 @@ impl OwnedChainStore {
         }
     }
 
-    pub fn create_owned_chain(&self, request: &SigningRequest) -> io::Result<OwnedChain> {
+    pub fn create_chain(&self, request: &SigningRequest) -> io::Result<OwnedChain> {
         let seed = Seed::auto_create();
         let mut buf = [0; BLOCK];
         let chain_hash = sign_block(&mut buf, &seed, request, None);
@@ -60,7 +60,7 @@ impl OwnedChainStore {
         Ok(OwnedChain::new(seed, chain, secret_chain))
     }
 
-    pub fn open_owned_chain(&self, chain_hash: &Hash) -> io::Result<OwnedChain> {
+    pub fn open_chain(&self, chain_hash: &Hash) -> io::Result<OwnedChain> {
         let chain = self.store.open_chain(chain_hash)?;
         if let Some(secret_chain) = self.open_secret_chain(chain_hash)? {
             let seed = secret_chain.tail().seed();
@@ -149,27 +149,27 @@ mod tests {
 
         let ocs = OwnedChainStore::new(&nope1, None);
         assert!(ocs.secret_store.is_none());
-        assert!(ocs.create_owned_chain(&request).is_err());
+        assert!(ocs.create_chain(&request).is_err());
 
         let ocs = OwnedChainStore::new(&nope1, Some(&nope2));
         assert!(ocs.secret_store.is_some());
-        assert!(ocs.create_owned_chain(&request).is_err());
+        assert!(ocs.create_chain(&request).is_err());
 
         // Paths are directories:
         let ocs = OwnedChainStore::new(tmpdir1.path(), None);
         assert!(ocs.secret_store.is_none());
-        let mut chain = ocs.create_owned_chain(&request).unwrap();
+        let mut chain = ocs.create_chain(&request).unwrap();
         assert_eq!(chain.tail().index, 0);
         let chain_hash = chain.chain_hash().clone();
         for i in 1..=420 {
             chain.sign_next(&random_request()).unwrap();
             assert_eq!(chain.tail().index, i);
         }
-        assert!(ocs.open_owned_chain(&chain_hash).is_err()); // No secret chain store
+        assert!(ocs.open_chain(&chain_hash).is_err()); // No secret chain store
 
         let ocs = OwnedChainStore::new(tmpdir1.path(), Some(tmpdir2.path()));
         assert!(ocs.secret_store.is_some());
-        let mut chain = ocs.create_owned_chain(&request).unwrap();
+        let mut chain = ocs.create_chain(&request).unwrap();
         assert_eq!(chain.tail().index, 0);
         let chain_hash = chain.chain_hash().clone();
         for i in 1..=420 {
@@ -177,7 +177,7 @@ mod tests {
             assert_eq!(chain.tail().index, i);
         }
         let tail = chain.tail().clone();
-        let chain = ocs.open_owned_chain(&chain_hash).unwrap();
+        let chain = ocs.open_chain(&chain_hash).unwrap();
         assert_eq!(chain.tail(), &tail);
     }
 }
