@@ -311,9 +311,9 @@ impl<'a> MutBlock<'a> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::pksign::SecretSigner;
+    use crate::pksign::{sign_block, SecretSigner};
     use crate::secretseed::Seed;
-    use crate::testhelpers::{random_hash, BitFlipper, HashBitFlipper};
+    use crate::testhelpers::{random_hash, random_request, BitFlipper, HashBitFlipper};
 
     const HEX0: &str = "21ad41a13a05568dd795e452ad0f080a78085ecaf5e05cc16aa85df2e2a9183a";
     const HEX1: &str = "33182aa896946c6864a9236518da9d3ff61001861932e8cbbf71dba90fc8d49f";
@@ -494,21 +494,46 @@ mod tests {
                 Err(BlockError::PreviousHash)
             );
         }
-        /*
         for bad in HashBitFlipper::new(&p.chain_hash) {
             let prev = BlockState::new(0, p.block_hash, bad, p.next_pubkey_hash);
-            assert_eq!(
-                Block::from_previous(&buf[..], &prev),
-                Err(BlockError::ChainHash)
-            );
+            // `chain_hash` of previous `BlockState` only gets checked in 3rd block and beyond
+            assert!(Block::from_previous(&buf[..], &prev).is_ok());
         }
-        */
         for bad in BitFlipper::new(&[0; 8]) {
             let bad_index = u64::from_le_bytes(bad.try_into().unwrap());
             let last = BlockState::new(bad_index, p.block_hash, p.chain_hash, p.next_pubkey_hash);
             assert_eq!(
                 Block::from_previous(&buf[..], &last),
                 Err(BlockError::Index)
+            );
+        }
+    }
+
+    #[test]
+    fn test_block_from_previous_3rd() {
+        let mut buf = [0; BLOCK];
+        let seed = Seed::auto_create();
+        let chain_hash = sign_block(&mut buf, &seed, &random_request(), None);
+        let tail = Block::from_hash(&buf, &chain_hash).unwrap().state();
+
+        let seed = seed.auto_advance();
+        sign_block(&mut buf, &seed, &random_request(), Some(&tail));
+        for bad in HashBitFlipper::new(&chain_hash) {
+            let prev = BlockState::new(0, tail.block_hash, bad, tail.next_pubkey_hash);
+            // `chain_hash` of previous `BlockState` only gets checked in 3rd block and beyond
+            assert!(Block::from_previous(&buf[..], &prev).is_ok());
+        }
+        let tail = Block::from_previous(&buf, &tail).unwrap().state();
+
+        let seed = seed.auto_advance();
+        sign_block(&mut buf, &seed, &random_request(), Some(&tail));
+        assert!(Block::from_previous(&buf, &tail).is_ok());
+        for bad in HashBitFlipper::new(&chain_hash) {
+            let prev = BlockState::new(1, tail.block_hash, bad, tail.next_pubkey_hash);
+            // `chain_hash` of previous `BlockState` only gets checked in 3rd block and beyond
+            assert_eq!(
+                Block::from_previous(&buf[..], &prev),
+                Err(BlockError::ChainHash)
             );
         }
     }
