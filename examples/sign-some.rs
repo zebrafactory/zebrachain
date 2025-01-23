@@ -67,4 +67,6 @@ fn main() {
     let chain = ocs.secret_to_public(&secchain).unwrap();
     assert_eq!(&head, chain.head());
     assert_eq!(&tail, chain.tail());
+
+    let chain = ocs.open_owned_chain(&chain_hash).unwrap();
 }
