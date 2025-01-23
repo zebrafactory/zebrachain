@@ -43,6 +43,14 @@ impl OwnedChainStore {
         }
     }
 
+    fn open_secret_chain(&self, chain_hash: &Hash) -> io::Result<Option<SecretChain>> {
+        if let Some(secret_store) = self.secret_store.as_ref() {
+            Ok(Some(secret_store.open_chain(chain_hash)?))
+        } else {
+            Ok(None)
+        }
+    }
+
     pub fn create_owned_chain(&self, request: &SigningRequest) -> io::Result<OwnedChain> {
         let seed = Seed::auto_create();
         let mut buf = [0; BLOCK];
@@ -50,6 +58,19 @@ impl OwnedChainStore {
         let chain = self.store.create_chain(&buf, &chain_hash)?;
         let secret_chain = self.create_secret_chain(&seed, &chain_hash, request)?;
         Ok(OwnedChain::new(seed, chain, secret_chain))
+    }
+
+    pub fn open_owned_chain(&self, chain_hash: &Hash) -> io::Result<OwnedChain> {
+        let chain = self.store.open_chain(chain_hash)?;
+        if let Some(secret_chain) = self.open_secret_chain(chain_hash)? {
+            let seed = secret_chain.tail().seed();
+            Ok(OwnedChain::new(seed, chain, Some(secret_chain)))
+        } else {
+            Err(io::Error::other(format!(
+                "No secret chain for {}",
+                chain_hash
+            )))
+        }
     }
 
     pub fn secret_to_public(&self, secret_chain: &SecretChain) -> io::Result<Chain> {
