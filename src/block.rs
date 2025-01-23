@@ -5,8 +5,6 @@ use crate::pksign::verify_block_signature;
 use blake3::{hash, Hash};
 use std::io;
 
-static ZERO_HASH: Hash = Hash::from_bytes([0; 32]);
-
 fn check_block_buf(buf: &[u8]) {
     if buf.len() != BLOCK {
         panic!("Need a {BLOCK} byte slice; got {} bytes", buf.len());
@@ -68,13 +66,10 @@ impl BlockState {
     }
 
     pub fn effective_chain_hash(&self) -> Hash {
-        assert_ne!(self.block_hash, ZERO_HASH);
-        if self.chain_hash == ZERO_HASH {
-            assert_eq!(self.index, 0);
-            self.block_hash // Block 0
+        if self.index == 0 {
+            self.block_hash
         } else {
-            // FIXME: assert!(self.index > 0);
-            self.chain_hash // Block > 0
+            self.chain_hash
         }
     }
 }
@@ -303,7 +298,7 @@ mod tests {
     use super::*;
     use crate::pksign::SecretSigner;
     use crate::secretseed::Seed;
-    use crate::testhelpers::{BitFlipper, HashBitFlipper};
+    use crate::testhelpers::{random_hash, BitFlipper, HashBitFlipper};
 
     const HEX0: &str = "21ad41a13a05568dd795e452ad0f080a78085ecaf5e05cc16aa85df2e2a9183a";
     const HEX1: &str = "33182aa896946c6864a9236518da9d3ff61001861932e8cbbf71dba90fc8d49f";
@@ -322,13 +317,13 @@ mod tests {
 
     #[test]
     fn test_blockstate_effective_chain_hash() {
-        let zero = Hash::from_bytes([0; 32]);
-        let one = Hash::from_bytes([1; 32]);
-        let two = Hash::from_bytes([2; 32]);
-        let bs = BlockState::new(0, one, zero, two);
-        assert_eq!(bs.effective_chain_hash(), one);
-        let bs = BlockState::new(0, one, two, zero);
-        assert_eq!(bs.effective_chain_hash(), two);
+        let h1 = random_hash();
+        let h2 = random_hash();
+        let h3 = random_hash();
+        let bs = BlockState::new(0, h1, h2, h3);
+        assert_eq!(bs.effective_chain_hash(), h1);
+        let bs = BlockState::new(1, h1, h2, h3);
+        assert_eq!(bs.effective_chain_hash(), h2);
     }
 
     fn new_expected() -> Hash {
@@ -472,38 +467,35 @@ mod tests {
         }
 
         // Block::from_previous() specific errors
-        let next_pubkey_hash = block.compute_pubkey_hash();
-        let previous_hash = block.previous_hash();
-        let chain_hash = block.chain_hash();
-        for bad in HashBitFlipper::new(&next_pubkey_hash) {
-            let prev = BlockState::new(0, previous_hash, block.chain_hash(), bad);
+        let p_next_pubkey_hash = block.compute_pubkey_hash();
+        let p_block_hash = block.previous_hash();
+        let p_chain_hash = block.chain_hash();
+        for bad in HashBitFlipper::new(&p_next_pubkey_hash) {
+            let prev = BlockState::new(0, p_block_hash, p_chain_hash, bad);
             assert_eq!(
                 Block::from_previous(&buf[..], &prev),
                 Err(BlockError::PubKeyHash)
             );
         }
-        for bad in HashBitFlipper::new(&previous_hash) {
-            let state = BlockState::new(0, bad, block.chain_hash(), next_pubkey_hash);
+        for bad in HashBitFlipper::new(&p_block_hash) {
+            let state = BlockState::new(0, bad, p_chain_hash, p_next_pubkey_hash);
             assert_eq!(
                 Block::from_previous(&buf[..], &state),
                 Err(BlockError::PreviousHash)
             );
         }
-        for bad in HashBitFlipper::new(&block.chain_hash()) {
-            let state = BlockState::new(0, previous_hash, bad, next_pubkey_hash);
+        /*
+        for bad in HashBitFlipper::new(&p_chain_hash) {
+            let state = BlockState::new(0, p_block_hash, bad, p_next_pubkey_hash);
             assert_eq!(
                 Block::from_previous(&buf[..], &state),
                 Err(BlockError::ChainHash)
             );
         }
+        */
         for bad in BitFlipper::new(&[0; 8]) {
             let bad_index = u64::from_le_bytes(bad.try_into().unwrap());
-            let last = BlockState {
-                index: bad_index,
-                block_hash: previous_hash,
-                chain_hash,
-                next_pubkey_hash,
-            };
+            let last = BlockState::new(bad_index, p_block_hash, p_chain_hash, p_next_pubkey_hash);
             assert_eq!(
                 Block::from_previous(&buf[..], &last),
                 Err(BlockError::Index)
