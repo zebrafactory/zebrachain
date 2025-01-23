@@ -496,7 +496,7 @@ mod tests {
         }
         for bad in HashBitFlipper::new(&p.chain_hash) {
             let prev = BlockState::new(0, p.block_hash, bad, p.next_pubkey_hash);
-            // `chain_hash` of previous `BlockState` only gets checked in 3rd block and beyond
+            // Previous `BlockState.chain_hash` only gets checked in 3rd block and beyond:
             assert!(Block::from_previous(&buf[..], &prev).is_ok());
         }
         for bad in BitFlipper::new(&[0; 8]) {
@@ -520,17 +520,17 @@ mod tests {
         sign_block(&mut buf, &seed, &random_request(), Some(&tail));
         for bad in HashBitFlipper::new(&chain_hash) {
             let prev = BlockState::new(0, tail.block_hash, bad, tail.next_pubkey_hash);
-            // `chain_hash` of previous `BlockState` only gets checked in 3rd block and beyond
+            // Previous `BlockState.chain_hash` only gets checked in 3rd block and beyond:
             assert!(Block::from_previous(&buf[..], &prev).is_ok());
         }
         let tail = Block::from_previous(&buf, &tail).unwrap().state();
 
+        // Sign 3rd block
         let seed = seed.auto_advance();
         sign_block(&mut buf, &seed, &random_request(), Some(&tail));
         assert!(Block::from_previous(&buf, &tail).is_ok());
         for bad in HashBitFlipper::new(&chain_hash) {
             let prev = BlockState::new(1, tail.block_hash, bad, tail.next_pubkey_hash);
-            // `chain_hash` of previous `BlockState` only gets checked in 3rd block and beyond
             assert_eq!(
                 Block::from_previous(&buf[..], &prev),
                 Err(BlockError::ChainHash)
@@ -600,7 +600,7 @@ mod tests {
     }
 
     #[test]
-    fn test_block_signature_is_value() {
+    fn test_block_signature_is_valid() {
         let good = new_valid_block();
         let block = Block::new(&good[..]);
         assert!(block.signature_is_valid());
@@ -612,6 +612,25 @@ mod tests {
                 assert!(block.signature_is_valid());
                 assert!(!block.content_is_valid());
             }
+        }
+    }
+
+    #[test]
+    fn test_block_first_block_is_valid() {
+        let buf = [0; BLOCK];
+        assert!(Block::new(&buf).first_block_is_valid());
+        for bad_hash in HashBitFlipper::new(&ZERO_HASH) {
+            let mut bad = buf.clone();
+            bad[CHAIN_HASH_RANGE].copy_from_slice(bad_hash.as_bytes());
+            assert!(!Block::new(&bad).first_block_is_valid());
+            bad[INDEX_RANGE].copy_from_slice(&[1, 0, 0, 0, 0, 0, 0, 0]);
+            assert!(Block::new(&bad).first_block_is_valid());
+
+            let mut bad = buf.clone();
+            bad[PREVIOUS_HASH_RANGE].copy_from_slice(bad_hash.as_bytes());
+            assert!(!Block::new(&bad).first_block_is_valid());
+            bad[INDEX_RANGE].copy_from_slice(&[1, 0, 0, 0, 0, 0, 0, 0]);
+            assert!(Block::new(&bad).first_block_is_valid());
         }
     }
 
