@@ -124,17 +124,21 @@ impl OwnedChain {
     pub fn tail(&self) -> &BlockState {
         self.chain.tail()
     }
+
+    pub fn chain_hash(&self) -> &Hash {
+        self.chain.chain_hash()
+    }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::testhelpers::random_hash;
+    use crate::testhelpers::random_request;
     use tempfile;
 
     #[test]
     fn test_ownedchainstore() {
-        let request = SigningRequest::new(random_hash(), random_hash());
+        let request = random_request();
 
         let tmpdir1 = tempfile::TempDir::new().unwrap();
         let tmpdir2 = tempfile::TempDir::new().unwrap();
@@ -154,12 +158,26 @@ mod tests {
         // Paths are directories:
         let ocs = OwnedChainStore::new(tmpdir1.path(), None);
         assert!(ocs.secret_store.is_none());
-        let chain = ocs.create_owned_chain(&request).unwrap();
+        let mut chain = ocs.create_owned_chain(&request).unwrap();
         assert_eq!(chain.tail().index, 0);
+        let chain_hash = chain.chain_hash().clone();
+        for i in 1..=420 {
+            chain.sign_next(&random_request()).unwrap();
+            assert_eq!(chain.tail().index, i);
+        }
+        assert!(ocs.open_owned_chain(&chain_hash).is_err()); // No secret chain store
 
         let ocs = OwnedChainStore::new(tmpdir1.path(), Some(tmpdir2.path()));
         assert!(ocs.secret_store.is_some());
-        let chain = ocs.create_owned_chain(&request).unwrap();
+        let mut chain = ocs.create_owned_chain(&request).unwrap();
         assert_eq!(chain.tail().index, 0);
+        let chain_hash = chain.chain_hash().clone();
+        for i in 1..=420 {
+            chain.sign_next(&random_request()).unwrap();
+            assert_eq!(chain.tail().index, i);
+        }
+        let tail = chain.tail().clone();
+        let chain = ocs.open_owned_chain(&chain_hash).unwrap();
+        assert_eq!(chain.tail(), &tail);
     }
 }

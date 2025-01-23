@@ -73,6 +73,7 @@ impl BlockState {
             assert_eq!(self.index, 0);
             self.block_hash // Block 0
         } else {
+            // FIXME: assert!(self.index > 0);
             self.chain_hash // Block > 0
         }
     }
