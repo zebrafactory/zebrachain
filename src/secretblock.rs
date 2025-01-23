@@ -53,7 +53,7 @@ pub enum SecretBlockError {
 }
 
 impl SecretBlockError {
-    // FIXME: Is there is a Rustier way of doing this [feedback encouraged].
+    // FIXME: Is there is a Rustier way of doing this? Feedback encouraged.
     pub fn to_io_error(&self) -> io::Error {
         io::Error::other(format!("SecretBlockError::{self:?}"))
     }

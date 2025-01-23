@@ -28,21 +28,21 @@ pub enum BlockError {
     /// Hash of public key bytes does not match expected external value.
     PubKeyHash,
 
-    /// Index does not match expected external value (previous block index + 1).
-    Index,
-
     /// Previous hash does not match expected external value.
     PreviousHash,
 
     /// Chain hash does not match expected external value.
     ChainHash,
 
-    /// First block does not meet first block constraints
+    /// Index does not match expected external value (previous block index + 1).
+    Index,
+
+    /// First block does not meet 1st block constraints
     FirstBlock,
 }
 
 impl BlockError {
-    // FIXME: Is there is a Rustier way of doing this [feedback encouraged].
+    // FIXME: Is there is a Rustier way of doing this? Feedback encouraged.
     pub fn to_io_error(&self) -> io::Error {
         io::Error::other(format!("BlockError::{self:?}"))
     }
@@ -623,13 +623,13 @@ mod tests {
             let mut bad = buf.clone();
             bad[CHAIN_HASH_RANGE].copy_from_slice(bad_hash.as_bytes());
             assert!(!Block::new(&bad).first_block_is_valid());
-            bad[INDEX_RANGE].copy_from_slice(&[1, 0, 0, 0, 0, 0, 0, 0]);
+            bad[INDEX_RANGE].copy_from_slice(&1u64.to_le_bytes());
             assert!(Block::new(&bad).first_block_is_valid());
 
             let mut bad = buf.clone();
             bad[PREVIOUS_HASH_RANGE].copy_from_slice(bad_hash.as_bytes());
             assert!(!Block::new(&bad).first_block_is_valid());
-            bad[INDEX_RANGE].copy_from_slice(&[1, 0, 0, 0, 0, 0, 0, 0]);
+            bad[INDEX_RANGE].copy_from_slice(&1u64.to_le_bytes());
             assert!(Block::new(&bad).first_block_is_valid());
         }
     }
