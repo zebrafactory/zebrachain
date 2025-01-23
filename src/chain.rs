@@ -21,7 +21,8 @@ Walk chain till last block.
 fn validate_chain(file: &File, chain_hash: &Hash) -> io::Result<(BlockState, BlockState, u64)> {
     let mut buf = [0; BLOCK];
     file.read_exact_at(&mut buf, 0)?;
-    let head = match Block::from_hash(&buf, chain_hash) {
+    // FIXME: Add test for when first block has index != 0
+    let head = match Block::from_hash_at_index(&buf, chain_hash, 0) {
         Ok(block) => block.state(),
         Err(err) => return Err(err.to_io_error()),
     };
@@ -57,7 +58,7 @@ impl Chain {
     }
 
     pub fn create(file: File, buf: &[u8], chain_hash: &Hash) -> io::Result<Self> {
-        match Block::from_hash(buf, chain_hash) {
+        match Block::from_hash_at_index(buf, chain_hash, 0) {
             Ok(block) => {
                 file.write_all_at(buf, 0)?;
                 Ok(Self {
@@ -143,7 +144,7 @@ impl<'a> ChainIter<'a> {
         let blockresult = if let Some(tail) = self.tail.as_ref() {
             Block::from_previous(&buf, tail)
         } else {
-            Block::from_hash(&buf, self.chain.chain_hash())
+            Block::from_hash_at_index(&buf, self.chain.chain_hash(), 0)
         };
 
         match blockresult {
@@ -230,7 +231,7 @@ mod tests {
         let request1 = &SigningRequest::new(random_hash(), random_hash());
         let chain_hash = sign_block(&mut buf1, &seed, &request1, None);
         let buf1 = buf1; // Doesn't need to be mutable anymore
-        let block1 = Block::from_hash(&buf1, &chain_hash).unwrap();
+        let block1 = Block::from_hash_at_index(&buf1, &chain_hash, 0).unwrap();
 
         // Write to file, test with a single block
         file.write_all_at(&buf1, 0).unwrap(); // Haha, file doesn't need to be mut

@@ -117,6 +117,17 @@ impl<'a> Block<'a> {
         }
     }
 
+    pub fn from_hash_at_index(buf: &'a [u8], block_hash: &Hash, index: u64) -> BlockResult<'a> {
+        let block = Block::open(buf)?;
+        if block_hash != &block.hash() {
+            Err(BlockError::Hash)
+        } else if index != block.index() {
+            Err(BlockError::Index)
+        } else {
+            Ok(block)
+        }
+    }
+
     pub fn from_previous(buf: &'a [u8], last: &BlockState) -> BlockResult<'a> {
         let block = Block::open(buf)?;
         if block.compute_pubkey_hash() != last.next_pubkey_hash {
