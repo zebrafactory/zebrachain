@@ -134,10 +134,32 @@ mod tests {
 
     #[test]
     fn test_ownedchainstore() {
+        let request = SigningRequest::new(random_hash(), random_hash());
+
         let tmpdir1 = tempfile::TempDir::new().unwrap();
         let tmpdir2 = tempfile::TempDir::new().unwrap();
+
+        // Paths do not exist:
+        let nope1 = tmpdir1.path().join("nope1");
+        let nope2 = tmpdir2.path().join("nope2");
+
+        let ocs = OwnedChainStore::new(&nope1, None);
+        assert!(ocs.secret_store.is_none());
+        assert!(ocs.create_owned_chain(&request).is_err());
+
+        let ocs = OwnedChainStore::new(&nope1, Some(&nope2));
+        assert!(ocs.secret_store.is_some());
+        assert!(ocs.create_owned_chain(&request).is_err());
+
+        // Paths are directories:
+        let ocs = OwnedChainStore::new(tmpdir1.path(), None);
+        assert!(ocs.secret_store.is_none());
+        let chain = ocs.create_owned_chain(&request).unwrap();
+        assert_eq!(chain.tail().index, 0);
+
         let ocs = OwnedChainStore::new(tmpdir1.path(), Some(tmpdir2.path()));
-        let request = SigningRequest::new(random_hash(), random_hash());
-        let _chain = ocs.create_owned_chain(&request).unwrap();
+        assert!(ocs.secret_store.is_some());
+        let chain = ocs.create_owned_chain(&request).unwrap();
+        assert_eq!(chain.tail().index, 0);
     }
 }
