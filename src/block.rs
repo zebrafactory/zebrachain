@@ -5,6 +5,8 @@ use crate::pksign::verify_block_signature;
 use blake3::{hash, Hash};
 use std::io;
 
+const ZERO_HASH: Hash = Hash::from_bytes([0; DIGEST]);
+
 fn check_block_buf(buf: &[u8]) {
     if buf.len() != BLOCK {
         panic!("Need a {BLOCK} byte slice; got {} bytes", buf.len());
@@ -34,6 +36,9 @@ pub enum BlockError {
 
     /// Chain hash does not match expected external value.
     ChainHash,
+
+    /// First block does not meet first block constraints
+    FirstBlock,
 }
 
 impl BlockError {
@@ -96,6 +101,8 @@ impl<'a> Block<'a> {
             Err(BlockError::Content)
         } else if !block.signature_is_valid() {
             Err(BlockError::Signature)
+        } else if !block.first_block_is_valid() {
+            Err(BlockError::FirstBlock)
         } else {
             Ok(block)
         }
@@ -220,6 +227,14 @@ impl<'a> Block<'a> {
 
     fn signature_is_valid(&self) -> bool {
         verify_block_signature(self)
+    }
+
+    fn first_block_is_valid(&self) -> bool {
+        if self.index() == 0 {
+            self.chain_hash() == ZERO_HASH && self.previous_hash() == ZERO_HASH
+        } else {
+            true
+        }
     }
 }
 
