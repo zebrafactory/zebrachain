@@ -42,12 +42,16 @@ impl CheckPoint {
 
 fn validate_chain(file: &File, chain_hash: &Hash) -> io::Result<(BlockState, BlockState)> {
     let mut buf = [0; BLOCK];
+
+    // Read and validate first block
     file.read_exact_at(&mut buf, 0)?;
     // FIXME: Add test for when first block has index != 0
     let head = match Block::from_hash_at_index(&buf, chain_hash, 0) {
         Ok(block) => block.state(),
         Err(err) => return Err(err.to_io_error()),
     };
+
+    // Read and validate all remaining blocks till the end of the chain
     let mut tail = head.clone();
     while file
         .read_exact_at(&mut buf, (tail.index + 1) * BLOCK as u64)
@@ -78,7 +82,7 @@ fn validate_from_checkpoint(file: &File, cp: &CheckPoint) -> io::Result<(BlockSt
         Err(err) => return Err(err.to_io_error()),
     };
 
-    // Read and validate any remaninig blocks till the end of the chain
+    // Read and validate any remaining blocks till the end of the chain
     while file
         .read_exact_at(&mut buf, (tail.index + 1) * BLOCK as u64)
         .is_ok()
@@ -99,8 +103,15 @@ pub struct Chain {
 }
 
 impl Chain {
+    /// Open and fully validate a chain.
     pub fn open(file: File, chain_hash: &Hash) -> io::Result<Self> {
         let (head, tail) = validate_chain(&file, chain_hash)?;
+        Ok(Self { file, head, tail })
+    }
+
+    /// Quickly open and validate a chain from a [CheckPoint].
+    pub fn resume(file: File, cp: &CheckPoint) -> io::Result<Self> {
+        let (head, tail) = validate_from_checkpoint(&file, cp)?;
         Ok(Self { file, head, tail })
     }
 
@@ -108,8 +119,9 @@ impl Chain {
         self.tail.index + 1
     }
 
+    /// This always returns `false`.
     pub fn is_empty(&self) -> bool {
-        false  // A chain can never be empty. No valid first block, no chain.
+        false // A chain can never be empty. No valid first block, no chain.
     }
 
     pub fn create(file: File, buf: &[u8], chain_hash: &Hash) -> io::Result<Self> {
@@ -173,6 +185,7 @@ impl<'a> IntoIterator for &'a Chain {
     }
 }
 
+/// Iterate through each [Block] in a [Chain].
 pub struct ChainIter<'a> {
     chain: &'a Chain,
     tail: Option<BlockState>,
