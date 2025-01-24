@@ -108,15 +108,6 @@ impl<'a> Block<'a> {
         }
     }
 
-    pub fn from_hash(buf: &'a [u8], block_hash: &Hash) -> BlockResult<'a> {
-        let block = Block::open(buf)?;
-        if block_hash != &block.hash() {
-            Err(BlockError::Hash)
-        } else {
-            Ok(block)
-        }
-    }
-
     pub fn from_hash_at_index(buf: &'a [u8], block_hash: &Hash, index: u64) -> BlockResult<'a> {
         let block = Block::open(buf)?;
         if block_hash != &block.hash() {
@@ -439,25 +430,34 @@ mod tests {
     }
 
     #[test]
-    fn test_block_from_hash() {
+    fn test_block_from_hash_at_index() {
         let buf = new_valid_block();
         let good = Block::open(&buf[..]).unwrap().hash();
-        assert!(Block::from_hash(&buf[..], &good).is_ok());
+        assert!(Block::from_hash_at_index(&buf[..], &good, 1).is_ok());
 
         // Make sure Block::open() is getting called
         for bad in BitFlipper::new(&buf[..]) {
-            assert_eq!(Block::from_hash(&bad[..], &good), Err(BlockError::Content));
+            assert_eq!(
+                Block::from_hash_at_index(&bad[..], &good, 0),
+                Err(BlockError::Content)
+            );
         }
         for badend in BitFlipper::new(&buf[DIGEST..]) {
             let mut badbuf = [0; BLOCK];
             badbuf[0..DIGEST].copy_from_slice(hash(&badend).as_bytes());
             badbuf[DIGEST..].copy_from_slice(&badend);
-            assert_eq!(Block::from_hash(&badbuf, &good), Err(BlockError::Signature));
+            assert_eq!(
+                Block::from_hash_at_index(&badbuf, &good, 0),
+                Err(BlockError::Signature)
+            );
         }
 
-        // Block::from_hash() specific error
+        // Block::from_hash_at_index() specific error
         for bad in HashBitFlipper::new(&good) {
-            assert_eq!(Block::from_hash(&buf[..], &bad), Err(BlockError::Hash));
+            assert_eq!(
+                Block::from_hash_at_index(&buf[..], &bad, 0),
+                Err(BlockError::Hash)
+            );
         }
     }
 
@@ -525,7 +525,9 @@ mod tests {
         let mut buf = [0; BLOCK];
         let seed = Seed::auto_create();
         let chain_hash = sign_block(&mut buf, &seed, &random_request(), None);
-        let tail = Block::from_hash(&buf, &chain_hash).unwrap().state();
+        let tail = Block::from_hash_at_index(&buf, &chain_hash, 0)
+            .unwrap()
+            .state();
 
         let seed = seed.auto_advance();
         sign_block(&mut buf, &seed, &random_request(), Some(&tail));

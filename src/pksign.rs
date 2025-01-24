@@ -268,7 +268,9 @@ mod tests {
         assert_eq!(&buf[BLOCK - DIGEST * 2..], &[0; DIGEST * 2]);
 
         // Sign 2nd block
-        let tail = Block::from_hash(&buf, &chain_hash).unwrap().state();
+        let tail = Block::from_hash_at_index(&buf, &chain_hash, 0)
+            .unwrap()
+            .state();
         buf.fill(69);
         let seed = seed.auto_advance();
         let request = SigningRequest::new(random_hash(), random_hash());
@@ -284,7 +286,9 @@ mod tests {
         );
 
         // Sign 3rd block
-        let tail2 = Block::from_hash(&buf, &block_hash).unwrap().state();
+        let tail2 = Block::from_hash_at_index(&buf, &block_hash, 1)
+            .unwrap()
+            .state();
         buf.fill(69);
         let seed = seed.auto_advance(); //.auto_advance(); // <-- Will break (cuz it's supposed to)
         let request = SigningRequest::new(random_hash(), random_hash());
@@ -309,7 +313,9 @@ mod tests {
         let chain_hash = sign_block(&mut buf, &seed, &request, None);
 
         // Sign 2nd block, but double advance the seed:
-        let tail = Block::from_hash(&buf, &chain_hash).unwrap().state();
+        let tail = Block::from_hash_at_index(&buf, &chain_hash, 0)
+            .unwrap()
+            .state();
         let seed = seed.auto_advance().auto_advance();
         let request = SigningRequest::new(random_hash(), random_hash());
         let _block_hash = sign_block(&mut buf, &seed, &request, Some(&tail));
