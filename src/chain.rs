@@ -32,7 +32,10 @@ fn validate_chain(file: &File, chain_hash: &Hash) -> io::Result<(BlockState, Blo
         Err(err) => return Err(err.to_io_error()),
     };
     let mut tail = head.clone();
-    while file.read_exact_at(&mut buf, (tail.index + 1) * BLOCK as u64).is_ok() {
+    while file
+        .read_exact_at(&mut buf, (tail.index + 1) * BLOCK as u64)
+        .is_ok()
+    {
         tail = match Block::from_previous(&buf, &tail) {
             Ok(block) => block.state(),
             Err(err) => return Err(err.to_io_error()),
@@ -84,6 +87,7 @@ impl Chain {
         &self.tail
     }
 
+    #[allow(clippy::misnamed_getters)] // Clippy is wrong here
     pub fn chain_hash(&self) -> &Hash {
         &self.head.block_hash
     }
