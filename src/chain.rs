@@ -124,39 +124,30 @@ impl<'a> IntoIterator for &'a Chain {
 
 pub struct ChainIter<'a> {
     chain: &'a Chain,
-    index: u64,
     tail: Option<BlockState>,
 }
 
 impl<'a> ChainIter<'a> {
     pub fn new(chain: &'a Chain) -> Self {
-        Self {
-            chain,
-            index: 0,
-            tail: None,
+        Self { chain, tail: None }
+    }
+
+    fn index(&self) -> u64 {
+        if let Some(tail) = self.tail.as_ref() {
+            tail.index + 1
+        } else {
+            0
         }
     }
 
     fn next_inner(&mut self) -> io::Result<BlockState> {
         let mut buf = [0; BLOCK];
-
-        let index = if let Some(tail) = self.tail.as_ref() {
-            tail.index + 1
-        } else {
-            0
-        };
-        assert!(index < self.chain.len());
-
-        self.chain.read_block(&mut buf, index)?;
-        assert_eq!(index, self.index);
-        self.index += 1;
-
+        self.chain.read_block(&mut buf, self.index())?;
         let blockresult = if let Some(tail) = self.tail.as_ref() {
             Block::from_previous(&buf, tail)
         } else {
             Block::from_hash_at_index(&buf, self.chain.chain_hash(), 0)
         };
-
         match blockresult {
             Ok(block) => {
                 self.tail = Some(block.state());
@@ -171,7 +162,7 @@ impl Iterator for ChainIter<'_> {
     type Item = io::Result<BlockState>;
 
     fn next(&mut self) -> Option<Self::Item> {
-        if self.index < self.chain.len() {
+        if self.index() < self.chain.len() {
             Some(self.next_inner())
         } else {
             None
