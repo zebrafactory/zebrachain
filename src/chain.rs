@@ -23,7 +23,7 @@ Or when resuming from a checkpoint, the chain validation process is:
     2. Walk remaining blocks till end of chain using Block::from_previous()
 */
 
-fn validate_chain(file: &File, chain_hash: &Hash) -> io::Result<(BlockState, BlockState, u64)> {
+fn validate_chain(file: &File, chain_hash: &Hash) -> io::Result<(BlockState, BlockState)> {
     let mut buf = [0; BLOCK];
     file.read_exact_at(&mut buf, 0)?;
     // FIXME: Add test for when first block has index != 0
@@ -41,8 +41,7 @@ fn validate_chain(file: &File, chain_hash: &Hash) -> io::Result<(BlockState, Blo
             Err(err) => return Err(err.to_io_error()),
         };
     }
-    let count = tail.index + 1;
-    Ok((head, tail, count))
+    Ok((head, tail))
 }
 
 /// Read and write blocks to a file.
@@ -55,7 +54,8 @@ pub struct Chain {
 
 impl Chain {
     pub fn open(file: File, chain_hash: &Hash) -> io::Result<Self> {
-        let (head, tail, count) = validate_chain(&file, chain_hash)?;
+        let (head, tail) = validate_chain(&file, chain_hash)?;
+        let count = tail.index + 1;
         Ok(Self {
             file,
             head,
@@ -251,15 +251,15 @@ mod tests {
 
         // Write to file, test with a single block
         file.write_all_at(&buf1, 0).unwrap(); // Haha, file doesn't need to be mut
-        let (head, tail, count) = validate_chain(&file, &chain_hash).unwrap();
+        let (head, tail) = validate_chain(&file, &chain_hash).unwrap();
         assert_eq!(head, block1.state());
         assert_eq!(tail, head);
-        assert_eq!(count, 1);
+        assert_eq!(tail.index, 0);
 
         // Open a 2nd time, should work the same (file cursor position plays no part)
         assert_eq!(
             validate_chain(&file, &chain_hash).unwrap(),
-            (block1.state(), block1.state(), 1)
+            (block1.state(), block1.state())
         );
 
         // Generate a 2nd block
@@ -275,7 +275,7 @@ mod tests {
         file.write_all_at(&buf2, BLOCK as u64).unwrap();
         assert_eq!(
             validate_chain(&file, &chain_hash).unwrap(),
-            (block1.state(), block2.state(), 2)
+            (block1.state(), block2.state())
         );
 
         for bad in BitFlipper::new(&buf1) {
