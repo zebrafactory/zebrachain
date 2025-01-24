@@ -57,7 +57,7 @@ impl Chain {
         Ok(Self { file, head, tail })
     }
 
-    pub fn count(&self) -> u64 {
+    pub fn len(&self) -> u64 {
         self.tail.index + 1
     }
 
@@ -145,7 +145,7 @@ impl<'a> ChainIter<'a> {
         } else {
             0
         };
-        assert!(index < self.chain.count());
+        assert!(index < self.chain.len());
 
         self.chain.read_block(&mut buf, index)?;
         assert_eq!(index, self.index);
@@ -171,7 +171,7 @@ impl Iterator for ChainIter<'_> {
     type Item = io::Result<BlockState>;
 
     fn next(&mut self) -> Option<Self::Item> {
-        if self.index < self.chain.count() {
+        if self.index < self.chain.len() {
             Some(self.next_inner())
         } else {
             None
