@@ -11,11 +11,16 @@ use std::os::unix::fs::FileExt;
 use std::path::{Path, PathBuf};
 
 /*
-For now we will fully validate all chains when opening them.
+Chain validation process:
 
-Validate first block
-Check againt external first block hash
-Walk chain till last block.
+    1. Load first block with Block::from_hash_at_index()
+    2. Walk remaining blocks till end of chain using Block::from_previous()
+
+Or when resuming from a checkpoint, the chain validation process is:
+
+    1. Load first block with Block::from_hash_at_index()
+    2. Load checkpoint block with Block::from_hash_at_index()
+    2. Walk remaining blocks till end of chain using Block::from_previous()
 */
 
 fn validate_chain(file: &File, chain_hash: &Hash) -> io::Result<(BlockState, BlockState, u64)> {
