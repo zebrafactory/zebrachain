@@ -23,6 +23,23 @@ Or when resuming from a checkpoint, the chain validation process is:
     2. Walk remaining blocks till end of chain using Block::from_previous()
 */
 
+/// Check point a chain for fast reload.
+pub struct CheckPoint {
+    pub chain_hash: Hash,
+    pub block_hash: Hash,
+    pub index: u64,
+}
+
+impl CheckPoint {
+    pub fn new(state: &BlockState) -> Self {
+        Self {
+            chain_hash: state.chain_hash,
+            block_hash: state.block_hash,
+            index: state.index,
+        }
+    }
+}
+
 fn validate_chain(file: &File, chain_hash: &Hash) -> io::Result<(BlockState, BlockState)> {
     let mut buf = [0; BLOCK];
     file.read_exact_at(&mut buf, 0)?;
@@ -32,6 +49,36 @@ fn validate_chain(file: &File, chain_hash: &Hash) -> io::Result<(BlockState, Blo
         Err(err) => return Err(err.to_io_error()),
     };
     let mut tail = head.clone();
+    while file
+        .read_exact_at(&mut buf, (tail.index + 1) * BLOCK as u64)
+        .is_ok()
+    {
+        tail = match Block::from_previous(&buf, &tail) {
+            Ok(block) => block.state(),
+            Err(err) => return Err(err.to_io_error()),
+        };
+    }
+    Ok((head, tail))
+}
+
+fn validate_from_checkpoint(file: &File, cp: &CheckPoint) -> io::Result<(BlockState, BlockState)> {
+    let mut buf = [0; BLOCK];
+
+    // Read and validate first block
+    file.read_exact_at(&mut buf, 0)?;
+    let head = match Block::from_hash_at_index(&buf, &cp.chain_hash, 0) {
+        Ok(block) => block.state(),
+        Err(err) => return Err(err.to_io_error()),
+    };
+
+    // Read and validate checkpoint block
+    file.read_exact_at(&mut buf, cp.index * BLOCK as u64)?;
+    let mut tail = match Block::from_hash_at_index(&buf, &cp.block_hash, cp.index) {
+        Ok(block) => block.state(),
+        Err(err) => return Err(err.to_io_error()),
+    };
+
+    // Read and validate any remaninig blocks till the end of the chain
     while file
         .read_exact_at(&mut buf, (tail.index + 1) * BLOCK as u64)
         .is_ok()

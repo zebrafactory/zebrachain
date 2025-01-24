@@ -13,23 +13,6 @@ fn check_block_buf(buf: &[u8]) {
     }
 }
 
-/// Check point a chain for fast reload.
-pub struct CheckPoint {
-    pub chain_hash: Hash,
-    pub block_hash: Hash,
-    pub index: u64,
-}
-
-impl CheckPoint {
-    pub fn new(state: &BlockState) -> Self {
-        Self {
-            chain_hash: state.chain_hash,
-            block_hash: state.block_hash,
-            index: state.index,
-        }
-    }
-}
-
 /// Expresses different error conditions hit during block validation.
 #[derive(Debug, PartialEq)]
 pub enum BlockError {
@@ -127,7 +110,8 @@ impl<'a> Block<'a> {
 
     /// Open and verify a block with `block_hash` at position `index` in the chain.
     ///
-    /// This is used when loading the first block (`index=0`), or when resuming from a [CheckPoint].
+    /// This is used when loading the first block (`index=0`), or when resuming from a
+    /// [CheckPoint][crate::chain::CheckPoint].
     pub fn from_hash_at_index(buf: &'a [u8], block_hash: &Hash, index: u64) -> BlockResult<'a> {
         let block = Block::open(buf)?;
         if block_hash != &block.hash() {
