@@ -32,15 +32,14 @@ fn validate_chain(file: &File, chain_hash: &Hash) -> io::Result<(BlockState, Blo
         Err(err) => return Err(err.to_io_error()),
     };
     let mut tail = head.clone();
-    let mut index = 1;
-    while file.read_exact_at(&mut buf, index * BLOCK as u64).is_ok() {
-        index += 1;
+    while file.read_exact_at(&mut buf, (tail.index + 1) * BLOCK as u64).is_ok() {
         tail = match Block::from_previous(&buf, &tail) {
             Ok(block) => block.state(),
             Err(err) => return Err(err.to_io_error()),
         };
     }
-    Ok((head, tail, index))
+    let count = tail.index + 1;
+    Ok((head, tail, count))
 }
 
 /// Read and write blocks to a file.
@@ -141,9 +140,17 @@ impl<'a> ChainIter<'a> {
     }
 
     fn next_inner(&mut self) -> io::Result<BlockState> {
-        assert!(self.index < self.count);
         let mut buf = [0; BLOCK];
-        self.chain.read_block(&mut buf, self.index)?;
+
+        let index = if let Some(tail) = self.tail.as_ref() {
+            tail.index + 1
+        } else {
+            0
+        };
+        assert!(index < self.count);
+
+        self.chain.read_block(&mut buf, index)?;
+        assert_eq!(index, self.index);
         self.index += 1;
 
         let blockresult = if let Some(tail) = self.tail.as_ref() {
