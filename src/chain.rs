@@ -69,19 +69,23 @@ fn validate_chain(file: &File, chain_hash: &Hash) -> io::Result<(BlockState, Blo
     Ok((head, tail))
 }
 
-fn validate_from_checkpoint(file: &File, cp: &CheckPoint) -> io::Result<(BlockState, BlockState)> {
+// Security Warning: This is ONLY secure if `checkpoint` is trustworthy and correct!
+fn validate_from_checkpoint(
+    file: &File,
+    checkpoint: &CheckPoint,
+) -> io::Result<(BlockState, BlockState)> {
     let mut buf = [0; BLOCK];
 
     // Read and validate first block
     file.read_exact_at(&mut buf, 0)?;
-    let head = match Block::from_hash_at_index(&buf, &cp.chain_hash, 0) {
+    let head = match Block::from_hash_at_index(&buf, &checkpoint.chain_hash, 0) {
         Ok(block) => block.state(),
         Err(err) => return Err(err.to_io_error()),
     };
 
     // Read and validate checkpoint block
-    file.read_exact_at(&mut buf, cp.index * BLOCK as u64)?;
-    let mut tail = match Block::from_hash_at_index(&buf, &cp.block_hash, cp.index) {
+    file.read_exact_at(&mut buf, checkpoint.index * BLOCK as u64)?;
+    let mut tail = match Block::from_hash_at_index(&buf, &checkpoint.block_hash, checkpoint.index) {
         Ok(block) => block.state(),
         Err(err) => return Err(err.to_io_error()),
     };
