@@ -49,19 +49,20 @@ pub struct Chain {
     file: File,
     head: BlockState,
     tail: BlockState,
-    count: u64,
 }
 
 impl Chain {
     pub fn open(file: File, chain_hash: &Hash) -> io::Result<Self> {
         let (head, tail) = validate_chain(&file, chain_hash)?;
-        let count = tail.index + 1;
         Ok(Self {
             file,
             head,
             tail,
-            count,
         })
+    }
+
+    pub fn count(&self) -> u64 {
+        self.tail.index + 1
     }
 
     pub fn create(file: File, buf: &[u8], chain_hash: &Hash) -> io::Result<Self> {
@@ -72,7 +73,6 @@ impl Chain {
                     file,
                     head: block.state(),
                     tail: block.state(),
-                    count: 1,
                 })
             }
             Err(err) => Err(err.to_io_error()),
@@ -113,7 +113,7 @@ impl Chain {
     }
 
     pub fn iter(&self) -> ChainIter {
-        ChainIter::new(self, self.count)
+        ChainIter::new(self)
     }
 }
 
@@ -129,16 +129,14 @@ impl<'a> IntoIterator for &'a Chain {
 pub struct ChainIter<'a> {
     chain: &'a Chain,
     index: u64,
-    count: u64,
     tail: Option<BlockState>,
 }
 
 impl<'a> ChainIter<'a> {
-    pub fn new(chain: &'a Chain, count: u64) -> Self {
+    pub fn new(chain: &'a Chain) -> Self {
         Self {
             chain,
             index: 0,
-            count,
             tail: None,
         }
     }
@@ -151,7 +149,7 @@ impl<'a> ChainIter<'a> {
         } else {
             0
         };
-        assert!(index < self.count);
+        assert!(index < self.chain.count());
 
         self.chain.read_block(&mut buf, index)?;
         assert_eq!(index, self.index);
@@ -177,7 +175,7 @@ impl Iterator for ChainIter<'_> {
     type Item = io::Result<BlockState>;
 
     fn next(&mut self) -> Option<Self::Item> {
-        if self.index < self.count {
+        if self.index < self.chain.count() {
             Some(self.next_inner())
         } else {
             None
