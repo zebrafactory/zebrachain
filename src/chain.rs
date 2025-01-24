@@ -31,12 +31,16 @@ pub struct CheckPoint {
 }
 
 impl CheckPoint {
-    pub fn new(state: &BlockState) -> Self {
+    pub fn new(chain_hash: Hash, block_hash: Hash, index: u64) -> Self {
         Self {
-            chain_hash: state.chain_hash,
-            block_hash: state.block_hash,
-            index: state.index,
+            chain_hash,
+            block_hash,
+            index,
         }
+    }
+
+    pub fn from_block_state(state: &BlockState) -> Self {
+        Self::new(state.chain_hash, state.block_hash, state.index)
     }
 }
 
@@ -109,17 +113,29 @@ impl Chain {
         Ok(Self { file, head, tail })
     }
 
-    /// Quickly open and validate a chain from a [CheckPoint].
-    pub fn resume(file: File, cp: &CheckPoint) -> io::Result<Self> {
-        let (head, tail) = validate_from_checkpoint(&file, cp)?;
+    /// Open and validate a chain from a [CheckPoint] forward.
+    ///
+    /// This does not fully validate the chain. It validates the first block, the checkpoint block
+    /// itself, and any remaining blocks in the chain.
+    ///
+    /// # Security Note
+    ///
+    /// This is ONLY secure if `checkpoint` is trustworthy and correct.
+    pub fn resume(file: File, checkpoint: &CheckPoint) -> io::Result<Self> {
+        let (head, tail) = validate_from_checkpoint(&file, checkpoint)?;
         Ok(Self { file, head, tail })
     }
 
+    /// Return the number of blocks in the chain.
+    ///
+    /// FIXME: Is `len()` a bad name since this returns `u64` instead of `usize`?
     pub fn len(&self) -> u64 {
         self.tail.index + 1
     }
 
     /// This always returns `false`.
+    ///
+    /// FIXME: Likewise, is this Rust approps when len() -> u64?
     pub fn is_empty(&self) -> bool {
         false // A chain can never be empty. No valid first block, no chain.
     }
@@ -268,6 +284,11 @@ impl ChainStore {
     pub fn open_chain(&self, chain_hash: &Hash) -> io::Result<Chain> {
         let file = self.open_chain_file(chain_hash)?;
         Chain::open(file, chain_hash)
+    }
+
+    pub fn resume_chain(&self, checkpoint: &CheckPoint) -> io::Result<Chain> {
+        let file = self.open_chain_file(&checkpoint.chain_hash)?;
+        Chain::resume(file, checkpoint)
     }
 
     pub fn create_chain(&self, buf: &[u8], chain_hash: &Hash) -> io::Result<Chain> {

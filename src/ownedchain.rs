@@ -5,7 +5,7 @@
 
 use crate::always::*;
 use crate::block::{BlockState, SigningRequest};
-use crate::chain::{Chain, ChainStore};
+use crate::chain::{Chain, ChainStore, CheckPoint};
 use crate::pksign::sign_block;
 use crate::secretchain::{SecretChain, SecretChainStore};
 use crate::secretseed::Seed;
@@ -69,6 +69,19 @@ impl OwnedChainStore {
             Err(io::Error::other(format!(
                 "No secret chain for {}",
                 chain_hash
+            )))
+        }
+    }
+
+    pub fn resume_chain(&self, checkpoint: &CheckPoint) -> io::Result<OwnedChain> {
+        let chain = self.store.resume_chain(checkpoint)?;
+        if let Some(secret_chain) = self.open_secret_chain(&checkpoint.chain_hash)? {
+            let seed = secret_chain.tail().seed();
+            Ok(OwnedChain::new(seed, chain, Some(secret_chain)))
+        } else {
+            Err(io::Error::other(format!(
+                "No secret chain for {}",
+                checkpoint.chain_hash
             )))
         }
     }

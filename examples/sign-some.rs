@@ -2,14 +2,14 @@
 
 use tempfile;
 use zebrachain::block::SigningRequest;
-use zebrachain::chain::Chain;
+use zebrachain::chain::{Chain, CheckPoint};
 use zebrachain::fsutil::{build_filename, open_for_append};
 use zebrachain::ownedchain::OwnedChainStore;
 use zebrachain::secretchain::SecretChain;
 use zebrachain::secretseed::random_secret;
 
 fn build_requests() -> Vec<SigningRequest> {
-    let count = 10_000;
+    let count = 420;
     let mut states = Vec::with_capacity(count);
     for _ in 0..count {
         states.push(SigningRequest::new(random_secret(), random_secret()));
@@ -68,5 +68,9 @@ fn main() {
     assert_eq!(&head, chain.head());
     assert_eq!(&tail, chain.tail());
 
-    let _chain = ocs.open_chain(&chain_hash).unwrap();
+    let chain = ocs.open_chain(&chain_hash).unwrap();
+    println!("{} {}", chain.tail().index, chain.tail().block_hash);
+    let checkpoint = CheckPoint::from_block_state(&tail);
+    let chain = ocs.resume_chain(&checkpoint).unwrap();
+    println!("{} {}", chain.tail().index, chain.tail().block_hash);
 }
