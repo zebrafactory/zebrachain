@@ -54,11 +54,7 @@ pub struct Chain {
 impl Chain {
     pub fn open(file: File, chain_hash: &Hash) -> io::Result<Self> {
         let (head, tail) = validate_chain(&file, chain_hash)?;
-        Ok(Self {
-            file,
-            head,
-            tail,
-        })
+        Ok(Self { file, head, tail })
     }
 
     pub fn count(&self) -> u64 {

@@ -68,5 +68,5 @@ fn main() {
     assert_eq!(&head, chain.head());
     assert_eq!(&tail, chain.tail());
 
-    let chain = ocs.open_chain(&chain_hash).unwrap();
+    let _chain = ocs.open_chain(&chain_hash).unwrap();
 }
