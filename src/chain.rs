@@ -108,6 +108,10 @@ impl Chain {
         self.tail.index + 1
     }
 
+    pub fn is_empty(&self) -> bool {
+        false  // A chain can never be empty. No valid first block, no chain.
+    }
+
     pub fn create(file: File, buf: &[u8], chain_hash: &Hash) -> io::Result<Self> {
         match Block::from_hash_at_index(buf, chain_hash, 0) {
             Ok(block) => {
