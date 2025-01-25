@@ -121,6 +121,30 @@ impl<const D: usize, const S: usize, const P: usize> Wire<D, S, P> {
     }
 }
 
+pub const WIRE: [usize; 10] = [
+    DIGEST,    // Block hash
+    SIGNATURE, // Dilithium + ed25519 signatures
+    PUBKEY,    // Dilithium + ed25519 public keys
+    DIGEST,    // Hash of next public key
+    8,         // Time
+    DIGEST,    // AUTH-entication, AUTH-orization hash
+    DIGEST,    // State hash
+    8,         // Block index
+    DIGEST,    // Previous block hash
+    DIGEST,    // Chain hash
+];
+
+pub const fn get_range(index: usize) -> Range<usize> {
+    if index == 0 {
+        0..WIRE[0]
+    } else {
+        let start = get_range(index - 1).end; // Can't use slice.iter().sum() in const fn
+        start..start + WIRE[index]
+    }
+}
+
+pub const TESTME: Range<usize> = get_range(0);
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -139,5 +163,13 @@ mod tests {
         assert_eq!(STATE_HASH_RANGE, 5445..5477);
         assert_eq!(PREVIOUS_HASH_RANGE, 5477..5509);
         assert_eq!(CHAIN_HASH_RANGE, 5509..5541);
+    }
+
+    #[test]
+    fn test_get_range() {
+        assert_eq!(get_range(0), 0..32);
+        assert_eq!(get_range(1), 32..3389);
+        assert_eq!(get_range(2), 3389..5373);
+        assert_eq!(get_range(3), 5373..5405);
     }
 }
