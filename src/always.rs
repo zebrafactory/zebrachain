@@ -69,6 +69,58 @@ pub static DILITHIUM_CONTEXT: &str =
 pub static SPHINCSPLUS_CONTEXT: &str =
     "b5de7bead4cac0fb4fe60cbb2ef31cb2c0590adb10f0764769cd5b0e0d7d11c1";
 
+pub struct Wire<const D: usize, const S: usize, const P: usize> {}
+
+impl<const D: usize, const S: usize, const P: usize> Wire<D, S, P> {
+    pub fn hash_range() -> Range<usize> {
+        0..D
+    }
+
+    pub fn sig_range() -> Range<usize> {
+        D..D + S
+    }
+
+    pub fn pub_range() -> Range<usize> {
+        let start = Self::sig_range().end;
+        start..start + P
+    }
+
+    pub fn next_pub_hash_range() -> Range<usize> {
+        let start = Self::pub_range().end;
+        start..start + D
+    }
+
+    pub fn time_range() -> Range<usize> {
+        let start = Self::next_pub_hash_range().end;
+        start..start + 8
+    }
+
+    pub fn auth_hash_range() -> Range<usize> {
+        let start = Self::time_range().end;
+        start..start + D
+    }
+
+    pub fn state_hash_range() -> Range<usize> {
+        let start = Self::auth_hash_range().end;
+        start..start + D
+    }
+
+    pub fn index_range() -> Range<usize> {
+        let start = Self::state_hash_range().end;
+        start..start + 8
+    }
+
+    pub fn prev_hash_range() -> Range<usize> {
+        let start = Self::index_range().end;
+        start..start + D
+    }
+
+    pub fn chain_hash_range() -> Range<usize> {
+        let start = Self::prev_hash_range().end;
+        start..start + D
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
