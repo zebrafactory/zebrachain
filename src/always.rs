@@ -39,16 +39,37 @@ pub const BLOCK: usize = DIGEST * 6 + SIGNATURE + PUBKEY + 8;
 pub const HASHABLE_RANGE: Range<usize> = DIGEST..BLOCK;
 pub const SIGNABLE_RANGE: Range<usize> = DIGEST + SIGNATURE..BLOCK;
 
-pub const HASH_RANGE: Range<usize> = 0..DIGEST;
-pub const SIGNATURE_RANGE: Range<usize> = DIGEST..DIGEST + SIGNATURE;
-pub const PUBKEY_RANGE: Range<usize> = SIGNATURE_RANGE.end..SIGNATURE_RANGE.end + PUBKEY;
-pub const NEXT_PUBKEY_HASH_RANGE: Range<usize> = PUBKEY_RANGE.end..PUBKEY_RANGE.end + DIGEST;
-pub const INDEX_RANGE: Range<usize> = NEXT_PUBKEY_HASH_RANGE.end..NEXT_PUBKEY_HASH_RANGE.end + 8;
+pub const WIRE: [usize; 9] = [
+    DIGEST,    // Block hash
+    SIGNATURE, // Dilithium + ed25519 signatures
+    PUBKEY,    // Dilithium + ed25519 public keys
+    DIGEST,    // Hash of next public key
+    8,         // Block index (FIXME: make this the Time field)
+    DIGEST,    // AUTH-entication, AUTH-orization hash
+    DIGEST,    // State hash
+    //8,         // Block index (FIXME: add another 8 bytes, put Index here
+    DIGEST, // Previous block hash
+    DIGEST, // Chain hash
+];
 
-pub const AUTH_HASH_RANGE: Range<usize> = BLOCK - DIGEST * 4..BLOCK - DIGEST * 3;
-pub const STATE_HASH_RANGE: Range<usize> = BLOCK - DIGEST * 3..BLOCK - DIGEST * 2;
-pub const PREVIOUS_HASH_RANGE: Range<usize> = BLOCK - DIGEST * 2..BLOCK - DIGEST;
-pub const CHAIN_HASH_RANGE: Range<usize> = BLOCK - DIGEST..BLOCK;
+const fn get_range(index: usize) -> Range<usize> {
+    if index == 0 {
+        0..WIRE[0]
+    } else {
+        let start = get_range(index - 1).end; // Can't use slice.iter().sum() in const fn
+        start..start + WIRE[index]
+    }
+}
+
+pub const HASH_RANGE: Range<usize> = get_range(0);
+pub const SIGNATURE_RANGE: Range<usize> = get_range(1);
+pub const PUBKEY_RANGE: Range<usize> = get_range(2);
+pub const NEXT_PUBKEY_HASH_RANGE: Range<usize> = get_range(3);
+pub const INDEX_RANGE: Range<usize> = get_range(4);
+pub const AUTH_HASH_RANGE: Range<usize> = get_range(5);
+pub const STATE_HASH_RANGE: Range<usize> = get_range(6);
+pub const PREVIOUS_HASH_RANGE: Range<usize> = get_range(7);
+pub const CHAIN_HASH_RANGE: Range<usize> = get_range(8);
 
 /*
 A SecretBlock currently has 6 fields:
@@ -68,82 +89,6 @@ pub static DILITHIUM_CONTEXT: &str =
     "e665ee96123e46d74e76dc53bdc64df06d72c238d574b7c153305f5e63063350";
 pub static SPHINCSPLUS_CONTEXT: &str =
     "b5de7bead4cac0fb4fe60cbb2ef31cb2c0590adb10f0764769cd5b0e0d7d11c1";
-
-pub struct Wire<const D: usize, const S: usize, const P: usize> {}
-
-impl<const D: usize, const S: usize, const P: usize> Wire<D, S, P> {
-    pub fn hash_range() -> Range<usize> {
-        0..D
-    }
-
-    pub fn sig_range() -> Range<usize> {
-        D..D + S
-    }
-
-    pub fn pub_range() -> Range<usize> {
-        let start = Self::sig_range().end;
-        start..start + P
-    }
-
-    pub fn next_pub_hash_range() -> Range<usize> {
-        let start = Self::pub_range().end;
-        start..start + D
-    }
-
-    pub fn time_range() -> Range<usize> {
-        let start = Self::next_pub_hash_range().end;
-        start..start + 8
-    }
-
-    pub fn auth_hash_range() -> Range<usize> {
-        let start = Self::time_range().end;
-        start..start + D
-    }
-
-    pub fn state_hash_range() -> Range<usize> {
-        let start = Self::auth_hash_range().end;
-        start..start + D
-    }
-
-    pub fn index_range() -> Range<usize> {
-        let start = Self::state_hash_range().end;
-        start..start + 8
-    }
-
-    pub fn prev_hash_range() -> Range<usize> {
-        let start = Self::index_range().end;
-        start..start + D
-    }
-
-    pub fn chain_hash_range() -> Range<usize> {
-        let start = Self::prev_hash_range().end;
-        start..start + D
-    }
-}
-
-pub const WIRE: [usize; 10] = [
-    DIGEST,    // Block hash
-    SIGNATURE, // Dilithium + ed25519 signatures
-    PUBKEY,    // Dilithium + ed25519 public keys
-    DIGEST,    // Hash of next public key
-    8,         // Time
-    DIGEST,    // AUTH-entication, AUTH-orization hash
-    DIGEST,    // State hash
-    8,         // Block index
-    DIGEST,    // Previous block hash
-    DIGEST,    // Chain hash
-];
-
-pub const fn get_range(index: usize) -> Range<usize> {
-    if index == 0 {
-        0..WIRE[0]
-    } else {
-        let start = get_range(index - 1).end; // Can't use slice.iter().sum() in const fn
-        start..start + WIRE[index]
-    }
-}
-
-pub const TESTME: Range<usize> = get_range(0);
 
 #[cfg(test)]
 mod tests {
