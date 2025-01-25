@@ -37,7 +37,7 @@ pub const BLOCK: usize = (6 * DIGEST) + SIGNATURE + PUBKEY + 16;
 pub const HASHABLE_RANGE: Range<usize> = DIGEST..BLOCK;
 pub const SIGNABLE_RANGE: Range<usize> = DIGEST + SIGNATURE..BLOCK;
 
-pub const WIRE: [usize; 10] = [
+const WIRE: [usize; 10] = [
     DIGEST,    // Block hash
     SIGNATURE, // Dilithium + ed25519 signatures
     PUBKEY,    // Dilithium + ed25519 public keys
