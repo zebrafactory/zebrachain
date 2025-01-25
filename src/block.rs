@@ -179,8 +179,8 @@ impl<'a> Block<'a> {
         &self.buf[INDEX_RANGE]
     }
 
-    fn as_permission_hash(&self) -> &[u8] {
-        &self.buf[PERMISSION_HASH_RANGE]
+    fn as_auth_hash(&self) -> &[u8] {
+        &self.buf[AUTH_HASH_RANGE]
     }
 
     fn as_state_hash(&self) -> &[u8] {
@@ -207,8 +207,8 @@ impl<'a> Block<'a> {
         u64::from_le_bytes(self.as_index().try_into().unwrap())
     }
 
-    pub fn permission_hash(&self) -> Hash {
-        Hash::from_bytes(self.as_permission_hash().try_into().expect("oops"))
+    pub fn auth_hash(&self) -> Hash {
+        Hash::from_bytes(self.as_auth_hash().try_into().expect("oops"))
     }
 
     pub fn state_hash(&self) -> Hash {
@@ -249,14 +249,14 @@ impl<'a> Block<'a> {
 }
 
 pub struct SigningRequest {
-    pub permission_hash: Hash,
+    pub auth_hash: Hash,
     pub state_hash: Hash,
 }
 
 impl SigningRequest {
-    pub fn new(permission_hash: Hash, state_hash: Hash) -> Self {
+    pub fn new(auth_hash: Hash, state_hash: Hash) -> Self {
         Self {
-            permission_hash,
+            auth_hash,
             state_hash,
         }
     }
@@ -272,7 +272,7 @@ impl<'a> MutBlock<'a> {
         check_block_buf(buf);
         buf.fill(0);
         buf[STATE_HASH_RANGE].copy_from_slice(request.state_hash.as_bytes());
-        buf[PERMISSION_HASH_RANGE].copy_from_slice(request.permission_hash.as_bytes());
+        buf[AUTH_HASH_RANGE].copy_from_slice(request.auth_hash.as_bytes());
         Self { buf }
     }
 
@@ -380,7 +380,7 @@ mod tests {
         buf.extend_from_slice(&[3; PUBKEY]);
         buf.extend_from_slice(&[4; DIGEST]); // NEXT_PUBKEY_HASH
         buf.extend_from_slice(&[5; 8]); // INDEX
-        buf.extend_from_slice(&[6; DIGEST]); // PERMISSION_HASH
+        buf.extend_from_slice(&[6; DIGEST]); // AUTH_HASH
         buf.extend_from_slice(&[7; DIGEST]); // STATE_HASH
         buf.extend_from_slice(&[8; DIGEST]); // PREVIOUS_HASH
         buf.extend_from_slice(&[9; DIGEST]); // CHAIN_HASH
@@ -568,7 +568,7 @@ mod tests {
         assert_eq!(block.as_pubkey(), [3; PUBKEY]);
         assert_eq!(block.as_next_pubkey_hash(), [4; DIGEST]);
         assert_eq!(block.as_index(), [5; 8]);
-        assert_eq!(block.as_permission_hash(), [6; DIGEST]);
+        assert_eq!(block.as_auth_hash(), [6; DIGEST]);
         assert_eq!(block.as_state_hash(), [7; DIGEST]);
         assert_eq!(block.as_previous_hash(), [8; DIGEST]);
         assert_eq!(block.as_chain_hash(), [9; DIGEST]);
@@ -581,7 +581,7 @@ mod tests {
         assert_eq!(block.hash(), Hash::from_bytes([1; DIGEST]));
         assert_eq!(block.next_pubkey_hash(), Hash::from_bytes([4; DIGEST]));
         assert_eq!(block.index(), 361700864190383365);
-        assert_eq!(block.permission_hash(), Hash::from_bytes([6; DIGEST]));
+        assert_eq!(block.auth_hash(), Hash::from_bytes([6; DIGEST]));
         assert_eq!(block.state_hash(), Hash::from_bytes([7; DIGEST]));
         assert_eq!(block.previous_hash(), Hash::from_bytes([8; DIGEST]));
         assert_eq!(block.chain_hash(), Hash::from_bytes([9; DIGEST]));

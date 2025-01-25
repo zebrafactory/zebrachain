@@ -68,7 +68,7 @@ pub struct SecretBlock {
     pub block_hash: Hash,
     pub secret: Hash,
     pub next_secret: Hash,
-    pub permission_hash: Hash,
+    pub auth_hash: Hash,
     pub state_hash: Hash,
     pub previous_hash: Hash,
 }
@@ -79,7 +79,7 @@ impl SecretBlock {
     }
 
     pub fn signing_request(&self) -> SigningRequest {
-        SigningRequest::new(self.permission_hash, self.state_hash)
+        SigningRequest::new(self.auth_hash, self.state_hash)
     }
 
     pub fn open(buf: &[u8]) -> SecretBlockResult {
@@ -89,7 +89,7 @@ impl SecretBlock {
             block_hash: get_hash(buf, 0),
             secret: get_hash(buf, SECRET_INDEX),
             next_secret: get_hash(buf, NEXT_SECRET_INDEX),
-            permission_hash: get_hash(buf, PERMISSION_INDEX),
+            auth_hash: get_hash(buf, PERMISSION_INDEX),
             state_hash: get_hash(buf, STATE_INDEX),
             previous_hash: get_hash(buf, PREVIOUS_INDEX),
         };
@@ -137,7 +137,7 @@ impl<'a> MutSecretBlock<'a> {
         set_hash(buf, SECRET_INDEX, &seed.secret);
         set_hash(buf, NEXT_SECRET_INDEX, &seed.next_secret);
 
-        set_hash(buf, PERMISSION_INDEX, &request.permission_hash);
+        set_hash(buf, PERMISSION_INDEX, &request.auth_hash);
         set_hash(buf, STATE_INDEX, &request.state_hash);
 
         Self { buf }
@@ -209,7 +209,7 @@ mod tests {
         );
         assert_eq!(block.secret, Hash::from_bytes([1; DIGEST]));
         assert_eq!(block.next_secret, Hash::from_bytes([2; DIGEST]));
-        assert_eq!(block.permission_hash, Hash::from_bytes([3; DIGEST]));
+        assert_eq!(block.auth_hash, Hash::from_bytes([3; DIGEST]));
         assert_eq!(block.state_hash, Hash::from_bytes([4; DIGEST]));
         assert_eq!(block.previous_hash, Hash::from_bytes([5; DIGEST]));
         for bad in BitFlipper::new(&buf) {
@@ -273,7 +273,7 @@ mod tests {
             block_hash: get_hash(&buf, PREVIOUS_INDEX),
             secret: Hash::from_bytes([0; 32]),
             next_secret: get_hash(&buf, SECRET_INDEX),
-            permission_hash: Hash::from_bytes([0; 32]),
+            auth_hash: Hash::from_bytes([0; 32]),
             state_hash: Hash::from_bytes([0; 32]),
             previous_hash: Hash::from_bytes([0; 32]),
         };
@@ -285,7 +285,7 @@ mod tests {
                 block_hash: bad_block_hash,
                 secret: prev.secret,
                 next_secret: prev.next_secret,
-                permission_hash: prev.permission_hash,
+                auth_hash: prev.auth_hash,
                 state_hash: prev.state_hash,
                 previous_hash: prev.previous_hash,
             };
@@ -299,7 +299,7 @@ mod tests {
                 block_hash: prev.block_hash,
                 secret: prev.secret,
                 next_secret: bad_next_secret,
-                permission_hash: prev.permission_hash,
+                auth_hash: prev.auth_hash,
                 state_hash: prev.state_hash,
                 previous_hash: prev.previous_hash,
             };

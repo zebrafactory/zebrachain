@@ -45,7 +45,7 @@ pub const PUBKEY_RANGE: Range<usize> = SIGNATURE_RANGE.end..SIGNATURE_RANGE.end 
 pub const NEXT_PUBKEY_HASH_RANGE: Range<usize> = PUBKEY_RANGE.end..PUBKEY_RANGE.end + DIGEST;
 pub const INDEX_RANGE: Range<usize> = NEXT_PUBKEY_HASH_RANGE.end..NEXT_PUBKEY_HASH_RANGE.end + 8;
 
-pub const PERMISSION_HASH_RANGE: Range<usize> = BLOCK - DIGEST * 4..BLOCK - DIGEST * 3;
+pub const AUTH_HASH_RANGE: Range<usize> = BLOCK - DIGEST * 4..BLOCK - DIGEST * 3;
 pub const STATE_HASH_RANGE: Range<usize> = BLOCK - DIGEST * 3..BLOCK - DIGEST * 2;
 pub const PREVIOUS_HASH_RANGE: Range<usize> = BLOCK - DIGEST * 2..BLOCK - DIGEST;
 pub const CHAIN_HASH_RANGE: Range<usize> = BLOCK - DIGEST..BLOCK;
@@ -53,7 +53,7 @@ pub const CHAIN_HASH_RANGE: Range<usize> = BLOCK - DIGEST..BLOCK;
 /*
 A SecretBlock currently has 6 fields:
 
-    HASH || SECRET || NEXT_SECRET || PERMISSION_HASH || STATE_HASH || PREVIOUS_HASH
+    HASH || SECRET || NEXT_SECRET || AUTH_HASH || STATE_HASH || PREVIOUS_HASH
 */
 
 pub const SECRET_BLOCK: usize = DIGEST * 6;
@@ -83,7 +83,7 @@ mod tests {
         assert_eq!(PUBKEY_RANGE, 3389..5373);
         assert_eq!(NEXT_PUBKEY_HASH_RANGE, 5373..5405);
         assert_eq!(INDEX_RANGE, 5405..5413);
-        assert_eq!(PERMISSION_HASH_RANGE, 5413..5445);
+        assert_eq!(AUTH_HASH_RANGE, 5413..5445);
         assert_eq!(STATE_HASH_RANGE, 5445..5477);
         assert_eq!(PREVIOUS_HASH_RANGE, 5477..5509);
         assert_eq!(CHAIN_HASH_RANGE, 5509..5541);
