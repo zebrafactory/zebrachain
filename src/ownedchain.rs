@@ -118,6 +118,10 @@ impl OwnedChain {
         }
     }
 
+    pub fn count(&self) -> u64 {
+        self.chain.count()
+    }
+
     pub fn sign_next(&mut self, request: &SigningRequest) -> io::Result<&BlockState> {
         let seed = self.seed.auto_advance();
         let mut buf = [0; BLOCK];

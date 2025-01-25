@@ -131,17 +131,8 @@ impl Chain {
     }
 
     /// Return the number of blocks in the chain.
-    ///
-    /// FIXME: Is `len()` a bad name since this returns `u64` instead of `usize`?
-    pub fn len(&self) -> u64 {
+    pub fn count(&self) -> u64 {
         self.tail.index + 1
-    }
-
-    /// This always returns `false`.
-    ///
-    /// FIXME: Likewise, is this Rust approps when len() -> u64?
-    pub fn is_empty(&self) -> bool {
-        false // A chain can never be empty. No valid first block, no chain.
     }
 
     pub fn create(file: File, buf: &[u8], chain_hash: &Hash) -> io::Result<Self> {
@@ -246,7 +237,7 @@ impl Iterator for ChainIter<'_> {
     type Item = io::Result<BlockState>;
 
     fn next(&mut self) -> Option<Self::Item> {
-        if self.index() < self.chain.len() {
+        if self.index() < self.chain.count() {
             Some(self.next_inner())
         } else {
             None
