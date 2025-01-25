@@ -3,7 +3,7 @@
 use std::ops::Range;
 
 /*
-A Block has 10 fields (actually, 9 currently, so FIXME):
+A Block has 10 fields:
 
     HASH || SIG || PUB || NEXT_PUB_HASH || TIME || AUTH_HASH || STATE_HASH || INDEX || PREV_HASH || CHAIN_HASH
             ^^^^^^^^^^^^^^^^^^^^^^^^^^^    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -17,8 +17,6 @@ And where:
 
     SIG = sign(PUB || NEXT_PUB_HASH || TIME || AUTH_HASH || STATE_HASH || INDEX || PREV_HASH || CHAIN_HASH)
                                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-FIXME: Current wire format lacks TIME and has INDEX in a different position.
 */
 
 pub const PUB_ED25519: usize = 32;
@@ -44,10 +42,10 @@ pub const WIRE: [usize; 10] = [
     SIGNATURE, // Dilithium + ed25519 signatures
     PUBKEY,    // Dilithium + ed25519 public keys
     DIGEST,    // Hash of next public key
-    8,         // Block index (FIXME: make this the Time field)
+    8,         // Time
     DIGEST,    // AUTH-entication, AUTH-orization hash
     DIGEST,    // State hash
-    8,         // Block index (FIXME: add another 8 bytes, put Index here
+    8,         // Block index
     DIGEST,    // Previous block hash
     DIGEST,    // Chain hash
 ];
@@ -62,12 +60,16 @@ const fn get_range(index: usize) -> Range<usize> {
 }
 
 pub const HASH_RANGE: Range<usize> = get_range(0);
+
 pub const SIGNATURE_RANGE: Range<usize> = get_range(1);
 pub const PUBKEY_RANGE: Range<usize> = get_range(2);
 pub const NEXT_PUBKEY_HASH_RANGE: Range<usize> = get_range(3);
-pub const INDEX_RANGE: Range<usize> = get_range(4);
+
+pub const TIME_RANGE: Range<usize> = get_range(4);
 pub const AUTH_HASH_RANGE: Range<usize> = get_range(5);
 pub const STATE_HASH_RANGE: Range<usize> = get_range(6);
+
+pub const INDEX_RANGE: Range<usize> = get_range(7);
 pub const PREVIOUS_HASH_RANGE: Range<usize> = get_range(8);
 pub const CHAIN_HASH_RANGE: Range<usize> = get_range(9);
 
@@ -100,12 +102,16 @@ mod tests {
         assert_eq!(SIGNABLE_RANGE, 3389..5549);
 
         assert_eq!(HASH_RANGE, 0..32);
+
         assert_eq!(SIGNATURE_RANGE, 32..3389);
         assert_eq!(PUBKEY_RANGE, 3389..5373);
         assert_eq!(NEXT_PUBKEY_HASH_RANGE, 5373..5405);
-        assert_eq!(INDEX_RANGE, 5405..5413);
+
+        assert_eq!(TIME_RANGE, 5405..5413);
         assert_eq!(AUTH_HASH_RANGE, 5413..5445);
         assert_eq!(STATE_HASH_RANGE, 5445..5477);
+
+        assert_eq!(INDEX_RANGE, 5477..5485);
         assert_eq!(PREVIOUS_HASH_RANGE, 5485..5517);
         assert_eq!(CHAIN_HASH_RANGE, 5517..5549);
     }

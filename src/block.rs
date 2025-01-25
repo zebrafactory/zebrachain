@@ -175,8 +175,8 @@ impl<'a> Block<'a> {
         &self.buf[NEXT_PUBKEY_HASH_RANGE]
     }
 
-    fn as_index(&self) -> &[u8] {
-        &self.buf[INDEX_RANGE]
+    fn as_time(&self) -> &[u8] {
+        &self.buf[TIME_RANGE]
     }
 
     fn as_auth_hash(&self) -> &[u8] {
@@ -185,6 +185,10 @@ impl<'a> Block<'a> {
 
     fn as_state_hash(&self) -> &[u8] {
         &self.buf[STATE_HASH_RANGE]
+    }
+
+    fn as_index(&self) -> &[u8] {
+        &self.buf[INDEX_RANGE]
     }
 
     fn as_previous_hash(&self) -> &[u8] {
@@ -203,8 +207,8 @@ impl<'a> Block<'a> {
         Hash::from_bytes(self.as_next_pubkey_hash().try_into().expect("oops"))
     }
 
-    pub fn index(&self) -> u64 {
-        u64::from_le_bytes(self.as_index().try_into().unwrap())
+    pub fn time(&self) -> u64 {
+        u64::from_le_bytes(self.as_time().try_into().unwrap())
     }
 
     pub fn auth_hash(&self) -> Hash {
@@ -213,6 +217,10 @@ impl<'a> Block<'a> {
 
     pub fn state_hash(&self) -> Hash {
         Hash::from_bytes(self.as_state_hash().try_into().expect("oops"))
+    }
+
+    pub fn index(&self) -> u64 {
+        u64::from_le_bytes(self.as_index().try_into().unwrap())
     }
 
     pub fn previous_hash(&self) -> Hash {
@@ -325,7 +333,7 @@ mod tests {
     use crate::secretseed::Seed;
     use crate::testhelpers::{random_hash, random_request, BitFlipper, HashBitFlipper};
 
-    const HEX0: &str = "4368f1ef39453e8cf1214a90ddf59fb9d94553a46178abd772c5b84f068ed6a8";
+    const HEX0: &str = "5d1b42c915d95c40a4e4626871bf42d27575aea13be5e20738ca3ca9837a3028";
     const HEX1: &str = "0934f0ee7a7c41ac69f9e3705a1395d31ddc9a2d81fbdd0b11b70a92535922be";
 
     #[test]
@@ -379,12 +387,12 @@ mod tests {
         buf.extend_from_slice(&[2; SIGNATURE]);
         buf.extend_from_slice(&[3; PUBKEY]);
         buf.extend_from_slice(&[4; DIGEST]); // NEXT_PUBKEY_HASH
-        buf.extend_from_slice(&[5; 8]); // INDEX
+        buf.extend_from_slice(&[5; 8]); // TIME
         buf.extend_from_slice(&[6; DIGEST]); // AUTH_HASH
         buf.extend_from_slice(&[7; DIGEST]); // STATE_HASH
-        buf.extend_from_slice(&[10; 8]);
-        buf.extend_from_slice(&[8; DIGEST]); // PREVIOUS_HASH
-        buf.extend_from_slice(&[9; DIGEST]); // CHAIN_HASH
+        buf.extend_from_slice(&[8; 8]); // INDEX
+        buf.extend_from_slice(&[9; DIGEST]); // PREVIOUS_HASH
+        buf.extend_from_slice(&[10; DIGEST]); // CHAIN_HASH
         buf
     }
 
@@ -565,14 +573,18 @@ mod tests {
         let buf = new_dummy_block();
         let block = Block::new(&buf[..]);
         assert_eq!(block.as_hash(), [1; DIGEST]);
+
         assert_eq!(block.as_signature(), [2; SIGNATURE]);
         assert_eq!(block.as_pubkey(), [3; PUBKEY]);
         assert_eq!(block.as_next_pubkey_hash(), [4; DIGEST]);
-        assert_eq!(block.as_index(), [5; 8]);
+
+        assert_eq!(block.as_time(), [5; 8]);
         assert_eq!(block.as_auth_hash(), [6; DIGEST]);
         assert_eq!(block.as_state_hash(), [7; DIGEST]);
-        assert_eq!(block.as_previous_hash(), [8; DIGEST]);
-        assert_eq!(block.as_chain_hash(), [9; DIGEST]);
+
+        assert_eq!(block.as_index(), [8; 8]);
+        assert_eq!(block.as_previous_hash(), [9; DIGEST]);
+        assert_eq!(block.as_chain_hash(), [10; DIGEST]);
     }
 
     #[test]
@@ -581,11 +593,14 @@ mod tests {
         let block = Block::new(&buf[..]);
         assert_eq!(block.hash(), Hash::from_bytes([1; DIGEST]));
         assert_eq!(block.next_pubkey_hash(), Hash::from_bytes([4; DIGEST]));
-        assert_eq!(block.index(), 361700864190383365);
+
+        assert_eq!(block.time(), 361700864190383365);
         assert_eq!(block.auth_hash(), Hash::from_bytes([6; DIGEST]));
         assert_eq!(block.state_hash(), Hash::from_bytes([7; DIGEST]));
-        assert_eq!(block.previous_hash(), Hash::from_bytes([8; DIGEST]));
-        assert_eq!(block.chain_hash(), Hash::from_bytes([9; DIGEST]));
+
+        assert_eq!(block.index(), 578721382704613384);
+        assert_eq!(block.previous_hash(), Hash::from_bytes([9; DIGEST]));
+        assert_eq!(block.chain_hash(), Hash::from_bytes([10; DIGEST]));
     }
 
     #[test]
