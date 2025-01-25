@@ -34,12 +34,12 @@ pub const SIG_ED25519_RANGE: Range<usize> = SIG_DILITHIUM..SIG_DILITHIUM + SIG_E
 pub const DIGEST: usize = 32;
 pub const SIGNATURE: usize = SIG_ED25519 + SIG_DILITHIUM;
 pub const PUBKEY: usize = PUB_ED25519 + PUB_DILITHIUM;
-pub const BLOCK: usize = DIGEST * 6 + SIGNATURE + PUBKEY + 8;
+pub const BLOCK: usize = (6 * DIGEST) + SIGNATURE + PUBKEY + 16;
 
 pub const HASHABLE_RANGE: Range<usize> = DIGEST..BLOCK;
 pub const SIGNABLE_RANGE: Range<usize> = DIGEST + SIGNATURE..BLOCK;
 
-pub const WIRE: [usize; 9] = [
+pub const WIRE: [usize; 10] = [
     DIGEST,    // Block hash
     SIGNATURE, // Dilithium + ed25519 signatures
     PUBKEY,    // Dilithium + ed25519 public keys
@@ -47,9 +47,9 @@ pub const WIRE: [usize; 9] = [
     8,         // Block index (FIXME: make this the Time field)
     DIGEST,    // AUTH-entication, AUTH-orization hash
     DIGEST,    // State hash
-    //8,         // Block index (FIXME: add another 8 bytes, put Index here
-    DIGEST, // Previous block hash
-    DIGEST, // Chain hash
+    8,         // Block index (FIXME: add another 8 bytes, put Index here
+    DIGEST,    // Previous block hash
+    DIGEST,    // Chain hash
 ];
 
 const fn get_range(index: usize) -> Range<usize> {
@@ -68,8 +68,8 @@ pub const NEXT_PUBKEY_HASH_RANGE: Range<usize> = get_range(3);
 pub const INDEX_RANGE: Range<usize> = get_range(4);
 pub const AUTH_HASH_RANGE: Range<usize> = get_range(5);
 pub const STATE_HASH_RANGE: Range<usize> = get_range(6);
-pub const PREVIOUS_HASH_RANGE: Range<usize> = get_range(7);
-pub const CHAIN_HASH_RANGE: Range<usize> = get_range(8);
+pub const PREVIOUS_HASH_RANGE: Range<usize> = get_range(8);
+pub const CHAIN_HASH_RANGE: Range<usize> = get_range(9);
 
 /*
 A SecretBlock currently has 6 fields:
@@ -96,8 +96,8 @@ mod tests {
 
     #[test]
     fn test_ranges() {
-        assert_eq!(HASHABLE_RANGE, 32..5541);
-        assert_eq!(SIGNABLE_RANGE, 3389..5541);
+        assert_eq!(HASHABLE_RANGE, 32..5549);
+        assert_eq!(SIGNABLE_RANGE, 3389..5549);
 
         assert_eq!(HASH_RANGE, 0..32);
         assert_eq!(SIGNATURE_RANGE, 32..3389);
@@ -106,8 +106,8 @@ mod tests {
         assert_eq!(INDEX_RANGE, 5405..5413);
         assert_eq!(AUTH_HASH_RANGE, 5413..5445);
         assert_eq!(STATE_HASH_RANGE, 5445..5477);
-        assert_eq!(PREVIOUS_HASH_RANGE, 5477..5509);
-        assert_eq!(CHAIN_HASH_RANGE, 5509..5541);
+        assert_eq!(PREVIOUS_HASH_RANGE, 5485..5517);
+        assert_eq!(CHAIN_HASH_RANGE, 5517..5549);
     }
 
     #[test]

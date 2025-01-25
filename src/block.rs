@@ -325,8 +325,8 @@ mod tests {
     use crate::secretseed::Seed;
     use crate::testhelpers::{random_hash, random_request, BitFlipper, HashBitFlipper};
 
-    const HEX0: &str = "21ad41a13a05568dd795e452ad0f080a78085ecaf5e05cc16aa85df2e2a9183a";
-    const HEX1: &str = "33182aa896946c6864a9236518da9d3ff61001861932e8cbbf71dba90fc8d49f";
+    const HEX0: &str = "4368f1ef39453e8cf1214a90ddf59fb9d94553a46178abd772c5b84f068ed6a8";
+    const HEX1: &str = "0934f0ee7a7c41ac69f9e3705a1395d31ddc9a2d81fbdd0b11b70a92535922be";
 
     #[test]
     fn test_blockerror_to_io_error() {
@@ -382,6 +382,7 @@ mod tests {
         buf.extend_from_slice(&[5; 8]); // INDEX
         buf.extend_from_slice(&[6; DIGEST]); // AUTH_HASH
         buf.extend_from_slice(&[7; DIGEST]); // STATE_HASH
+        buf.extend_from_slice(&[10; 8]);
         buf.extend_from_slice(&[8; DIGEST]); // PREVIOUS_HASH
         buf.extend_from_slice(&[9; DIGEST]); // CHAIN_HASH
         buf
@@ -394,28 +395,28 @@ mod tests {
     }
 
     #[test]
-    #[should_panic(expected = "Need a 5541 byte slice; got 5540 bytes")]
+    #[should_panic(expected = "Need a 5549 byte slice; got 5548 bytes")]
     fn test_block_new_short_panic() {
         let buf: Vec<u8> = vec![0; BLOCK - 1];
         let _block = Block::new(&buf[..]);
     }
 
     #[test]
-    #[should_panic(expected = "Need a 5541 byte slice; got 5542 bytes")]
+    #[should_panic(expected = "Need a 5549 byte slice; got 5550 bytes")]
     fn test_block_new_long_panic() {
         let buf: Vec<u8> = vec![0; BLOCK + 1];
         let _block = Block::new(&buf[..]);
     }
 
     #[test]
-    #[should_panic(expected = "Need a 5541 byte slice; got 5540 bytes")]
+    #[should_panic(expected = "Need a 5549 byte slice; got 5548 bytes")]
     fn test_block_open_short_panic() {
         let buf: Vec<u8> = vec![0; BLOCK - 1];
         let _block = Block::open(&buf[..]);
     }
 
     #[test]
-    #[should_panic(expected = "Need a 5541 byte slice; got 5542 bytes")]
+    #[should_panic(expected = "Need a 5549 byte slice; got 5550 bytes")]
     fn test_block_open_long_panic() {
         let buf: Vec<u8> = vec![0; BLOCK + 1];
         let _block = Block::open(&buf[..]);
