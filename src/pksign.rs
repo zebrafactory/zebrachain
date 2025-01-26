@@ -1,4 +1,4 @@
-//! Abstraction over specific public key algorithms (and hybrid combinations thereof).
+//! Hybrid signing and verification with Dilithium + ed25519.
 
 use crate::always::*;
 use crate::block::{Block, BlockState, MutBlock, SigningRequest};

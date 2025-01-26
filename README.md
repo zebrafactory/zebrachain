@@ -1,5 +1,7 @@
 # 🦓 ZebraChain 🦓
 
+[![Build Status](https://github.com/zebrafactory/zebrachain/actions/workflows/rust.yml/badge.svg)](https://github.com/zebrafactory/zebrachain/actions)
+
 ZebraChain is designed to the replace long lived secret keys used to sign
 software releases (or to sign other super important stuff).
 
@@ -20,7 +22,7 @@ ZebraChain was created.
 * Quantum safe (assuming the Dilithium + ed25519 hybrid construction is quantum
 safe).
 
-* Quantum mitigation, even if Dilithium is broken.  A sufficiently large
+* *Some* quantum mitigation, even if Dilithium is broken.  A sufficiently large
 quantum computer can get the secret key from an ed25519 public key (that's the
 whole problem).  But that same quantum computer *cannot* get the ed25519 public
 key from the *hash* of that public key.  So if consumers of the chain locally
