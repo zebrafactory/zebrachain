@@ -32,7 +32,7 @@ pub const SIG_ED25519_RANGE: Range<usize> = SIG_DILITHIUM..SIG_DILITHIUM + SIG_E
 pub const DIGEST: usize = 32;
 pub const SIGNATURE: usize = SIG_ED25519 + SIG_DILITHIUM;
 pub const PUBKEY: usize = PUB_ED25519 + PUB_DILITHIUM;
-pub const BLOCK: usize = (6 * DIGEST) + SIGNATURE + PUBKEY + 16;
+pub const BLOCK: usize = (6 * DIGEST) + SIGNATURE + PUBKEY + (2 * 8);
 
 pub const HASHABLE_RANGE: Range<usize> = DIGEST..BLOCK;
 pub const SIGNABLE_RANGE: Range<usize> = DIGEST + SIGNATURE..BLOCK;
@@ -41,13 +41,13 @@ const WIRE: [usize; 10] = [
     DIGEST,    // Block hash
     SIGNATURE, // Dilithium + ed25519 signatures
     PUBKEY,    // Dilithium + ed25519 public keys
-    DIGEST,    // Hash of next public key
+    DIGEST,    // Hash of public key that will be used to sign next block
     8,         // Time
     DIGEST,    // AUTH-entication, AUTH-orization hash
     DIGEST,    // State hash
     8,         // Block index
     DIGEST,    // Previous block hash
-    DIGEST,    // Chain hash
+    DIGEST,    // Chain hash (hash of first block in chain)
 ];
 
 const fn get_range(index: usize) -> Range<usize> {
@@ -60,15 +60,12 @@ const fn get_range(index: usize) -> Range<usize> {
 }
 
 pub const HASH_RANGE: Range<usize> = get_range(0);
-
 pub const SIGNATURE_RANGE: Range<usize> = get_range(1);
 pub const PUBKEY_RANGE: Range<usize> = get_range(2);
 pub const NEXT_PUBKEY_HASH_RANGE: Range<usize> = get_range(3);
-
 pub const TIME_RANGE: Range<usize> = get_range(4);
 pub const AUTH_HASH_RANGE: Range<usize> = get_range(5);
 pub const STATE_HASH_RANGE: Range<usize> = get_range(6);
-
 pub const INDEX_RANGE: Range<usize> = get_range(7);
 pub const PREVIOUS_HASH_RANGE: Range<usize> = get_range(8);
 pub const CHAIN_HASH_RANGE: Range<usize> = get_range(9);
