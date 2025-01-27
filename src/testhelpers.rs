@@ -2,11 +2,11 @@
 
 use crate::block::SigningRequest;
 use blake3::Hash;
-use getrandom::getrandom;
+use getrandom;
 
 pub fn random_hash() -> Hash {
     let mut buf = [0; 32];
-    getrandom(&mut buf).unwrap();
+    getrandom::fill(&mut buf).unwrap();
     Hash::from_bytes(buf)
 }
 

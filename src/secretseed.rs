@@ -6,7 +6,7 @@
 
 use crate::always::*;
 use blake3::{keyed_hash, Hash, Hasher};
-use getrandom::getrandom;
+use getrandom;
 
 /// A secret buffer with constant time comparison and zeroize.
 ///
@@ -15,10 +15,10 @@ use getrandom::getrandom;
 /// a Hash buffer as they will almost certainly need to differ in some configurations.
 pub type Secret = Hash;
 
-/// Return a [Secret] buffer with entropy from [getrandom::getrandom()].
+/// Return a [Secret] buffer with entropy from [getrandom::fill()].
 pub fn random_secret() -> Secret {
     let mut buf = [0; 32];
-    getrandom(&mut buf).unwrap();
+    getrandom::fill(&mut buf).unwrap();
     Secret::from_bytes(buf)
 }
 
