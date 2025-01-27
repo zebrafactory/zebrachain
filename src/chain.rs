@@ -307,7 +307,7 @@ mod tests {
         let file = tempfile::tempfile().unwrap();
 
         // Generate 1st block
-        let mut seed = Seed::auto_create();
+        let mut seed = Seed::auto_create().unwrap();
         let mut buf1 = [0; BLOCK];
         let request1 = &SigningRequest::new(random_hash(), random_hash());
         let chain_hash = sign_block(&mut buf1, &seed, &request1, None);

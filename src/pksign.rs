@@ -81,7 +81,7 @@ impl KeyPair {
 /// # Examples
 ///
 /// ```
-/// let seed = zebrachain::secretseed::Seed::auto_create();
+/// let seed = zebrachain::secretseed::Seed::auto_create().unwrap();
 /// let secsign = zebrachain::pksign::SecretSigner::new(&seed);
 /// ```
 pub struct SecretSigner {
@@ -259,7 +259,7 @@ mod tests {
     fn test_sign_block() {
         // Sign first block
         let mut buf = [69; BLOCK]; // 69 to make sure block gets zeroed first
-        let seed = Seed::auto_create();
+        let seed = Seed::auto_create().unwrap();
         let request = SigningRequest::new(random_hash(), random_hash());
         let chain_hash = sign_block(&mut buf, &seed, &request, None);
 
@@ -308,7 +308,7 @@ mod tests {
     fn test_sign_block_panic() {
         // Sign first block
         let mut buf = [0; BLOCK];
-        let seed = Seed::auto_create();
+        let seed = Seed::auto_create().unwrap();
         let request = SigningRequest::new(random_hash(), random_hash());
         let chain_hash = sign_block(&mut buf, &seed, &request, None);
 

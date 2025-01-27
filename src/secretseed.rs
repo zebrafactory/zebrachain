@@ -78,12 +78,7 @@ impl Seed {
     }
 
     /// Creates a new seed using entropy from [random_secret()].
-    pub fn auto_create() -> Self {
-        let initial_entropy = random_secret().unwrap();
-        Self::create(&initial_entropy)
-    }
-
-    pub fn auto_create2() -> Result<Self, Error> {
+    pub fn auto_create() -> Result<Self, Error> {
         let initial_entropy = random_secret()?; // Only this part can fail
         Ok(Self::create(&initial_entropy))
     }

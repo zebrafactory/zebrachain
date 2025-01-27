@@ -52,7 +52,7 @@ impl OwnedChainStore {
     }
 
     pub fn create_chain(&self, request: &SigningRequest) -> io::Result<OwnedChain> {
-        let seed = Seed::auto_create();
+        let seed = Seed::auto_create().unwrap();
         let mut buf = [0; BLOCK];
         let chain_hash = sign_block(&mut buf, &seed, request, None);
         let chain = self.store.create_chain(&buf, &chain_hash)?;

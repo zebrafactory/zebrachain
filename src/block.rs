@@ -540,7 +540,7 @@ mod tests {
     #[test]
     fn test_block_from_previous_3rd() {
         let mut buf = [0; BLOCK];
-        let seed = Seed::auto_create();
+        let seed = Seed::auto_create().unwrap();
         let chain_hash = sign_block(&mut buf, &seed, &random_request(), None);
         let tail = Block::from_hash_at_index(&buf, &chain_hash, 0)
             .unwrap()

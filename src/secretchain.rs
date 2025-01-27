@@ -207,7 +207,7 @@ mod tests {
         assert!(SecretChain::open(file.try_clone().unwrap()).is_err());
         let mut buf = [0; SECRET_BLOCK];
 
-        let seed = Seed::auto_create();
+        let seed = Seed::auto_create().unwrap();
         let request = SigningRequest::new(random_hash(), random_hash());
         let block = MutSecretBlock::new(&mut buf, &seed, &request);
         block.finalize();
