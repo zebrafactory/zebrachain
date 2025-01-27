@@ -6,6 +6,10 @@ use crate::fsutil::{build_filename, create_for_append, open_for_append};
 use crate::secretblock::{MutSecretBlock, SecretBlock};
 use crate::secretseed::Seed;
 use blake3::Hash;
+use chacha20poly1305::{
+    aead::{AeadCore, AeadInPlace, KeyInit, OsRng},
+    ChaCha20Poly1305, Nonce,
+};
 use std::fs::File;
 use std::io;
 use std::io::{Read, Write};
@@ -185,6 +189,18 @@ mod tests {
     use crate::testhelpers::random_hash;
     use std::io::Seek;
     use tempfile::tempfile;
+
+    #[test]
+    fn test_chacha20poly1305() {
+        let key = ChaCha20Poly1305::generate_key(&mut OsRng);
+        let cipher = ChaCha20Poly1305::new(&key);
+        let nonce = ChaCha20Poly1305::generate_nonce(&mut OsRng);
+        let mut buf: Vec<u8> = Vec::new();
+        buf.extend_from_slice(&[69; 32]);
+        assert_eq!(buf.len(), 32);
+        cipher.encrypt_in_place(&nonce, b"", &mut buf).unwrap();
+        assert_eq!(buf.len(), 48);
+    }
 
     #[test]
     fn test_chain_create() {
