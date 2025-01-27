@@ -123,7 +123,7 @@ impl OwnedChain {
     }
 
     pub fn sign_next(&mut self, request: &SigningRequest) -> io::Result<&BlockState> {
-        let seed = self.seed.auto_advance();
+        let seed = self.seed.auto_advance().unwrap();
         let mut buf = [0; BLOCK];
         sign_block(&mut buf, &seed, request, Some(self.tail()));
         if let Some(secret_chain) = self.secret_chain.as_mut() {

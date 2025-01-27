@@ -83,6 +83,11 @@ impl Seed {
         Self::create(&initial_entropy)
     }
 
+    pub fn auto_create2() -> Result<Self, Error> {
+        let initial_entropy = random_secret()?; // Only this part can fail
+        Ok(Self::create(&initial_entropy))
+    }
+
     /// Create next seed by mixing `new_entropy` into the entropy chain.
     ///
     /// This is a critical part of the ZebraChain design.  If we simply created the next secret
@@ -104,9 +109,9 @@ impl Seed {
     }
 
     /// Advance chain by mixing in new entropy from [random_secret()].
-    pub fn auto_advance(&self) -> Self {
-        let new_entropy = random_secret().unwrap();
-        self.advance(&new_entropy)
+    pub fn auto_advance(&self) -> Result<Self, Error> {
+        let new_entropy = random_secret()?; // Only this part can fail
+        Ok(self.advance(&new_entropy))
     }
 
     /// Mutate seed state to match `next`.

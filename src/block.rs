@@ -546,7 +546,7 @@ mod tests {
             .unwrap()
             .state();
 
-        let seed = seed.auto_advance();
+        let seed = seed.auto_advance().unwrap();
         sign_block(&mut buf, &seed, &random_request(), Some(&tail));
         for bad in HashBitFlipper::new(&chain_hash) {
             let prev = BlockState::new(0, tail.block_hash, bad, tail.next_pubkey_hash);
@@ -556,7 +556,7 @@ mod tests {
         let tail = Block::from_previous(&buf, &tail).unwrap().state();
 
         // Sign 3rd block
-        let seed = seed.auto_advance();
+        let seed = seed.auto_advance().unwrap();
         sign_block(&mut buf, &seed, &random_request(), Some(&tail));
         assert!(Block::from_previous(&buf, &tail).is_ok());
         for bad in HashBitFlipper::new(&chain_hash) {

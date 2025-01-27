@@ -328,7 +328,7 @@ mod tests {
         );
 
         // Generate a 2nd block
-        let next = seed.auto_advance();
+        let next = seed.auto_advance().unwrap();
         let mut buf2 = [0; BLOCK];
         let request2 = &SigningRequest::new(random_hash(), random_hash());
         let _block_hash = sign_block(&mut buf2, &next, &request2, Some(&tail));

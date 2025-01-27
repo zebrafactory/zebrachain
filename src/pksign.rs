@@ -272,7 +272,7 @@ mod tests {
             .unwrap()
             .state();
         buf.fill(69);
-        let seed = seed.auto_advance();
+        let seed = seed.auto_advance().unwrap();
         let request = SigningRequest::new(random_hash(), random_hash());
         let block_hash = sign_block(&mut buf, &seed, &request, Some(&tail));
         assert_ne!(chain_hash, block_hash);
@@ -290,7 +290,7 @@ mod tests {
             .unwrap()
             .state();
         buf.fill(69);
-        let seed = seed.auto_advance(); //.auto_advance(); // <-- Will break (cuz it's supposed to)
+        let seed = seed.auto_advance().unwrap();
         let request = SigningRequest::new(random_hash(), random_hash());
         let block2_hash = sign_block(&mut buf, &seed, &request, Some(&tail2));
         assert_ne!(block_hash, block2_hash);
@@ -316,7 +316,7 @@ mod tests {
         let tail = Block::from_hash_at_index(&buf, &chain_hash, 0)
             .unwrap()
             .state();
-        let seed = seed.auto_advance().auto_advance();
+        let seed = seed.auto_advance().unwrap().auto_advance().unwrap();
         let request = SigningRequest::new(random_hash(), random_hash());
         let _block_hash = sign_block(&mut buf, &seed, &request, Some(&tail));
     }
