@@ -4,8 +4,8 @@ use crate::always::*;
 use crate::block::SigningRequest;
 use crate::fsutil::{build_filename, create_for_append, open_for_append};
 use crate::secretblock::{MutSecretBlock, SecretBlock};
-use crate::secretseed::Seed;
-use blake3::Hash;
+use crate::secretseed::{Secret, Seed};
+use blake3::{keyed_hash, Hash};
 use chacha20poly1305::{
     aead::{AeadCore, AeadInPlace, KeyInit, OsRng},
     ChaCha20Poly1305, Nonce,
@@ -27,6 +27,7 @@ pub struct SecretChain {
     file: File,
     tail: SecretBlock,
     count: u64,
+    secret: Secret,
 }
 
 impl SecretChain {
@@ -39,6 +40,7 @@ impl SecretChain {
             file,
             tail: block,
             count: 1,
+            secret: Secret::from_bytes([69; 32]),
         })
     }
 
@@ -57,7 +59,18 @@ impl SecretChain {
             };
             count += 1;
         }
-        Ok(Self { file, tail, count })
+        let secret = Secret::from_bytes([69; 32]);
+        Ok(Self {
+            file,
+            tail,
+            count,
+            secret,
+        })
+    }
+
+    // Use a different key for each block
+    fn derive_block_secret(&self, index: u64) -> Secret {
+        keyed_hash(self.secret.as_bytes(), &index.to_le_bytes())
     }
 
     fn read_block(&self, buf: &mut [u8], index: u64) -> io::Result<()> {
@@ -155,18 +168,26 @@ impl Iterator for SecretChainIter<'_> {
 /// Organizes [SecretChain] files in a directory.
 pub struct SecretChainStore {
     dir: PathBuf,
+    secret: Secret,
 }
 
 impl SecretChainStore {
     pub fn new(dir: &Path) -> Self {
         Self {
             dir: dir.to_path_buf(),
+            secret: Secret::from_bytes([69; 32]), // FIXME (to put it mildly)
         }
+    }
+
+    // Use a different key for each secret chain file
+    fn derive_secret(&self, chain_hash: &Hash) -> Secret {
+        keyed_hash(self.secret.as_bytes(), chain_hash.as_bytes())
     }
 
     pub fn open_chain(&self, chain_hash: &Hash) -> io::Result<SecretChain> {
         let filename = build_filename(&self.dir, chain_hash);
         let file = open_for_append(&filename)?;
+        let secret = self.derive_secret(chain_hash);
         SecretChain::open(file)
     }
 
@@ -178,6 +199,7 @@ impl SecretChainStore {
     ) -> io::Result<SecretChain> {
         let filename = build_filename(&self.dir, chain_hash);
         let file = create_for_append(&filename)?;
+        let secret = self.derive_secret(chain_hash);
         SecretChain::create(file, seed, request)
     }
 }
