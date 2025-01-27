@@ -32,7 +32,7 @@ fn build_sphincsplus_keypair(secret: &Hash) -> pqc_sphincsplus::Keypair {
 /// # Examples
 ///
 /// ```
-/// let secret = zebrachain::secretseed::random_secret();
+/// let secret = zebrachain::secretseed::random_secret().unwrap();
 /// let keypair = zebrachain::pksign::KeyPair::new(&secret);
 /// ```
 pub struct KeyPair {

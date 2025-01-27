@@ -7,6 +7,7 @@
 use crate::always::*;
 use blake3::{keyed_hash, Hash, Hasher};
 use getrandom;
+pub use getrandom::Error;
 
 /// A secret buffer with constant time comparison and zeroize.
 ///
@@ -16,10 +17,12 @@ use getrandom;
 pub type Secret = Hash;
 
 /// Return a [Secret] buffer with entropy from [getrandom::fill()].
-pub fn random_secret() -> Secret {
+pub fn random_secret() -> Result<Secret, Error> {
     let mut buf = [0; 32];
-    getrandom::fill(&mut buf).unwrap();
-    Secret::from_bytes(buf)
+    match getrandom::fill(&mut buf) {
+        Ok(_) => Ok(Secret::from_bytes(buf)),
+        Err(err) => Err(err),
+    }
 }
 
 /// Derive a domain specific [Secret] from a context string and a root secret.
@@ -41,9 +44,9 @@ pub fn derive(context: &str, secret: &Secret) -> Secret {
 ///
 /// ```
 /// use zebrachain::secretseed::{Seed, random_secret};
-/// let initial_entropy = random_secret();
+/// let initial_entropy = random_secret().unwrap();
 /// let mut seed = Seed::create(&initial_entropy);
-/// let new_entropy = random_secret();
+/// let new_entropy = random_secret().unwrap();
 /// let next = seed.advance(&new_entropy);
 /// assert_eq!(next.secret, seed.next_secret);
 /// assert_ne!(seed, next);
@@ -76,7 +79,7 @@ impl Seed {
 
     /// Creates a new seed using entropy from [random_secret()].
     pub fn auto_create() -> Self {
-        let initial_entropy = random_secret();
+        let initial_entropy = random_secret().unwrap();
         Self::create(&initial_entropy)
     }
 
@@ -102,7 +105,7 @@ impl Seed {
 
     /// Advance chain by mixing in new entropy from [random_secret()].
     pub fn auto_advance(&self) -> Self {
-        let new_entropy = random_secret();
+        let new_entropy = random_secret().unwrap();
         self.advance(&new_entropy)
     }
 
@@ -130,7 +133,7 @@ mod tests {
         let count = 1024;
         let mut hset = HashSet::new();
         for _ in 0..count {
-            assert!(hset.insert(random_secret()));
+            assert!(hset.insert(random_secret().unwrap()));
         }
         assert_eq!(hset.len(), count);
     }
