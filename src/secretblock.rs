@@ -7,29 +7,17 @@ use blake3::{hash, Hash};
 use std::io;
 use std::ops::Range;
 
-const SECRET_INDEX: usize = 1;
-const NEXT_SECRET_INDEX: usize = 2;
-const PERMISSION_INDEX: usize = 3;
-const STATE_INDEX: usize = 4;
-const PREVIOUS_INDEX: usize = 5;
-
 fn check_secretblock_buf(buf: &[u8]) {
     if buf.len() != SECRET_BLOCK {
         panic!("Need a {SECRET_BLOCK} byte slice; got {} bytes", buf.len());
     }
 }
 
-fn hash_range(index: usize) -> Range<usize> {
-    index * DIGEST..(index + 1) * DIGEST
-}
-
-fn get_hash(buf: &[u8], index: usize) -> Hash {
-    let range = hash_range(index);
+fn get_hash(buf: &[u8], range: Range<usize>) -> Hash {
     Hash::from_bytes(buf[range].try_into().unwrap())
 }
 
-fn set_hash(buf: &mut [u8], index: usize, value: &Hash) {
-    let range = hash_range(index);
+fn set_hash(buf: &mut [u8], range: Range<usize>, value: &Hash) {
     buf[range].copy_from_slice(value.as_bytes());
 }
 
@@ -86,12 +74,12 @@ impl SecretBlock {
         check_secretblock_buf(buf);
         let computed_hash = hash(&buf[DIGEST..]);
         let block = SecretBlock {
-            block_hash: get_hash(buf, 0),
-            secret: get_hash(buf, SECRET_INDEX),
-            next_secret: get_hash(buf, NEXT_SECRET_INDEX),
-            auth_hash: get_hash(buf, PERMISSION_INDEX),
-            state_hash: get_hash(buf, STATE_INDEX),
-            previous_hash: get_hash(buf, PREVIOUS_INDEX),
+            block_hash: get_hash(buf, SEC_HASH_RANGE),
+            secret: get_hash(buf, SEC_SECRET_RANGE),
+            next_secret: get_hash(buf, SEC_NEXT_SECRET_RANGE),
+            auth_hash: get_hash(buf, SEC_AUTH_HASH_RANGE),
+            state_hash: get_hash(buf, SEC_STATE_HASH_RANGE),
+            previous_hash: get_hash(buf, SEC_PREV_HASH_RANGE),
         };
         if computed_hash != block.block_hash {
             Err(SecretBlockError::Content)
@@ -134,22 +122,22 @@ impl<'a> MutSecretBlock<'a> {
         check_secretblock_buf(buf);
         buf.fill(0);
 
-        set_hash(buf, SECRET_INDEX, &seed.secret);
-        set_hash(buf, NEXT_SECRET_INDEX, &seed.next_secret);
+        set_hash(buf, SEC_SECRET_RANGE, &seed.secret);
+        set_hash(buf, SEC_NEXT_SECRET_RANGE, &seed.next_secret);
 
-        set_hash(buf, PERMISSION_INDEX, &request.auth_hash);
-        set_hash(buf, STATE_INDEX, &request.state_hash);
+        set_hash(buf, SEC_AUTH_HASH_RANGE, &request.auth_hash);
+        set_hash(buf, SEC_STATE_HASH_RANGE, &request.state_hash);
 
         Self { buf }
     }
 
     pub fn set_previous(&mut self, prev: &SecretBlock) {
-        set_hash(self.buf, PREVIOUS_INDEX, &prev.block_hash)
+        set_hash(self.buf, SEC_PREV_HASH_RANGE, &prev.block_hash)
     }
 
     fn finalize_hash(&mut self) -> Hash {
         let block_hash = hash(&self.buf[DIGEST..]);
-        set_hash(self.buf, 0, &block_hash);
+        set_hash(self.buf, SEC_HASH_RANGE, &block_hash);
         block_hash
     }
 
@@ -167,13 +155,29 @@ mod tests {
 
     fn valid_secret_block() -> [u8; SECRET_BLOCK] {
         let mut buf = [0; SECRET_BLOCK];
-        set_hash(&mut buf, SECRET_INDEX, &Hash::from_bytes([1; DIGEST]));
-        set_hash(&mut buf, NEXT_SECRET_INDEX, &Hash::from_bytes([2; DIGEST]));
-        set_hash(&mut buf, PERMISSION_INDEX, &Hash::from_bytes([3; DIGEST]));
-        set_hash(&mut buf, STATE_INDEX, &Hash::from_bytes([4; DIGEST]));
-        set_hash(&mut buf, PREVIOUS_INDEX, &Hash::from_bytes([5; DIGEST]));
+        set_hash(&mut buf, SEC_SECRET_RANGE, &Hash::from_bytes([1; DIGEST]));
+        set_hash(
+            &mut buf,
+            SEC_NEXT_SECRET_RANGE,
+            &Hash::from_bytes([2; DIGEST]),
+        );
+        set_hash(
+            &mut buf,
+            SEC_AUTH_HASH_RANGE,
+            &Hash::from_bytes([3; DIGEST]),
+        );
+        set_hash(
+            &mut buf,
+            SEC_STATE_HASH_RANGE,
+            &Hash::from_bytes([4; DIGEST]),
+        );
+        set_hash(
+            &mut buf,
+            SEC_PREV_HASH_RANGE,
+            &Hash::from_bytes([5; DIGEST]),
+        );
         let block_hash = hash(&buf[DIGEST..]);
-        set_hash(&mut buf, 0, &block_hash);
+        set_hash(&mut buf, SEC_HASH_RANGE, &block_hash);
         buf
     }
 
@@ -270,9 +274,9 @@ mod tests {
     fn test_block_from_previous() {
         let buf = valid_secret_block();
         let prev = SecretBlock {
-            block_hash: get_hash(&buf, PREVIOUS_INDEX),
+            block_hash: get_hash(&buf, SEC_PREV_HASH_RANGE),
             secret: Hash::from_bytes([0; 32]),
-            next_secret: get_hash(&buf, SECRET_INDEX),
+            next_secret: get_hash(&buf, SEC_SECRET_RANGE),
             auth_hash: Hash::from_bytes([0; 32]),
             state_hash: Hash::from_bytes([0; 32]),
             previous_hash: Hash::from_bytes([0; 32]),
