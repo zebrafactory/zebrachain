@@ -114,12 +114,7 @@ impl SecretChain {
         })
     }
 
-    fn read_block(&self, buf: &mut [u8], index: u64) -> io::Result<()> {
-        let offset = index * SECRET_BLOCK as u64;
-        self.file.read_exact_at(buf, offset)
-    }
-
-    fn read_block2(&self, buf: &mut Vec<u8>, index: u64) -> io::Result<()> {
+    fn read_block(&self, buf: &mut Vec<u8>, index: u64) -> io::Result<()> {
         buf.resize(SECRET_BLOCK_AEAD, 0);
         let offset = index * SECRET_BLOCK_AEAD as u64;
         self.file.read_exact_at(&mut buf[..], offset)?;
@@ -189,12 +184,12 @@ impl<'a> SecretChainIter<'a> {
 
     fn next_inner(&mut self) -> io::Result<SecretBlock> {
         assert!(self.index < self.count);
-        let mut buf = [0; SECRET_BLOCK];
+        let mut buf = vec![0; SECRET_BLOCK_AEAD];
         self.secretchain.read_block(&mut buf, self.index)?;
         self.index += 1;
 
         let result = if let Some(tail) = self.tail.as_ref() {
-            SecretBlock::from_previous(&buf, tail)
+            SecretBlock::from_previous(&buf[..], tail)
         } else {
             SecretBlock::open(&buf)
         };

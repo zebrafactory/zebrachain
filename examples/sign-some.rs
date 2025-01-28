@@ -1,5 +1,6 @@
 //! Create a new chain and some signatures.
 
+use blake3::keyed_hash;
 use tempfile;
 use zebrachain::block::SigningRequest;
 use zebrachain::chain::{Chain, CheckPoint};
@@ -44,8 +45,6 @@ fn main() {
         );
     }
 
-    let storage_secret = random_secret().unwrap();
-
     let chain_hash = chain.tail().chain_hash;
     let head = chain.head().clone();
     let tail = chain.tail().clone();
@@ -60,7 +59,8 @@ fn main() {
     }
     ocs.store().remove_chain_file(&chain_hash).unwrap();
 
-    /*
+    let storage_secret = keyed_hash(&[69; 32], chain_hash.as_bytes());
+
     let filename = build_filename(tmpdir2.path(), &chain_hash);
     let file = open_for_append(&filename).unwrap();
     let secchain = SecretChain::open(file, storage_secret).unwrap();
@@ -82,5 +82,4 @@ fn main() {
     let chain = ocs.resume_chain(&checkpoint).unwrap();
     println!("{} {}", chain.tail().index, chain.tail().block_hash);
     assert_eq!(chain.count(), requests.len() as u64);
-    */
 }
