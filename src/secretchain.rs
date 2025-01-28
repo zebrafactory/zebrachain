@@ -122,11 +122,6 @@ impl SecretChain {
         Ok(())
     }
 
-    fn write_block(&mut self, index: u64) -> io::Result<()> {
-        encrypt_in_place(&mut self.buf, &self.secret, self.count);
-        self.file.write_all(&self.buf[..])
-    }
-
     pub fn tail(&self) -> &SecretBlock {
         &self.tail
     }
@@ -149,7 +144,7 @@ impl SecretChain {
     }
 
     pub fn iter(&self) -> SecretChainIter {
-        SecretChainIter::new(self, self.count)
+        SecretChainIter::new(self)
     }
 }
 
@@ -165,25 +160,23 @@ impl<'a> IntoIterator for &'a SecretChain {
 pub struct SecretChainIter<'a> {
     secretchain: &'a SecretChain,
     index: u64,
-    count: u64,
     tail: Option<SecretBlock>,
 }
 
 impl<'a> SecretChainIter<'a> {
-    pub fn new(secretchain: &'a SecretChain, count: u64) -> Self {
-        if count == 0 {
+    pub fn new(secretchain: &'a SecretChain) -> Self {
+        if secretchain.count == 0 {
             panic!("count cannot be 0");
         }
         Self {
             secretchain,
             index: 0,
-            count,
             tail: None,
         }
     }
 
     fn next_inner(&mut self) -> io::Result<SecretBlock> {
-        assert!(self.index < self.count);
+        assert!(self.index < self.secretchain.count);
         let mut buf = vec![0; SECRET_BLOCK_AEAD];
         self.secretchain.read_block(&mut buf, self.index)?;
         self.index += 1;
@@ -208,7 +201,7 @@ impl Iterator for SecretChainIter<'_> {
     type Item = io::Result<SecretBlock>;
 
     fn next(&mut self) -> Option<Self::Item> {
-        if self.index < self.count {
+        if self.index < self.secretchain.count {
             Some(self.next_inner())
         } else {
             None
