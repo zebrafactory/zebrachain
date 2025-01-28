@@ -80,6 +80,7 @@ impl SecretChain {
         let root = keyed_hash(self.secret.as_bytes(), &index.to_le_bytes());
         let key = derive(STORAGE_KEY_CONTEXT, &root);
         let nonce = derive(STORAGE_NONCE_CONTEXT, &root);
+        assert_ne!(key, nonce);
         let key = Key::from_slice(&key.as_bytes()[..]);
         let nonce = Nonce::from_slice(&nonce.as_bytes()[0..12]);
         (*key, *nonce)
@@ -88,6 +89,26 @@ impl SecretChain {
     fn read_block(&self, buf: &mut [u8], index: u64) -> io::Result<()> {
         let offset = index * SECRET_BLOCK as u64;
         self.file.read_exact_at(buf, offset)
+    }
+
+    fn read_block2(&mut self, index: u64) -> io::Result<()> {
+        self.buf.resize(SECRET_BLOCK_AEAD, 0);
+        let offset = index * SECRET_BLOCK_AEAD as u64;
+        self.file.read_exact_at(&mut self.buf[..], offset)?;
+        let (key, nonce) = self.derive_block_secrets(index);
+        let cipher = ChaCha20Poly1305::new(&key);
+        cipher.decrypt_in_place(&nonce, b"", &mut self.buf).unwrap(); // FIXME (this can fail)
+        assert_eq!(self.buf.len(), SECRET_BLOCK);
+        Ok(())
+    }
+
+    fn write_block(&mut self, index: u64) -> io::Result<()> {
+        assert_eq!(self.buf.len(), SECRET_BLOCK);
+        let (key, nonce) = self.derive_block_secrets(index);
+        let cipher = ChaCha20Poly1305::new(&key);
+        cipher.encrypt_in_place(&nonce, b"", &mut self.buf).unwrap(); // This shouldn't fail
+        assert_eq!(self.buf.len(), SECRET_BLOCK_AEAD);
+        self.file.write_all(&self.buf[..])
     }
 
     pub fn tail(&self) -> &SecretBlock {
