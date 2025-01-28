@@ -88,6 +88,10 @@ pub static DILITHIUM_CONTEXT: &str =
     "e665ee96123e46d74e76dc53bdc64df06d72c238d574b7c153305f5e63063350";
 pub static SPHINCSPLUS_CONTEXT: &str =
     "b5de7bead4cac0fb4fe60cbb2ef31cb2c0590adb10f0764769cd5b0e0d7d11c1";
+pub static STORAGE_KEY_CONTEXT: &str =
+    "0179f9dd9cb5b0af47079d3a102872a32744b7f7aa8a5f22f7c0a16ba8549601";
+pub static STORAGE_NONCE_CONTEXT: &str =
+    "dc49809016fca0a126c5df6d373e90c48683e664ecba0440ae59523d93e13515";
 
 #[cfg(test)]
 mod tests {

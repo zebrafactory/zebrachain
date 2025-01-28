@@ -4,7 +4,7 @@ use crate::always::*;
 use crate::block::SigningRequest;
 use crate::fsutil::{build_filename, create_for_append, open_for_append};
 use crate::secretblock::{MutSecretBlock, SecretBlock};
-use crate::secretseed::{random_secret, Secret, Seed};
+use crate::secretseed::{derive, random_secret, Secret, Seed};
 use blake3::{keyed_hash, Hash};
 use chacha20poly1305::{
     aead::{AeadCore, AeadInPlace, KeyInit, OsRng},
@@ -75,9 +75,14 @@ impl SecretChain {
         Ok(Self::new(file, tail, count))
     }
 
-    // Use a different key for each block
-    fn derive_block_secret(&self, index: u64) -> Secret {
-        keyed_hash(self.secret.as_bytes(), &index.to_le_bytes())
+    // Use a unique key and nonce for each block
+    fn derive_block_secrets(&self, index: u64) -> (Key, Nonce) {
+        let root = keyed_hash(self.secret.as_bytes(), &index.to_le_bytes());
+        let key = derive(STORAGE_KEY_CONTEXT, &root);
+        let nonce = derive(STORAGE_NONCE_CONTEXT, &root);
+        let key = Key::from_slice(&key.as_bytes()[..]);
+        let nonce = Nonce::from_slice(&nonce.as_bytes()[0..12]);
+        (*key, *nonce)
     }
 
     fn read_block(&self, buf: &mut [u8], index: u64) -> io::Result<()> {
@@ -94,14 +99,7 @@ impl SecretChain {
         let mut block = MutSecretBlock::new(&mut self.buf[..], seed, request);
         block.set_previous(&self.tail);
         let block = block.finalize();
-        // Might as well take advatange of our entropy accumulation when generating the nonce
-        let nonce_material = keyed_hash(
-            block.block_hash.as_bytes(),
-            random_secret().unwrap().as_bytes(),
-        );
-        let nonce = Nonce::from_slice(&nonce_material.as_bytes()[0..12]);
-        let secret = self.derive_block_secret(self.count);
-        let key = Key::from_slice(&secret.as_bytes()[..]);
+        let (key, nonce) = self.derive_block_secrets(self.count);
         let cipher = ChaCha20Poly1305::new(&key);
         self.file.write_all(&self.buf)?;
         cipher.encrypt_in_place(&nonce, b"", &mut self.buf).unwrap();
