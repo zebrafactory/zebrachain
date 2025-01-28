@@ -83,6 +83,25 @@ impl SecretChain {
         Ok(Self::new(file, block, 1))
     }
 
+    pub fn create2(
+        mut file: File,
+        secret: Secret,
+        seed: &Seed,
+        request: &SigningRequest,
+    ) -> io::Result<Self> {
+        let mut buf = vec![0; SECRET_BLOCK];
+        let tail = MutSecretBlock::new(&mut buf[..], seed, request).finalize();
+        encrypt_in_place(&mut buf, &secret, 0);
+        file.write_all(&buf[..])?;
+        Ok(Self {
+            file,
+            tail,
+            count: 1,
+            secret,
+            buf,
+        })
+    }
+
     pub fn open(mut file: File) -> io::Result<Self> {
         let mut buf = [0; SECRET_BLOCK];
         file.read_exact(&mut buf)?;
@@ -99,6 +118,34 @@ impl SecretChain {
             count += 1;
         }
         Ok(Self::new(file, tail, count))
+    }
+
+    pub fn open2(mut file: File, secret: Secret) -> io::Result<Self> {
+        let mut buf = vec![0; SECRET_BLOCK_AEAD];
+        file.read_exact(&mut buf[..])?;
+        decrypt_in_place(&mut buf, &secret, 0);
+        let mut tail = match SecretBlock::open(&buf[..]) {
+            Ok(block) => block,
+            Err(err) => return Err(err.to_io_error()),
+        };
+        let mut count = 1;
+        buf.resize(SECRET_BLOCK_AEAD, 0);
+        while file.read_exact(&mut buf[..]).is_ok() {
+            decrypt_in_place(&mut buf, &secret, count);
+            tail = match SecretBlock::from_previous(&buf[..], &tail) {
+                Ok(block) => block,
+                Err(err) => return Err(err.to_io_error()),
+            };
+            count += 1;
+            buf.resize(SECRET_BLOCK_AEAD, 0);
+        }
+        Ok(Self {
+            file,
+            tail,
+            count,
+            secret,
+            buf,
+        })
     }
 
     fn read_block(&self, buf: &mut [u8], index: u64) -> io::Result<()> {
