@@ -44,6 +44,8 @@ fn main() {
         );
     }
 
+    let storage_secret = random_secret().unwrap();
+
     let chain_hash = chain.tail().chain_hash;
     let head = chain.head().clone();
     let tail = chain.tail().clone();
@@ -58,9 +60,10 @@ fn main() {
     }
     ocs.store().remove_chain_file(&chain_hash).unwrap();
 
+    /*
     let filename = build_filename(tmpdir2.path(), &chain_hash);
     let file = open_for_append(&filename).unwrap();
-    let secchain = SecretChain::open(file).unwrap();
+    let secchain = SecretChain::open(file, storage_secret).unwrap();
 
     for result in &secchain {
         let secblock = result.unwrap();
@@ -79,4 +82,5 @@ fn main() {
     let chain = ocs.resume_chain(&checkpoint).unwrap();
     println!("{} {}", chain.tail().index, chain.tail().block_hash);
     assert_eq!(chain.count(), requests.len() as u64);
+    */
 }

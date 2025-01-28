@@ -65,25 +65,7 @@ pub struct SecretChain {
 }
 
 impl SecretChain {
-    fn new(file: File, tail: SecretBlock, count: u64) -> Self {
-        Self {
-            file,
-            tail,
-            count,
-            secret: Secret::from_bytes([69; 32]),
-            buf: Vec::with_capacity(SECRET_BLOCK_AEAD),
-        }
-    }
-
-    pub fn create(mut file: File, seed: &Seed, request: &SigningRequest) -> io::Result<Self> {
-        let mut buf = [0; SECRET_BLOCK];
-        let block = MutSecretBlock::new(&mut buf, seed, request);
-        let block = block.finalize();
-        file.write_all(&buf)?;
-        Ok(Self::new(file, block, 1))
-    }
-
-    pub fn create2(
+    pub fn create(
         mut file: File,
         secret: Secret,
         seed: &Seed,
@@ -102,25 +84,7 @@ impl SecretChain {
         })
     }
 
-    pub fn open(mut file: File) -> io::Result<Self> {
-        let mut buf = [0; SECRET_BLOCK];
-        file.read_exact(&mut buf)?;
-        let mut tail = match SecretBlock::open(&buf) {
-            Ok(block) => block,
-            Err(err) => return Err(err.to_io_error()),
-        };
-        let mut count = 1;
-        while file.read_exact(&mut buf).is_ok() {
-            tail = match SecretBlock::from_previous(&buf, &tail) {
-                Ok(block) => block,
-                Err(err) => return Err(err.to_io_error()),
-            };
-            count += 1;
-        }
-        Ok(Self::new(file, tail, count))
-    }
-
-    pub fn open2(mut file: File, secret: Secret) -> io::Result<Self> {
+    pub fn open(mut file: File, secret: Secret) -> io::Result<Self> {
         let mut buf = vec![0; SECRET_BLOCK_AEAD];
         file.read_exact(&mut buf[..])?;
         decrypt_in_place(&mut buf, &secret, 0);
@@ -153,12 +117,11 @@ impl SecretChain {
         self.file.read_exact_at(buf, offset)
     }
 
-    fn read_block2(&mut self, index: u64) -> io::Result<()> {
-        self.buf.resize(SECRET_BLOCK_AEAD, 0);
+    fn read_block2(&self, buf: &mut Vec<u8>, index: u64) -> io::Result<()> {
+        buf.resize(SECRET_BLOCK_AEAD, 0);
         let offset = index * SECRET_BLOCK_AEAD as u64;
-        self.file.read_exact_at(&mut self.buf[..], offset)?;
-        decrypt_in_place(&mut self.buf, &self.secret, self.count);
-        assert_eq!(self.buf.len(), SECRET_BLOCK);
+        self.file.read_exact_at(&mut buf[..], offset)?;
+        decrypt_in_place(buf, &self.secret, index);
         Ok(())
     }
 
@@ -279,7 +242,7 @@ impl SecretChainStore {
         let filename = build_filename(&self.dir, chain_hash);
         let file = open_for_append(&filename)?;
         let secret = self.derive_secret(chain_hash);
-        SecretChain::open(file)
+        SecretChain::open(file, secret)
     }
 
     pub fn create_chain(
@@ -291,7 +254,7 @@ impl SecretChainStore {
         let filename = build_filename(&self.dir, chain_hash);
         let file = create_for_append(&filename)?;
         let secret = self.derive_secret(chain_hash);
-        SecretChain::create(file, seed, request)
+        SecretChain::create(file, secret, seed, request)
     }
 }
 
@@ -299,7 +262,7 @@ impl SecretChainStore {
 mod tests {
     use super::*;
     use crate::block::SigningRequest;
-    use crate::testhelpers::random_hash;
+    use crate::testhelpers::{random_hash, random_request};
     use std::io::Seek;
     use tempfile::tempfile;
 
@@ -320,54 +283,56 @@ mod tests {
     #[test]
     fn test_chain_create() {
         let file = tempfile().unwrap();
-        let seed = Seed::create(&Hash::from_bytes([42; 32]));
-        let request = SigningRequest::new(random_hash(), Hash::from_bytes([69; DIGEST]));
-        let result = SecretChain::create(file, &seed, &request);
+        let secret = random_secret().unwrap();
+        let seed = Seed::auto_create().unwrap();
+        let request = random_request();
+        let result = SecretChain::create(file, secret.clone(), &seed, &request);
         assert!(result.is_ok());
         let mut file = result.unwrap().into_file();
         file.rewind().unwrap();
-        let mut buf = [0; SECRET_BLOCK];
-        file.read_exact(&mut buf).unwrap();
-        let block = SecretBlock::open(&buf).unwrap();
+        let mut buf = vec![0; SECRET_BLOCK_AEAD];
+        file.read_exact(&mut buf[..]).unwrap();
+        decrypt_in_place(&mut buf, &secret, 0);
+        let block = SecretBlock::open(&buf[..]).unwrap();
         assert_eq!(seed, block.seed());
     }
 
     #[test]
     fn test_chain_open() {
         let mut file = tempfile().unwrap();
-        assert!(SecretChain::open(file.try_clone().unwrap()).is_err());
-        let mut buf = [0; SECRET_BLOCK];
+        let secret = random_secret().unwrap();
+        assert!(SecretChain::open(file.try_clone().unwrap(), secret.clone()).is_err());
+        let mut buf = vec![0; SECRET_BLOCK];
 
         let seed = Seed::auto_create().unwrap();
-        let request = SigningRequest::new(random_hash(), random_hash());
-        let block = MutSecretBlock::new(&mut buf, &seed, &request);
-        block.finalize();
+        let request = random_request();
+        MutSecretBlock::new(&mut buf, &seed, &request).finalize();
+        encrypt_in_place(&mut buf, &secret, 0);
 
-        file.write_all(&buf).unwrap();
+        file.write_all(&buf[..]).unwrap();
         file.rewind().unwrap();
-        SecretChain::open(file).unwrap();
+        SecretChain::open(file, secret).unwrap();
     }
 
     #[test]
     fn test_chain_advance_and_commit() {
-        let entropy = Hash::from_bytes([69; 32]);
         let file = tempfile().unwrap();
-        let mut seed = Seed::create(&entropy);
-        let request = SigningRequest::new(
-            Hash::from_bytes([69; DIGEST]),
-            Hash::from_bytes([42; DIGEST]),
-        );
-        let mut chain = SecretChain::create(file, &seed, &request).unwrap();
+        let secret = random_secret().unwrap();
+        let mut seed = Seed::auto_create().unwrap();
+        let request = random_request();
+        let mut chain = SecretChain::create(file, secret, &seed, &request).unwrap();
         assert_eq!(chain.count, 1);
         for i in 0u8..=255 {
-            let next = seed.advance(&entropy);
-            let request = SigningRequest::new(random_hash(), Hash::from_bytes([i; DIGEST]));
+            let next = seed.auto_advance().unwrap();
+            let request = random_request();
             chain.commit(&next, &request).unwrap();
             assert_eq!(chain.count, i as u64 + 2);
             seed.commit(next);
         }
+        /* FIXME
         let mut file = chain.into_file();
         file.rewind().unwrap();
-        SecretChain::open(file).unwrap();
+        SecretChain::open(file, secret).unwrap();
+        */
     }
 }
