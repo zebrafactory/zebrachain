@@ -77,6 +77,32 @@ A SecretBlock currently has 6 fields:
 */
 
 pub const SECRET_BLOCK: usize = DIGEST * 6;
+pub const SECRET_BLOCK_AEAD: usize = SECRET_BLOCK + 16;
+
+const SECWIRE: [usize; 6] = [
+    DIGEST, // Block hash
+    DIGEST, // Secret
+    DIGEST, // Next secret
+    DIGEST, // AUTH hash
+    DIGEST, // State hash
+    DIGEST, // Previous block hash
+];
+
+const fn get_secrange(index: usize) -> Range<usize> {
+    if index == 0 {
+        0..SECWIRE[0]
+    } else {
+        let start = get_secrange(index - 1).end; // Can't use slice.iter().sum() in const fn
+        start..start + SECWIRE[index]
+    }
+}
+
+pub const SEC_HASH_RANGE: Range<usize> = get_secrange(0);
+pub const SEC_SECRET_RANGE: Range<usize> = get_secrange(1);
+pub const SEC_NEXT_SECRET_RANGE: Range<usize> = get_secrange(2);
+pub const SEC_AUTH_HASH_RANGE: Range<usize> = get_secrange(3);
+pub const SEC_STATE_HASH_RANGE: Range<usize> = get_secrange(4);
+pub const SEC_PREV_HASH_RANGE: Range<usize> = get_secrange(5);
 
 pub static SECRET_CONTEXT: &str =
     "ed149ef77826374035fd3a1e2c1bf3b39539333d5a8bc1f7e788736430efc7f2";
@@ -115,13 +141,18 @@ mod tests {
         assert_eq!(INDEX_RANGE, 5477..5485);
         assert_eq!(PREVIOUS_HASH_RANGE, 5485..5517);
         assert_eq!(CHAIN_HASH_RANGE, 5517..5549);
+
+        assert_eq!(CHAIN_HASH_RANGE.end, BLOCK);
     }
 
     #[test]
-    fn test_get_range() {
-        assert_eq!(get_range(0), 0..32);
-        assert_eq!(get_range(1), 32..3389);
-        assert_eq!(get_range(2), 3389..5373);
-        assert_eq!(get_range(3), 5373..5405);
+    fn test_sec_ranges() {
+        assert_eq!(SEC_HASH_RANGE, 0..32);
+        assert_eq!(SEC_SECRET_RANGE, 32..64);
+        assert_eq!(SEC_NEXT_SECRET_RANGE, 64..96);
+        assert_eq!(SEC_AUTH_HASH_RANGE, 96..128);
+        assert_eq!(SEC_STATE_HASH_RANGE, 128..160);
+        assert_eq!(SEC_PREV_HASH_RANGE, 160..192);
+        assert_eq!(SEC_PREV_HASH_RANGE.end, SECRET_BLOCK);
     }
 }

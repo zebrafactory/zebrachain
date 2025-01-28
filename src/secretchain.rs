@@ -16,8 +16,6 @@ use std::io::{Read, Write};
 use std::os::unix::fs::FileExt;
 use std::path::{Path, PathBuf};
 
-const SECRET_BLOCK_AEAD: usize = SECRET_BLOCK + 16;
-
 fn derive_block_secrets(secret: &Secret, index: u64) -> (Key, Nonce) {
     let root = keyed_hash(secret.as_bytes(), &index.to_le_bytes());
     let key = derive(STORAGE_KEY_CONTEXT, &root);
