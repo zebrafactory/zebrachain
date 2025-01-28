@@ -18,6 +18,32 @@ use std::path::{Path, PathBuf};
 
 const SECRET_BLOCK_AEAD: usize = SECRET_BLOCK + 16;
 
+fn derive_block_secrets(secret: &Secret, index: u64) -> (Key, Nonce) {
+    let root = keyed_hash(secret.as_bytes(), &index.to_le_bytes());
+    let key = derive(STORAGE_KEY_CONTEXT, &root);
+    let nonce = derive(STORAGE_NONCE_CONTEXT, &root);
+    assert_ne!(key, nonce);
+    let key = Key::from_slice(&key.as_bytes()[..]);
+    let nonce = Nonce::from_slice(&nonce.as_bytes()[0..12]);
+    (*key, *nonce)
+}
+
+fn encrypt_in_place(buf: &mut Vec<u8>, secret: &Secret, index: u64) {
+    assert_eq!(buf.len(), SECRET_BLOCK);
+    let (key, nonce) = derive_block_secrets(secret, index);
+    let cipher = ChaCha20Poly1305::new(&key);
+    cipher.encrypt_in_place(&nonce, b"", buf).unwrap(); // This should not fail
+    assert_eq!(buf.len(), SECRET_BLOCK_AEAD);
+}
+
+fn decrypt_in_place(buf: &mut Vec<u8>, secret: &Secret, index: u64) {
+    assert_eq!(buf.len(), SECRET_BLOCK_AEAD);
+    let (key, nonce) = derive_block_secrets(secret, index);
+    let cipher = ChaCha20Poly1305::new(&key);
+    cipher.decrypt_in_place(&nonce, b"", buf).unwrap(); // FIXME (this can fail)
+    assert_eq!(buf.len(), SECRET_BLOCK);
+}
+
 /*
 We should likewise do entropy accumulation when creating the nonce for each block. The hash of the
 latest block is a great accumulator.
@@ -75,17 +101,6 @@ impl SecretChain {
         Ok(Self::new(file, tail, count))
     }
 
-    // Use a unique key and nonce for each block
-    fn derive_block_secrets(&self, index: u64) -> (Key, Nonce) {
-        let root = keyed_hash(self.secret.as_bytes(), &index.to_le_bytes());
-        let key = derive(STORAGE_KEY_CONTEXT, &root);
-        let nonce = derive(STORAGE_NONCE_CONTEXT, &root);
-        assert_ne!(key, nonce);
-        let key = Key::from_slice(&key.as_bytes()[..]);
-        let nonce = Nonce::from_slice(&nonce.as_bytes()[0..12]);
-        (*key, *nonce)
-    }
-
     fn read_block(&self, buf: &mut [u8], index: u64) -> io::Result<()> {
         let offset = index * SECRET_BLOCK as u64;
         self.file.read_exact_at(buf, offset)
@@ -95,19 +110,13 @@ impl SecretChain {
         self.buf.resize(SECRET_BLOCK_AEAD, 0);
         let offset = index * SECRET_BLOCK_AEAD as u64;
         self.file.read_exact_at(&mut self.buf[..], offset)?;
-        let (key, nonce) = self.derive_block_secrets(index);
-        let cipher = ChaCha20Poly1305::new(&key);
-        cipher.decrypt_in_place(&nonce, b"", &mut self.buf).unwrap(); // FIXME (this can fail)
+        decrypt_in_place(&mut self.buf, &self.secret, self.count);
         assert_eq!(self.buf.len(), SECRET_BLOCK);
         Ok(())
     }
 
     fn write_block(&mut self, index: u64) -> io::Result<()> {
-        assert_eq!(self.buf.len(), SECRET_BLOCK);
-        let (key, nonce) = self.derive_block_secrets(index);
-        let cipher = ChaCha20Poly1305::new(&key);
-        cipher.encrypt_in_place(&nonce, b"", &mut self.buf).unwrap(); // This shouldn't fail
-        assert_eq!(self.buf.len(), SECRET_BLOCK_AEAD);
+        encrypt_in_place(&mut self.buf, &self.secret, self.count);
         self.file.write_all(&self.buf[..])
     }
 
@@ -120,10 +129,8 @@ impl SecretChain {
         let mut block = MutSecretBlock::new(&mut self.buf[..], seed, request);
         block.set_previous(&self.tail);
         let block = block.finalize();
-        let (key, nonce) = self.derive_block_secrets(self.count);
-        let cipher = ChaCha20Poly1305::new(&key);
         self.file.write_all(&self.buf)?;
-        cipher.encrypt_in_place(&nonce, b"", &mut self.buf).unwrap();
+        encrypt_in_place(&mut self.buf, &self.secret, self.count);
         assert_eq!(self.buf.len(), SECRET_BLOCK_AEAD);
         self.tail = block;
         self.count += 1;
