@@ -281,6 +281,18 @@ mod tests {
     }
 
     #[test]
+    fn test_chacha20poly1305_roundtrip() {
+        let mut buf = vec![69; SECRET_BLOCK];
+        let secret = random_secret().unwrap();
+        for index in 0..420 {
+            encrypt_in_place(&mut buf, &secret, index);
+            assert_eq!(buf.len(), SECRET_BLOCK_AEAD);
+            decrypt_in_place(&mut buf, &secret, index);
+            assert_eq!(buf, vec![69; SECRET_BLOCK]);
+        }
+    }
+
+    #[test]
     fn test_chain_create() {
         let file = tempfile().unwrap();
         let secret = random_secret().unwrap();
