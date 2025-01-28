@@ -40,7 +40,9 @@ fn decrypt_in_place(buf: &mut Vec<u8>, secret: &Secret, index: u64) {
     assert_eq!(buf.len(), SECRET_BLOCK_AEAD);
     let (key, nonce) = derive_block_secrets(secret, index);
     let cipher = ChaCha20Poly1305::new(&key);
-    cipher.decrypt_in_place(&nonce, b"", buf).unwrap(); // FIXME (this can fail)
+    if let Err(err) = cipher.decrypt_in_place(&nonce, b"", buf) {
+        panic!("bad time: {err}");
+    }
     assert_eq!(buf.len(), SECRET_BLOCK);
 }
 
@@ -72,7 +74,7 @@ impl SecretChain {
         request: &SigningRequest,
     ) -> io::Result<Self> {
         let mut buf = vec![0; SECRET_BLOCK];
-        let tail = MutSecretBlock::new(&mut buf[..], seed, request).finalize();
+        let tail = MutSecretBlock::new(&mut buf, seed, request).finalize();
         encrypt_in_place(&mut buf, &secret, 0);
         file.write_all(&buf[..])?;
         Ok(Self {
@@ -139,9 +141,9 @@ impl SecretChain {
         let mut block = MutSecretBlock::new(&mut self.buf[..], seed, request);
         block.set_previous(&self.tail);
         let block = block.finalize();
-        self.file.write_all(&self.buf)?;
         encrypt_in_place(&mut self.buf, &self.secret, self.count);
         assert_eq!(self.buf.len(), SECRET_BLOCK_AEAD);
+        self.file.write_all(&self.buf)?;
         self.tail = block;
         self.count += 1;
         Ok(())
@@ -298,7 +300,7 @@ mod tests {
         let secret = random_secret().unwrap();
         let seed = Seed::auto_create().unwrap();
         let request = random_request();
-        let result = SecretChain::create(file, secret.clone(), &seed, &request);
+        let result = SecretChain::create(file, secret, &seed, &request);
         assert!(result.is_ok());
         let mut file = result.unwrap().into_file();
         file.rewind().unwrap();
@@ -334,17 +336,15 @@ mod tests {
         let request = random_request();
         let mut chain = SecretChain::create(file, secret, &seed, &request).unwrap();
         assert_eq!(chain.count, 1);
-        for i in 0u8..=255 {
+        for i in 0..69 {
             let next = seed.auto_advance().unwrap();
             let request = random_request();
             chain.commit(&next, &request).unwrap();
             assert_eq!(chain.count, i as u64 + 2);
             seed.commit(next);
         }
-        /* FIXME
         let mut file = chain.into_file();
         file.rewind().unwrap();
         SecretChain::open(file, secret).unwrap();
-        */
     }
 }

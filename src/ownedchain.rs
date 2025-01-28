@@ -193,10 +193,8 @@ mod tests {
             chain.sign_next(&random_request()).unwrap();
             assert_eq!(chain.tail().index, i);
         }
-        /* FIXME
         let tail = chain.tail().clone();
         let chain = ocs.open_chain(&chain_hash).unwrap();
         assert_eq!(chain.tail(), &tail);
-        */
     }
 }
