@@ -4,17 +4,24 @@ use crate::always::*;
 use crate::block::SigningRequest;
 use crate::fsutil::{build_filename, create_for_append, open_for_append};
 use crate::secretblock::{MutSecretBlock, SecretBlock};
-use crate::secretseed::{Secret, Seed};
+use crate::secretseed::{random_secret, Secret, Seed};
 use blake3::{keyed_hash, Hash};
 use chacha20poly1305::{
     aead::{AeadCore, AeadInPlace, KeyInit, OsRng},
-    ChaCha20Poly1305, Nonce,
+    ChaCha20Poly1305, Key, Nonce,
 };
 use std::fs::File;
 use std::io;
 use std::io::{Read, Write};
 use std::os::unix::fs::FileExt;
 use std::path::{Path, PathBuf};
+
+const SECRET_BLOCK_AEAD: usize = SECRET_BLOCK + 16;
+
+/*
+We should likewise do entropy accumulation when creating the nonce for each block. The hash of the
+latest block is a great accumulator.
+*/
 
 /// Save secret chain to non-volitile storage.
 ///
@@ -28,20 +35,26 @@ pub struct SecretChain {
     tail: SecretBlock,
     count: u64,
     secret: Secret,
+    buf: Vec<u8>,
 }
 
 impl SecretChain {
+    fn new(file: File, tail: SecretBlock, count: u64) -> Self {
+        Self {
+            file,
+            tail,
+            count,
+            secret: Secret::from_bytes([69; 32]),
+            buf: Vec::with_capacity(SECRET_BLOCK_AEAD),
+        }
+    }
+
     pub fn create(mut file: File, seed: &Seed, request: &SigningRequest) -> io::Result<Self> {
         let mut buf = [0; SECRET_BLOCK];
         let block = MutSecretBlock::new(&mut buf, seed, request);
         let block = block.finalize();
         file.write_all(&buf)?;
-        Ok(Self {
-            file,
-            tail: block,
-            count: 1,
-            secret: Secret::from_bytes([69; 32]),
-        })
+        Ok(Self::new(file, block, 1))
     }
 
     pub fn open(mut file: File) -> io::Result<Self> {
@@ -59,13 +72,7 @@ impl SecretChain {
             };
             count += 1;
         }
-        let secret = Secret::from_bytes([69; 32]);
-        Ok(Self {
-            file,
-            tail,
-            count,
-            secret,
-        })
+        Ok(Self::new(file, tail, count))
     }
 
     // Use a different key for each block
@@ -83,11 +90,22 @@ impl SecretChain {
     }
 
     pub fn commit(&mut self, seed: &Seed, request: &SigningRequest) -> io::Result<()> {
-        let mut buf = [0; SECRET_BLOCK];
-        let mut block = MutSecretBlock::new(&mut buf, seed, request);
+        self.buf.resize(SECRET_BLOCK, 0);
+        let mut block = MutSecretBlock::new(&mut self.buf[..], seed, request);
         block.set_previous(&self.tail);
         let block = block.finalize();
-        self.file.write_all(&buf)?;
+        // Might as well take advatange of our entropy accumulation when generating the nonce
+        let nonce_material = keyed_hash(
+            block.block_hash.as_bytes(),
+            random_secret().unwrap().as_bytes(),
+        );
+        let nonce = Nonce::from_slice(&nonce_material.as_bytes()[0..12]);
+        let secret = self.derive_block_secret(self.count);
+        let key = Key::from_slice(&secret.as_bytes()[..]);
+        let cipher = ChaCha20Poly1305::new(&key);
+        self.file.write_all(&self.buf)?;
+        cipher.encrypt_in_place(&nonce, b"", &mut self.buf).unwrap();
+        assert_eq!(self.buf.len(), SECRET_BLOCK_AEAD);
         self.tail = block;
         self.count += 1;
         Ok(())
@@ -222,6 +240,8 @@ mod tests {
         assert_eq!(buf.len(), 32);
         cipher.encrypt_in_place(&nonce, b"", &mut buf).unwrap();
         assert_eq!(buf.len(), 48);
+        cipher.decrypt_in_place(&nonce, b"", &mut buf).unwrap();
+        assert_eq!(&buf, &[69; 32])
     }
 
     #[test]
