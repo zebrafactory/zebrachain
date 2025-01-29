@@ -21,11 +21,18 @@ pub enum StorageError {
     Bad,
 }
 
-fn derive_block_secrets(secret: &Secret, index: u64) -> (Key, Nonce) {
+// Split out of derive_block_secrets() for testability
+#[inline]
+fn derive_block_secrets_inner(secret: &Secret, index: u64) -> (Secret, Secret) {
     let root = keyed_hash(secret.as_bytes(), &index.to_le_bytes());
     let key = derive(STORAGE_KEY_CONTEXT, &root);
     let nonce = derive(STORAGE_NONCE_CONTEXT, &root);
     assert_ne!(key, nonce);
+    (key, nonce)
+}
+
+fn derive_block_secrets(secret: &Secret, index: u64) -> (Key, Nonce) {
+    let (key, nonce) = derive_block_secrets_inner(secret, index);
     let key = Key::from_slice(&key.as_bytes()[..]);
     let nonce = Nonce::from_slice(&nonce.as_bytes()[0..12]);
     (*key, *nonce)
@@ -247,8 +254,22 @@ mod tests {
     use crate::testhelpers::{random_request, BitFlipper};
     use blake3::hash;
     use getrandom;
+    use std::collections::HashSet;
     use std::io::Seek;
     use tempfile::tempfile;
+
+    #[test]
+    fn test_derive_block_secrets_inner() {
+        let count: u64 = 4200;
+        let mut hset = HashSet::with_capacity(count as usize);
+        let secret = random_secret().unwrap();
+        for index in 0..count {
+            let (key, nonce) = derive_block_secrets_inner(&secret, index);
+            assert!(hset.insert(key));
+            assert!(hset.insert(nonce));
+        }
+        assert_eq!(hset.len(), 2 * count as usize);
+    }
 
     #[test]
     fn test_chacha20poly1305_roundtrip() {
