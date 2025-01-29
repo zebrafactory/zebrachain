@@ -144,7 +144,6 @@ impl<'a> IntoIterator for &'a SecretChain {
 
 pub struct SecretChainIter<'a> {
     secretchain: &'a SecretChain,
-    index: u64,
     tail: Option<SecretBlock>,
 }
 
@@ -152,23 +151,27 @@ impl<'a> SecretChainIter<'a> {
     pub fn new(secretchain: &'a SecretChain) -> Self {
         Self {
             secretchain,
-            index: 0,
             tail: None,
         }
     }
 
-    fn next_inner(&mut self) -> io::Result<SecretBlock> {
-        assert!(self.index < self.secretchain.count());
-        let mut buf = vec![0; SECRET_BLOCK_AEAD];
-        self.secretchain.read_block(&mut buf, self.index)?;
-        self.index += 1;
+    fn index(&self) -> u64 {
+        if let Some(tail) = self.tail.as_ref() {
+            tail.index + 1
+        } else {
+            0
+        }
+    }
 
+    fn next_inner(&mut self) -> io::Result<SecretBlock> {
+        assert!(self.index() < self.secretchain.count());
+        let mut buf = vec![0; SECRET_BLOCK_AEAD];
+        self.secretchain.read_block(&mut buf, self.index())?;
         let result = if let Some(tail) = self.tail.as_ref() {
             SecretBlock::from_previous(&buf[..], tail)
         } else {
             SecretBlock::open(&buf)
         };
-
         match result {
             Ok(block) => {
                 self.tail = Some(block.clone());
@@ -183,7 +186,7 @@ impl Iterator for SecretChainIter<'_> {
     type Item = io::Result<SecretBlock>;
 
     fn next(&mut self) -> Option<Self::Item> {
-        if self.index < self.secretchain.count() {
+        if self.index() < self.secretchain.count() {
             Some(self.next_inner())
         } else {
             None
