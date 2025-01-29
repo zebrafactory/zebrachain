@@ -16,6 +16,11 @@ use std::io::{Read, Write};
 use std::os::unix::fs::FileExt;
 use std::path::{Path, PathBuf};
 
+#[derive(Debug)]
+pub enum StorageError {
+    Bad,
+}
+
 fn derive_block_secrets(secret: &Secret, index: u64) -> (Key, Nonce) {
     let root = keyed_hash(secret.as_bytes(), &index.to_le_bytes());
     let key = derive(STORAGE_KEY_CONTEXT, &root);
@@ -34,14 +39,16 @@ fn encrypt_in_place(buf: &mut Vec<u8>, secret: &Secret, index: u64) {
     assert_eq!(buf.len(), SECRET_BLOCK_AEAD);
 }
 
-fn decrypt_in_place(buf: &mut Vec<u8>, secret: &Secret, index: u64) {
+fn decrypt_in_place(buf: &mut Vec<u8>, secret: &Secret, index: u64) -> Result<(), StorageError> {
     assert_eq!(buf.len(), SECRET_BLOCK_AEAD);
     let (key, nonce) = derive_block_secrets(secret, index);
     let cipher = ChaCha20Poly1305::new(&key);
     if let Err(err) = cipher.decrypt_in_place(&nonce, b"", buf) {
-        panic!("bad time: {err}");
+        Err(StorageError::Bad)
+    } else {
+        assert_eq!(buf.len(), SECRET_BLOCK);
+        Ok(())
     }
-    assert_eq!(buf.len(), SECRET_BLOCK);
 }
 
 /// Save secret chain to non-volitile storage (encrypted and authenticated).
@@ -74,14 +81,14 @@ impl SecretChain {
     pub fn open(mut file: File, secret: Secret) -> io::Result<Self> {
         let mut buf = vec![0; SECRET_BLOCK_AEAD];
         file.read_exact(&mut buf[..])?;
-        decrypt_in_place(&mut buf, &secret, 0);
+        decrypt_in_place(&mut buf, &secret, 0).unwrap(); // FIXME
         let mut tail = match SecretBlock::open(&buf[..]) {
             Ok(block) => block,
             Err(err) => return Err(err.to_io_error()),
         };
         buf.resize(SECRET_BLOCK_AEAD, 0);
         while file.read_exact(&mut buf[..]).is_ok() {
-            decrypt_in_place(&mut buf, &secret, tail.index + 1);
+            decrypt_in_place(&mut buf, &secret, tail.index + 1).unwrap(); // FIXME
             tail = match SecretBlock::from_previous(&buf[..], &tail) {
                 Ok(block) => block,
                 Err(err) => return Err(err.to_io_error()),
@@ -104,7 +111,7 @@ impl SecretChain {
         buf.resize(SECRET_BLOCK_AEAD, 0);
         let offset = index * SECRET_BLOCK_AEAD as u64;
         self.file.read_exact_at(&mut buf[..], offset)?;
-        decrypt_in_place(buf, &self.secret, index);
+        decrypt_in_place(buf, &self.secret, index).unwrap(); // FIXME
         Ok(())
     }
 
@@ -237,7 +244,9 @@ impl SecretChainStore {
 mod tests {
     use super::*;
     use crate::secretseed::random_secret;
-    use crate::testhelpers::random_request;
+    use crate::testhelpers::{random_request, BitFlipper};
+    use blake3::hash;
+    use getrandom;
     use std::io::Seek;
     use tempfile::tempfile;
 
@@ -248,8 +257,24 @@ mod tests {
         for index in 0..420 {
             encrypt_in_place(&mut buf, &secret, index);
             assert_eq!(buf.len(), SECRET_BLOCK_AEAD);
-            decrypt_in_place(&mut buf, &secret, index);
+            decrypt_in_place(&mut buf, &secret, index).unwrap();
             assert_eq!(buf, vec![69; SECRET_BLOCK]);
+        }
+    }
+
+    #[test]
+    fn test_chacha20poly1305_error() {
+        let mut buf = vec![0; SECRET_BLOCK];
+        getrandom::fill(&mut buf).unwrap();
+        let h = hash(&buf);
+        let secret = random_secret().unwrap();
+        for index in 0..3 {
+            encrypt_in_place(&mut buf, &secret, index);
+            for mut bad in BitFlipper::new(&buf) {
+                assert!(decrypt_in_place(&mut bad, &secret, index).is_err());
+            }
+            decrypt_in_place(&mut buf, &secret, index).unwrap();
+            assert_eq!(hash(&buf), h);
         }
     }
 
