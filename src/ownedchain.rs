@@ -117,6 +117,7 @@ impl OwnedChain {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::secretseed::random_secret;
     use crate::testhelpers::random_request;
     use tempfile;
 
@@ -126,7 +127,7 @@ mod tests {
 
         let tmpdir1 = tempfile::TempDir::new().unwrap();
         let tmpdir2 = tempfile::TempDir::new().unwrap();
-        let secstore = SecretChainStore::new(tmpdir2.path());
+        let secstore = SecretChainStore::new(tmpdir2.path(), random_secret().unwrap());
         let ocs = OwnedChainStore::new(tmpdir1.path(), secstore);
 
         let mut chain = ocs.create_chain(&request).unwrap();

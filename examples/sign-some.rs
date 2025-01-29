@@ -25,7 +25,8 @@ fn main() {
     let requests = build_requests();
     let tmpdir1 = tempfile::TempDir::new().unwrap();
     let tmpdir2 = tempfile::TempDir::new().unwrap();
-    let secstore = SecretChainStore::new(tmpdir2.path());
+    let root_secret = random_secret().unwrap();
+    let secstore = SecretChainStore::new(tmpdir2.path(), root_secret);
     let ocs = OwnedChainStore::new(tmpdir1.path(), secstore);
     let mut chain = ocs.create_chain(&requests[0]).unwrap();
 
@@ -60,11 +61,10 @@ fn main() {
     }
     ocs.store().remove_chain_file(&chain_hash).unwrap();
 
-    let storage_secret = keyed_hash(&[69; 32], chain_hash.as_bytes());
-
+    let chain_secret = keyed_hash(root_secret.as_bytes(), chain_hash.as_bytes());
     let filename = build_filename(tmpdir2.path(), &chain_hash);
     let file = open_for_append(&filename).unwrap();
-    let secchain = SecretChain::open(file, storage_secret).unwrap();
+    let secchain = SecretChain::open(file, chain_secret).unwrap();
 
     for result in &secchain {
         let secblock = result.unwrap();

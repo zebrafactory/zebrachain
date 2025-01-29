@@ -208,10 +208,10 @@ pub struct SecretChainStore {
 }
 
 impl SecretChainStore {
-    pub fn new(dir: &Path) -> Self {
+    pub fn new(dir: &Path, secret: Secret) -> Self {
         Self {
             dir: dir.to_path_buf(),
-            secret: Secret::from_bytes([69; 32]), // FIXME (to put it mildly)
+            secret,
         }
     }
 
