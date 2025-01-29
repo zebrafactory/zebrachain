@@ -21,6 +21,10 @@ fn set_hash(buf: &mut [u8], range: Range<usize>, value: &Hash) {
     buf[range].copy_from_slice(value.as_bytes());
 }
 
+fn get_u64(buf: &[u8], range: Range<usize>) -> u64 {
+    u64::from_le_bytes(buf[range].try_into().unwrap())
+}
+
 /// Expresses different error conditions hit when validating a [SecretBlock].
 #[derive(Debug, PartialEq)]
 pub enum SecretBlockError {
@@ -56,8 +60,10 @@ pub struct SecretBlock {
     pub block_hash: Hash,
     pub secret: Hash,
     pub next_secret: Hash,
+    pub time: u64,
     pub auth_hash: Hash,
     pub state_hash: Hash,
+    pub index: u64,
     pub previous_hash: Hash,
 }
 
@@ -77,8 +83,10 @@ impl SecretBlock {
             block_hash: get_hash(buf, SEC_HASH_RANGE),
             secret: get_hash(buf, SEC_SECRET_RANGE),
             next_secret: get_hash(buf, SEC_NEXT_SECRET_RANGE),
+            time: get_u64(buf, SEC_TIME_RANGE),
             auth_hash: get_hash(buf, SEC_AUTH_HASH_RANGE),
             state_hash: get_hash(buf, SEC_STATE_HASH_RANGE),
+            index: get_u64(buf, SEC_INDEX_RANGE),
             previous_hash: get_hash(buf, SEC_PREV_HASH_RANGE),
         };
         if computed_hash != block.block_hash {
@@ -132,6 +140,8 @@ impl<'a> MutSecretBlock<'a> {
     }
 
     pub fn set_previous(&mut self, prev: &SecretBlock) {
+        let index = prev.index + 1;
+        self.buf[SEC_INDEX_RANGE].copy_from_slice(&index.to_le_bytes());
         set_hash(self.buf, SEC_PREV_HASH_RANGE, &prev.block_hash)
     }
 
@@ -277,8 +287,10 @@ mod tests {
             block_hash: get_hash(&buf, SEC_PREV_HASH_RANGE),
             secret: Hash::from_bytes([0; 32]),
             next_secret: get_hash(&buf, SEC_SECRET_RANGE),
+            time: 0,
             auth_hash: Hash::from_bytes([0; 32]),
             state_hash: Hash::from_bytes([0; 32]),
+            index: 0,
             previous_hash: Hash::from_bytes([0; 32]),
         };
         SecretBlock::from_previous(&buf, &prev).unwrap();
@@ -289,8 +301,10 @@ mod tests {
                 block_hash: bad_block_hash,
                 secret: prev.secret,
                 next_secret: prev.next_secret,
+                time: 0,
                 auth_hash: prev.auth_hash,
                 state_hash: prev.state_hash,
+                index: 0,
                 previous_hash: prev.previous_hash,
             };
             assert_eq!(
@@ -303,8 +317,10 @@ mod tests {
                 block_hash: prev.block_hash,
                 secret: prev.secret,
                 next_secret: bad_next_secret,
+                time: 0,
                 auth_hash: prev.auth_hash,
                 state_hash: prev.state_hash,
+                index: 0,
                 previous_hash: prev.previous_hash,
             };
             assert_eq!(
