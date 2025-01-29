@@ -44,18 +44,7 @@ fn decrypt_in_place(buf: &mut Vec<u8>, secret: &Secret, index: u64) {
     assert_eq!(buf.len(), SECRET_BLOCK);
 }
 
-/*
-We should likewise do entropy accumulation when creating the nonce for each block. The hash of the
-latest block is a great accumulator.
-*/
-
-/// Save secret chain to non-volitile storage.
-///
-/// The SecretBlock and SecretChain are decent now, but we still aren't encrypting this. So still
-/// kinda crappy.
-///
-/// But remember an import use case for ZebraChain is Hardware Security Modules that *never* write
-/// any secrets to non-volitle storage.  Always on, only in memory.
+/// Save secret chain to non-volitile storage (encrypted and authenticated).
 pub struct SecretChain {
     file: File,
     tail: SecretBlock,

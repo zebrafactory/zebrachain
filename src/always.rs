@@ -142,6 +142,8 @@ mod tests {
         assert_eq!(PREVIOUS_HASH_RANGE, 5485..5517);
         assert_eq!(CHAIN_HASH_RANGE, 5517..5549);
 
+        assert_eq!(HASHABLE_RANGE.end, BLOCK);
+        assert_eq!(SIGNABLE_RANGE.end, BLOCK);
         assert_eq!(CHAIN_HASH_RANGE.end, BLOCK);
     }
 
