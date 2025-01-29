@@ -61,7 +61,8 @@ fn main() {
     ocs.store().remove_chain_file(&chain_hash).unwrap();
 
     let chain_secret = keyed_hash(root_secret.as_bytes(), chain_hash.as_bytes());
-    let filename = build_filename(tmpdir2.path(), &chain_hash);
+    let mut filename = build_filename(tmpdir2.path(), &chain_hash);
+    filename.set_extension("secret");
     let file = open_for_append(&filename).unwrap();
     let secchain = SecretChain::open(file, chain_secret).unwrap();
 

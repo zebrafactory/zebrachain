@@ -151,11 +151,9 @@ mod tests {
 
     #[test]
     fn test_ocs_build() {
-        let tmpdir1 = tempfile::TempDir::new().unwrap();
-        let tmpdir2 = tempfile::TempDir::new().unwrap();
+        let tmpdir = tempfile::TempDir::new().unwrap();
         let secret = random_secret().unwrap();
-        // FIXME: Test when store_dir and secret_store_dir are == (fails currently)
-        let ocs = OwnedChainStore::build(tmpdir1.path(), tmpdir2.path(), secret);
+        let ocs = OwnedChainStore::build(tmpdir.path(), tmpdir.path(), secret);
         let request = random_request();
         let oc = ocs.create_chain(&request).unwrap();
         let chain_hash = oc.chain_hash();

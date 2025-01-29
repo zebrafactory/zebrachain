@@ -227,8 +227,14 @@ impl SecretChainStore {
         keyed_hash(self.secret.as_bytes(), chain_hash.as_bytes())
     }
 
+    fn chain_filename(&self, chain_hash: &Hash) -> PathBuf {
+        let mut filename = build_filename(&self.dir, chain_hash);
+        filename.set_extension("secret");
+        filename
+    }
+
     pub fn open_chain(&self, chain_hash: &Hash) -> io::Result<SecretChain> {
-        let filename = build_filename(&self.dir, chain_hash);
+        let filename = self.chain_filename(chain_hash);
         let file = open_for_append(&filename)?;
         let secret = self.derive_secret(chain_hash);
         SecretChain::open(file, secret)
@@ -240,7 +246,7 @@ impl SecretChainStore {
         seed: &Seed,
         request: &SigningRequest,
     ) -> io::Result<SecretChain> {
-        let filename = build_filename(&self.dir, chain_hash);
+        let filename = self.chain_filename(chain_hash);
         let file = create_for_append(&filename)?;
         let secret = self.derive_secret(chain_hash);
         SecretChain::create(file, secret, seed, request)
@@ -251,7 +257,7 @@ impl SecretChainStore {
 mod tests {
     use super::*;
     use crate::secretseed::random_secret;
-    use crate::testhelpers::{random_request, BitFlipper};
+    use crate::testhelpers::{random_hash, random_request, BitFlipper};
     use blake3::hash;
     use getrandom;
     use std::collections::HashSet;
@@ -354,5 +360,24 @@ mod tests {
         let mut file = chain.into_file();
         file.rewind().unwrap();
         SecretChain::open(file, secret).unwrap();
+    }
+
+    #[test]
+    fn test_store_chain_filename() {
+        let dir = PathBuf::from("/nope");
+        let secret = random_secret().unwrap();
+        let store = SecretChainStore::new(dir.as_path(), secret);
+        let chain_hash = Hash::from_bytes([69; DIGEST]);
+        assert_eq!(
+            store.chain_filename(&chain_hash),
+            PathBuf::from(
+                "/nope/4545454545454545454545454545454545454545454545454545454545454545.secret"
+            )
+        );
+        let chain_hash = random_hash();
+        assert_eq!(
+            store.chain_filename(&chain_hash),
+            PathBuf::from(format!("/nope/{chain_hash}.secret"))
+        );
     }
 }
