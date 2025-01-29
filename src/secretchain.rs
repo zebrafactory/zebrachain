@@ -48,7 +48,6 @@ fn decrypt_in_place(buf: &mut Vec<u8>, secret: &Secret, index: u64) {
 pub struct SecretChain {
     file: File,
     tail: SecretBlock,
-    count: u64,
     secret: Secret,
     buf: Vec<u8>,
 }
@@ -67,7 +66,6 @@ impl SecretChain {
         Ok(Self {
             file,
             tail,
-            count: 1,
             secret,
             buf,
         })
@@ -81,24 +79,25 @@ impl SecretChain {
             Ok(block) => block,
             Err(err) => return Err(err.to_io_error()),
         };
-        let mut count = 1;
         buf.resize(SECRET_BLOCK_AEAD, 0);
         while file.read_exact(&mut buf[..]).is_ok() {
-            decrypt_in_place(&mut buf, &secret, count);
+            decrypt_in_place(&mut buf, &secret, tail.index + 1);
             tail = match SecretBlock::from_previous(&buf[..], &tail) {
                 Ok(block) => block,
                 Err(err) => return Err(err.to_io_error()),
             };
-            count += 1;
             buf.resize(SECRET_BLOCK_AEAD, 0);
         }
         Ok(Self {
             file,
             tail,
-            count,
             secret,
             buf,
         })
+    }
+
+    pub fn count(&self) -> u64 {
+        self.tail.index + 1
     }
 
     fn read_block(&self, buf: &mut Vec<u8>, index: u64) -> io::Result<()> {
@@ -118,11 +117,10 @@ impl SecretChain {
         let mut block = MutSecretBlock::new(&mut self.buf[..], seed, request);
         block.set_previous(&self.tail);
         let block = block.finalize();
-        encrypt_in_place(&mut self.buf, &self.secret, self.count);
+        encrypt_in_place(&mut self.buf, &self.secret, block.index);
         assert_eq!(self.buf.len(), SECRET_BLOCK_AEAD);
         self.file.write_all(&self.buf)?;
         self.tail = block;
-        self.count += 1;
         Ok(())
     }
 
@@ -152,9 +150,6 @@ pub struct SecretChainIter<'a> {
 
 impl<'a> SecretChainIter<'a> {
     pub fn new(secretchain: &'a SecretChain) -> Self {
-        if secretchain.count == 0 {
-            panic!("count cannot be 0");
-        }
         Self {
             secretchain,
             index: 0,
@@ -163,7 +158,7 @@ impl<'a> SecretChainIter<'a> {
     }
 
     fn next_inner(&mut self) -> io::Result<SecretBlock> {
-        assert!(self.index < self.secretchain.count);
+        assert!(self.index < self.secretchain.count());
         let mut buf = vec![0; SECRET_BLOCK_AEAD];
         self.secretchain.read_block(&mut buf, self.index)?;
         self.index += 1;
@@ -188,7 +183,7 @@ impl Iterator for SecretChainIter<'_> {
     type Item = io::Result<SecretBlock>;
 
     fn next(&mut self) -> Option<Self::Item> {
-        if self.index < self.secretchain.count {
+        if self.index < self.secretchain.count() {
             Some(self.next_inner())
         } else {
             None
@@ -310,12 +305,12 @@ mod tests {
         let mut seed = Seed::auto_create().unwrap();
         let request = random_request();
         let mut chain = SecretChain::create(file, secret, &seed, &request).unwrap();
-        assert_eq!(chain.count, 1);
+        assert_eq!(chain.count(), 1);
         for i in 0..69 {
             let next = seed.auto_advance().unwrap();
             let request = random_request();
             chain.commit(&next, &request).unwrap();
-            assert_eq!(chain.count, i as u64 + 2);
+            assert_eq!(chain.count(), i + 2);
             seed.commit(next);
         }
         let mut file = chain.into_file();
