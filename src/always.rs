@@ -76,15 +76,17 @@ A SecretBlock currently has 6 fields:
     HASH || SECRET || NEXT_SECRET || AUTH_HASH || STATE_HASH || PREVIOUS_HASH
 */
 
-pub const SECRET_BLOCK: usize = DIGEST * 6;
+pub const SECRET_BLOCK: usize = 6 * DIGEST + 2 * 8;
 pub const SECRET_BLOCK_AEAD: usize = SECRET_BLOCK + 16;
 
-const SECWIRE: [usize; 6] = [
+const SECWIRE: [usize; 8] = [
     DIGEST, // Block hash
     DIGEST, // Secret
     DIGEST, // Next secret
+    8,      // Time
     DIGEST, // AUTH hash
     DIGEST, // State hash
+    8,      // Block index
     DIGEST, // Previous block hash
 ];
 
@@ -100,9 +102,11 @@ const fn get_secrange(index: usize) -> Range<usize> {
 pub const SEC_HASH_RANGE: Range<usize> = get_secrange(0);
 pub const SEC_SECRET_RANGE: Range<usize> = get_secrange(1);
 pub const SEC_NEXT_SECRET_RANGE: Range<usize> = get_secrange(2);
-pub const SEC_AUTH_HASH_RANGE: Range<usize> = get_secrange(3);
-pub const SEC_STATE_HASH_RANGE: Range<usize> = get_secrange(4);
-pub const SEC_PREV_HASH_RANGE: Range<usize> = get_secrange(5);
+pub const SEC_TIME_RANGE: Range<usize> = get_secrange(3);
+pub const SEC_AUTH_HASH_RANGE: Range<usize> = get_secrange(4);
+pub const SEC_STATE_HASH_RANGE: Range<usize> = get_secrange(5);
+pub const SEC_INDEX_RANGE: Range<usize> = get_secrange(6);
+pub const SEC_PREV_HASH_RANGE: Range<usize> = get_secrange(7);
 
 pub static SECRET_CONTEXT: &str =
     "ed149ef77826374035fd3a1e2c1bf3b39539333d5a8bc1f7e788736430efc7f2";
@@ -152,9 +156,11 @@ mod tests {
         assert_eq!(SEC_HASH_RANGE, 0..32);
         assert_eq!(SEC_SECRET_RANGE, 32..64);
         assert_eq!(SEC_NEXT_SECRET_RANGE, 64..96);
-        assert_eq!(SEC_AUTH_HASH_RANGE, 96..128);
-        assert_eq!(SEC_STATE_HASH_RANGE, 128..160);
-        assert_eq!(SEC_PREV_HASH_RANGE, 160..192);
+        assert_eq!(SEC_TIME_RANGE, 96..104);
+        assert_eq!(SEC_AUTH_HASH_RANGE, 104..136);
+        assert_eq!(SEC_STATE_HASH_RANGE, 136..168);
+        assert_eq!(SEC_INDEX_RANGE, 168..176);
+        assert_eq!(SEC_PREV_HASH_RANGE, 176..208);
         assert_eq!(SEC_PREV_HASH_RANGE.end, SECRET_BLOCK);
     }
 }

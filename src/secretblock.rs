@@ -189,14 +189,14 @@ mod tests {
     }
 
     #[test]
-    #[should_panic(expected = "Need a 192 byte slice; got 191 bytes")]
+    #[should_panic(expected = "Need a 208 byte slice; got 207 bytes")]
     fn test_check_secretblock_buf_panic_low() {
         let buf = [0; SECRET_BLOCK - 1];
         check_secretblock_buf(&buf);
     }
 
     #[test]
-    #[should_panic(expected = "Need a 192 byte slice; got 193 bytes")]
+    #[should_panic(expected = "Need a 208 byte slice; got 209 bytes")]
     fn test_check_secretblock_buf_panic_high() {
         let buf = [0; SECRET_BLOCK + 1];
         check_secretblock_buf(&buf);
@@ -208,7 +208,7 @@ mod tests {
         let block = SecretBlock::open(&buf).unwrap();
         assert_eq!(
             block.block_hash,
-            Hash::from_hex("2973f346ecdae71fa8bc58a31969b9868bd9a8dfe34e93298b85584695e6df55")
+            Hash::from_hex("3cd2eb0aede5680b5270b9c8633d5a7112d9ddeb3cf53fc4aff109f78fbf7411")
                 .unwrap()
         );
         assert_eq!(block.secret, Hash::from_bytes([1; DIGEST]));
@@ -353,11 +353,12 @@ mod tests {
                 0, 0, 0, 0, 9, 253, 30, 6, 249, 18, 171, 84, 19, 62, 24, 21, 201, 205, 86, 68, 150,
                 57, 60, 28, 90, 199, 222, 217, 117, 98, 117, 95, 85, 68, 13, 139, 81, 71, 83, 252,
                 176, 21, 151, 8, 29, 122, 107, 144, 241, 142, 43, 193, 43, 176, 152, 50, 175, 128,
-                168, 219, 8, 72, 38, 149, 74, 180, 245, 26, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13,
+                168, 219, 8, 72, 38, 149, 74, 180, 245, 26, 0, 0, 0, 0, 0, 0, 0, 0, 13, 13, 13, 13,
                 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13,
-                13, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42,
-                42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+                13, 13, 13, 13, 13, 13, 13, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42,
+                42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 0, 0, 0, 0,
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 0, 0, 0, 0, 0, 0
             ]
         );
     }
