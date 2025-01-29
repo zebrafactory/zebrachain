@@ -149,9 +149,8 @@ impl<'a> MutSecretBlock<'a> {
     }
 
     pub fn set_previous(&mut self, prev: &SecretBlock) {
-        let index = prev.index + 1;
-        self.buf[SEC_INDEX_RANGE].copy_from_slice(&index.to_le_bytes());
-        set_hash(self.buf, SEC_PREV_HASH_RANGE, &prev.block_hash)
+        set_u64(self.buf, SEC_INDEX_RANGE, prev.index + 1);
+        set_hash(self.buf, SEC_PREV_HASH_RANGE, &prev.block_hash);
     }
 
     fn finalize_hash(&mut self) -> Hash {

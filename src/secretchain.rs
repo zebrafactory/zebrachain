@@ -4,10 +4,10 @@ use crate::always::*;
 use crate::block::SigningRequest;
 use crate::fsutil::{build_filename, create_for_append, open_for_append};
 use crate::secretblock::{MutSecretBlock, SecretBlock};
-use crate::secretseed::{derive, random_secret, Secret, Seed};
+use crate::secretseed::{derive, Secret, Seed};
 use blake3::{keyed_hash, Hash};
 use chacha20poly1305::{
-    aead::{AeadCore, AeadInPlace, KeyInit, OsRng},
+    aead::{AeadInPlace, KeyInit},
     ChaCha20Poly1305, Key, Nonce,
 };
 use std::fs::File;
@@ -236,24 +236,10 @@ impl SecretChainStore {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::block::SigningRequest;
-    use crate::testhelpers::{random_hash, random_request};
+    use crate::secretseed::random_secret;
+    use crate::testhelpers::random_request;
     use std::io::Seek;
     use tempfile::tempfile;
-
-    #[test]
-    fn test_chacha20poly1305() {
-        let key = ChaCha20Poly1305::generate_key(&mut OsRng);
-        let cipher = ChaCha20Poly1305::new(&key);
-        let nonce = ChaCha20Poly1305::generate_nonce(&mut OsRng);
-        let mut buf: Vec<u8> = Vec::new();
-        buf.extend_from_slice(&[69; 32]);
-        assert_eq!(buf.len(), 32);
-        cipher.encrypt_in_place(&nonce, b"", &mut buf).unwrap();
-        assert_eq!(buf.len(), 48);
-        cipher.decrypt_in_place(&nonce, b"", &mut buf).unwrap();
-        assert_eq!(&buf, &[69; 32])
-    }
 
     #[test]
     fn test_chacha20poly1305_roundtrip() {
