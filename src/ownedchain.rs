@@ -8,9 +8,10 @@ use crate::block::{BlockState, SigningRequest};
 use crate::chain::{Chain, ChainStore, CheckPoint};
 use crate::pksign::sign_block;
 use crate::secretchain::{SecretChain, SecretChainStore};
-use crate::secretseed::Seed;
+use crate::secretseed::{Secret, Seed};
 use blake3::Hash;
 use std::io;
+use std::path::Path;
 
 pub struct OwnedChainStore {
     store: ChainStore,
@@ -23,6 +24,12 @@ impl OwnedChainStore {
             store,
             secret_store,
         }
+    }
+
+    pub fn build(store_dir: &Path, secret_store_dir: &Path, secret: Secret) -> Self {
+        let store = ChainStore::new(store_dir);
+        let secret_store = SecretChainStore::new(secret_store_dir, secret);
+        Self::new(store, secret_store)
     }
 
     pub fn store(&self) -> &ChainStore {
@@ -140,5 +147,21 @@ mod tests {
         let tail = chain.tail().clone();
         let chain = ocs.open_chain(&chain_hash).unwrap();
         assert_eq!(chain.tail(), &tail);
+    }
+
+    #[test]
+    fn test_ocs_build() {
+        let tmpdir1 = tempfile::TempDir::new().unwrap();
+        let tmpdir2 = tempfile::TempDir::new().unwrap();
+        let secret = random_secret().unwrap();
+        // FIXME: Test when store_dir and secret_store_dir are == (fails currently)
+        let ocs = OwnedChainStore::build(tmpdir1.path(), tmpdir2.path(), secret);
+        let request = random_request();
+        let oc = ocs.create_chain(&request).unwrap();
+        let chain_hash = oc.chain_hash();
+        let tail = oc.tail();
+        let oc = ocs.open_chain(&chain_hash).unwrap();
+        assert_eq!(oc.chain_hash(), chain_hash);
+        assert_eq!(oc.tail(), tail);
     }
 }
