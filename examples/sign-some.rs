@@ -6,7 +6,7 @@ use zebrachain::block::SigningRequest;
 use zebrachain::chain::{Chain, CheckPoint};
 use zebrachain::fsutil::{build_filename, open_for_append};
 use zebrachain::ownedchain::OwnedChainStore;
-use zebrachain::secretchain::SecretChain;
+use zebrachain::secretchain::{SecretChain, SecretChainStore};
 use zebrachain::secretseed::random_secret;
 
 fn build_requests() -> Vec<SigningRequest> {
@@ -25,7 +25,8 @@ fn main() {
     let requests = build_requests();
     let tmpdir1 = tempfile::TempDir::new().unwrap();
     let tmpdir2 = tempfile::TempDir::new().unwrap();
-    let ocs = OwnedChainStore::new(tmpdir1.path(), Some(tmpdir2.path()));
+    let secstore = SecretChainStore::new(tmpdir2.path());
+    let ocs = OwnedChainStore::new(tmpdir1.path(), secstore);
     let mut chain = ocs.create_chain(&requests[0]).unwrap();
 
     println!(

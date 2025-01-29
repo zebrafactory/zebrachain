@@ -15,14 +15,14 @@ use std::path::Path;
 
 pub struct OwnedChainStore {
     store: ChainStore,
-    secret_store: Option<SecretChainStore>,
+    secret_store: SecretChainStore,
 }
 
 impl OwnedChainStore {
-    pub fn new(chain_dir: &Path, secret_chain_dir: Option<&Path>) -> Self {
+    pub fn new(chain_dir: &Path, secret_store: SecretChainStore) -> Self {
         Self {
             store: ChainStore::new(chain_dir),
-            secret_store: secret_chain_dir.map(SecretChainStore::new),
+            secret_store,
         }
     }
 
@@ -30,60 +30,29 @@ impl OwnedChainStore {
         &self.store
     }
 
-    fn create_secret_chain(
-        &self,
-        seed: &Seed,
-        chain_hash: &Hash,
-        request: &SigningRequest,
-    ) -> io::Result<Option<SecretChain>> {
-        if let Some(secret_store) = self.secret_store.as_ref() {
-            Ok(Some(secret_store.create_chain(chain_hash, seed, request)?))
-        } else {
-            Ok(None)
-        }
-    }
-
-    fn open_secret_chain(&self, chain_hash: &Hash) -> io::Result<Option<SecretChain>> {
-        if let Some(secret_store) = self.secret_store.as_ref() {
-            Ok(Some(secret_store.open_chain(chain_hash)?))
-        } else {
-            Ok(None)
-        }
-    }
-
     pub fn create_chain(&self, request: &SigningRequest) -> io::Result<OwnedChain> {
         let seed = Seed::auto_create().unwrap();
         let mut buf = [0; BLOCK];
         let chain_hash = sign_block(&mut buf, &seed, request, None);
         let chain = self.store.create_chain(&buf, &chain_hash)?;
-        let secret_chain = self.create_secret_chain(&seed, &chain_hash, request)?;
+        let secret_chain = self
+            .secret_store
+            .create_chain(&chain_hash, &seed, request)?;
         Ok(OwnedChain::new(seed, chain, secret_chain))
     }
 
     pub fn open_chain(&self, chain_hash: &Hash) -> io::Result<OwnedChain> {
         let chain = self.store.open_chain(chain_hash)?;
-        if let Some(secret_chain) = self.open_secret_chain(chain_hash)? {
-            let seed = secret_chain.tail().seed();
-            Ok(OwnedChain::new(seed, chain, Some(secret_chain)))
-        } else {
-            Err(io::Error::other(format!(
-                "No secret chain for {}",
-                chain_hash
-            )))
-        }
+        let secret_chain = self.secret_store.open_chain(chain_hash)?;
+        let seed = secret_chain.tail().seed();
+        Ok(OwnedChain::new(seed, chain, secret_chain))
     }
 
     pub fn resume_chain(&self, checkpoint: &CheckPoint) -> io::Result<OwnedChain> {
         let chain = self.store.resume_chain(checkpoint)?;
-        if let Some(secret_chain) = self.open_secret_chain(&checkpoint.chain_hash)? {
-            let seed = secret_chain.tail().seed();
-            Ok(OwnedChain::new(seed, chain, Some(secret_chain)))
-        } else {
-            Err(io::Error::other(format!(
-                "No secret chain for {}",
-                checkpoint.chain_hash
-            )))
-        }
+        let secret_chain = self.secret_store.open_chain(&checkpoint.chain_hash)?;
+        let seed = secret_chain.tail().seed();
+        Ok(OwnedChain::new(seed, chain, secret_chain))
     }
 
     pub fn secret_to_public(&self, secret_chain: &SecretChain) -> io::Result<Chain> {
@@ -106,11 +75,11 @@ impl OwnedChainStore {
 pub struct OwnedChain {
     seed: Seed,
     chain: Chain,
-    secret_chain: Option<SecretChain>,
+    secret_chain: SecretChain,
 }
 
 impl OwnedChain {
-    pub fn new(seed: Seed, chain: Chain, secret_chain: Option<SecretChain>) -> Self {
+    pub fn new(seed: Seed, chain: Chain, secret_chain: SecretChain) -> Self {
         Self {
             seed,
             chain,
@@ -126,9 +95,7 @@ impl OwnedChain {
         let seed = self.seed.auto_advance().unwrap();
         let mut buf = [0; BLOCK];
         sign_block(&mut buf, &seed, request, Some(self.tail()));
-        if let Some(secret_chain) = self.secret_chain.as_mut() {
-            secret_chain.commit(&seed, request)?;
-        }
+        self.secret_chain.commit(&seed, request)?;
         let result = self.chain.append(&buf)?;
         self.seed.commit(seed);
         Ok(result)
@@ -159,33 +126,9 @@ mod tests {
 
         let tmpdir1 = tempfile::TempDir::new().unwrap();
         let tmpdir2 = tempfile::TempDir::new().unwrap();
+        let secstore = SecretChainStore::new(tmpdir2.path());
+        let ocs = OwnedChainStore::new(tmpdir1.path(), secstore);
 
-        // Paths do not exist:
-        let nope1 = tmpdir1.path().join("nope1");
-        let nope2 = tmpdir2.path().join("nope2");
-
-        let ocs = OwnedChainStore::new(&nope1, None);
-        assert!(ocs.secret_store.is_none());
-        assert!(ocs.create_chain(&request).is_err());
-
-        let ocs = OwnedChainStore::new(&nope1, Some(&nope2));
-        assert!(ocs.secret_store.is_some());
-        assert!(ocs.create_chain(&request).is_err());
-
-        // Paths are directories:
-        let ocs = OwnedChainStore::new(tmpdir1.path(), None);
-        assert!(ocs.secret_store.is_none());
-        let mut chain = ocs.create_chain(&request).unwrap();
-        assert_eq!(chain.tail().index, 0);
-        let chain_hash = chain.chain_hash().clone();
-        for i in 1..=420 {
-            chain.sign_next(&random_request()).unwrap();
-            assert_eq!(chain.tail().index, i);
-        }
-        assert!(ocs.open_chain(&chain_hash).is_err()); // No secret chain store
-
-        let ocs = OwnedChainStore::new(tmpdir1.path(), Some(tmpdir2.path()));
-        assert!(ocs.secret_store.is_some());
         let mut chain = ocs.create_chain(&request).unwrap();
         assert_eq!(chain.tail().index, 0);
         let chain_hash = chain.chain_hash().clone();

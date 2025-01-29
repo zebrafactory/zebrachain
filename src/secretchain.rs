@@ -43,7 +43,7 @@ fn decrypt_in_place(buf: &mut Vec<u8>, secret: &Secret, index: u64) -> Result<()
     assert_eq!(buf.len(), SECRET_BLOCK_AEAD);
     let (key, nonce) = derive_block_secrets(secret, index);
     let cipher = ChaCha20Poly1305::new(&key);
-    if let Err(err) = cipher.decrypt_in_place(&nonce, b"", buf) {
+    if cipher.decrypt_in_place(&nonce, b"", buf).is_err() {
         Err(StorageError::Bad)
     } else {
         assert_eq!(buf.len(), SECRET_BLOCK);
@@ -252,13 +252,16 @@ mod tests {
 
     #[test]
     fn test_chacha20poly1305_roundtrip() {
-        let mut buf = vec![69; SECRET_BLOCK];
+        let mut buf = vec![0; SECRET_BLOCK];
+        getrandom::fill(&mut buf).unwrap();
+        let h = hash(&buf);
         let secret = random_secret().unwrap();
         for index in 0..420 {
             encrypt_in_place(&mut buf, &secret, index);
             assert_eq!(buf.len(), SECRET_BLOCK_AEAD);
+            assert_ne!(hash(&buf[0..SECRET_BLOCK]), h);
             decrypt_in_place(&mut buf, &secret, index).unwrap();
-            assert_eq!(buf, vec![69; SECRET_BLOCK]);
+            assert_eq!(hash(&buf), h);
         }
     }
 
@@ -290,7 +293,7 @@ mod tests {
         file.rewind().unwrap();
         let mut buf = vec![0; SECRET_BLOCK_AEAD];
         file.read_exact(&mut buf[..]).unwrap();
-        decrypt_in_place(&mut buf, &secret, 0);
+        decrypt_in_place(&mut buf, &secret, 0).unwrap();
         let block = SecretBlock::open(&buf[..]).unwrap();
         assert_eq!(seed, block.seed());
     }
