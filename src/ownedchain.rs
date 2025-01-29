@@ -11,7 +11,6 @@ use crate::secretchain::{SecretChain, SecretChainStore};
 use crate::secretseed::Seed;
 use blake3::Hash;
 use std::io;
-use std::path::Path;
 
 pub struct OwnedChainStore {
     store: ChainStore,
@@ -19,9 +18,9 @@ pub struct OwnedChainStore {
 }
 
 impl OwnedChainStore {
-    pub fn new(chain_dir: &Path, secret_store: SecretChainStore) -> Self {
+    pub fn new(store: ChainStore, secret_store: SecretChainStore) -> Self {
         Self {
-            store: ChainStore::new(chain_dir),
+            store,
             secret_store,
         }
     }
@@ -127,8 +126,9 @@ mod tests {
 
         let tmpdir1 = tempfile::TempDir::new().unwrap();
         let tmpdir2 = tempfile::TempDir::new().unwrap();
+        let store = ChainStore::new(tmpdir1.path());
         let secstore = SecretChainStore::new(tmpdir2.path(), random_secret().unwrap());
-        let ocs = OwnedChainStore::new(tmpdir1.path(), secstore);
+        let ocs = OwnedChainStore::new(store, secstore);
 
         let mut chain = ocs.create_chain(&request).unwrap();
         assert_eq!(chain.tail().index, 0);

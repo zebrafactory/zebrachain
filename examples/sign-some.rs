@@ -3,7 +3,7 @@
 use blake3::keyed_hash;
 use tempfile;
 use zebrachain::block::SigningRequest;
-use zebrachain::chain::{Chain, CheckPoint};
+use zebrachain::chain::{Chain, ChainStore, CheckPoint};
 use zebrachain::fsutil::{build_filename, open_for_append};
 use zebrachain::ownedchain::OwnedChainStore;
 use zebrachain::secretchain::{SecretChain, SecretChainStore};
@@ -26,8 +26,9 @@ fn main() {
     let tmpdir1 = tempfile::TempDir::new().unwrap();
     let tmpdir2 = tempfile::TempDir::new().unwrap();
     let root_secret = random_secret().unwrap();
+    let store = ChainStore::new(tmpdir1.path());
     let secstore = SecretChainStore::new(tmpdir2.path(), root_secret);
-    let ocs = OwnedChainStore::new(tmpdir1.path(), secstore);
+    let ocs = OwnedChainStore::new(store, secstore);
     let mut chain = ocs.create_chain(&requests[0]).unwrap();
 
     println!(
