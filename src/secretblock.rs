@@ -25,6 +25,10 @@ fn get_u64(buf: &[u8], range: Range<usize>) -> u64 {
     u64::from_le_bytes(buf[range].try_into().unwrap())
 }
 
+fn set_u64(buf: &mut [u8], range: Range<usize>, value: u64) {
+    buf[range].copy_from_slice(&value.to_le_bytes());
+}
+
 /// Expresses different error conditions hit when validating a [SecretBlock].
 #[derive(Debug, PartialEq)]
 pub enum SecretBlockError {
@@ -39,6 +43,9 @@ pub enum SecretBlockError {
 
     /// Hash in block does not match expected external value.
     Hash,
+
+    /// Block index is wrong.
+    Index,
 
     /// Previous hash in block does not match expected external value.
     PreviousHash,
@@ -113,6 +120,8 @@ impl SecretBlock {
             Err(SecretBlockError::PreviousHash)
         } else if block.secret != prev.next_secret {
             Err(SecretBlockError::SeedSequence)
+        } else if block.index != prev.index + 1 {
+            Err(SecretBlockError::Index)
         } else {
             Ok(block)
         }
@@ -181,6 +190,7 @@ mod tests {
             SEC_STATE_HASH_RANGE,
             &Hash::from_bytes([4; DIGEST]),
         );
+        set_u64(&mut buf, SEC_INDEX_RANGE, 1);
         set_hash(
             &mut buf,
             SEC_PREV_HASH_RANGE,
@@ -218,7 +228,7 @@ mod tests {
         let block = SecretBlock::open(&buf).unwrap();
         assert_eq!(
             block.block_hash,
-            Hash::from_hex("3cd2eb0aede5680b5270b9c8633d5a7112d9ddeb3cf53fc4aff109f78fbf7411")
+            Hash::from_hex("c79720e9f45128d27bce83e91182267b6034702a0506d5d08e52681f12a0c6fc")
                 .unwrap()
         );
         assert_eq!(block.secret, Hash::from_bytes([1; DIGEST]));
