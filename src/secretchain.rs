@@ -21,6 +21,13 @@ pub enum StorageError {
     Bad,
 }
 
+impl StorageError {
+    // FIXME: Is there is a Rustier way of doing this? Feedback encouraged.
+    pub fn to_io_error(&self) -> io::Error {
+        io::Error::other(format!("StorageError::{self:?}"))
+    }
+}
+
 // Split out of derive_block_secrets() for testability
 #[inline]
 fn derive_block_secrets_inner(secret: &Secret, index: u64) -> (Secret, Secret) {
@@ -88,14 +95,18 @@ impl SecretChain {
     pub fn open(mut file: File, secret: Secret) -> io::Result<Self> {
         let mut buf = vec![0; SECRET_BLOCK_AEAD];
         file.read_exact(&mut buf[..])?;
-        decrypt_in_place(&mut buf, &secret, 0).unwrap(); // FIXME
+        if let Err(err) = decrypt_in_place(&mut buf, &secret, 0) {
+            return Err(err.to_io_error());
+        }
         let mut tail = match SecretBlock::open(&buf[..]) {
             Ok(block) => block,
             Err(err) => return Err(err.to_io_error()),
         };
         buf.resize(SECRET_BLOCK_AEAD, 0);
         while file.read_exact(&mut buf[..]).is_ok() {
-            decrypt_in_place(&mut buf, &secret, tail.index + 1).unwrap(); // FIXME
+            if let Err(err) = decrypt_in_place(&mut buf, &secret, tail.index + 1) {
+                return Err(err.to_io_error());
+            }
             tail = match SecretBlock::from_previous(&buf[..], &tail) {
                 Ok(block) => block,
                 Err(err) => return Err(err.to_io_error()),
@@ -118,8 +129,11 @@ impl SecretChain {
         buf.resize(SECRET_BLOCK_AEAD, 0);
         let offset = index * SECRET_BLOCK_AEAD as u64;
         self.file.read_exact_at(&mut buf[..], offset)?;
-        decrypt_in_place(buf, &self.secret, index).unwrap(); // FIXME
-        Ok(())
+        if let Err(err) = decrypt_in_place(buf, &self.secret, index) {
+            Err(err.to_io_error())
+        } else {
+            Ok(())
+        }
     }
 
     pub fn tail(&self) -> &SecretBlock {
@@ -262,7 +276,9 @@ mod tests {
     use getrandom;
     use std::collections::HashSet;
     use std::io::Seek;
-    use tempfile::tempfile;
+    use tempfile::{tempfile, TempDir};
+
+    const HEX0: &str = "1b695d50d6105777ed7b5a0bb0bce5484ddca1d6b16bbb0c7bac90599c59370e";
 
     #[test]
     fn test_derive_block_secrets_inner() {
@@ -288,6 +304,7 @@ mod tests {
             assert_eq!(buf.len(), SECRET_BLOCK_AEAD);
             assert_ne!(hash(&buf[0..SECRET_BLOCK]), h);
             decrypt_in_place(&mut buf, &secret, index).unwrap();
+            assert_eq!(hash(&buf[0..SECRET_BLOCK]), h);
             assert_eq!(hash(&buf), h);
         }
     }
@@ -339,7 +356,18 @@ mod tests {
 
         file.write_all(&buf[..]).unwrap();
         file.rewind().unwrap();
-        SecretChain::open(file, secret).unwrap();
+        assert_eq!(
+            SecretChain::open(file.try_clone().unwrap(), secret)
+                .unwrap()
+                .tail()
+                .seed(),
+            seed
+        );
+
+        getrandom::fill(&mut buf).unwrap();
+        file.write_all(&buf).unwrap();
+        file.rewind().unwrap();
+        assert!(SecretChain::open(file, secret).is_err());
     }
 
     #[test]
@@ -363,6 +391,24 @@ mod tests {
     }
 
     #[test]
+    fn test_store_derive_secret() {
+        let dir = PathBuf::from("/nope");
+        let secret = Hash::from_bytes([42; DIGEST]);
+        let store = SecretChainStore::new(&dir, secret);
+        let chain_hash = Hash::from_bytes([69; DIGEST]);
+        let sec = store.derive_secret(&chain_hash);
+        assert_eq!(sec, Hash::from_hex(HEX0).unwrap());
+        assert_eq!(sec, keyed_hash(secret.as_bytes(), chain_hash.as_bytes()));
+        let secret = random_hash();
+        let chain_hash = random_hash();
+        let store = SecretChainStore::new(&dir, secret);
+        assert_eq!(
+            store.derive_secret(&chain_hash),
+            keyed_hash(secret.as_bytes(), chain_hash.as_bytes())
+        );
+    }
+
+    #[test]
     fn test_store_chain_filename() {
         let dir = PathBuf::from("/nope");
         let secret = random_secret().unwrap();
@@ -379,5 +425,28 @@ mod tests {
             store.chain_filename(&chain_hash),
             PathBuf::from(format!("/nope/{chain_hash}.secret"))
         );
+    }
+
+    #[test]
+    fn test_store_open_chain() {
+        let dir = TempDir::new().unwrap();
+        let secret = random_hash();
+        let store = SecretChainStore::new(dir.path(), secret);
+        let chain_hash = random_hash();
+        assert!(store.open_chain(&chain_hash).is_err());
+    }
+
+    #[test]
+    fn test_store_create_chain() {
+        let dir = TempDir::new().unwrap();
+        let secret = random_hash();
+        let store = SecretChainStore::new(dir.path(), secret);
+        let chain_hash = random_hash();
+        let seed = Seed::auto_create().unwrap();
+        let request = random_request();
+        let chain = store.create_chain(&chain_hash, &seed, &request).unwrap();
+        assert_eq!(chain.tail().seed(), seed);
+        let chain = store.open_chain(&chain_hash).unwrap();
+        assert_eq!(chain.tail().seed(), seed);
     }
 }

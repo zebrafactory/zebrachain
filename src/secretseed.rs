@@ -33,6 +33,12 @@ pub fn random_secret() -> Result<Secret, Error> {
 /// And even if signing with a single algorithm, we still should use a derived secret instead of the
 /// root secret directly.
 pub fn derive(context: &str, secret: &Secret) -> Secret {
+    if context.len() != 64 {
+        panic!(
+            "derive(): context string length must be 64; got {}",
+            context.len()
+        );
+    }
     let mut hasher = Hasher::new_derive_key(context);
     hasher.update(secret.as_bytes());
     hasher.finalize()
@@ -142,43 +148,59 @@ mod tests {
     fn test_derive() {
         let secret = Hash::from_bytes([7; 32]);
 
-        let h = derive("example0", &secret);
+        let h = derive(SECRET_CONTEXT, &secret);
         assert_eq!(
             h.as_bytes(),
             &[
-                201, 197, 207, 85, 251, 50, 175, 230, 93, 166, 135, 151, 254, 182, 137, 72, 247,
-                158, 154, 71, 13, 107, 98, 185, 50, 220, 200, 223, 244, 224, 121, 36
+                120, 255, 86, 223, 30, 100, 162, 199, 106, 136, 172, 87, 236, 29, 37, 87, 54, 34,
+                187, 11, 86, 136, 243, 38, 218, 235, 136, 210, 10, 49, 145, 205
             ]
         );
 
-        let h = derive("example1", &secret);
+        let h = derive(NEXT_SECRET_CONTEXT, &secret);
         assert_eq!(
             h.as_bytes(),
             &[
-                12, 255, 43, 240, 22, 55, 198, 18, 190, 243, 159, 226, 207, 193, 9, 243, 40, 12,
-                148, 123, 160, 138, 63, 163, 136, 72, 203, 47, 243, 111, 81, 122
+                56, 77, 119, 202, 143, 168, 34, 136, 205, 197, 90, 11, 162, 112, 64, 45, 180, 80,
+                53, 21, 110, 79, 164, 134, 252, 40, 223, 195, 105, 145, 116, 30
             ]
         );
 
         let secret = Hash::from_bytes([8; 32]);
 
-        let h = derive("example0", &secret);
+        let h = derive(SECRET_CONTEXT, &secret);
         assert_eq!(
             h.as_bytes(),
             &[
-                85, 20, 18, 22, 96, 47, 74, 31, 16, 135, 2, 135, 147, 82, 64, 78, 92, 122, 8, 72,
-                237, 33, 68, 119, 115, 195, 18, 171, 140, 184, 186, 101
+                204, 111, 146, 79, 175, 44, 54, 156, 189, 251, 132, 13, 239, 136, 191, 186, 33,
+                207, 252, 183, 28, 52, 122, 92, 77, 16, 181, 179, 130, 180, 83, 141
             ]
         );
 
-        let h = derive("example1", &secret);
+        let h = derive(NEXT_SECRET_CONTEXT, &secret);
         assert_eq!(
             h.as_bytes(),
             &[
-                168, 183, 42, 224, 55, 249, 54, 53, 86, 216, 99, 36, 116, 156, 36, 118, 92, 240,
-                132, 61, 243, 141, 196, 154, 196, 167, 54, 161, 134, 248, 4, 201
+                21, 128, 0, 241, 82, 225, 6, 165, 5, 12, 101, 182, 221, 147, 193, 220, 120, 250,
+                138, 223, 152, 199, 78, 68, 69, 51, 238, 203, 135, 83, 186, 246
             ]
         );
+    }
+
+    #[test]
+    #[should_panic(expected = "derive(): context string length must be 64; got 63")]
+    fn test_derive_panic_low() {
+        let secret = random_secret().unwrap();
+        derive(&SECRET_CONTEXT[0..63], &secret);
+    }
+
+    #[test]
+    #[should_panic(expected = "derive(): context string length must be 64; got 65")]
+    fn test_derive_panic_high() {
+        let secret = random_secret().unwrap();
+        let mut context = String::from(SECRET_CONTEXT);
+        context.push('7');
+        derive(&context, &secret);
     }
 
     #[test]
