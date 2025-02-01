@@ -36,6 +36,10 @@ impl OwnedChainStore {
         &self.store
     }
 
+    pub fn secret_store(&self) -> &SecretChainStore {
+        &self.secret_store
+    }
+
     pub fn create_chain(&self, request: &SigningRequest) -> io::Result<OwnedChain> {
         let seed = Seed::auto_create().unwrap();
         let mut buf = [0; BLOCK];
@@ -161,5 +165,22 @@ mod tests {
         let oc = ocs.open_chain(&chain_hash).unwrap();
         assert_eq!(oc.chain_hash(), chain_hash);
         assert_eq!(oc.tail(), tail);
+    }
+
+    #[test]
+    fn test_ocs_secret_to_public() {
+        let tmpdir = tempfile::TempDir::new().unwrap();
+        let secret = random_secret().unwrap();
+        let ocs = OwnedChainStore::build(tmpdir.path(), tmpdir.path(), secret);
+        let request = random_request();
+        let mut chain = ocs.create_chain(&request).unwrap();
+        for _ in 0..420 {
+            chain.sign_next(&random_request()).unwrap();
+        }
+        let tail = chain.tail().clone();
+        ocs.store().remove_chain_file(&tail.chain_hash).unwrap();
+        let secret_chain = ocs.secret_store.open_chain(&tail.chain_hash).unwrap();
+        let chain = ocs.secret_to_public(&secret_chain).unwrap();
+        assert_eq!(chain.tail(), &tail);
     }
 }
