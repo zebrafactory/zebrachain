@@ -2,7 +2,7 @@
 
 use crate::always::*;
 use crate::block::SigningRequest;
-use crate::fsutil::{build_filename, create_for_append, open_for_append};
+use crate::fsutil::{create_for_append, open_for_append, secret_chain_filename};
 use crate::secretblock::{MutSecretBlock, SecretBlock};
 use crate::secretseed::{derive, Secret, Seed};
 use blake3::{keyed_hash, Hash};
@@ -242,9 +242,7 @@ impl SecretChainStore {
     }
 
     fn chain_filename(&self, chain_hash: &Hash) -> PathBuf {
-        let mut filename = build_filename(&self.dir, chain_hash);
-        filename.set_extension("secret");
-        filename
+        secret_chain_filename(&self.dir, chain_hash)
     }
 
     pub fn open_chain(&self, chain_hash: &Hash) -> io::Result<SecretChain> {

@@ -4,7 +4,7 @@ use blake3::keyed_hash;
 use tempfile;
 use zebrachain::block::SigningRequest;
 use zebrachain::chain::{Chain, CheckPoint};
-use zebrachain::fsutil::{build_filename, open_for_append};
+use zebrachain::fsutil::{chain_filename, open_for_append, secret_chain_filename};
 use zebrachain::ownedchain::OwnedChainStore;
 use zebrachain::secretchain::SecretChain;
 use zebrachain::secretseed::random_secret;
@@ -50,7 +50,7 @@ fn main() {
     let head = chain.head().clone();
     let tail = chain.tail().clone();
 
-    let filename = build_filename(tmpdir1.path(), &chain_hash);
+    let filename = chain_filename(tmpdir1.path(), &chain_hash);
     println!("{:?}", filename);
     let file = open_for_append(&filename).unwrap();
     let chain = Chain::open(file, &chain_hash).unwrap();
@@ -61,8 +61,7 @@ fn main() {
     ocs.store().remove_chain_file(&chain_hash).unwrap();
 
     let chain_secret = keyed_hash(root_secret.as_bytes(), chain_hash.as_bytes());
-    let mut filename = build_filename(tmpdir2.path(), &chain_hash);
-    filename.set_extension("secret");
+    let mut filename = secret_chain_filename(tmpdir2.path(), &chain_hash);
     let file = open_for_append(&filename).unwrap();
     let secchain = SecretChain::open(file, chain_secret).unwrap();
 

@@ -2,7 +2,7 @@
 
 use crate::always::*;
 use crate::block::{Block, BlockState};
-use crate::fsutil::{build_filename, create_for_append, open_for_append};
+use crate::fsutil::{chain_filename, create_for_append, open_for_append};
 use blake3::Hash;
 use std::fs::{remove_file, File};
 use std::io;
@@ -258,7 +258,7 @@ impl ChainStore {
     }
 
     fn chain_filename(&self, chain_hash: &Hash) -> PathBuf {
-        build_filename(&self.dir, chain_hash)
+        chain_filename(&self.dir, chain_hash)
     }
 
     pub fn open_chain_file(&self, chain_hash: &Hash) -> io::Result<File> {
