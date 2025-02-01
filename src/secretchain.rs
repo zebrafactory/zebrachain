@@ -10,7 +10,7 @@ use chacha20poly1305::{
     aead::{AeadInPlace, KeyInit},
     ChaCha20Poly1305, Key, Nonce,
 };
-use std::fs::File;
+use std::fs::{remove_file, File};
 use std::io;
 use std::io::{Read, Write};
 use std::os::unix::fs::FileExt;
@@ -265,6 +265,11 @@ impl SecretChainStore {
         let secret = self.derive_secret(chain_hash);
         SecretChain::create(file, secret, seed, request)
     }
+
+    pub fn remove_chain_file(&self, chain_hash: &Hash) -> io::Result<()> {
+        let filename = self.chain_filename(chain_hash);
+        remove_file(&filename)
+    }
 }
 
 #[cfg(test)]
@@ -434,6 +439,29 @@ mod tests {
         let store = SecretChainStore::new(dir.path(), secret);
         let chain_hash = random_hash();
         assert!(store.open_chain(&chain_hash).is_err());
+        let filename = store.chain_filename(&chain_hash);
+        let mut file = create_for_append(&filename).unwrap();
+        let mut buf = [0; SECRET_BLOCK_AEAD];
+        getrandom::fill(&mut buf).unwrap();
+        file.write_all(&buf).unwrap();
+        file.rewind().unwrap();
+        assert!(store.open_chain(&chain_hash).is_err()); // Not valid ChaCha20Poly1305 content
+
+        let mut buf = vec![0; SECRET_BLOCK];
+        let seed = Seed::auto_create().unwrap();
+        let request = random_request();
+        let chain_secret = store.derive_secret(&chain_hash);
+        assert_eq!(
+            chain_secret,
+            keyed_hash(secret.as_bytes(), chain_hash.as_bytes())
+        );
+        MutSecretBlock::new(&mut buf, &seed, &request).finalize();
+        encrypt_in_place(&mut buf, &chain_secret, 0);
+        store.remove_chain_file(&chain_hash).unwrap();
+        let mut file = create_for_append(&filename).unwrap();
+        file.write_all(&buf).unwrap();
+        let chain = store.open_chain(&chain_hash).unwrap();
+        assert_eq!(chain.tail().seed(), seed);
     }
 
     #[test]
@@ -448,5 +476,18 @@ mod tests {
         assert_eq!(chain.tail().seed(), seed);
         let chain = store.open_chain(&chain_hash).unwrap();
         assert_eq!(chain.tail().seed(), seed);
+    }
+
+    #[test]
+    fn test_store_remove_file() {
+        let dir = TempDir::new().unwrap();
+        let secret = random_hash();
+        let store = SecretChainStore::new(dir.path(), secret);
+        let chain_hash = random_hash();
+        assert!(store.remove_chain_file(&chain_hash).is_err());
+        let filename = store.chain_filename(&chain_hash);
+        create_for_append(&filename).unwrap();
+        assert!(store.remove_chain_file(&chain_hash).is_ok());
+        assert!(store.remove_chain_file(&chain_hash).is_err());
     }
 }
