@@ -20,7 +20,7 @@ Or when resuming from a checkpoint, the chain validation process is:
 
     1. Load first block with Block::from_hash_at_index()
     2. Load checkpoint block with Block::from_hash_at_index()
-    2. Walk remaining blocks till end of chain using Block::from_previous()
+    3. Walk remaining blocks till end of chain using Block::from_previous()
 */
 
 /// Check point a chain for fast reload.

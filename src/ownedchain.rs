@@ -82,6 +82,9 @@ impl OwnedChainStore {
 }
 
 /// Sign new blocks in an owned chain.
+///
+/// An [OwnedChain] wraps a [Chain] and a [SecretChain] together. New blocks are signed using the
+/// [Seed] state from the [SecretChain], and then the new block is appended to the [Chain].
 pub struct OwnedChain {
     seed: Seed,
     chain: Chain,
@@ -90,15 +93,15 @@ pub struct OwnedChain {
 
 impl OwnedChain {
     pub fn new(seed: Seed, chain: Chain, secret_chain: SecretChain) -> Self {
+        // FIXME: We need to abstract the secret_chain with a trait so that we can use the same API
+        // whether we are writing a secret chain to nonvolitile storage or just keeping the state in
+        // memory. Also, once this is done, OwnedChain shouldn't have a seed (that should an
+        // internal detail in the secret_chain).
         Self {
             seed,
             chain,
             secret_chain,
         }
-    }
-
-    pub fn count(&self) -> u64 {
-        self.chain.count()
     }
 
     pub fn sign_next(&mut self, request: &SigningRequest) -> io::Result<&BlockState> {
@@ -109,6 +112,10 @@ impl OwnedChain {
         let result = self.chain.append(&buf)?;
         self.seed.commit(seed);
         Ok(result)
+    }
+
+    pub fn count(&self) -> u64 {
+        self.chain.count()
     }
 
     pub fn head(&self) -> &BlockState {
@@ -148,9 +155,11 @@ mod tests {
             chain.sign_next(&random_request()).unwrap();
             assert_eq!(chain.tail().index, i);
         }
+        assert_eq!(chain.count(), 421);
         let tail = chain.tail().clone();
         let chain = ocs.open_chain(&chain_hash).unwrap();
         assert_eq!(chain.tail(), &tail);
+        assert_eq!(chain.count(), 421);
     }
 
     #[test]

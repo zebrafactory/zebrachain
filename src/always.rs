@@ -71,9 +71,11 @@ pub const PREVIOUS_HASH_RANGE: Range<usize> = get_range(8);
 pub const CHAIN_HASH_RANGE: Range<usize> = get_range(9);
 
 /*
-A SecretBlock currently has 6 fields:
+A SecretBlock currently has 8 fields:
 
-    HASH || SECRET || NEXT_SECRET || AUTH_HASH || STATE_HASH || PREVIOUS_HASH
+    HASH || SECRET || NEXT_SECRET || TIME || AUTH_HASH || STATE_HASH || INDEX || PREVIOUS_HASH
+            ^^^^^^^^^^^^^^^^^^^^^    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^    ^^^^^^^^^^^^^^^^^^^^^^
+            Secret Seed state        From the signing request           From the previous block
 */
 
 pub const SECRET_BLOCK: usize = 6 * DIGEST + 2 * 8;
