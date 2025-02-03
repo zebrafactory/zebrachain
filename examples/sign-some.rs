@@ -14,6 +14,7 @@ fn build_requests() -> Vec<SigningRequest> {
     let mut requests = Vec::with_capacity(count);
     for _ in 0..count {
         requests.push(SigningRequest::new(
+            0,
             random_secret().unwrap(),
             random_secret().unwrap(),
         ));

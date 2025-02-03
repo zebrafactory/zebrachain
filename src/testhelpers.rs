@@ -11,7 +11,7 @@ pub fn random_hash() -> Hash {
 }
 
 pub fn random_request() -> SigningRequest {
-    SigningRequest::new(random_hash(), random_hash())
+    SigningRequest::new(0, random_hash(), random_hash())
 }
 
 pub fn random_request_vec(count: usize) -> Vec<SigningRequest> {

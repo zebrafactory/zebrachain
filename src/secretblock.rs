@@ -80,7 +80,7 @@ impl SecretBlock {
     }
 
     pub fn signing_request(&self) -> SigningRequest {
-        SigningRequest::new(self.auth_hash, self.state_hash)
+        SigningRequest::new(self.time, self.auth_hash, self.state_hash)
     }
 
     pub fn open(buf: &[u8]) -> SecretBlockResult {
@@ -169,7 +169,7 @@ impl<'a> MutSecretBlock<'a> {
 mod tests {
 
     use super::*;
-    use crate::testhelpers::{random_hash, BitFlipper, HashBitFlipper};
+    use crate::testhelpers::{random_request, BitFlipper, HashBitFlipper};
 
     fn valid_secret_block() -> [u8; SECRET_BLOCK] {
         let mut buf = [0; SECRET_BLOCK];
@@ -245,7 +245,7 @@ mod tests {
                 secret: Hash::from_bytes([i; DIGEST]),
                 next_secret: Hash::from_bytes([i; DIGEST]),
             };
-            let request = SigningRequest::new(random_hash(), random_hash());
+            let request = random_request();
             let mut block = MutSecretBlock::new(&mut buf, &seed, &request);
             block.finalize_hash();
             assert_eq!(SecretBlock::open(&buf), Err(SecretBlockError::Seed));
@@ -279,7 +279,7 @@ mod tests {
                 secret: Hash::from_bytes([i; DIGEST]),
                 next_secret: Hash::from_bytes([i; DIGEST]),
             };
-            let request = SigningRequest::new(random_hash(), random_hash());
+            let request = random_request();
             let mut block = MutSecretBlock::new(&mut buf, &seed, &request);
             block.finalize_hash();
             assert_eq!(
@@ -351,7 +351,7 @@ mod tests {
                 secret: Hash::from_bytes([i; DIGEST]),
                 next_secret: Hash::from_bytes([i; DIGEST]),
             };
-            let request = SigningRequest::new(random_hash(), random_hash());
+            let request = random_request();
             let mut block = MutSecretBlock::new(&mut buf, &seed, &request);
             block.finalize_hash();
             assert_eq!(
@@ -366,6 +366,7 @@ mod tests {
         let mut buf = [69; SECRET_BLOCK];
         let seed = Seed::create(&Hash::from_bytes([69; 32]));
         let request = SigningRequest::new(
+            0,
             Hash::from_bytes([13; DIGEST]),
             Hash::from_bytes([42; DIGEST]),
         );

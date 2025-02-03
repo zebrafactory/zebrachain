@@ -198,7 +198,7 @@ pub fn verify_block_signature(block: &Block) -> bool {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::testhelpers::random_hash;
+    use crate::testhelpers::random_request;
     use pqc_dilithium;
     //use pqc_sphincsplus;
     use pqcrypto_dilithium;
@@ -260,7 +260,7 @@ mod tests {
         // Sign first block
         let mut buf = [69; BLOCK]; // 69 to make sure block gets zeroed first
         let seed = Seed::auto_create().unwrap();
-        let request = SigningRequest::new(random_hash(), random_hash());
+        let request = random_request();
         let chain_hash = sign_block(&mut buf, &seed, &request, None);
 
         // chain_hash and previous_hash are always zeros in 1st block:
@@ -273,7 +273,7 @@ mod tests {
             .state();
         buf.fill(69);
         let seed = seed.auto_advance().unwrap();
-        let request = SigningRequest::new(random_hash(), random_hash());
+        let request = random_request();
         let block_hash = sign_block(&mut buf, &seed, &request, Some(&tail));
         assert_ne!(chain_hash, block_hash);
         assert_eq!(&buf[0..DIGEST], block_hash.as_bytes());
@@ -291,7 +291,7 @@ mod tests {
             .state();
         buf.fill(69);
         let seed = seed.auto_advance().unwrap();
-        let request = SigningRequest::new(random_hash(), random_hash());
+        let request = random_request();
         let block2_hash = sign_block(&mut buf, &seed, &request, Some(&tail2));
         assert_ne!(block_hash, block2_hash);
         assert_ne!(chain_hash, block2_hash);
@@ -309,7 +309,7 @@ mod tests {
         // Sign first block
         let mut buf = [0; BLOCK];
         let seed = Seed::auto_create().unwrap();
-        let request = SigningRequest::new(random_hash(), random_hash());
+        let request = random_request();
         let chain_hash = sign_block(&mut buf, &seed, &request, None);
 
         // Sign 2nd block, but double advance the seed:
@@ -317,7 +317,7 @@ mod tests {
             .unwrap()
             .state();
         let seed = seed.auto_advance().unwrap().auto_advance().unwrap();
-        let request = SigningRequest::new(random_hash(), random_hash());
+        let request = random_request();
         let _block_hash = sign_block(&mut buf, &seed, &request, Some(&tail));
     }
 }

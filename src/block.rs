@@ -257,13 +257,15 @@ impl<'a> Block<'a> {
 }
 
 pub struct SigningRequest {
+    pub time: u64,
     pub auth_hash: Hash,
     pub state_hash: Hash,
 }
 
 impl SigningRequest {
-    pub fn new(auth_hash: Hash, state_hash: Hash) -> Self {
+    pub fn new(time: u64, auth_hash: Hash, state_hash: Hash) -> Self {
         Self {
+            time,
             auth_hash,
             state_hash,
         }
@@ -367,7 +369,7 @@ mod tests {
         let mut buf = vec![0; BLOCK];
         let seed = Seed::create(&Hash::from_bytes([69; 32]));
         let secsign = SecretSigner::new(&seed);
-        let request = SigningRequest::new(Hash::from_bytes([1; 32]), Hash::from_bytes([2; 32]));
+        let request = SigningRequest::new(0, Hash::from_bytes([1; 32]), Hash::from_bytes([2; 32]));
         let mut block = MutBlock::new(&mut buf, &request);
         let last = BlockState::new(
             0,
@@ -675,6 +677,7 @@ mod tests {
     fn test_mutblock_new() {
         let mut buf = [27; BLOCK];
         let request = SigningRequest::new(
+            0,
             Hash::from_bytes([42; DIGEST]),
             Hash::from_bytes([69; DIGEST]),
         );

@@ -295,10 +295,9 @@ impl ChainStore {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::block::SigningRequest;
     use crate::pksign::sign_block;
     use crate::secretseed::Seed;
-    use crate::testhelpers::{random_hash, BitFlipper};
+    use crate::testhelpers::{random_hash, random_request, BitFlipper};
     use blake3::Hash;
     use tempfile;
 
@@ -309,7 +308,7 @@ mod tests {
         // Generate 1st block
         let mut seed = Seed::auto_create().unwrap();
         let mut buf1 = [0; BLOCK];
-        let request1 = &SigningRequest::new(random_hash(), random_hash());
+        let request1 = random_request();
         let chain_hash = sign_block(&mut buf1, &seed, &request1, None);
         let buf1 = buf1; // Doesn't need to be mutable anymore
         let block1 = Block::from_hash_at_index(&buf1, &chain_hash, 0).unwrap();
@@ -330,7 +329,7 @@ mod tests {
         // Generate a 2nd block
         let next = seed.auto_advance().unwrap();
         let mut buf2 = [0; BLOCK];
-        let request2 = &SigningRequest::new(random_hash(), random_hash());
+        let request2 = random_request();
         let _block_hash = sign_block(&mut buf2, &next, &request2, Some(&tail));
         seed.commit(next);
         let buf2 = buf2; // Doesn't need to be mutable anymore
