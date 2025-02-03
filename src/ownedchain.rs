@@ -48,21 +48,19 @@ impl OwnedChainStore {
         let secret_chain = self
             .secret_store
             .create_chain(&chain_hash, &seed, request)?;
-        Ok(OwnedChain::new(seed, chain, secret_chain))
+        Ok(OwnedChain::new(chain, secret_chain))
     }
 
     pub fn open_chain(&self, chain_hash: &Hash) -> io::Result<OwnedChain> {
         let chain = self.store.open_chain(chain_hash)?;
         let secret_chain = self.secret_store.open_chain(chain_hash)?;
-        let seed = secret_chain.tail().seed();
-        Ok(OwnedChain::new(seed, chain, secret_chain))
+        Ok(OwnedChain::new(chain, secret_chain))
     }
 
     pub fn resume_chain(&self, checkpoint: &CheckPoint) -> io::Result<OwnedChain> {
         let chain = self.store.resume_chain(checkpoint)?;
         let secret_chain = self.secret_store.open_chain(&checkpoint.chain_hash)?;
-        let seed = secret_chain.tail().seed();
-        Ok(OwnedChain::new(seed, chain, secret_chain))
+        Ok(OwnedChain::new(chain, secret_chain))
     }
 
     pub fn secret_to_public(&self, secret_chain: &SecretChain) -> io::Result<Chain> {
@@ -86,19 +84,13 @@ impl OwnedChainStore {
 /// An [OwnedChain] wraps a [Chain] and a [SecretChain] together. New blocks are signed using the
 /// [Seed] state from the [SecretChain], and then the new block is appended to the [Chain].
 pub struct OwnedChain {
-    seed: Seed,
     chain: Chain,
     secret_chain: SecretChain,
 }
 
 impl OwnedChain {
-    pub fn new(seed: Seed, chain: Chain, secret_chain: SecretChain) -> Self {
-        // FIXME: We need to abstract the secret_chain with a trait so that we can use the same API
-        // whether we are writing a secret chain to nonvolitile storage or just keeping the state in
-        // memory. Also, once this is done, OwnedChain shouldn't have a seed (that should an
-        // internal detail in the secret_chain).
+    pub fn new(chain: Chain, secret_chain: SecretChain) -> Self {
         Self {
-            seed,
             chain,
             secret_chain,
         }
@@ -106,12 +98,12 @@ impl OwnedChain {
 
     pub fn sign_next(&mut self, request: &SigningRequest) -> io::Result<&BlockState> {
         // let seed = self.secret_chain.auto_advance().unwrap();
-        let seed = self.seed.auto_advance().unwrap();
+        let seed = self.secret_chain.auto_advance();
         let mut buf = [0; BLOCK];
         sign_block(&mut buf, &seed, request, Some(self.tail()));
         self.secret_chain.commit(&seed, request)?;
         let result = self.chain.append(&buf)?;
-        self.seed.commit(seed);
+        //self.seed.commit(seed);
         Ok(result)
     }
 

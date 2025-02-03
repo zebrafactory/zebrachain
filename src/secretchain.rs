@@ -92,6 +92,10 @@ impl SecretChain {
         })
     }
 
+    pub fn auto_advance(&self) -> Seed {
+        self.tail.seed().auto_advance().unwrap()
+    }
+
     pub fn open(mut file: File, secret: Secret) -> io::Result<Self> {
         let mut buf = vec![0; SECRET_BLOCK_AEAD];
         file.read_exact(&mut buf[..])?;
@@ -141,6 +145,7 @@ impl SecretChain {
     }
 
     pub fn commit(&mut self, seed: &Seed, request: &SigningRequest) -> io::Result<()> {
+        // FIXME: Check SeedSequence here like Seed.commit() does
         self.buf.resize(SECRET_BLOCK, 0);
         let mut block = MutSecretBlock::new(&mut self.buf[..], seed, request);
         block.set_previous(&self.tail);
