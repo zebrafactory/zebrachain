@@ -1,4 +1,4 @@
-# 🦓 ZebraChain 🦓
+# ZebraChain 🦓 🔗
 
 [![Build Status](https://github.com/zebrafactory/zebrachain/actions/workflows/rust.yml/badge.svg)](https://github.com/zebrafactory/zebrachain/actions)
 
@@ -38,22 +38,49 @@ construction for signing
 * [Blake3](https://github.com/BLAKE3-team/BLAKE3) for hashing
 
 
-## Wire Format
+## Wire Format 📜
 
-A ZebraChain block has 10 fields currently:
+A ZebraChain block currently has 10 fields:
 
 ```
-HASH SIG PUB NEXT_PUB_HASH TIME AUTH_HASH STATE_HASH INDEX PREV_HASH CHAIN_HASH
+HASH || SIG || PUB || NEXT_PUB_HASH || TIME AUTH_HASH || STATE_HASH || INDEX || PREV_HASH || CHAIN_HASH
 ```
 
 Where:
 
 ```
-HASH = hash(SIG PUB NEXT_PUB_HASH TIME AUTH_HASH STATE_HASH INDEX PREV_HASH CHAIN_HASH)
+HASH = hash(SIG || PUB || NEXT_PUB_HASH || TIME AUTH_HASH || STATE_HASH || INDEX || PREV_HASH || CHAIN_HASH)
 ```
 
 And where:
 
 ```
-SIG = sign(PUB NEXT_PUB_HASH TIME AUTH_HASH STATE_HASH INDEX PREV_HASH CHAIN_HASH)
+SIG = sign(PUB || NEXT_PUB_HASH || TIME AUTH_HASH || STATE_HASH || INDEX || PREV_HASH || CHAIN_HASH)
 ```
+
+The `PUB` field expands into:
+
+```
+PUB = (PUB_DILITHIUM || PUB_ED25519)
+```
+
+And the `SIG` field expands into:
+
+```
+SIG = (SIG_DILITHIUM || SIG_ED25519)
+```
+
+
+## Dependencies of Interest 🦀
+
+ZebraChain is built on existing implementations of established cryptographic primatives.
+
+These key crates are used:
+
+* [ed25519-dalek](https://crates.io/crates/ed25519-dalek) and [pqc_dilithium](https://crates.io/crates/pqc_dilithium) for hybrid signing
+
+* [blake3](https://crates.io/crates/blake3) for hashing
+
+* [chacha20poly1305](https://crates.io/crates/chacha20poly1305) for encrypting the secrect blocks
+
+* [getrandom](https://crates.io/crates/getrandom) for accessing the operating system CSPRNG
