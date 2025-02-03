@@ -2,8 +2,8 @@
 
 [![Build Status](https://github.com/zebrafactory/zebrachain/actions/workflows/rust.yml/badge.svg)](https://github.com/zebrafactory/zebrachain/actions)
 
-ZebraChain is designed to the replace long lived secret keys used to sign
-software releases (or to sign other super important stuff).
+ZebraChain is a logged, quantum safe signing protocol designed to replace the long lived asymmetric
+key pairs used to sign software releases (and to sign other super important stuff).
 
 Consider the GPG key used to sign your favorite Linux distribution.  You could
 replace it with a ZebraChain, gaining some important benefits over the GPG key:
@@ -32,13 +32,6 @@ until the owner of the ZebraChain publishes their next valid signature block
 attacker to get the secret key and forge arbitrary signatures for that position
 in the chain).
 
-* Why not checkpoint ZebraChains in other ZebraChains?  That could build a vast
-network of cross checkedpointed chains that would likely be very difficult to
-attack in practice. There will be a lot more to say on this soon, but the
-general design philosophy is: public key crypto weak, hash crypto strong.  So
-we want to verify by the signature only if essential, and otherwise move onto
-relying on the hash instead.
-
 In the near term ZebraChain needs to configurable to support all the [NIST post quantum standards](https://www.nist.gov/news-events/news/2024/08/nist-releases-first-3-finalized-post-quantum-encryption-standards) and multiple hash algorithms.  It must be possible to add new algorithms in the future.
 
 But the current focus is on building a simple, non-configurable reference implementation using:
@@ -52,15 +45,18 @@ But the current focus is on building a simple, non-configurable reference implem
 
 A ZebraChain block has 10 fields currently:
 
-        HASH || SIG || PUB || NEXT_PUB_HASH || TIME || AUTH_HASH || STATE_HASH || INDEX || PREV_HASH || CHAIN_HASH
-                ^^^^^^^^^^^^^^^^^^^^^^^^^^^    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-                From the `Seed`                From the `SigningRequest`          From the previous `BlockState`
+```
+HASH || SIG || PUB || NEXT_PUB_HASH || TIME || AUTH_HASH || STATE_HASH || INDEX || PREV_HASH || CHAIN_HASH
+```
+
 Where:
 
-        HASH = hash(SIG || PUB || NEXT_PUB_HASH || TIME || AUTH_HASH || STATE_HASH || INDEX || PREV_HASH || CHAIN_HASH)
-                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+```
+HASH = hash(SIG || PUB || NEXT_PUB_HASH || TIME || AUTH_HASH || STATE_HASH || INDEX || PREV_HASH || CHAIN_HASH)
+```
 
 And where:
 
-        SIG = sign(PUB || NEXT_PUB_HASH || TIME || AUTH_HASH || STATE_HASH || INDEX || PREV_HASH || CHAIN_HASH)
-                                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+```
+SIG = sign(PUB || NEXT_PUB_HASH || TIME || AUTH_HASH || STATE_HASH || INDEX || PREV_HASH || CHAIN_HASH)
+```
