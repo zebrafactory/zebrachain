@@ -4,6 +4,12 @@ use crate::block::SigningRequest;
 use blake3::Hash;
 use getrandom;
 
+pub fn random_u64() -> u64 {
+    let mut buf = [0; 8];
+    getrandom::fill(&mut buf).unwrap();
+    u64::from_le_bytes(buf)
+}
+
 pub fn random_hash() -> Hash {
     let mut buf = [0; 32];
     getrandom::fill(&mut buf).unwrap();
@@ -11,7 +17,7 @@ pub fn random_hash() -> Hash {
 }
 
 pub fn random_request() -> SigningRequest {
-    SigningRequest::new(0, random_hash(), random_hash())
+    SigningRequest::new(random_u64(), random_hash(), random_hash())
 }
 
 pub fn random_request_vec(count: usize) -> Vec<SigningRequest> {

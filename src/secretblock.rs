@@ -142,6 +142,7 @@ impl<'a> MutSecretBlock<'a> {
         set_hash(buf, SEC_SECRET_RANGE, &seed.secret);
         set_hash(buf, SEC_NEXT_SECRET_RANGE, &seed.next_secret);
 
+        set_u64(buf, SEC_TIME_RANGE, request.time);
         set_hash(buf, SEC_AUTH_HASH_RANGE, &request.auth_hash);
         set_hash(buf, SEC_STATE_HASH_RANGE, &request.state_hash);
 

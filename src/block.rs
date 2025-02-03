@@ -281,6 +281,7 @@ impl<'a> MutBlock<'a> {
     pub fn new(buf: &'a mut [u8], request: &SigningRequest) -> Self {
         check_block_buf(buf);
         buf.fill(0);
+        buf[TIME_RANGE].copy_from_slice(&request.time.to_le_bytes());
         buf[STATE_HASH_RANGE].copy_from_slice(request.state_hash.as_bytes());
         buf[AUTH_HASH_RANGE].copy_from_slice(request.auth_hash.as_bytes());
         Self { buf }
