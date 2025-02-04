@@ -84,7 +84,7 @@ impl SecretBlock {
             Err(SecretBlockError::Seed)
         } else {
             Ok(SecretBlock {
-                block_hash: block_hash,
+                block_hash,
                 seed: Seed::new(secret, next_secret),
                 request: SigningRequest::new(
                     get_u64(buf, SEC_TIME_RANGE),
