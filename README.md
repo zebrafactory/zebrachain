@@ -58,19 +58,19 @@ These key crates are used:
 A ZebraChain block currently has 10 fields:
 
 ```
-HASH || SIG || PUB || NEXT_PUB_HASH || TIME AUTH_HASH || STATE_HASH || INDEX || PREV_HASH || CHAIN_HASH
+HASH || SIG || PUB || NEXT_PUB_HASH || TIME || AUTH_HASH || STATE_HASH || INDEX || PREV_HASH || CHAIN_HASH
 ```
 
 Where:
 
 ```
-HASH = hash(SIG || PUB || NEXT_PUB_HASH || TIME AUTH_HASH || STATE_HASH || INDEX || PREV_HASH || CHAIN_HASH)
+HASH = hash(SIG || PUB || NEXT_PUB_HASH || TIME || AUTH_HASH || STATE_HASH || INDEX || PREV_HASH || CHAIN_HASH)
 ```
 
 And where:
 
 ```
-SIG = sign(PUB || NEXT_PUB_HASH || TIME AUTH_HASH || STATE_HASH || INDEX || PREV_HASH || CHAIN_HASH)
+SIG = sign(PUB || NEXT_PUB_HASH || TIME || AUTH_HASH || STATE_HASH || INDEX || PREV_HASH || CHAIN_HASH)
 ```
 
 The `PUB` field expands into:
