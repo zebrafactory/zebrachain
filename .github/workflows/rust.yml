@@ -21,7 +21,6 @@ jobs:
     - name: Run tests
       run: cargo test --verbose --release
 
-jobs:
   build-macos:
     name: Build and Test on MacOS
     runs-on: macos-latest
