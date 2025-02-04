@@ -38,6 +38,7 @@ fn derive_block_secrets_inner(secret: &Secret, index: u64) -> (Secret, Secret) {
     (key, nonce)
 }
 
+// Use a unique key and nonce for each block in the secret chain
 fn derive_block_secrets(secret: &Secret, index: u64) -> (Key, Nonce) {
     let (key, nonce) = derive_block_secrets_inner(secret, index);
     let key = Key::from_slice(&key.as_bytes()[..]);

@@ -159,10 +159,6 @@ impl<'a> Block<'a> {
         &self.buf[SIGNABLE_RANGE]
     }
 
-    fn as_hash(&self) -> &[u8] {
-        &self.buf[HASH_RANGE]
-    }
-
     pub fn as_signature(&self) -> &[u8] {
         &self.buf[SIGNATURE_RANGE]
     }
@@ -171,64 +167,36 @@ impl<'a> Block<'a> {
         &self.buf[PUBKEY_RANGE]
     }
 
-    fn as_next_pubkey_hash(&self) -> &[u8] {
-        &self.buf[NEXT_PUBKEY_HASH_RANGE]
-    }
-
-    fn as_time(&self) -> &[u8] {
-        &self.buf[TIME_RANGE]
-    }
-
-    fn as_auth_hash(&self) -> &[u8] {
-        &self.buf[AUTH_HASH_RANGE]
-    }
-
-    fn as_state_hash(&self) -> &[u8] {
-        &self.buf[STATE_HASH_RANGE]
-    }
-
-    fn as_index(&self) -> &[u8] {
-        &self.buf[INDEX_RANGE]
-    }
-
-    fn as_previous_hash(&self) -> &[u8] {
-        &self.buf[PREVIOUS_HASH_RANGE]
-    }
-
-    fn as_chain_hash(&self) -> &[u8] {
-        &self.buf[CHAIN_HASH_RANGE]
-    }
-
     pub fn hash(&self) -> Hash {
-        Hash::from_bytes(self.as_hash().try_into().expect("oops"))
+        get_hash(self.buf, HASH_RANGE)
     }
 
     pub fn next_pubkey_hash(&self) -> Hash {
-        Hash::from_bytes(self.as_next_pubkey_hash().try_into().expect("oops"))
+        get_hash(self.buf, NEXT_PUBKEY_HASH_RANGE)
     }
 
     pub fn time(&self) -> u64 {
-        u64::from_le_bytes(self.as_time().try_into().unwrap())
+        get_u64(self.buf, TIME_RANGE)
     }
 
     pub fn auth_hash(&self) -> Hash {
-        Hash::from_bytes(self.as_auth_hash().try_into().expect("oops"))
+        get_hash(self.buf, AUTH_HASH_RANGE)
     }
 
     pub fn state_hash(&self) -> Hash {
-        Hash::from_bytes(self.as_state_hash().try_into().expect("oops"))
+        get_hash(self.buf, STATE_HASH_RANGE)
     }
 
     pub fn index(&self) -> u64 {
-        u64::from_le_bytes(self.as_index().try_into().unwrap())
+        get_u64(self.buf, INDEX_RANGE)
     }
 
     pub fn previous_hash(&self) -> Hash {
-        Hash::from_bytes(self.as_previous_hash().try_into().expect("oops"))
+        get_hash(self.buf, PREVIOUS_HASH_RANGE)
     }
 
     pub fn chain_hash(&self) -> Hash {
-        Hash::from_bytes(self.as_chain_hash().try_into().expect("oops"))
+        get_hash(self.buf, CHAIN_HASH_RANGE)
     }
 
     fn compute_hash(&self) -> Hash {
@@ -282,25 +250,25 @@ impl<'a> MutBlock<'a> {
     pub fn new(buf: &'a mut [u8], request: &SigningRequest) -> Self {
         check_block_buf(buf);
         buf.fill(0);
-        buf[TIME_RANGE].copy_from_slice(&request.time.to_le_bytes());
-        buf[STATE_HASH_RANGE].copy_from_slice(request.state_hash.as_bytes());
-        buf[AUTH_HASH_RANGE].copy_from_slice(request.auth_hash.as_bytes());
+        set_u64(buf, TIME_RANGE, request.time);
+        set_hash(buf, STATE_HASH_RANGE, &request.state_hash);
+        set_hash(buf, AUTH_HASH_RANGE, &request.auth_hash);
         Self { buf }
     }
 
     pub fn set_hash(&mut self, block_hash: &Hash) {
-        self.buf[HASH_RANGE].copy_from_slice(block_hash.as_bytes());
+        set_hash(self.buf, HASH_RANGE, block_hash);
     }
 
     pub fn set_next_pubkey_hash(&mut self, next_pubkey_hash: &Hash) {
-        self.buf[NEXT_PUBKEY_HASH_RANGE].copy_from_slice(next_pubkey_hash.as_bytes());
+        set_hash(self.buf, NEXT_PUBKEY_HASH_RANGE, next_pubkey_hash);
     }
 
-    pub fn set_previous(&mut self, last: &BlockState) {
-        self.buf[INDEX_RANGE].copy_from_slice(&(last.index + 1).to_le_bytes());
-        self.buf[PREVIOUS_HASH_RANGE].copy_from_slice(last.block_hash.as_bytes());
-        let chain_hash = last.effective_chain_hash(); // Don't use last.chain_hash !
-        self.buf[CHAIN_HASH_RANGE].copy_from_slice(chain_hash.as_bytes());
+    pub fn set_previous(&mut self, prev: &BlockState) {
+        set_u64(self.buf, INDEX_RANGE, prev.index + 1);
+        set_hash(self.buf, PREVIOUS_HASH_RANGE, &prev.block_hash);
+        let chain_hash = prev.effective_chain_hash(); // Don't use prev.chain_hash !
+        set_hash(self.buf, CHAIN_HASH_RANGE, &chain_hash);
     }
 
     pub fn as_mut_signature(&mut self) -> &mut [u8] {
@@ -576,19 +544,8 @@ mod tests {
     fn test_block_as_fns() {
         let buf = new_dummy_block();
         let block = Block::new(&buf[..]);
-        assert_eq!(block.as_hash(), [1; DIGEST]);
-
         assert_eq!(block.as_signature(), [2; SIGNATURE]);
         assert_eq!(block.as_pubkey(), [3; PUBKEY]);
-        assert_eq!(block.as_next_pubkey_hash(), [4; DIGEST]);
-
-        assert_eq!(block.as_time(), [5; 8]);
-        assert_eq!(block.as_auth_hash(), [6; DIGEST]);
-        assert_eq!(block.as_state_hash(), [7; DIGEST]);
-
-        assert_eq!(block.as_index(), [8; 8]);
-        assert_eq!(block.as_previous_hash(), [9; DIGEST]);
-        assert_eq!(block.as_chain_hash(), [10; DIGEST]);
     }
 
     #[test]

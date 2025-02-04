@@ -1,5 +1,6 @@
 //! Wire format ranges are defined here (good place to start).
 
+use blake3::Hash;
 use std::ops::Range;
 
 /*
@@ -124,6 +125,26 @@ pub static STORAGE_KEY_CONTEXT: &str =
     "0179f9dd9cb5b0af47079d3a102872a32744b7f7aa8a5f22f7c0a16ba8549601";
 pub static STORAGE_NONCE_CONTEXT: &str =
     "dc49809016fca0a126c5df6d373e90c48683e664ecba0440ae59523d93e13515";
+
+#[inline]
+pub fn get_hash(buf: &[u8], range: Range<usize>) -> Hash {
+    Hash::from_bytes(buf[range].try_into().unwrap())
+}
+
+#[inline]
+pub fn set_hash(buf: &mut [u8], range: Range<usize>, value: &Hash) {
+    buf[range].copy_from_slice(value.as_bytes());
+}
+
+#[inline]
+pub fn get_u64(buf: &[u8], range: Range<usize>) -> u64 {
+    u64::from_le_bytes(buf[range].try_into().unwrap())
+}
+
+#[inline]
+pub fn set_u64(buf: &mut [u8], range: Range<usize>, value: u64) {
+    buf[range].copy_from_slice(&value.to_le_bytes());
+}
 
 #[cfg(test)]
 mod tests {

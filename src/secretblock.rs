@@ -5,28 +5,11 @@ use crate::block::SigningRequest;
 use crate::secretseed::Seed;
 use blake3::{hash, Hash};
 use std::io;
-use std::ops::Range;
 
 fn check_secretblock_buf(buf: &[u8]) {
     if buf.len() != SECRET_BLOCK {
         panic!("Need a {SECRET_BLOCK} byte slice; got {} bytes", buf.len());
     }
-}
-
-fn get_hash(buf: &[u8], range: Range<usize>) -> Hash {
-    Hash::from_bytes(buf[range].try_into().unwrap())
-}
-
-fn set_hash(buf: &mut [u8], range: Range<usize>, value: &Hash) {
-    buf[range].copy_from_slice(value.as_bytes());
-}
-
-fn get_u64(buf: &[u8], range: Range<usize>) -> u64 {
-    u64::from_le_bytes(buf[range].try_into().unwrap())
-}
-
-fn set_u64(buf: &mut [u8], range: Range<usize>, value: u64) {
-    buf[range].copy_from_slice(&value.to_le_bytes());
 }
 
 /// Expresses different error conditions hit when validating a [SecretBlock].
