@@ -97,10 +97,12 @@ impl SecretBlock {
         }
     }
 
-    pub fn from_hash(buf: &[u8], block_hash: &Hash) -> SecretBlockResult {
+    pub fn from_hash_at_index(buf: &[u8], block_hash: &Hash, index: u64) -> SecretBlockResult {
         let block = Self::open(buf)?;
         if block_hash != &block.block_hash {
             Err(SecretBlockError::Hash)
+        } else if index != block.index {
+            Err(SecretBlockError::Index)
         } else {
             Ok(block)
         }
@@ -154,7 +156,8 @@ impl<'a> MutSecretBlock<'a> {
 
     pub fn finalize(mut self) -> SecretBlock {
         let block_hash = self.finalize_hash();
-        SecretBlock::from_hash(self.buf, &block_hash).unwrap()
+        let index = get_u64(self.buf, SEC_INDEX_RANGE); // FIXME
+        SecretBlock::from_hash_at_index(self.buf, &block_hash, index).unwrap()
     }
 }
 
@@ -246,15 +249,15 @@ mod tests {
     }
 
     #[test]
-    fn test_block_from_hash() {
+    fn test_block_from_hash_at_index() {
         let buf = valid_secret_block();
         let block_hash = hash(&buf[DIGEST..]);
-        SecretBlock::from_hash(&buf, &block_hash).unwrap();
+        SecretBlock::from_hash_at_index(&buf, &block_hash, 1).unwrap();
 
-        // Test error specific to SecretBlock::from_hash():
+        // Test errors specific to SecretBlock::from_hash_at_index():
         for bad in HashBitFlipper::new(&block_hash) {
             assert_eq!(
-                SecretBlock::from_hash(&buf, &bad),
+                SecretBlock::from_hash_at_index(&buf, &bad, 1),
                 Err(SecretBlockError::Hash)
             );
         }
@@ -262,7 +265,7 @@ mod tests {
         // Make sure SecretBlock::open() is getting called:
         for bad in BitFlipper::new(&buf) {
             assert_eq!(
-                SecretBlock::from_hash(&bad[..], &block_hash),
+                SecretBlock::from_hash_at_index(&bad[..], &block_hash, 1),
                 Err(SecretBlockError::Content)
             );
         }
@@ -276,7 +279,7 @@ mod tests {
             let mut block = MutSecretBlock::new(&mut buf, &seed, &request);
             block.finalize_hash();
             assert_eq!(
-                SecretBlock::from_hash(&buf, &block_hash),
+                SecretBlock::from_hash_at_index(&buf, &block_hash, 1),
                 Err(SecretBlockError::Seed)
             );
         }

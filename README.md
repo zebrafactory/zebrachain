@@ -38,6 +38,21 @@ construction for signing
 * [Blake3](https://github.com/BLAKE3-team/BLAKE3) for hashing
 
 
+## Dependencies of Interest 🦀
+
+ZebraChain is built on existing implementations of established cryptographic primatives.
+
+These key crates are used:
+
+* [ed25519-dalek](https://crates.io/crates/ed25519-dalek) and [pqc_dilithium](https://crates.io/crates/pqc_dilithium) for hybrid signing
+
+* [blake3](https://crates.io/crates/blake3) for hashing
+
+* [chacha20poly1305](https://crates.io/crates/chacha20poly1305) for encrypting the secrect blocks
+
+* [getrandom](https://crates.io/crates/getrandom) for accessing the operating system CSPRNG
+
+
 ## Wire Format 📜
 
 A ZebraChain block currently has 10 fields:
@@ -69,18 +84,3 @@ And the `SIG` field expands into:
 ```
 SIG = (SIG_DILITHIUM || SIG_ED25519)
 ```
-
-
-## Dependencies of Interest 🦀
-
-ZebraChain is built on existing implementations of established cryptographic primatives.
-
-These key crates are used:
-
-* [ed25519-dalek](https://crates.io/crates/ed25519-dalek) and [pqc_dilithium](https://crates.io/crates/pqc_dilithium) for hybrid signing
-
-* [blake3](https://crates.io/crates/blake3) for hashing
-
-* [chacha20poly1305](https://crates.io/crates/chacha20poly1305) for encrypting the secrect blocks
-
-* [getrandom](https://crates.io/crates/getrandom) for accessing the operating system CSPRNG
