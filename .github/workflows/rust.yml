@@ -31,3 +31,14 @@ jobs:
       run: cargo build --verbose --release
     - name: Run tests
       run: cargo test --verbose --release
+
+  build-windows:
+    name: Build and Test on Windows
+    runs-on: windows-latest
+
+    steps:
+    - uses: actions/checkout@v4
+    - name: Build
+      run: cargo build --verbose --release
+    - name: Run tests
+      run: cargo test --verbose --release
