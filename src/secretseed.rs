@@ -59,7 +59,7 @@ pub fn derive(context: &str, secret: &Secret) -> Secret {
 /// seed.commit(next.clone());
 /// assert_eq!(seed, next);
 /// ```
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Seed {
     pub secret: Secret,
     pub next_secret: Secret,

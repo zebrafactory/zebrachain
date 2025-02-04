@@ -67,12 +67,12 @@ impl OwnedChainStore {
         let mut buf = [0; BLOCK];
         let mut iter = secret_chain.iter();
         let sec = iter.nth(0).unwrap()?;
-        let chain_hash = sign_block(&mut buf, &sec.seed(), &sec.signing_request(), None);
+        let chain_hash = sign_block(&mut buf, &sec.seed, &sec.request, None);
         let mut chain = self.store.create_chain(&buf, &chain_hash)?;
         let mut tail = chain.head().clone();
         for result in iter {
             let sec = result?;
-            sign_block(&mut buf, &sec.seed(), &sec.signing_request(), Some(&tail));
+            sign_block(&mut buf, &sec.seed, &sec.request, Some(&tail));
             tail = chain.append(&buf)?.clone();
         }
         Ok(chain)

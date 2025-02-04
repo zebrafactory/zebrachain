@@ -65,43 +65,35 @@ pub type SecretBlockResult = Result<SecretBlock, SecretBlockError>;
 #[derive(Debug, PartialEq, Clone)]
 pub struct SecretBlock {
     pub block_hash: Hash,
-    pub secret: Hash,
-    pub next_secret: Hash,
-    pub time: u64,
-    pub auth_hash: Hash,
-    pub state_hash: Hash,
+    pub seed: Seed,
+    pub request: SigningRequest,
     pub index: u64,
     pub previous_hash: Hash,
 }
 
 impl SecretBlock {
-    pub fn seed(&self) -> Seed {
-        Seed::new(self.secret, self.next_secret)
-    }
-
-    pub fn signing_request(&self) -> SigningRequest {
-        SigningRequest::new(self.time, self.auth_hash, self.state_hash)
-    }
-
     pub fn open(buf: &[u8]) -> SecretBlockResult {
         check_secretblock_buf(buf);
         let computed_hash = hash(&buf[DIGEST..]);
-        let block = SecretBlock {
-            block_hash: get_hash(buf, SEC_HASH_RANGE),
-            secret: get_hash(buf, SEC_SECRET_RANGE),
-            next_secret: get_hash(buf, SEC_NEXT_SECRET_RANGE),
-            time: get_u64(buf, SEC_TIME_RANGE),
-            auth_hash: get_hash(buf, SEC_AUTH_HASH_RANGE),
-            state_hash: get_hash(buf, SEC_STATE_HASH_RANGE),
-            index: get_u64(buf, SEC_INDEX_RANGE),
-            previous_hash: get_hash(buf, SEC_PREV_HASH_RANGE),
-        };
-        if computed_hash != block.block_hash {
+        let block_hash = get_hash(buf, SEC_HASH_RANGE);
+        let secret = get_hash(buf, SEC_SECRET_RANGE);
+        let next_secret = get_hash(buf, SEC_NEXT_SECRET_RANGE);
+        if computed_hash != block_hash {
             Err(SecretBlockError::Content)
-        } else if block.secret == block.next_secret {
+        } else if secret == next_secret {
             Err(SecretBlockError::Seed)
         } else {
-            Ok(block)
+            Ok(SecretBlock {
+                block_hash: block_hash,
+                seed: Seed::new(secret, next_secret),
+                request: SigningRequest::new(
+                    get_u64(buf, SEC_TIME_RANGE),
+                    get_hash(buf, SEC_AUTH_HASH_RANGE),
+                    get_hash(buf, SEC_STATE_HASH_RANGE),
+                ),
+                index: get_u64(buf, SEC_INDEX_RANGE),
+                previous_hash: get_hash(buf, SEC_PREV_HASH_RANGE),
+            })
         }
     }
 
@@ -118,7 +110,7 @@ impl SecretBlock {
         let block = Self::open(buf)?;
         if block.previous_hash != prev.block_hash {
             Err(SecretBlockError::PreviousHash)
-        } else if block.secret != prev.next_secret {
+        } else if block.seed.secret != prev.seed.next_secret {
             Err(SecretBlockError::SeedSequence)
         } else if block.index != prev.index + 1 {
             Err(SecretBlockError::Index)
@@ -231,10 +223,10 @@ mod tests {
             Hash::from_hex("c79720e9f45128d27bce83e91182267b6034702a0506d5d08e52681f12a0c6fc")
                 .unwrap()
         );
-        assert_eq!(block.secret, Hash::from_bytes([1; DIGEST]));
-        assert_eq!(block.next_secret, Hash::from_bytes([2; DIGEST]));
-        assert_eq!(block.auth_hash, Hash::from_bytes([3; DIGEST]));
-        assert_eq!(block.state_hash, Hash::from_bytes([4; DIGEST]));
+        assert_eq!(block.seed.secret, Hash::from_bytes([1; DIGEST]));
+        assert_eq!(block.seed.next_secret, Hash::from_bytes([2; DIGEST]));
+        assert_eq!(block.request.auth_hash, Hash::from_bytes([3; DIGEST]));
+        assert_eq!(block.request.state_hash, Hash::from_bytes([4; DIGEST]));
         assert_eq!(block.previous_hash, Hash::from_bytes([5; DIGEST]));
         for bad in BitFlipper::new(&buf) {
             assert_eq!(SecretBlock::open(&bad[..]), Err(SecretBlockError::Content));
@@ -295,11 +287,8 @@ mod tests {
         let buf = valid_secret_block();
         let prev = SecretBlock {
             block_hash: get_hash(&buf, SEC_PREV_HASH_RANGE),
-            secret: Hash::from_bytes([0; 32]),
-            next_secret: get_hash(&buf, SEC_SECRET_RANGE),
-            time: 0,
-            auth_hash: Hash::from_bytes([0; 32]),
-            state_hash: Hash::from_bytes([0; 32]),
+            seed: Seed::new(Hash::from_bytes([0; 32]), get_hash(&buf, SEC_SECRET_RANGE)),
+            request: SigningRequest::new(0, Hash::from_bytes([0; 32]), Hash::from_bytes([0; 32])),
             index: 0,
             previous_hash: Hash::from_bytes([0; 32]),
         };
@@ -309,11 +298,8 @@ mod tests {
         for bad_block_hash in HashBitFlipper::new(&prev.block_hash) {
             let bad_prev = SecretBlock {
                 block_hash: bad_block_hash,
-                secret: prev.secret,
-                next_secret: prev.next_secret,
-                time: 0,
-                auth_hash: prev.auth_hash,
-                state_hash: prev.state_hash,
+                seed: prev.seed,
+                request: prev.request,
                 index: 0,
                 previous_hash: prev.previous_hash,
             };
@@ -322,14 +308,11 @@ mod tests {
                 Err(SecretBlockError::PreviousHash)
             );
         }
-        for bad_next_secret in HashBitFlipper::new(&prev.next_secret) {
+        for bad_next_secret in HashBitFlipper::new(&prev.seed.next_secret) {
             let bad_prev = SecretBlock {
                 block_hash: prev.block_hash,
-                secret: prev.secret,
-                next_secret: bad_next_secret,
-                time: 0,
-                auth_hash: prev.auth_hash,
-                state_hash: prev.state_hash,
+                seed: Seed::new(prev.seed.secret, bad_next_secret),
+                request: prev.request,
                 index: 0,
                 previous_hash: prev.previous_hash,
             };

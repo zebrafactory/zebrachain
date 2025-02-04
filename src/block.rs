@@ -256,6 +256,7 @@ impl<'a> Block<'a> {
     }
 }
 
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub struct SigningRequest {
     pub time: u64,
     pub auth_hash: Hash,

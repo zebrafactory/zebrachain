@@ -68,7 +68,7 @@ fn main() {
 
     for result in &secchain {
         let secblock = result.unwrap();
-        println!("state_hash: {}", secblock.state_hash);
+        println!("state_hash: {}", secblock.request.state_hash);
     }
 
     let chain = ocs.secret_to_public(&secchain).unwrap();

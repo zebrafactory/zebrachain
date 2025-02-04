@@ -93,7 +93,7 @@ impl SecretChain {
     }
 
     pub fn auto_advance(&self) -> Seed {
-        self.tail.seed().auto_advance().unwrap()
+        self.tail.seed.auto_advance().unwrap()
     }
 
     pub fn open(mut file: File, secret: Secret) -> io::Result<Self> {
@@ -347,7 +347,7 @@ mod tests {
         file.read_exact(&mut buf[..]).unwrap();
         decrypt_in_place(&mut buf, &secret, 0).unwrap();
         let block = SecretBlock::open(&buf[..]).unwrap();
-        assert_eq!(seed, block.seed());
+        assert_eq!(seed, block.seed);
     }
 
     #[test]
@@ -368,7 +368,7 @@ mod tests {
             SecretChain::open(file.try_clone().unwrap(), secret)
                 .unwrap()
                 .tail()
-                .seed(),
+                .seed,
             seed
         );
 
@@ -464,7 +464,7 @@ mod tests {
         let mut file = create_for_append(&filename).unwrap();
         file.write_all(&buf).unwrap();
         let chain = store.open_chain(&chain_hash).unwrap();
-        assert_eq!(chain.tail().seed(), seed);
+        assert_eq!(chain.tail().seed, seed);
     }
 
     #[test]
@@ -476,9 +476,9 @@ mod tests {
         let seed = Seed::auto_create().unwrap();
         let request = random_request();
         let chain = store.create_chain(&chain_hash, &seed, &request).unwrap();
-        assert_eq!(chain.tail().seed(), seed);
+        assert_eq!(chain.tail().seed, seed);
         let chain = store.open_chain(&chain_hash).unwrap();
-        assert_eq!(chain.tail().seed(), seed);
+        assert_eq!(chain.tail().seed, seed);
     }
 
     #[test]
