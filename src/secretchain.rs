@@ -12,8 +12,7 @@ use chacha20poly1305::{
 };
 use std::fs::{remove_file, File};
 use std::io;
-use std::io::{Read, Write};
-use std::os::unix::fs::FileExt;
+use std::io::{BufReader, Read, Seek, Write};
 use std::path::{Path, PathBuf};
 
 #[derive(Debug)]
@@ -130,17 +129,6 @@ impl SecretChain {
         self.tail.index + 1
     }
 
-    fn read_block(&self, buf: &mut Vec<u8>, index: u64) -> io::Result<()> {
-        buf.resize(SECRET_BLOCK_AEAD, 0);
-        let offset = index * SECRET_BLOCK_AEAD as u64;
-        self.file.read_exact_at(&mut buf[..], offset)?;
-        if let Err(err) = decrypt_in_place(buf, &self.secret, index) {
-            Err(err.to_io_error())
-        } else {
-            Ok(())
-        }
-    }
-
     pub fn tail(&self) -> &SecretBlock {
         &self.tail
     }
@@ -163,29 +151,36 @@ impl SecretChain {
     }
 
     pub fn iter(&self) -> SecretChainIter {
-        SecretChainIter::new(self)
+        SecretChainIter::new(self.file.try_clone().unwrap(), self.secret, self.count())
     }
 }
 
-impl<'a> IntoIterator for &'a SecretChain {
+impl IntoIterator for &SecretChain {
     type Item = io::Result<SecretBlock>;
-    type IntoIter = SecretChainIter<'a>;
+    type IntoIter = SecretChainIter;
 
     fn into_iter(self) -> Self::IntoIter {
         self.iter()
     }
 }
 
-pub struct SecretChainIter<'a> {
-    secretchain: &'a SecretChain,
+pub struct SecretChainIter {
+    file: BufReader<File>,
+    secret: Hash,
+    count: u64,
     tail: Option<SecretBlock>,
+    buf: Vec<u8>,
 }
 
-impl<'a> SecretChainIter<'a> {
-    pub fn new(secretchain: &'a SecretChain) -> Self {
+impl SecretChainIter {
+    pub fn new(file: File, secret: Hash, count: u64) -> Self {
+        let file = BufReader::with_capacity(SECRET_BLOCK_AEAD * 16, file);
         Self {
-            secretchain,
+            file,
+            secret,
+            count,
             tail: None,
+            buf: vec![0; SECRET_BLOCK_AEAD],
         }
     }
 
@@ -198,13 +193,19 @@ impl<'a> SecretChainIter<'a> {
     }
 
     fn next_inner(&mut self) -> io::Result<SecretBlock> {
-        assert!(self.index() < self.secretchain.count());
-        let mut buf = vec![0; SECRET_BLOCK_AEAD];
-        self.secretchain.read_block(&mut buf, self.index())?;
+        if self.tail.is_none() {
+            self.file.rewind()?;
+        }
+        self.buf.resize(SECRET_BLOCK_AEAD, 0);
+        self.file.read_exact(&mut self.buf)?;
+        let index = self.index();
+        if let Err(err) = decrypt_in_place(&mut self.buf, &self.secret, index) {
+            return Err(err.to_io_error());
+        }
         let result = if let Some(tail) = self.tail.as_ref() {
-            SecretBlock::from_previous(&buf[..], tail)
+            SecretBlock::from_previous(&self.buf[..], tail)
         } else {
-            SecretBlock::open(&buf)
+            SecretBlock::open(&self.buf)
         };
         match result {
             Ok(block) => {
@@ -216,11 +217,11 @@ impl<'a> SecretChainIter<'a> {
     }
 }
 
-impl Iterator for SecretChainIter<'_> {
+impl Iterator for SecretChainIter {
     type Item = io::Result<SecretBlock>;
 
     fn next(&mut self) -> Option<Self::Item> {
-        if self.index() < self.secretchain.count() {
+        if self.index() < self.count {
             Some(self.next_inner())
         } else {
             None
