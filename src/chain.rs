@@ -7,7 +7,6 @@ use blake3::Hash;
 use std::fs::{remove_file, File};
 use std::io;
 use std::io::{BufReader, Read, Seek, SeekFrom, Write};
-use std::os::unix::fs::FileExt;
 use std::path::{Path, PathBuf};
 
 /*
@@ -44,7 +43,7 @@ impl CheckPoint {
     }
 }
 
-fn validate_chain(mut file: File, chain_hash: &Hash) -> io::Result<(File, BlockState, BlockState)> {
+fn validate_chain(file: File, chain_hash: &Hash) -> io::Result<(File, BlockState, BlockState)> {
     let mut file = BufReader::with_capacity(BLOCK * 16, file);
     let mut buf = [0; BLOCK];
 
@@ -134,10 +133,10 @@ impl Chain {
         self.tail.index + 1
     }
 
-    pub fn create(file: File, buf: &[u8], chain_hash: &Hash) -> io::Result<Self> {
+    pub fn create(mut file: File, buf: &[u8], chain_hash: &Hash) -> io::Result<Self> {
         match Block::from_hash_at_index(buf, chain_hash, 0) {
             Ok(block) => {
-                file.write_all_at(buf, 0)?;
+                file.write_all(buf)?;
                 Ok(Self {
                     file,
                     head: block.state(),
@@ -159,11 +158,6 @@ impl Chain {
     #[allow(clippy::misnamed_getters)] // Clippy is wrong here
     pub fn chain_hash(&self) -> &Hash {
         &self.head.block_hash
-    }
-
-    fn read_block(&self, buf: &mut [u8], index: u64) -> io::Result<()> {
-        let offset = index * BLOCK as u64;
-        self.file.read_exact_at(buf, offset)
     }
 
     pub fn append(&mut self, buf: &[u8]) -> io::Result<&BlockState> {
@@ -198,12 +192,19 @@ impl<'a> IntoIterator for &'a Chain {
 /// Iterate through each [Block] in a [Chain].
 pub struct ChainIter<'a> {
     chain: &'a Chain,
+    reader: BufReader<File>,
     tail: Option<BlockState>,
 }
 
 impl<'a> ChainIter<'a> {
     pub fn new(chain: &'a Chain) -> Self {
-        Self { chain, tail: None }
+        let file = chain.file.try_clone().unwrap();
+        let reader = BufReader::with_capacity(BLOCK * 16, file);
+        Self {
+            chain,
+            reader,
+            tail: None,
+        }
     }
 
     fn index(&self) -> u64 {
@@ -216,7 +217,10 @@ impl<'a> ChainIter<'a> {
 
     fn next_inner(&mut self) -> io::Result<BlockState> {
         let mut buf = [0; BLOCK];
-        self.chain.read_block(&mut buf, self.index())?;
+        if self.tail.is_none() {
+            self.reader.rewind()?;
+        }
+        self.reader.read_exact(&mut buf)?;
         let blockresult = if let Some(tail) = self.tail.as_ref() {
             Block::from_previous(&buf, tail)
         } else {
@@ -336,7 +340,7 @@ mod tests {
 
         // Write to file, test with 2 blocks
         file.write_all(&buf2).unwrap();
-        let (mut file, head, tail) = validate_chain(file, &chain_hash).unwrap();
+        let (_file, head, tail) = validate_chain(file, &chain_hash).unwrap();
         assert_eq!(head, block1.state());
         assert_eq!(tail, block2.state());
         assert_eq!(tail.index, 1);
