@@ -176,13 +176,17 @@ impl Chain {
     }
 
     pub fn iter(&self) -> ChainIter {
-        ChainIter::new(self)
+        ChainIter::new(
+            self.file.try_clone().unwrap(),
+            *self.chain_hash(),
+            self.count(),
+        )
     }
 }
 
-impl<'a> IntoIterator for &'a Chain {
+impl IntoIterator for &Chain {
     type Item = io::Result<BlockState>;
-    type IntoIter = ChainIter<'a>;
+    type IntoIter = ChainIter;
 
     fn into_iter(self) -> Self::IntoIter {
         self.iter()
@@ -190,20 +194,23 @@ impl<'a> IntoIterator for &'a Chain {
 }
 
 /// Iterate through each [Block] in a [Chain].
-pub struct ChainIter<'a> {
-    chain: &'a Chain,
-    reader: BufReader<File>,
+pub struct ChainIter {
+    file: BufReader<File>,
+    chain_hash: Hash,
+    count: u64,
     tail: Option<BlockState>,
+    buf: [u8; BLOCK],
 }
 
-impl<'a> ChainIter<'a> {
-    pub fn new(chain: &'a Chain) -> Self {
-        let file = chain.file.try_clone().unwrap();
-        let reader = BufReader::with_capacity(BLOCK * 16, file);
+impl ChainIter {
+    pub fn new(file: File, chain_hash: Hash, count: u64) -> Self {
+        let file = BufReader::with_capacity(BLOCK * 16, file);
         Self {
-            chain,
-            reader,
+            file,
+            chain_hash,
+            count,
             tail: None,
+            buf: [0; BLOCK],
         }
     }
 
@@ -216,15 +223,14 @@ impl<'a> ChainIter<'a> {
     }
 
     fn next_inner(&mut self) -> io::Result<BlockState> {
-        let mut buf = [0; BLOCK];
         if self.tail.is_none() {
-            self.reader.rewind()?;
+            self.file.rewind()?;
         }
-        self.reader.read_exact(&mut buf)?;
+        self.file.read_exact(&mut self.buf)?;
         let blockresult = if let Some(tail) = self.tail.as_ref() {
-            Block::from_previous(&buf, tail)
+            Block::from_previous(&self.buf, tail)
         } else {
-            Block::from_hash_at_index(&buf, self.chain.chain_hash(), 0)
+            Block::from_hash_at_index(&self.buf, &self.chain_hash, 0)
         };
         match blockresult {
             Ok(block) => {
@@ -236,11 +242,11 @@ impl<'a> ChainIter<'a> {
     }
 }
 
-impl Iterator for ChainIter<'_> {
+impl Iterator for ChainIter {
     type Item = io::Result<BlockState>;
 
     fn next(&mut self) -> Option<Self::Item> {
-        if self.index() < self.chain.count() {
+        if self.index() < self.count {
             Some(self.next_inner())
         } else {
             None
