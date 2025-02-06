@@ -346,39 +346,47 @@ mod tests {
 
         // Write to file, test with 2 blocks
         file.write_all(&buf2).unwrap();
-        let (_file, head, tail) = validate_chain(file, &chain_hash).unwrap();
+        let (mut file, head, tail) = validate_chain(file, &chain_hash).unwrap();
         assert_eq!(head, block1.state());
         assert_eq!(tail, block2.state());
         assert_eq!(tail.index, 1);
 
-        /*
-        FIXME: This needs reworked
-        for bad in BitFlipper::new(&buf1) {
-            file.write_all_at(&bad, 0).unwrap();
-            assert!(validate_chain(&file, &chain_hash).is_err());
+        let mut good = Vec::with_capacity(BLOCK * 2);
+        good.extend_from_slice(&buf1);
+        good.extend_from_slice(&buf2);
+        file.rewind().unwrap();
+        file.set_len(0).unwrap();
+        file.write_all(&good).unwrap();
+        let (_, head, tail) = validate_chain(file.try_clone().unwrap(), &chain_hash).unwrap();
+        assert_eq!(head, block1.state());
+        assert_eq!(tail, block2.state());
+        assert_eq!(tail.index, 1);
+
+        for bad in BitFlipper::new(&good) {
+            file.rewind().unwrap();
+            file.set_len(0).unwrap();
+            file.write_all(&bad).unwrap();
+            assert!(validate_chain(file.try_clone().unwrap(), &chain_hash).is_err());
         }
 
-        for bad in BitFlipper::new(&buf2) {
-            file.write_all_at(&bad, BLOCK as u64).unwrap();
-            assert!(validate_chain(&file, &chain_hash).is_err());
-        }
-
-        file.write_all_at(&buf1, 0).unwrap();
-        file.write_all_at(&buf2, BLOCK as u64).unwrap();
-        assert!(validate_chain(&file, &chain_hash).is_ok());
-
+        file.rewind().unwrap();
+        file.set_len(0).unwrap();
+        file.write_all(&good).unwrap();
+        let (_, head, tail) = validate_chain(file.try_clone().unwrap(), &chain_hash).unwrap();
+        assert_eq!(head, block1.state());
+        assert_eq!(tail, block2.state());
+        assert_eq!(tail.index, 1);
         // FIXME: We aren't currently handling truncation
         let length = (BLOCK * 2) as u64;
         for reduce in 1..=length {
             assert!(reduce > 0);
             file.set_len(length - reduce).unwrap();
             if reduce > BLOCK as u64 {
-                assert!(validate_chain(&file, &chain_hash).is_err());
+                assert!(validate_chain(file.try_clone().unwrap(), &chain_hash).is_err());
             } else {
-                assert!(validate_chain(&file, &chain_hash).is_ok());
+                assert!(validate_chain(file.try_clone().unwrap(), &chain_hash).is_ok());
             }
         }
-        */
     }
 
     #[test]

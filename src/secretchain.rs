@@ -174,7 +174,7 @@ pub struct SecretChainIter {
 
 impl SecretChainIter {
     pub fn new(file: File, secret: Hash, count: u64) -> Self {
-        let file = BufReader::with_capacity(SECRET_BLOCK_AEAD * 16, file);
+        let file = BufReader::with_capacity(SECRET_BLOCK_AEAD * 64, file);
         Self {
             file,
             secret,
@@ -203,7 +203,7 @@ impl SecretChainIter {
             return Err(err.to_io_error());
         }
         let result = if let Some(tail) = self.tail.as_ref() {
-            SecretBlock::from_previous(&self.buf[..], tail)
+            SecretBlock::from_previous(&self.buf, tail)
         } else {
             SecretBlock::open(&self.buf)
         };
