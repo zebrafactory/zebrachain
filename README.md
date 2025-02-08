@@ -83,6 +83,7 @@ And the `SIG` field expands into:
 
 ```
 SIG = (SIG_DILITHIUM || SIG_ED25519)
+```
 
 ## License
 
