@@ -14,7 +14,7 @@ fn build_ed25519_keypair(secret: &Hash) -> ed25519_dalek::SigningKey {
 }
 
 fn build_dilithium_keypair(secret: &Hash) -> pqc_dilithium::Keypair {
-    pqc_dilithium::Keypair::generate_from_seed(derive(DILITHIUM_CONTEXT, secret).as_bytes())
+    pqc_dilithium::Keypair::from_bytes(derive(DILITHIUM_CONTEXT, secret).as_bytes())
 }
 
 /*
@@ -225,7 +225,7 @@ mod tests {
         assert!(pqc_dilithium::verify(&sig, msg, &kp.public).is_ok());
 
         let seed = Hash::from_bytes([69; DIGEST]);
-        let kp = pqc_dilithium::Keypair::generate_from_seed(seed.as_bytes());
+        let kp = pqc_dilithium::Keypair::from_bytes(seed.as_bytes());
         assert_eq!(hash(&kp.public), Hash::from_hex(HEX1).unwrap());
         assert_eq!(kp.public.len(), PUB_DILITHIUM);
     }
