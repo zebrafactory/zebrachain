@@ -3,7 +3,7 @@ name = "zebrachain"
 version = "0.1.0"
 authors = ["Jason Gerard DeRose <jasonderose@gmail.com>"]
 edition = "2021"
-license = "AGPL-3.0-or-later"
+license = "MIT OR Apache-2.0"
 rust-version = "1.81"
 
 [dependencies]
