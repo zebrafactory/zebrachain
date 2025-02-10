@@ -18,6 +18,12 @@ coresponding public key that will be used to sign the *next* block. This allows 
 introduced at each signature, minimizing the problem of whether there was high enough quality
 entropy when the first secret key in the ZebraChain was created.
 
+* Entropy accumulation throughout the lifetime of the ZebraChain. At each signature, a new call to
+`getrandom()` or equivalent is made. This new entropy is securely mixed with the previous secret
+(using a keyed hash), and the result is then used to create the next signing keys. In other words,
+if at any point in the history of the chain there was a secret unknown to an attacker, than the
+secret chain state is unknown to an attacker from that block froward.
+
 * Quantum safe (assuming the Dilithium + ed25519 hybrid construction is quantum safe).
 
 * *Some* quantum mitigation, even if Dilithium is broken.  A sufficiently large quantum computer can
