@@ -14,6 +14,7 @@ use std::fs::{remove_file, File};
 use std::io;
 use std::io::{BufReader, Read, Seek, Write};
 use std::path::{Path, PathBuf};
+use zeroize::Zeroize;
 
 #[derive(Debug)]
 pub enum StorageError {
@@ -117,6 +118,7 @@ impl SecretChain {
             };
             buf.resize(SECRET_BLOCK_AEAD, 0);
         }
+        buf.zeroize();
         Ok(Self {
             file,
             tail,
@@ -224,6 +226,7 @@ impl Iterator for SecretChainIter {
         if self.index() < self.count {
             Some(self.next_inner())
         } else {
+            self.buf.zeroize();
             None
         }
     }
