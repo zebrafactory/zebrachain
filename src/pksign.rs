@@ -204,7 +204,9 @@ mod tests {
     use pqcrypto_dilithium;
 
     static HEX0: &str = "498027d13f2a1c09194ecc64321154a9bfd3e3ac86536d38c3ed33e9b2e76579";
-    static HEX1: &str = "260e8536e614fb20441ef43e5b1b2f87d0320b913dc0d3df4508372a2910ec2f";
+    // FIXME: So, yeah, pqc_dilithium and ml_dsa are producing different deterministic keys
+    static HEX1A: &str = "260e8536e614fb20441ef43e5b1b2f87d0320b913dc0d3df4508372a2910ec2f";
+    static HEX1B: &str = "80eb433447f789410ce5261e94880da671cb61140540512c33ba710b43bed605";
     static HEX2: &str = "d65fcc64431cb837a4de1edb1957e0c8d0f9f844ddff7e2eb429e0c59962ac6a";
 
     #[test]
@@ -226,9 +228,30 @@ mod tests {
 
         let seed = Hash::from_bytes([69; DIGEST]);
         let kp = pqc_dilithium::Keypair::from_bytes(seed.as_bytes());
-        assert_eq!(hash(&kp.public), Hash::from_hex(HEX1).unwrap());
+        assert_eq!(hash(&kp.public), Hash::from_hex(HEX1A).unwrap());
         assert_eq!(kp.public.len(), PUB_DILITHIUM);
     }
+
+    #[test]
+    fn test_ml_dsa() {
+        use ml_dsa::{KeyGen, MlDsa65, B32};
+        use signature::{Signer, Verifier};
+        let msg = b"Wish this API let me provide the entropy used to generate the key";
+        let mut secret = B32::default();
+        secret.0.copy_from_slice(&[69; 32]);
+        let keypair = MlDsa65::key_gen_internal(&secret);
+        let sig = keypair.signing_key.sign(msg);
+        assert!(keypair.verifying_key.verify(msg, &sig).is_ok());
+        assert_eq!(
+            keypair.verifying_key.encode().as_slice().len(),
+            PUB_DILITHIUM
+        );
+        assert_eq!(
+            hash(keypair.verifying_key.encode().as_slice()),
+            Hash::from_hex(HEX1B).unwrap()
+        );
+    }
+
     /*
         #[test]
         fn test_pqc_sphincsplus() {
