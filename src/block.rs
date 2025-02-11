@@ -305,8 +305,8 @@ mod tests {
     use crate::secretseed::Seed;
     use crate::testhelpers::{random_hash, random_request, BitFlipper, HashBitFlipper};
 
-    const HEX0: &str = "5d1b42c915d95c40a4e4626871bf42d27575aea13be5e20738ca3ca9837a3028";
-    const HEX1: &str = "0934f0ee7a7c41ac69f9e3705a1395d31ddc9a2d81fbdd0b11b70a92535922be";
+    const HEX0: &str = "96d80b4e492dcc8291e93fdc7d8e45b00b9195e9ba8f8cb048ea3e829ff47910";
+    const HEX1: &str = "0937a15cff834af56d2be81e4eb7467e75a555c532d5b2d9f9ef0847e32a1676";
 
     #[test]
     fn test_blockerror_to_io_error() {
@@ -375,28 +375,28 @@ mod tests {
     }
 
     #[test]
-    #[should_panic(expected = "Need a 5549 byte slice; got 5548 bytes")]
+    #[should_panic(expected = "Need a 5565 byte slice; got 5564 bytes")]
     fn test_block_new_short_panic() {
         let buf: Vec<u8> = vec![0; BLOCK - 1];
         let _block = Block::new(&buf[..]);
     }
 
     #[test]
-    #[should_panic(expected = "Need a 5549 byte slice; got 5550 bytes")]
+    #[should_panic(expected = "Need a 5565 byte slice; got 5566 bytes")]
     fn test_block_new_long_panic() {
         let buf: Vec<u8> = vec![0; BLOCK + 1];
         let _block = Block::new(&buf[..]);
     }
 
     #[test]
-    #[should_panic(expected = "Need a 5549 byte slice; got 5548 bytes")]
+    #[should_panic(expected = "Need a 5565 byte slice; got 5564 bytes")]
     fn test_block_open_short_panic() {
         let buf: Vec<u8> = vec![0; BLOCK - 1];
         let _block = Block::open(&buf[..]);
     }
 
     #[test]
-    #[should_panic(expected = "Need a 5549 byte slice; got 5550 bytes")]
+    #[should_panic(expected = "Need a 5565 byte slice; got 5566 bytes")]
     fn test_block_open_long_panic() {
         let buf: Vec<u8> = vec![0; BLOCK + 1];
         let _block = Block::open(&buf[..]);

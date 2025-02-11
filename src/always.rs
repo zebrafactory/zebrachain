@@ -23,7 +23,7 @@ And where:
 pub const PUB_ED25519: usize = 32;
 pub const SIG_ED25519: usize = 64;
 pub const PUB_DILITHIUM: usize = 1952;
-pub const SIG_DILITHIUM: usize = 3293;
+pub const SIG_DILITHIUM: usize = 3309;
 
 pub const PUB_DILITHIUM_RANGE: Range<usize> = 0..PUB_DILITHIUM;
 pub const PUB_ED25519_RANGE: Range<usize> = PUB_DILITHIUM..PUB_DILITHIUM + PUB_ED25519;
@@ -152,22 +152,22 @@ mod tests {
 
     #[test]
     fn test_ranges() {
-        assert_eq!(HASHABLE_RANGE, 32..5549);
-        assert_eq!(SIGNABLE_RANGE, 3389..5549);
+        assert_eq!(HASHABLE_RANGE, 32..5565);
+        assert_eq!(SIGNABLE_RANGE, 3405..5565);
 
         assert_eq!(HASH_RANGE, 0..32);
 
-        assert_eq!(SIGNATURE_RANGE, 32..3389);
-        assert_eq!(PUBKEY_RANGE, 3389..5373);
-        assert_eq!(NEXT_PUBKEY_HASH_RANGE, 5373..5405);
+        assert_eq!(SIGNATURE_RANGE, 32..3405);
+        assert_eq!(PUBKEY_RANGE, 3405..5389);
+        assert_eq!(NEXT_PUBKEY_HASH_RANGE, 5389..5421);
 
-        assert_eq!(TIME_RANGE, 5405..5413);
-        assert_eq!(AUTH_HASH_RANGE, 5413..5445);
-        assert_eq!(STATE_HASH_RANGE, 5445..5477);
+        assert_eq!(TIME_RANGE, 5421..5429);
+        assert_eq!(AUTH_HASH_RANGE, 5429..5461);
+        assert_eq!(STATE_HASH_RANGE, 5461..5493);
 
-        assert_eq!(INDEX_RANGE, 5477..5485);
-        assert_eq!(PREVIOUS_HASH_RANGE, 5485..5517);
-        assert_eq!(CHAIN_HASH_RANGE, 5517..5549);
+        assert_eq!(INDEX_RANGE, 5493..5501);
+        assert_eq!(PREVIOUS_HASH_RANGE, 5501..5533);
+        assert_eq!(CHAIN_HASH_RANGE, 5533..5565);
 
         assert_eq!(HASHABLE_RANGE.end, BLOCK);
         assert_eq!(SIGNABLE_RANGE.end, BLOCK);

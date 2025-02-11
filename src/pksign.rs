@@ -5,16 +5,22 @@ use crate::block::{Block, BlockState, MutBlock, SigningRequest};
 use crate::secretseed::{derive, Seed};
 use blake3::{hash, Hash};
 use ed25519_dalek;
-use ed25519_dalek::Signer;
+use ml_dsa;
+use ml_dsa::{KeyGen, MlDsa65, B32};
 use pqc_dilithium;
+use signature::{Signer, Verifier};
 //use pqc_sphincsplus;
 
 fn build_ed25519_keypair(secret: &Hash) -> ed25519_dalek::SigningKey {
     ed25519_dalek::SigningKey::from_bytes(derive(ED25519_CONTEXT, secret).as_bytes())
 }
 
-fn build_dilithium_keypair(secret: &Hash) -> pqc_dilithium::Keypair {
-    pqc_dilithium::Keypair::from_bytes(derive(DILITHIUM_CONTEXT, secret).as_bytes())
+fn build_dilithium_keypair(secret: &Hash) -> ml_dsa::KeyPair<MlDsa65> {
+    let mut hack = B32::default();
+    hack.0
+        .copy_from_slice(derive(DILITHIUM_CONTEXT, secret).as_bytes()); // FIXME: Do more better
+    MlDsa65::key_gen_internal(&hack)
+    //pqc_dilithium::Keypair::from_bytes(derive(DILITHIUM_CONTEXT, secret).as_bytes())
 }
 
 /*
@@ -37,7 +43,7 @@ fn build_sphincsplus_keypair(secret: &Hash) -> pqc_sphincsplus::Keypair {
 /// ```
 pub struct KeyPair {
     ed25519: ed25519_dalek::SigningKey,
-    dilithium: pqc_dilithium::Keypair,
+    dilithium: ml_dsa::KeyPair<MlDsa65>,
     //sphincsplus: pqc_sphincsplus::Keypair, // FIXME: We need a seed that is 48 bytes
 }
 
@@ -52,7 +58,7 @@ impl KeyPair {
     /// Write Public Key(s) into buffer (could be ed25519 + Dilithium).
     pub fn write_pubkey(&self, dst: &mut [u8]) {
         dst[PUB_ED25519_RANGE].copy_from_slice(self.ed25519.verifying_key().as_bytes());
-        dst[PUB_DILITHIUM_RANGE].copy_from_slice(&self.dilithium.public);
+        dst[PUB_DILITHIUM_RANGE].copy_from_slice(&self.dilithium.verifying_key.encode().as_slice());
     }
 
     /// Returns hash of public key byte representation.
@@ -70,9 +76,13 @@ impl KeyPair {
     pub fn sign(self, block: &mut MutBlock) {
         self.write_pubkey(block.as_mut_pubkey());
         let sig1 = self.ed25519.sign(block.as_signable());
-        let sig2 = self.dilithium.sign(block.as_signable());
+        let sig2 = self
+            .dilithium
+            .signing_key
+            .sign_deterministic(block.as_signable(), b"")
+            .unwrap();
         block.as_mut_signature()[SIG_ED25519_RANGE].copy_from_slice(&sig1.to_bytes());
-        block.as_mut_signature()[SIG_DILITHIUM_RANGE].copy_from_slice(&sig2);
+        block.as_mut_signature()[SIG_DILITHIUM_RANGE].copy_from_slice(sig2.encode().as_slice());
     }
 }
 
@@ -165,12 +175,24 @@ impl<'a> Hybrid<'a> {
     }
 
     fn verify_dilithium(&self) -> bool {
+        let pubenc =
+            ml_dsa::EncodedVerifyingKey::<MlDsa65>::try_from(self.as_pub_dilithium()).unwrap();
+        let pubkey = ml_dsa::VerifyingKey::<MlDsa65>::decode(&pubenc);
+        let sigenc =
+            ml_dsa::EncodedSignature::<MlDsa65>::try_from(self.as_sig_dilithium()).unwrap();
+        if let Some(sig) = ml_dsa::Signature::<MlDsa65>::decode(&sigenc) {
+            pubkey.verify_with_context(self.block.as_signable(), b"", &sig)
+        } else {
+            false
+        }
+        /*
         pqc_dilithium::verify(
             self.as_sig_dilithium(),
             self.block.as_signable(),
             self.as_pub_dilithium(),
         )
         .is_ok()
+        */
     }
 
     fn verify_ed25519(&self) -> bool {
@@ -203,11 +225,11 @@ mod tests {
     //use pqc_sphincsplus;
     use pqcrypto_dilithium;
 
-    static HEX0: &str = "498027d13f2a1c09194ecc64321154a9bfd3e3ac86536d38c3ed33e9b2e76579";
+    static HEX0: &str = "8e4bb3dfe69f0720a9fc6eb5770c035be4db78a4c127f48691f3c0291711e165";
     // FIXME: So, yeah, pqc_dilithium and ml_dsa are producing different deterministic keys
     static HEX1A: &str = "260e8536e614fb20441ef43e5b1b2f87d0320b913dc0d3df4508372a2910ec2f";
     static HEX1B: &str = "80eb433447f789410ce5261e94880da671cb61140540512c33ba710b43bed605";
-    static HEX2: &str = "d65fcc64431cb837a4de1edb1957e0c8d0f9f844ddff7e2eb429e0c59962ac6a";
+    static HEX2: &str = "9a847a51072b98ddaaf55dbae220ef8f13a18a4511165587677d00e9bb19418d";
 
     #[test]
     fn test_pqcrypto_dilithium() {
@@ -223,13 +245,11 @@ mod tests {
         let msg = b"Wish this API let me provide the entropy used to generate the key";
         let kp = pqc_dilithium::Keypair::generate();
         let sig = kp.sign(msg);
-        assert_eq!(sig.len(), SIG_DILITHIUM);
         assert!(pqc_dilithium::verify(&sig, msg, &kp.public).is_ok());
 
         let seed = Hash::from_bytes([69; DIGEST]);
         let kp = pqc_dilithium::Keypair::from_bytes(seed.as_bytes());
         assert_eq!(hash(&kp.public), Hash::from_hex(HEX1A).unwrap());
-        assert_eq!(kp.public.len(), PUB_DILITHIUM);
     }
 
     #[test]
