@@ -7,7 +7,7 @@ use blake3::{hash, Hash};
 use ed25519_dalek;
 use ml_dsa;
 use ml_dsa::{KeyGen, MlDsa65, B32};
-use signature::Signer;
+use signature::{Keypair, Signer};
 
 fn build_ed25519_keypair(secret: &Hash) -> ed25519_dalek::SigningKey {
     ed25519_dalek::SigningKey::from_bytes(derive(ED25519_CONTEXT, secret).as_bytes())
@@ -56,7 +56,7 @@ impl KeyPair {
     /// Write Public Key(s) into buffer (could be ed25519 + Dilithium).
     pub fn write_pubkey(&self, dst: &mut [u8]) {
         dst[PUB_ED25519_RANGE].copy_from_slice(self.ed25519.verifying_key().as_bytes());
-        dst[PUB_DILITHIUM_RANGE].copy_from_slice(self.dilithium.verifying_key.encode().as_slice());
+        dst[PUB_DILITHIUM_RANGE].copy_from_slice(self.dilithium.verifying_key().encode().as_slice());
     }
 
     /// Returns hash of public key byte representation.
@@ -76,7 +76,7 @@ impl KeyPair {
         let sig1 = self.ed25519.sign(block.as_signable());
         let sig2 = self
             .dilithium
-            .signing_key
+            .signing_key()
             .sign_deterministic(block.as_signable(), b"")
             .unwrap();
         block.as_mut_signature()[SIG_ED25519_RANGE].copy_from_slice(&sig1.to_bytes());
@@ -224,14 +224,14 @@ mod tests {
         let mut secret = B32::default();
         secret.0.copy_from_slice(&[69; 32]);
         let keypair = MlDsa65::key_gen_internal(&secret);
-        let sig = keypair.signing_key.sign(msg);
-        assert!(keypair.verifying_key.verify(msg, &sig).is_ok());
+        let sig = keypair.signing_key().sign(msg);
+        assert!(keypair.verifying_key().verify(msg, &sig).is_ok());
         assert_eq!(
-            keypair.verifying_key.encode().as_slice().len(),
+            keypair.verifying_key().encode().as_slice().len(),
             PUB_DILITHIUM
         );
         assert_eq!(
-            hash(keypair.verifying_key.encode().as_slice()),
+            hash(keypair.verifying_key().encode().as_slice()),
             Hash::from_hex(HEX1).unwrap()
         );
     }
