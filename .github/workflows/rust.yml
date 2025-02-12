@@ -17,9 +17,9 @@ jobs:
     steps:
     - uses: actions/checkout@v4
     - name: Build
-      run: cargo build --verbose --release
+      run: cargo build --verbose
     - name: Run tests
-      run: cargo test --verbose --release
+      run: cargo test --verbose
 
   do-it-on-macos:
     name: Build and Test on MacOS
@@ -28,9 +28,9 @@ jobs:
     steps:
     - uses: actions/checkout@v4
     - name: Build
-      run: cargo build --verbose --release
+      run: cargo build --verbose
     - name: Run tests
-      run: cargo test --verbose --release
+      run: cargo test --verbose
 
   do-it-on-windows:
     name: Build and Test on Windows
@@ -39,7 +39,7 @@ jobs:
     steps:
     - uses: actions/checkout@v4
     - name: Build
-      run: cargo build --verbose --release
+      run: cargo build --verbose
     - name: Run tests
-      run: cargo test --verbose --release
+      run: cargo test --verbose
 
