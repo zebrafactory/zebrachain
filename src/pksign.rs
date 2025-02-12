@@ -7,7 +7,7 @@ use blake3::{hash, Hash};
 use ed25519_dalek;
 use ml_dsa;
 use ml_dsa::{KeyGen, MlDsa65, B32};
-use signature::{Signer, Verifier};
+use signature::Signer;
 
 fn build_ed25519_keypair(secret: &Hash) -> ed25519_dalek::SigningKey {
     ed25519_dalek::SigningKey::from_bytes(derive(ED25519_CONTEXT, secret).as_bytes())
@@ -183,14 +183,6 @@ impl<'a> Hybrid<'a> {
         } else {
             false
         }
-        /*
-        pqc_dilithium::verify(
-            self.as_sig_dilithium(),
-            self.block.as_signable(),
-            self.as_pub_dilithium(),
-        )
-        .is_ok()
-        */
     }
 
     fn verify_ed25519(&self) -> bool {
@@ -228,7 +220,7 @@ mod tests {
     fn test_ml_dsa() {
         use ml_dsa::{KeyGen, MlDsa65, B32};
         use signature::{Signer, Verifier};
-        let msg = b"This API let me provide the enropy used to generate the key!";
+        let msg = b"This API lets me provide the enropy used to generate the key!";
         let mut secret = B32::default();
         secret.0.copy_from_slice(&[69; 32]);
         let keypair = MlDsa65::key_gen_internal(&secret);
