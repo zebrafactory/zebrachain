@@ -132,7 +132,6 @@ mod tests {
     use tempfile;
 
     #[test]
-    #[ignore] // FIXME
     fn test_ownedchainstore() {
         let request = random_request();
 
@@ -171,7 +170,6 @@ mod tests {
     }
 
     #[test]
-    #[ignore] // FIXME
     fn test_ocs_secret_to_public() {
         let tmpdir = tempfile::TempDir::new().unwrap();
         let secret = random_secret().unwrap();

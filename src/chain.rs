@@ -311,7 +311,6 @@ mod tests {
     use tempfile;
 
     #[test]
-    #[ignore] // FIXME
     fn test_validate_chain() {
         let mut file = tempfile::tempfile().unwrap();
 
