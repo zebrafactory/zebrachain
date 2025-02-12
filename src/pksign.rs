@@ -1,4 +1,4 @@
-//! Hybrid signing and verification with Dilithium + ed25519.
+//! Hybrid signing and verification with ML-DSA + ed25519.
 
 use crate::always::*;
 use crate::block::{Block, BlockState, MutBlock, SigningRequest};
@@ -13,25 +13,17 @@ fn build_ed25519_keypair(secret: &Hash) -> ed25519_dalek::SigningKey {
     ed25519_dalek::SigningKey::from_bytes(derive(ED25519_CONTEXT, secret).as_bytes())
 }
 
-fn build_dilithium_keypair(secret: &Hash) -> ml_dsa::KeyPair<MlDsa65> {
+fn build_mldsa_keypair(secret: &Hash) -> ml_dsa::KeyPair<MlDsa65> {
     let mut hack = B32::default();
     hack.0
-        .copy_from_slice(derive(DILITHIUM_CONTEXT, secret).as_bytes()); // FIXME: Do more better
+        .copy_from_slice(derive(MLDSA_CONTEXT, secret).as_bytes()); // FIXME: Do more better
     MlDsa65::key_gen_internal(&hack)
-    //pqc_dilithium::Keypair::from_bytes(derive(DILITHIUM_CONTEXT, secret).as_bytes())
 }
-
-/*
-fn build_sphincsplus_keypair(secret: &Hash) -> pqc_sphincsplus::Keypair {
-    let secret = derive(SPHINCSPLUS_CONTEXT, secret);
-    pqc_sphincsplus::keypair_from_seed(secret.as_bytes())
-}
-*/
 
 /// Abstraction over specific public key algorithms (and hybrid combinations thereof).
 ///
-/// Currently this just signs with ed25519. Soon we will sign using a hybrid
-/// Dilithium + ed25519 scheme.
+/// Currently this does hybrid signing with ML-DSA-65 and ed25519. This needs to be configurable in
+/// the near future.
 ///
 /// # Examples
 ///
@@ -41,23 +33,21 @@ fn build_sphincsplus_keypair(secret: &Hash) -> pqc_sphincsplus::Keypair {
 /// ```
 pub struct KeyPair {
     ed25519: ed25519_dalek::SigningKey,
-    dilithium: ml_dsa::KeyPair<MlDsa65>,
-    //sphincsplus: pqc_sphincsplus::Keypair, // FIXME: We need a seed that is 48 bytes
+    mldsa: ml_dsa::KeyPair<MlDsa65>,
 }
 
 impl KeyPair {
     pub fn new(secret: &Hash) -> Self {
         Self {
             ed25519: build_ed25519_keypair(secret),
-            dilithium: build_dilithium_keypair(secret),
+            mldsa: build_mldsa_keypair(secret),
         }
     }
 
-    /// Write Public Key(s) into buffer (could be ed25519 + Dilithium).
+    /// Write Public Keys into buffer (both ed25519 and ML-DSA).
     pub fn write_pubkey(&self, dst: &mut [u8]) {
         dst[PUB_ED25519_RANGE].copy_from_slice(self.ed25519.verifying_key().as_bytes());
-        dst[PUB_DILITHIUM_RANGE]
-            .copy_from_slice(self.dilithium.verifying_key().encode().as_slice());
+        dst[PUB_DILITHIUM_RANGE].copy_from_slice(self.mldsa.verifying_key().encode().as_slice());
     }
 
     /// Returns hash of public key byte representation.
@@ -76,7 +66,7 @@ impl KeyPair {
         self.write_pubkey(block.as_mut_pubkey());
         let sig1 = self.ed25519.sign(block.as_signable());
         let sig2 = self
-            .dilithium
+            .mldsa
             .signing_key()
             .sign_deterministic(block.as_signable(), b"")
             .unwrap();
@@ -157,7 +147,7 @@ impl<'a> Hybrid<'a> {
         Self { block }
     }
 
-    fn as_pub_dilithium(&self) -> &[u8] {
+    fn as_pub_mldsa(&self) -> &[u8] {
         &self.block.as_pubkey()[PUB_DILITHIUM_RANGE]
     }
 
@@ -165,7 +155,7 @@ impl<'a> Hybrid<'a> {
         &self.block.as_pubkey()[PUB_ED25519_RANGE]
     }
 
-    fn as_sig_dilithium(&self) -> &[u8] {
+    fn as_sig_mldsa(&self) -> &[u8] {
         &self.block.as_signature()[SIG_DILITHIUM_RANGE]
     }
 
@@ -173,12 +163,10 @@ impl<'a> Hybrid<'a> {
         &self.block.as_signature()[SIG_ED25519_RANGE]
     }
 
-    fn verify_dilithium(&self) -> bool {
-        let pubenc =
-            ml_dsa::EncodedVerifyingKey::<MlDsa65>::try_from(self.as_pub_dilithium()).unwrap();
+    fn verify_mldsa(&self) -> bool {
+        let pubenc = ml_dsa::EncodedVerifyingKey::<MlDsa65>::try_from(self.as_pub_mldsa()).unwrap();
         let pubkey = ml_dsa::VerifyingKey::<MlDsa65>::decode(&pubenc);
-        let sigenc =
-            ml_dsa::EncodedSignature::<MlDsa65>::try_from(self.as_sig_dilithium()).unwrap();
+        let sigenc = ml_dsa::EncodedSignature::<MlDsa65>::try_from(self.as_sig_mldsa()).unwrap();
         if let Some(sig) = ml_dsa::Signature::<MlDsa65>::decode(&sigenc) {
             pubkey.verify_with_context(self.block.as_signable(), b"", &sig)
         } else {
@@ -198,7 +186,7 @@ impl<'a> Hybrid<'a> {
     }
 
     fn verify(&self) -> bool {
-        self.verify_ed25519() && self.verify_dilithium()
+        self.verify_ed25519() && self.verify_mldsa()
     }
 }
 
