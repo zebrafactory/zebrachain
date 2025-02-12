@@ -24,9 +24,9 @@ entropy when the first secret key in the ZebraChain was created.
 if at any point in the history of the chain there was a secret unknown to an attacker, than the
 secret chain state is unknown to an attacker from that block froward.
 
-* Quantum safe (assuming the Dilithium + ed25519 hybrid construction is quantum safe).
+* Quantum safe (assuming the ML-DSA + ed25519 hybrid construction is quantum safe).
 
-* *Some* quantum mitigation, even if Dilithium is broken.  A sufficiently large quantum computer can
+* *Some* quantum mitigation, even if ML-DSA is broken.  A sufficiently large quantum computer can
 get the secret key from an ed25519 public key (that's the whole problem).  But that same quantum
 computer *cannot* get the ed25519 public key from the *hash* of that public key. So if consumers of
 the chain locally checkpoint the hash of the latest block, a quantum attack cannot be attempted
@@ -38,7 +38,7 @@ In the near term ZebraChain needs to configurable to support all the [NIST post 
 
 But the current focus is on building a simple, non-configurable reference implementation using:
 
-* A [Dilithium](https://pq-crystals.org/dilithium/) + [ed25519](https://ed25519.cr.yp.to/) hybrid
+* [ML-DSA FIPS 204](https://csrc.nist.gov/pubs/fips/204/final) and [ed25519](https://ed25519.cr.yp.to/) in a hybrid
 construction for signing
 
 * [Blake3](https://github.com/BLAKE3-team/BLAKE3) for hashing
@@ -50,7 +50,7 @@ ZebraChain is built on existing implementations of established cryptographic pri
 
 These key crates are used:
 
-* [ed25519-dalek](https://crates.io/crates/ed25519-dalek) and [pqc_dilithium](https://crates.io/crates/pqc_dilithium) for hybrid signing
+* [ed25519-dalek](https://crates.io/crates/ed25519-dalek) and [ml-dsa](https://crates.io/crates/ml-dsa) for hybrid signing
 
 * [blake3](https://crates.io/crates/blake3) for hashing
 

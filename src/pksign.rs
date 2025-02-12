@@ -56,7 +56,8 @@ impl KeyPair {
     /// Write Public Key(s) into buffer (could be ed25519 + Dilithium).
     pub fn write_pubkey(&self, dst: &mut [u8]) {
         dst[PUB_ED25519_RANGE].copy_from_slice(self.ed25519.verifying_key().as_bytes());
-        dst[PUB_DILITHIUM_RANGE].copy_from_slice(self.dilithium.verifying_key().encode().as_slice());
+        dst[PUB_DILITHIUM_RANGE]
+            .copy_from_slice(self.dilithium.verifying_key().encode().as_slice());
     }
 
     /// Returns hash of public key byte representation.
