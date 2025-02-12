@@ -22,17 +22,17 @@ And where:
 
 pub const PUB_ED25519: usize = 32;
 pub const SIG_ED25519: usize = 64;
-pub const PUB_DILITHIUM: usize = 1952;
-pub const SIG_DILITHIUM: usize = 3309;
+pub const PUB_MLDSA: usize = 1952;
+pub const SIG_MLDSA: usize = 3309;
 
-pub const PUB_DILITHIUM_RANGE: Range<usize> = 0..PUB_DILITHIUM;
-pub const PUB_ED25519_RANGE: Range<usize> = PUB_DILITHIUM..PUB_DILITHIUM + PUB_ED25519;
-pub const SIG_DILITHIUM_RANGE: Range<usize> = 0..SIG_DILITHIUM;
-pub const SIG_ED25519_RANGE: Range<usize> = SIG_DILITHIUM..SIG_DILITHIUM + SIG_ED25519;
+pub const PUB_MLDSA_RANGE: Range<usize> = 0..PUB_MLDSA;
+pub const PUB_ED25519_RANGE: Range<usize> = PUB_MLDSA..PUB_MLDSA + PUB_ED25519;
+pub const SIG_MLDSA_RANGE: Range<usize> = 0..SIG_MLDSA;
+pub const SIG_ED25519_RANGE: Range<usize> = SIG_MLDSA..SIG_MLDSA + SIG_ED25519;
 
 pub const DIGEST: usize = 32;
-pub const SIGNATURE: usize = SIG_ED25519 + SIG_DILITHIUM;
-pub const PUBKEY: usize = PUB_ED25519 + PUB_DILITHIUM;
+pub const SIGNATURE: usize = SIG_ED25519 + SIG_MLDSA;
+pub const PUBKEY: usize = PUB_ED25519 + PUB_MLDSA;
 pub const BLOCK: usize = (6 * DIGEST) + SIGNATURE + PUBKEY + (2 * 8);
 
 pub const HASHABLE_RANGE: Range<usize> = DIGEST..BLOCK;
@@ -40,8 +40,8 @@ pub const SIGNABLE_RANGE: Range<usize> = DIGEST + SIGNATURE..BLOCK;
 
 const WIRE: [usize; 10] = [
     DIGEST,    // Block hash
-    SIGNATURE, // Dilithium + ed25519 signatures
-    PUBKEY,    // Dilithium + ed25519 public keys
+    SIGNATURE, // ML-DSA + ed25519 signatures
+    PUBKEY,    // ML-DSA + ed25519 public keys
     DIGEST,    // Hash of public key that will be used to sign next block
     8,         // Time
     DIGEST,    // AUTH-entication, AUTH-orization hash

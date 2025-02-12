@@ -47,7 +47,7 @@ impl KeyPair {
     /// Write Public Keys into buffer (both ed25519 and ML-DSA).
     pub fn write_pubkey(&self, dst: &mut [u8]) {
         dst[PUB_ED25519_RANGE].copy_from_slice(self.ed25519.verifying_key().as_bytes());
-        dst[PUB_DILITHIUM_RANGE].copy_from_slice(self.mldsa.verifying_key().encode().as_slice());
+        dst[PUB_MLDSA_RANGE].copy_from_slice(self.mldsa.verifying_key().encode().as_slice());
     }
 
     /// Returns hash of public key byte representation.
@@ -71,7 +71,7 @@ impl KeyPair {
             .sign_deterministic(block.as_signable(), b"")
             .unwrap();
         block.as_mut_signature()[SIG_ED25519_RANGE].copy_from_slice(&sig1.to_bytes());
-        block.as_mut_signature()[SIG_DILITHIUM_RANGE].copy_from_slice(sig2.encode().as_slice());
+        block.as_mut_signature()[SIG_MLDSA_RANGE].copy_from_slice(sig2.encode().as_slice());
     }
 }
 
@@ -148,7 +148,7 @@ impl<'a> Hybrid<'a> {
     }
 
     fn as_pub_mldsa(&self) -> &[u8] {
-        &self.block.as_pubkey()[PUB_DILITHIUM_RANGE]
+        &self.block.as_pubkey()[PUB_MLDSA_RANGE]
     }
 
     fn as_pub_ed25519(&self) -> &[u8] {
@@ -156,7 +156,7 @@ impl<'a> Hybrid<'a> {
     }
 
     fn as_sig_mldsa(&self) -> &[u8] {
-        &self.block.as_signature()[SIG_DILITHIUM_RANGE]
+        &self.block.as_signature()[SIG_MLDSA_RANGE]
     }
 
     fn as_sig_ed25519(&self) -> &[u8] {
@@ -215,10 +215,7 @@ mod tests {
         let keypair = MlDsa65::key_gen_internal(&secret);
         let sig = keypair.signing_key().sign(msg);
         assert!(keypair.verifying_key().verify(msg, &sig).is_ok());
-        assert_eq!(
-            keypair.verifying_key().encode().as_slice().len(),
-            PUB_DILITHIUM
-        );
+        assert_eq!(keypair.verifying_key().encode().as_slice().len(), PUB_MLDSA);
         assert_eq!(
             hash(keypair.verifying_key().encode().as_slice()),
             Hash::from_hex(HEX1).unwrap()
