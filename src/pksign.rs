@@ -7,9 +7,7 @@ use blake3::{hash, Hash};
 use ed25519_dalek;
 use ml_dsa;
 use ml_dsa::{KeyGen, MlDsa65, B32};
-use pqc_dilithium;
 use signature::{Signer, Verifier};
-//use pqc_sphincsplus;
 
 fn build_ed25519_keypair(secret: &Hash) -> ed25519_dalek::SigningKey {
     ed25519_dalek::SigningKey::from_bytes(derive(ED25519_CONTEXT, secret).as_bytes())
@@ -221,42 +219,16 @@ pub fn verify_block_signature(block: &Block) -> bool {
 mod tests {
     use super::*;
     use crate::testhelpers::random_request;
-    use pqc_dilithium;
-    //use pqc_sphincsplus;
-    use pqcrypto_dilithium;
 
     static HEX0: &str = "8e4bb3dfe69f0720a9fc6eb5770c035be4db78a4c127f48691f3c0291711e165";
-    // FIXME: So, yeah, pqc_dilithium and ml_dsa are producing different deterministic keys
-    static HEX1A: &str = "260e8536e614fb20441ef43e5b1b2f87d0320b913dc0d3df4508372a2910ec2f";
-    static HEX1B: &str = "80eb433447f789410ce5261e94880da671cb61140540512c33ba710b43bed605";
+    static HEX1: &str = "80eb433447f789410ce5261e94880da671cb61140540512c33ba710b43bed605";
     static HEX2: &str = "9a847a51072b98ddaaf55dbae220ef8f13a18a4511165587677d00e9bb19418d";
-
-    #[test]
-    fn test_pqcrypto_dilithium() {
-        let msg = b"Wish this API let me provide the entropy used to generate the key";
-        let (pk, sk) = pqcrypto_dilithium::dilithium3::keypair();
-        let sm = pqcrypto_dilithium::dilithium3::sign(msg, &sk);
-        let vmsg = pqcrypto_dilithium::dilithium3::open(&sm, &pk).unwrap();
-        assert_eq!(vmsg, msg);
-    }
-
-    #[test]
-    fn test_pqc_dilithium() {
-        let msg = b"Wish this API let me provide the entropy used to generate the key";
-        let kp = pqc_dilithium::Keypair::generate();
-        let sig = kp.sign(msg);
-        assert!(pqc_dilithium::verify(&sig, msg, &kp.public).is_ok());
-
-        let seed = Hash::from_bytes([69; DIGEST]);
-        let kp = pqc_dilithium::Keypair::from_bytes(seed.as_bytes());
-        assert_eq!(hash(&kp.public), Hash::from_hex(HEX1A).unwrap());
-    }
 
     #[test]
     fn test_ml_dsa() {
         use ml_dsa::{KeyGen, MlDsa65, B32};
         use signature::{Signer, Verifier};
-        let msg = b"Wish this API let me provide the entropy used to generate the key";
+        let msg = b"This API let me provide the enropy used to generate the key!";
         let mut secret = B32::default();
         secret.0.copy_from_slice(&[69; 32]);
         let keypair = MlDsa65::key_gen_internal(&secret);
@@ -268,19 +240,9 @@ mod tests {
         );
         assert_eq!(
             hash(keypair.verifying_key.encode().as_slice()),
-            Hash::from_hex(HEX1B).unwrap()
+            Hash::from_hex(HEX1).unwrap()
         );
     }
-
-    /*
-        #[test]
-        fn test_pqc_sphincsplus() {
-            let msg = b"Wish this API let me provide the entropy used to generate the key";
-            let kp = pqc_sphincsplus::keypair();
-            let sig = pqc_sphincsplus::sign(msg, &kp);
-            assert!(pqc_sphincsplus::verify(&sig, msg, &kp).is_ok());
-        }
-    */
 
     #[test]
     fn keypair_new() {

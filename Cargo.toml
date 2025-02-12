@@ -21,12 +21,10 @@ chacha20poly1305 = "0.10.1"
 ed25519-dalek = { git = "https://github.com/dalek-cryptography/curve25519-dalek.git", branch = "rustcrypto-new-releases", version = "2.2.0-pre" }
 getrandom = "0.3.0"
 ml-dsa = { version = "0.1.0-pre.0", features = ["zeroize"] }
-pqc_dilithium = { git = "https://github.com/zebrafactory/zebra_dilithium.git", version = "0.2.0", features = ["mode3"] }
 signature = "2.3.0-pre.4"
 zeroize = "1.8.1"
 
 [dev-dependencies]
-pqcrypto-dilithium = "0.5.0"
 tempfile = "3.14.0"
 
 [profile.dev]
