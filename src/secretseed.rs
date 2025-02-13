@@ -78,8 +78,8 @@ impl Seed {
 
     /// Create a new seed by deriving [Seed::secret], [Seed::next_secret] from `initial_entropy`.
     pub fn create(initial_entropy: &Secret) -> Self {
-        let secret = derive(SECRET_CONTEXT, initial_entropy);
-        let next_secret = derive(NEXT_SECRET_CONTEXT, initial_entropy);
+        let secret = derive(CONTEXT_SECRET, initial_entropy);
+        let next_secret = derive(CONTEXT_SECRET_NEXT, initial_entropy);
         Self::new(secret, next_secret)
     }
 
@@ -148,7 +148,7 @@ mod tests {
     fn test_derive() {
         let secret = Hash::from_bytes([7; 32]);
 
-        let h = derive(SECRET_CONTEXT, &secret);
+        let h = derive(CONTEXT_SECRET, &secret);
         assert_eq!(
             h.as_bytes(),
             &[
@@ -157,7 +157,7 @@ mod tests {
             ]
         );
 
-        let h = derive(NEXT_SECRET_CONTEXT, &secret);
+        let h = derive(CONTEXT_SECRET_NEXT, &secret);
         assert_eq!(
             h.as_bytes(),
             &[
@@ -168,7 +168,7 @@ mod tests {
 
         let secret = Hash::from_bytes([8; 32]);
 
-        let h = derive(SECRET_CONTEXT, &secret);
+        let h = derive(CONTEXT_SECRET, &secret);
         assert_eq!(
             h.as_bytes(),
             &[
@@ -177,7 +177,7 @@ mod tests {
             ]
         );
 
-        let h = derive(NEXT_SECRET_CONTEXT, &secret);
+        let h = derive(CONTEXT_SECRET_NEXT, &secret);
         assert_eq!(
             h.as_bytes(),
             &[
@@ -191,14 +191,14 @@ mod tests {
     #[should_panic(expected = "derive(): context string length must be 64; got 63")]
     fn test_derive_panic_low() {
         let secret = random_secret().unwrap();
-        derive(&SECRET_CONTEXT[0..63], &secret);
+        derive(&CONTEXT_SECRET[0..63], &secret);
     }
 
     #[test]
     #[should_panic(expected = "derive(): context string length must be 64; got 65")]
     fn test_derive_panic_high() {
         let secret = random_secret().unwrap();
-        let mut context = String::from(SECRET_CONTEXT);
+        let mut context = String::from(CONTEXT_SECRET);
         context.push('7');
         derive(&context, &secret);
     }

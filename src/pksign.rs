@@ -10,13 +10,13 @@ use ml_dsa::{KeyGen, MlDsa65, B32};
 use signature::{Keypair, Signer};
 
 fn build_ed25519_keypair(secret: &Hash) -> ed25519_dalek::SigningKey {
-    ed25519_dalek::SigningKey::from_bytes(derive(ED25519_CONTEXT, secret).as_bytes())
+    ed25519_dalek::SigningKey::from_bytes(derive(CONTEXT_ED25519, secret).as_bytes())
 }
 
 fn build_mldsa_keypair(secret: &Hash) -> ml_dsa::KeyPair<MlDsa65> {
     let mut hack = B32::default();
     hack.0
-        .copy_from_slice(derive(MLDSA_CONTEXT, secret).as_bytes()); // FIXME: Do more better
+        .copy_from_slice(derive(CONTEXT_ML_DSA, secret).as_bytes()); // FIXME: Do more better
     MlDsa65::key_gen_internal(&hack)
 }
 

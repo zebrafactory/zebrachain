@@ -32,8 +32,8 @@ impl StorageError {
 #[inline]
 fn derive_block_secrets_inner(secret: &Secret, index: u64) -> (Secret, Secret) {
     let root = keyed_hash(secret.as_bytes(), &index.to_le_bytes());
-    let key = derive(STORAGE_KEY_CONTEXT, &root);
-    let nonce = derive(STORAGE_NONCE_CONTEXT, &root);
+    let key = derive(CONTEXT_STORE_KEY, &root);
+    let nonce = derive(CONTEXT_STORE_NONCE, &root);
     assert_ne!(key, nonce);
     (key, nonce)
 }
