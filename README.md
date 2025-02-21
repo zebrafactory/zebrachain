@@ -9,7 +9,7 @@ key pairs used to sign software releases (and to sign other super important stuf
 
 ZebraChain is not yet suitable for production use.
 
-This in a nascent implementation of a yet to be finalized protocol. It's also built a nascent (but
+This is a nascent implementation of a yet to be finalized protocol. It's also built a nascent (but
 already awesome) [Rust implementation of ML-DSA](https://github.com/RustCrypto/signatures/tree/master/ml-dsa).
 
 ## 🦓 Overview
