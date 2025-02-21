@@ -5,6 +5,15 @@
 ZebraChain is a logged, quantum safe signing protocol designed to replace the long lived asymmetric
 key pairs used to sign software releases (and to sign other super important stuff).
 
+## ⚠️ Security Warning
+
+ZebraChain is not yet suitable for production use.
+
+This in a nascent implementation of a yet to be finalized protocol. It's also built a nascent (but
+already awesome) [Rust implementation of ML-DSA](https://github.com/RustCrypto/signatures/tree/master/ml-dsa).
+
+## 🦓 Overview
+
 Consider the GPG key used to sign updates for your favorite Linux distribution.  You could replace
 it with a ZebraChain, gaining some important benefits over the GPG key:
 
@@ -14,17 +23,18 @@ specific ZebraChain.
 
 * A given asymmetric key pair is only used *once!* Each block contains the signature, the
 corresponding public key used to sign the block, and a *forward-reference* to the *hash* of the
-coresponding public key that will be used to sign the *next* block. This allows new entropy to be
+corresponding public key that will be used to sign the *next* block. This allows new entropy to be
 introduced at each signature, minimizing the problem of whether there was high enough quality
-entropy when the first secret key in the ZebraChain was created.
+entropy when the ZebraChain was created.
 
-* Entropy accumulation throughout the lifetime of the ZebraChain. At each signature, a new call to
-`getrandom()` or equivalent is made. This new entropy is securely mixed with the previous secret
-(using a keyed hash), and the result is then used to create the next signing keys. In other words,
-if at any point in the history of the chain there was a secret unknown to an attacker, than the
-secret chain state is unknown to an attacker from that block froward.
+* Entropy accumulation throughout the lifetime of a ZebraChain. At each signature, a new call to
+`getrandom()` is made. This new entropy is securely mixed with the current seed (using a keyed hash), and the result is the next seed.
 
-* Quantum safe (assuming the ML-DSA + ed25519 hybrid construction is quantum safe).
+* Quantum safe. ZebraChain uses the recently standardizied
+[ML-DSA FIPS 204](https://csrc.nist.gov/pubs/fips/204/final) quantum secure algorithm in a hybrid
+construction with the classically secure [ed25519](https://ed25519.cr.yp.to/) algorithm (as
+recommended by the ML-DSA authors). Support for
+[SLH-DSA FIPS 205](https://csrc.nist.gov/pubs/fips/205/final) will be added soon.
 
 * *Some* quantum mitigation, even if ML-DSA is broken.  A sufficiently large quantum computer can
 get the secret key from an ed25519 public key (that's the whole problem).  But that same quantum
@@ -34,23 +44,13 @@ until the owner of the ZebraChain publishes their next valid signature block (af
 key for the block is exposed, allowing a quantum attacker to get the secret key and forge arbitrary
 signatures for that position in the chain).
 
-In the near term ZebraChain needs to configurable to support all the [NIST post quantum standards](https://www.nist.gov/news-events/news/2024/08/nist-releases-first-3-finalized-post-quantum-encryption-standards) and multiple hash algorithms.  It must be possible to add new algorithms in the future.
-
-But the current focus is on building a simple, non-configurable reference implementation using:
-
-* [ML-DSA FIPS 204](https://csrc.nist.gov/pubs/fips/204/final) and [ed25519](https://ed25519.cr.yp.to/) in a hybrid
-construction for signing
-
-* [Blake3](https://github.com/BLAKE3-team/BLAKE3) for hashing
-
-
-## Dependencies of Interest 🦀
+## 🦀 Dependencies of Interest
 
 ZebraChain is built on existing implementations of established cryptographic primatives.
 
 These key crates are used:
 
-* [ed25519-dalek](https://crates.io/crates/ed25519-dalek) and [ml-dsa](https://crates.io/crates/ml-dsa) for hybrid signing
+* [ed25519-dalek](https://crates.io/crates/ed25519-dalek) and [ml-dsa](https://crates.io/crates/ml-dsa) for hybrid signing.
 
 * [blake3](https://crates.io/crates/blake3) for hashing
 
@@ -59,7 +59,7 @@ These key crates are used:
 * [getrandom](https://crates.io/crates/getrandom) for accessing the operating system CSPRNG
 
 
-## Wire Format 📜
+## 🔗 Wire Format
 
 A ZebraChain block currently has 10 fields:
 
@@ -82,16 +82,16 @@ SIG = sign(PUB || NEXT_PUB_HASH || TIME || AUTH_HASH || STATE_HASH || INDEX || P
 The `PUB` field expands into:
 
 ```
-PUB = (PUB_DILITHIUM || PUB_ED25519)
+PUB = (PUB_ML_DSA || PUB_ED25519)
 ```
 
 And the `SIG` field expands into:
 
 ```
-SIG = (SIG_DILITHIUM || SIG_ED25519)
+SIG = (SIG_ML_DSA || SIG_ED25519)
 ```
 
-## License
+## 📜 License
 
 The crate is licensed under either of:
 
@@ -100,7 +100,7 @@ The crate is licensed under either of:
 
 at your option.
 
-### Contribution
+## 😎 Contribution
 
 Unless you explicitly state otherwise, any contribution intentionally submitted
 for inclusion in the work by you, as defined in the Apache-2.0 license, shall be
