@@ -31,7 +31,7 @@ entropy when the ZebraChain was created.
 * Entropy accumulation throughout the lifetime of a ZebraChain. At each signature, a new call to
 `getrandom()` is made. This new entropy is securely mixed with the current seed (using a keyed hash), and the result is the next seed.
 
-* Quantum safe. ZebraChain uses the recently standardizied
+* Quantum safe. ZebraChain uses the recently standardized
 [ML-DSA FIPS 204](https://csrc.nist.gov/pubs/fips/204/final) quantum secure algorithm in a hybrid
 construction with the classically secure [ed25519](https://ed25519.cr.yp.to/) algorithm (as
 recommended by the ML-DSA authors). Support for
@@ -47,7 +47,7 @@ signatures for that position in the chain).
 
 ## 🦀 Dependencies of Interest
 
-ZebraChain is built on existing implementations of established cryptographic primatives.
+ZebraChain is built on existing implementations of established cryptographic primitives.
 
 These key crates are used:
 
