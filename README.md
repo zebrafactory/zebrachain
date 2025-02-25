@@ -9,9 +9,10 @@ key pairs used to sign software releases (and to sign other super important stuf
 
 ZebraChain is not yet suitable for production use.
 
-This is a nascent implementation of a yet to be finalized protocol. It's also built on a nascent
-(but already awesome)
-[Rust implementation of ML-DSA](https://github.com/RustCrypto/signatures/tree/master/ml-dsa).
+This is a nascent implementation of a yet to be finalized protocol. It's also built on early
+(but already awesome) Rust implementations of
+[ML-DSA](https://github.com/RustCrypto/signatures/tree/master/ml-dsa) and
+[SLH-DSA](https://github.com/RustCrypto/signatures/tree/master/slh-dsa).
 
 ## 🦓 Overview
 
@@ -32,10 +33,10 @@ entropy when the ZebraChain was created.
 `getrandom()` is made. This new entropy is securely mixed with the current seed (using a keyed hash), and the result is the next seed.
 
 * Quantum safe. ZebraChain uses the recently standardized
-[ML-DSA FIPS 204](https://csrc.nist.gov/pubs/fips/204/final) quantum secure algorithm in a hybrid
+[FIPS 204 ML-DSA](https://csrc.nist.gov/pubs/fips/204/final) quantum secure algorithm in a hybrid
 construction with the classically secure [ed25519](https://ed25519.cr.yp.to/) algorithm (as
 recommended by the ML-DSA authors). Support for
-[SLH-DSA FIPS 205](https://csrc.nist.gov/pubs/fips/205/final) will be added soon.
+[FIPS 205 SLH-DSA](https://csrc.nist.gov/pubs/fips/205/final) will be added soon.
 
 * *Some* quantum mitigation, even if ML-DSA is broken.  A sufficiently large quantum computer can
 get the secret key from an ed25519 public key (that's the whole problem).  But that same quantum
@@ -56,9 +57,6 @@ These key crates are used:
 * [blake3](https://crates.io/crates/blake3) for hashing
 
 * [chacha20poly1305](https://crates.io/crates/chacha20poly1305) for encrypting the secrect blocks
-
-* [getrandom](https://crates.io/crates/getrandom) for accessing the operating system CSPRNG
-
 
 ## 🔗 Wire Format
 
