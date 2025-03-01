@@ -5,20 +5,22 @@ use crate::block::{Block, BlockState, MutBlock, SigningRequest};
 use crate::secretseed::{derive, Seed};
 use blake3::{hash, Hash};
 use ed25519_dalek;
-use ml_dsa;
-use ml_dsa::{KeyGen, MlDsa65, B32};
+//use ml_dsa;
+//use ml_dsa::{KeyGen, MlDsa65, B32};
 use signature::{Keypair, Signer};
 
 fn build_ed25519_keypair(secret: &Hash) -> ed25519_dalek::SigningKey {
     ed25519_dalek::SigningKey::from_bytes(derive(CONTEXT_ED25519, secret).as_bytes())
 }
 
+/*
 fn build_mldsa_keypair(secret: &Hash) -> ml_dsa::KeyPair<MlDsa65> {
     let mut hack = B32::default();
     hack.0
         .copy_from_slice(derive(CONTEXT_ML_DSA, secret).as_bytes()); // FIXME: Do more better
     MlDsa65::key_gen_internal(&hack)
 }
+*/
 
 /// Abstraction over specific public key algorithms (and hybrid combinations thereof).
 ///
@@ -33,21 +35,21 @@ fn build_mldsa_keypair(secret: &Hash) -> ml_dsa::KeyPair<MlDsa65> {
 /// ```
 pub struct KeyPair {
     ed25519: ed25519_dalek::SigningKey,
-    mldsa: ml_dsa::KeyPair<MlDsa65>,
+    //mldsa: ml_dsa::KeyPair<MlDsa65>,
 }
 
 impl KeyPair {
     pub fn new(secret: &Hash) -> Self {
         Self {
             ed25519: build_ed25519_keypair(secret),
-            mldsa: build_mldsa_keypair(secret),
+            //mldsa: build_mldsa_keypair(secret),
         }
     }
 
     /// Write Public Keys into buffer (both ed25519 and ML-DSA).
     pub fn write_pubkey(&self, dst: &mut [u8]) {
         dst[PUB_ED25519_RANGE].copy_from_slice(self.ed25519.verifying_key().as_bytes());
-        dst[PUB_MLDSA_RANGE].copy_from_slice(self.mldsa.verifying_key().encode().as_slice());
+        //dst[PUB_MLDSA_RANGE].copy_from_slice(self.mldsa.verifying_key().encode().as_slice());
     }
 
     /// Returns hash of public key byte representation.
@@ -65,13 +67,15 @@ impl KeyPair {
     pub fn sign(self, block: &mut MutBlock) {
         self.write_pubkey(block.as_mut_pubkey());
         let sig1 = self.ed25519.sign(block.as_signable());
+        /*
         let sig2 = self
             .mldsa
             .signing_key()
             .sign_deterministic(block.as_signable(), b"")
             .unwrap();
+        */
         block.as_mut_signature()[SIG_ED25519_RANGE].copy_from_slice(&sig1.to_bytes());
-        block.as_mut_signature()[SIG_MLDSA_RANGE].copy_from_slice(sig2.encode().as_slice());
+        //block.as_mut_signature()[SIG_MLDSA_RANGE].copy_from_slice(sig2.encode().as_slice());
     }
 }
 
@@ -163,6 +167,7 @@ impl<'a> Hybrid<'a> {
         &self.block.as_signature()[SIG_ED25519_RANGE]
     }
 
+    /*
     fn verify_mldsa(&self) -> bool {
         let pubenc = ml_dsa::EncodedVerifyingKey::<MlDsa65>::try_from(self.as_pub_mldsa()).unwrap();
         let pubkey = ml_dsa::VerifyingKey::<MlDsa65>::decode(&pubenc);
@@ -173,6 +178,7 @@ impl<'a> Hybrid<'a> {
             false
         }
     }
+    */
 
     fn verify_ed25519(&self) -> bool {
         let sigbuf = self.as_sig_ed25519();
@@ -186,7 +192,7 @@ impl<'a> Hybrid<'a> {
     }
 
     fn verify(&self) -> bool {
-        self.verify_ed25519() && self.verify_mldsa()
+        self.verify_ed25519() // && self.verify_mldsa()
     }
 }
 
@@ -205,6 +211,7 @@ mod tests {
     static HEX1: &str = "80eb433447f789410ce5261e94880da671cb61140540512c33ba710b43bed605";
     static HEX2: &str = "9a847a51072b98ddaaf55dbae220ef8f13a18a4511165587677d00e9bb19418d";
 
+    /*
     #[test]
     fn test_ml_dsa() {
         use ml_dsa::{KeyGen, MlDsa65, B32};
@@ -221,6 +228,7 @@ mod tests {
             Hash::from_hex(HEX1).unwrap()
         );
     }
+    */
 
     #[test]
     fn keypair_new() {
