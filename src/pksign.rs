@@ -151,17 +151,21 @@ impl<'a> Hybrid<'a> {
         Self { block }
     }
 
+    /*
     fn as_pub_mldsa(&self) -> &[u8] {
         &self.block.as_pubkey()[PUB_MLDSA_RANGE]
     }
+    */
 
     fn as_pub_ed25519(&self) -> &[u8] {
         &self.block.as_pubkey()[PUB_ED25519_RANGE]
     }
 
+    /*
     fn as_sig_mldsa(&self) -> &[u8] {
         &self.block.as_signature()[SIG_MLDSA_RANGE]
     }
+    */
 
     fn as_sig_ed25519(&self) -> &[u8] {
         &self.block.as_signature()[SIG_ED25519_RANGE]

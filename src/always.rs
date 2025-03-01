@@ -25,10 +25,13 @@ pub const SIG_ED25519: usize = 64;
 pub const PUB_MLDSA: usize = 1952;
 pub const SIG_MLDSA: usize = 3309;
 
-pub const PUB_MLDSA_RANGE: Range<usize> = 0..PUB_MLDSA;
-pub const PUB_ED25519_RANGE: Range<usize> = PUB_MLDSA..PUB_MLDSA + PUB_ED25519;
-pub const SIG_MLDSA_RANGE: Range<usize> = 0..SIG_MLDSA;
-pub const SIG_ED25519_RANGE: Range<usize> = SIG_MLDSA..SIG_MLDSA + SIG_ED25519;
+//pub const PUB_MLDSA_RANGE: Range<usize> = 0..PUB_MLDSA;
+//pub const PUB_ED25519_RANGE: Range<usize> = PUB_MLDSA..PUB_MLDSA + PUB_ED25519;
+//pub const SIG_MLDSA_RANGE: Range<usize> = 0..SIG_MLDSA;
+//pub const SIG_ED25519_RANGE: Range<usize> = SIG_MLDSA..SIG_MLDSA + SIG_ED25519;
+
+pub const PUB_ED25519_RANGE: Range<usize> = 0..PUB_ED25519;
+pub const SIG_ED25519_RANGE: Range<usize> = 0..SIG_ED25519;
 
 pub const DIGEST: usize = 32;
 pub const SIGNATURE: usize = SIG_ED25519 + SIG_MLDSA;
