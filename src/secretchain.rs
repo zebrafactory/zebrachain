@@ -4,13 +4,13 @@ use crate::always::*;
 use crate::block::SigningRequest;
 use crate::fsutil::{create_for_append, open_for_append, secret_chain_filename};
 use crate::secretblock::{MutSecretBlock, SecretBlock};
-use crate::secretseed::{derive, Secret, Seed};
-use blake3::{keyed_hash, Hash};
+use crate::secretseed::{Secret, Seed, derive};
+use blake3::{Hash, keyed_hash};
 use chacha20poly1305::{
-    aead::{AeadInPlace, KeyInit},
     ChaCha20Poly1305, Key, Nonce,
+    aead::{AeadInPlace, KeyInit},
 };
-use std::fs::{remove_file, File};
+use std::fs::{File, remove_file};
 use std::io;
 use std::io::{BufReader, Read, Seek, Write};
 use std::path::{Path, PathBuf};
@@ -91,6 +91,10 @@ impl SecretChain {
             secret,
             buf,
         })
+    }
+
+    pub fn advance(&self, new_entropy: &Hash) -> Seed {
+        self.tail.seed.advance(new_entropy)
     }
 
     pub fn auto_advance(&self) -> Seed {
@@ -284,12 +288,12 @@ impl SecretChainStore {
 mod tests {
     use super::*;
     use crate::secretseed::random_secret;
-    use crate::testhelpers::{random_hash, random_request, BitFlipper};
+    use crate::testhelpers::{BitFlipper, random_hash, random_request};
     use blake3::hash;
     use getrandom;
     use std::collections::HashSet;
     use std::io::Seek;
-    use tempfile::{tempfile, TempDir};
+    use tempfile::{TempDir, tempfile};
 
     const HEX0: &str = "1b695d50d6105777ed7b5a0bb0bce5484ddca1d6b16bbb0c7bac90599c59370e";
 

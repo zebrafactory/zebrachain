@@ -2,6 +2,9 @@
 //!
 //! An owned chain is one you have the secret seed state for, a chain you can generate new valid
 //! blocks for.
+//!
+//! FIXME: As signing cannot fail (shouldn't fail anyway), we don' want calls to getrandom::fill(),
+//! which can fail, to be inside calls to the top-level signing method.
 
 use crate::always::*;
 use crate::block::{BlockState, SigningRequest};
@@ -96,9 +99,12 @@ impl OwnedChain {
         }
     }
 
-    pub fn sign_next(&mut self, request: &SigningRequest) -> io::Result<&BlockState> {
-        // let seed = self.secret_chain.auto_advance().unwrap();
-        let seed = self.secret_chain.auto_advance();
+    pub fn sign(
+        &mut self,
+        new_entropy: &Hash,
+        request: &SigningRequest,
+    ) -> io::Result<&BlockState> {
+        let seed = self.secret_chain.advance(new_entropy);
         let mut buf = [0; BLOCK];
         sign_block(&mut buf, &seed, request, Some(self.tail()));
         self.secret_chain.commit(&seed, request)?;
@@ -145,7 +151,8 @@ mod tests {
         assert_eq!(chain.tail().index, 0);
         let chain_hash = chain.chain_hash().clone();
         for i in 1..=420 {
-            chain.sign_next(&random_request()).unwrap();
+            let new_entropy = random_secret().unwrap();
+            chain.sign(&new_entropy, &random_request()).unwrap();
             assert_eq!(chain.tail().index, i);
         }
         assert_eq!(chain.count(), 421);
@@ -177,7 +184,8 @@ mod tests {
         let request = random_request();
         let mut chain = ocs.create_chain(&request).unwrap();
         for _ in 0..420 {
-            chain.sign_next(&random_request()).unwrap();
+            let new_entropy = random_secret().unwrap();
+            chain.sign(&new_entropy, &random_request()).unwrap();
         }
         let tail = chain.tail().clone();
         ocs.store().remove_chain_file(&tail.chain_hash).unwrap();

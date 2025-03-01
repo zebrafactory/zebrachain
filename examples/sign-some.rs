@@ -38,7 +38,8 @@ fn main() {
     );
 
     for request in &requests[1..] {
-        chain.sign_next(&request).unwrap();
+        let new_entropy = random_secret().unwrap();
+        chain.sign(&new_entropy, &request).unwrap();
         println!(
             "{} {} {}",
             chain.tail().chain_hash,
