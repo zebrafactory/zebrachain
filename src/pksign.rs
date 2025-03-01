@@ -188,10 +188,9 @@ impl<'a> Hybrid<'a> {
         let sigbuf = self.as_sig_ed25519();
         let pubkeybuf = self.as_pub_ed25519();
         let sig = ed25519_dalek::Signature::from_bytes(sigbuf.try_into().unwrap());
-        if let Ok(pubkey) = ed25519_dalek::VerifyingKey::from_bytes(pubkeybuf.try_into().unwrap()) {
-            pubkey.verify_strict(self.block.as_signable(), &sig).is_ok()
-        } else {
-            false
+        match ed25519_dalek::VerifyingKey::from_bytes(pubkeybuf.try_into().unwrap()) {
+            Ok(pubkey) => pubkey.verify_strict(self.block.as_signable(), &sig).is_ok(),
+            _ => false,
         }
     }
 
