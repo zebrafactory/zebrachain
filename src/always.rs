@@ -34,8 +34,8 @@ pub const PUB_ED25519_RANGE: Range<usize> = 0..PUB_ED25519;
 pub const SIG_ED25519_RANGE: Range<usize> = 0..SIG_ED25519;
 
 pub const DIGEST: usize = 32;
-pub const SIGNATURE: usize = SIG_ED25519 + SIG_MLDSA;
-pub const PUBKEY: usize = PUB_ED25519 + PUB_MLDSA;
+pub const SIGNATURE: usize = SIG_ED25519; // + SIG_MLDSA;
+pub const PUBKEY: usize = PUB_ED25519; // + PUB_MLDSA;
 pub const BLOCK: usize = (6 * DIGEST) + SIGNATURE + PUBKEY + (2 * 8);
 
 pub const HASHABLE_RANGE: Range<usize> = DIGEST..BLOCK;
@@ -155,22 +155,22 @@ mod tests {
 
     #[test]
     fn test_ranges() {
-        assert_eq!(HASHABLE_RANGE, 32..5565);
-        assert_eq!(SIGNABLE_RANGE, 3405..5565);
+        assert_eq!(HASHABLE_RANGE, 32..304);
+        assert_eq!(SIGNABLE_RANGE, 96..304);
 
         assert_eq!(HASH_RANGE, 0..32);
 
-        assert_eq!(SIGNATURE_RANGE, 32..3405);
-        assert_eq!(PUBKEY_RANGE, 3405..5389);
-        assert_eq!(NEXT_PUBKEY_HASH_RANGE, 5389..5421);
+        assert_eq!(SIGNATURE_RANGE, 32..96);
+        assert_eq!(PUBKEY_RANGE, 96..128);
+        assert_eq!(NEXT_PUBKEY_HASH_RANGE, 128..160);
 
-        assert_eq!(TIME_RANGE, 5421..5429);
-        assert_eq!(AUTH_HASH_RANGE, 5429..5461);
-        assert_eq!(STATE_HASH_RANGE, 5461..5493);
+        assert_eq!(TIME_RANGE, 160..168);
+        assert_eq!(AUTH_HASH_RANGE, 168..200);
+        assert_eq!(STATE_HASH_RANGE, 200..232);
 
-        assert_eq!(INDEX_RANGE, 5493..5501);
-        assert_eq!(PREVIOUS_HASH_RANGE, 5501..5533);
-        assert_eq!(CHAIN_HASH_RANGE, 5533..5565);
+        assert_eq!(INDEX_RANGE, 232..240);
+        assert_eq!(PREVIOUS_HASH_RANGE, 240..272);
+        assert_eq!(CHAIN_HASH_RANGE, 272..304);
 
         assert_eq!(HASHABLE_RANGE.end, BLOCK);
         assert_eq!(SIGNABLE_RANGE.end, BLOCK);
