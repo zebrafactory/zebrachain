@@ -28,7 +28,8 @@ fn main() {
     let tmpdir2 = tempfile::TempDir::new().unwrap();
     let root_secret = random_secret().unwrap();
     let ocs = OwnedChainStore::build(tmpdir1.path(), tmpdir2.path(), root_secret);
-    let mut chain = ocs.create_chain(&requests[0]).unwrap();
+    let initial_entropy = random_secret().unwrap();
+    let mut chain = ocs.create_chain(&initial_entropy, &requests[0]).unwrap();
 
     println!(
         "{} {} {}",

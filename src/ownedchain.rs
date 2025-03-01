@@ -43,8 +43,12 @@ impl OwnedChainStore {
         &self.secret_store
     }
 
-    pub fn create_chain(&self, request: &SigningRequest) -> io::Result<OwnedChain> {
-        let seed = Seed::auto_create().unwrap();
+    pub fn create_chain(
+        &self,
+        initial_entropy: &Hash,
+        request: &SigningRequest,
+    ) -> io::Result<OwnedChain> {
+        let seed = Seed::create(initial_entropy);
         let mut buf = [0; BLOCK];
         let chain_hash = sign_block(&mut buf, &seed, request, None);
         let chain = self.store.create_chain(&buf, &chain_hash)?;
@@ -147,7 +151,8 @@ mod tests {
         let secstore = SecretChainStore::new(tmpdir2.path(), random_secret().unwrap());
         let ocs = OwnedChainStore::new(store, secstore);
 
-        let mut chain = ocs.create_chain(&request).unwrap();
+        let initial_entropy = random_secret().unwrap();
+        let mut chain = ocs.create_chain(&initial_entropy, &request).unwrap();
         assert_eq!(chain.tail().index, 0);
         let chain_hash = chain.chain_hash().clone();
         for i in 1..=420 {
@@ -168,7 +173,8 @@ mod tests {
         let secret = random_secret().unwrap();
         let ocs = OwnedChainStore::build(tmpdir.path(), tmpdir.path(), secret);
         let request = random_request();
-        let oc = ocs.create_chain(&request).unwrap();
+        let initial_entropy = random_secret().unwrap();
+        let oc = ocs.create_chain(&initial_entropy, &request).unwrap();
         let chain_hash = oc.chain_hash();
         let tail = oc.tail();
         let oc = ocs.open_chain(&chain_hash).unwrap();
@@ -182,7 +188,8 @@ mod tests {
         let secret = random_secret().unwrap();
         let ocs = OwnedChainStore::build(tmpdir.path(), tmpdir.path(), secret);
         let request = random_request();
-        let mut chain = ocs.create_chain(&request).unwrap();
+        let initial_entropy = random_secret().unwrap();
+        let mut chain = ocs.create_chain(&initial_entropy, &request).unwrap();
         for _ in 0..420 {
             let new_entropy = random_secret().unwrap();
             chain.sign(&new_entropy, &random_request()).unwrap();
