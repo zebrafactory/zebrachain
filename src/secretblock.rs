@@ -3,7 +3,7 @@
 use crate::always::*;
 use crate::block::SigningRequest;
 use crate::secretseed::Seed;
-use blake3::{hash, Hash};
+use blake3::{Hash, hash};
 use std::io;
 
 fn check_secretblock_buf(buf: &[u8]) {
@@ -148,7 +148,7 @@ impl<'a> MutSecretBlock<'a> {
 mod tests {
 
     use super::*;
-    use crate::testhelpers::{random_request, BitFlipper, HashBitFlipper};
+    use crate::testhelpers::{BitFlipper, HashBitFlipper, random_request};
 
     fn valid_secret_block() -> [u8; SECRET_BLOCK] {
         let mut buf = [0; SECRET_BLOCK];

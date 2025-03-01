@@ -2,8 +2,8 @@
 
 use crate::always::*;
 use crate::block::{Block, BlockState, MutBlock, SigningRequest};
-use crate::secretseed::{derive, Seed};
-use blake3::{hash, Hash};
+use crate::secretseed::{Seed, derive};
+use blake3::{Hash, hash};
 use ed25519_dalek;
 //use ml_dsa;
 //use ml_dsa::{KeyGen, MlDsa65, B32};

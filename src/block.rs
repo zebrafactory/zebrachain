@@ -2,7 +2,7 @@
 
 use crate::always::*;
 use crate::pksign::verify_block_signature;
-use blake3::{hash, Hash};
+use blake3::{Hash, hash};
 use std::io;
 
 const ZERO_HASH: Hash = Hash::from_bytes([0; DIGEST]);
@@ -301,9 +301,9 @@ impl<'a> MutBlock<'a> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::pksign::{sign_block, SecretSigner};
+    use crate::pksign::{SecretSigner, sign_block};
     use crate::secretseed::Seed;
-    use crate::testhelpers::{random_hash, random_request, BitFlipper, HashBitFlipper};
+    use crate::testhelpers::{BitFlipper, HashBitFlipper, random_hash, random_request};
 
     const HEX0: &str = "5315dee5bc984eaa9fed01510884260fb312234fedff1e31bea4ddeb616291e0";
     const HEX1: &str = "75982a59864747e5e83b9356814acff88c32d6cc9834ea10001b4e73872d6a52";

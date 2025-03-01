@@ -4,7 +4,7 @@ use crate::always::*;
 use crate::block::{Block, BlockState};
 use crate::fsutil::{chain_filename, create_for_append, open_for_append};
 use blake3::Hash;
-use std::fs::{remove_file, File};
+use std::fs::{File, remove_file};
 use std::io;
 use std::io::{BufReader, Read, Seek, SeekFrom, Write};
 use std::path::{Path, PathBuf};
@@ -306,7 +306,7 @@ mod tests {
     use super::*;
     use crate::pksign::sign_block;
     use crate::secretseed::Seed;
-    use crate::testhelpers::{random_hash, random_request, BitFlipper};
+    use crate::testhelpers::{BitFlipper, random_hash, random_request};
     use blake3::Hash;
     use tempfile;
 

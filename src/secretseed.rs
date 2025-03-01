@@ -5,7 +5,7 @@
 //! the [Secret] abstraction we use likewise ensures constant time comparison.
 
 use crate::always::*;
-use blake3::{keyed_hash, Hash, Hasher};
+use blake3::{Hash, Hasher, keyed_hash};
 use getrandom;
 pub use getrandom::Error;
 
