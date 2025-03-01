@@ -7,7 +7,7 @@ use blake3::{hash, Hash};
 use ed25519_dalek;
 //use ml_dsa;
 //use ml_dsa::{KeyGen, MlDsa65, B32};
-use signature::{Keypair, Signer};
+use signature::Signer;
 
 fn build_ed25519_keypair(secret: &Hash) -> ed25519_dalek::SigningKey {
     ed25519_dalek::SigningKey::from_bytes(derive(CONTEXT_ED25519, secret).as_bytes())
