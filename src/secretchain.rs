@@ -101,7 +101,8 @@ impl SecretChain {
         self.tail.seed.auto_advance().unwrap()
     }
 
-    pub fn open(mut file: File, secret: Secret) -> io::Result<Self> {
+    pub fn open(file: File, secret: Secret) -> io::Result<Self> {
+        let mut file = BufReader::with_capacity(SECRET_BLOCK_AEAD * 64, file);
         let mut buf = vec![0; SECRET_BLOCK_AEAD];
         file.read_exact(&mut buf[..])?;
         if let Err(err) = decrypt_in_place(&mut buf, &secret, 0) {
@@ -124,7 +125,7 @@ impl SecretChain {
         }
         buf.zeroize();
         Ok(Self {
-            file,
+            file: file.into_inner(),
             tail,
             secret,
             buf,
