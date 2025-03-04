@@ -84,7 +84,7 @@ fn validate_from_checkpoint(
 
     // Read and validate checkpoint block
     file.seek(SeekFrom::Start(checkpoint.index * BLOCK as u64))?;
-    let mut file = BufReader::with_capacity(BLOCK * 16, file);
+    let mut file = BufReader::with_capacity(BLOCK_READ_BUF, file);
     file.read_exact(&mut buf)?;
     let mut tail = match Block::from_hash_at_index(&buf, &checkpoint.block_hash, checkpoint.index) {
         Ok(block) => block.state(),
@@ -204,7 +204,7 @@ pub struct ChainIter {
 
 impl ChainIter {
     pub fn new(file: File, chain_hash: Hash, count: u64) -> Self {
-        let file = BufReader::with_capacity(BLOCK * 16, file);
+        let file = BufReader::with_capacity(BLOCK_READ_BUF, file);
         Self {
             file,
             chain_hash,
