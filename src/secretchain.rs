@@ -102,7 +102,7 @@ impl SecretChain {
     }
 
     pub fn open(file: File, secret: Secret) -> io::Result<Self> {
-        let mut file = BufReader::with_capacity(SECRET_BLOCK_AEAD * 64, file);
+        let mut file = BufReader::with_capacity(SECRET_BLOCK_AEAD_READ_BUF, file);
         let mut buf = vec![0; SECRET_BLOCK_AEAD];
         file.read_exact(&mut buf[..])?;
         if let Err(err) = decrypt_in_place(&mut buf, &secret, 0) {
@@ -181,7 +181,7 @@ pub struct SecretChainIter {
 
 impl SecretChainIter {
     pub fn new(file: File, secret: Hash, count: u64) -> Self {
-        let file = BufReader::with_capacity(SECRET_BLOCK_AEAD * 64, file);
+        let file = BufReader::with_capacity(SECRET_BLOCK_AEAD_READ_BUF, file);
         Self {
             file,
             secret,

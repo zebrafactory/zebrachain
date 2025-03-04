@@ -114,6 +114,9 @@ pub const SEC_STATE_HASH_RANGE: Range<usize> = get_secrange(5);
 pub const SEC_INDEX_RANGE: Range<usize> = get_secrange(6);
 pub const SEC_PREV_HASH_RANGE: Range<usize> = get_secrange(7);
 
+pub const BLOCK_READ_BUF: usize = BLOCK * 64;
+pub const SECRET_BLOCK_AEAD_READ_BUF: usize = SECRET_BLOCK_AEAD * 64;
+
 pub static CONTEXT_SECRET: &str =
     "ed149ef77826374035fd3a1e2c1bf3b39539333d5a8bc1f7e788736430efc7f2";
 pub static CONTEXT_SECRET_NEXT: &str =

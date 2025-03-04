@@ -9,10 +9,11 @@ use zebrachain::ownedchain::OwnedChainStore;
 use zebrachain::secretchain::SecretChain;
 use zebrachain::secretseed::random_secret;
 
+const COUNT: usize = 42_000;
+
 fn build_requests() -> Vec<SigningRequest> {
-    let count = 420;
-    let mut requests = Vec::with_capacity(count);
-    for _ in 0..count {
+    let mut requests = Vec::with_capacity(COUNT);
+    for _ in 0..COUNT {
         requests.push(SigningRequest::new(
             0,
             random_secret().unwrap(),
@@ -24,10 +25,9 @@ fn build_requests() -> Vec<SigningRequest> {
 
 fn main() {
     let requests = build_requests();
-    let tmpdir1 = tempfile::TempDir::new().unwrap();
-    let tmpdir2 = tempfile::TempDir::new().unwrap();
+    let tmpdir = tempfile::TempDir::new().unwrap();
     let root_secret = random_secret().unwrap();
-    let ocs = OwnedChainStore::build(tmpdir1.path(), tmpdir2.path(), root_secret);
+    let ocs = OwnedChainStore::build(tmpdir.path(), tmpdir.path(), root_secret);
     let initial_entropy = random_secret().unwrap();
     let mut chain = ocs.create_chain(&initial_entropy, &requests[0]).unwrap();
 
@@ -53,7 +53,7 @@ fn main() {
     let head = chain.head().clone();
     let tail = chain.tail().clone();
 
-    let filename = chain_filename(tmpdir1.path(), &chain_hash);
+    let filename = chain_filename(tmpdir.path(), &chain_hash);
     println!("{:?}", filename);
     let file = open_for_append(&filename).unwrap();
     let chain = Chain::open(file, &chain_hash).unwrap();
@@ -64,7 +64,7 @@ fn main() {
     ocs.store().remove_chain_file(&chain_hash).unwrap();
 
     let chain_secret = keyed_hash(root_secret.as_bytes(), chain_hash.as_bytes());
-    let filename = secret_chain_filename(tmpdir2.path(), &chain_hash);
+    let filename = secret_chain_filename(tmpdir.path(), &chain_hash);
     let file = open_for_append(&filename).unwrap();
     let secchain = SecretChain::open(file, chain_secret).unwrap();
 
