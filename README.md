@@ -60,25 +60,32 @@ These key crates are used:
 
 ## 🔗 Wire Format
 
-A ZebraChain block currently has 10 fields:
+The generic ZebraChain block structure has 8 fields:
 
 ```
-HASH || SIG || PUB || NEXT_PUB_HASH || TIME || AUTH_HASH || STATE_HASH || INDEX || PREV_HASH || CHAIN_HASH
+HASH || SIG || PUB || NEXT_PUB_HASH || PAYLOAD || INDEX || PREV_HASH || CHAIN_HASH
 ```
 
 Where:
 
 ```
-HASH = hash(SIG || PUB || NEXT_PUB_HASH || TIME || AUTH_HASH || STATE_HASH || INDEX || PREV_HASH || CHAIN_HASH)
+HASH = hash(SIG || PUB || NEXT_PUB_HASH || PAYLOAD || INDEX || PREV_HASH || CHAIN_HASH)
 ```
 
 And where:
 
 ```
-SIG = sign(PUB || NEXT_PUB_HASH || TIME || AUTH_HASH || STATE_HASH || INDEX || PREV_HASH || CHAIN_HASH)
+SIG = sign(PUB || NEXT_PUB_HASH || PAYLOAD || INDEX || PREV_HASH || CHAIN_HASH)
 ```
 
-The `PUB` field expands into:
+The `PAYLOAD` field is the content being signed, but the exact size and meaning of this field is
+defined by higher level code built on ZebraChain. The `PAYLOAD` would typically contain the hash
+of the top level state object being tracked by the ZebraChain.
+
+As ZebraChain supports hybrid signing, the `SIG` and `PUB` fields can contain multiple signatures
+and multiple public keys.
+
+For example, if doing hybrid signing with ML-DSA and ed25519, the `PUB` field expands into:
 
 ```
 PUB = (PUB_ML_DSA || PUB_ED25519)
@@ -88,6 +95,18 @@ And the `SIG` field expands into:
 
 ```
 SIG = (SIG_ML_DSA || SIG_ED25519)
+```
+
+Where:
+
+```
+SIG_ED25519 = sign_ed25519(SIGNABLE)
+```
+
+And where:
+
+```
+SIG_ML_DSA = sign_ml_dsa(SIG_ED25519 || SIGNABLE)
 ```
 
 ## 📜 License
