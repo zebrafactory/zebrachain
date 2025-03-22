@@ -7,7 +7,7 @@ use zebrachain::chain::{Chain, CheckPoint};
 use zebrachain::fsutil::{chain_filename, open_for_append, secret_chain_filename};
 use zebrachain::ownedchain::OwnedChainStore;
 use zebrachain::secretchain::SecretChain;
-use zebrachain::secretseed::random_secret;
+use zebrachain::secretseed::generate_secret;
 
 const COUNT: usize = 42_000;
 
@@ -16,8 +16,8 @@ fn build_requests() -> Vec<SigningRequest> {
     for _ in 0..COUNT {
         requests.push(SigningRequest::new(
             0,
-            random_secret().unwrap(),
-            random_secret().unwrap(),
+            generate_secret().unwrap(),
+            generate_secret().unwrap(),
         ));
     }
     requests
@@ -27,16 +27,16 @@ fn main() {
     println!("Pre-generating {} random signing requests...", COUNT);
     let requests = build_requests();
     let tmpdir = tempfile::TempDir::new().unwrap();
-    let root_secret = random_secret().unwrap();
+    let root_secret = generate_secret().unwrap();
     let ocs = OwnedChainStore::build(tmpdir.path(), tmpdir.path(), root_secret);
-    let initial_entropy = random_secret().unwrap();
+    let initial_entropy = generate_secret().unwrap();
     let mut chain = ocs.create_chain(&initial_entropy, &requests[0]).unwrap();
 
     println!("Created new chain in directory {:?}", tmpdir.path());
 
     println!("Signing remaning {} requests... ", COUNT - 1);
     for request in &requests[1..] {
-        let new_entropy = random_secret().unwrap();
+        let new_entropy = generate_secret().unwrap();
         chain.sign(&new_entropy, &request).unwrap();
     }
     let chain_hash = chain.tail().chain_hash;

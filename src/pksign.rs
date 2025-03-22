@@ -30,7 +30,7 @@ fn build_mldsa_keypair(secret: &Hash) -> ml_dsa::KeyPair<MlDsa65> {
 /// # Examples
 ///
 /// ```
-/// let secret = zebrachain::secretseed::random_secret().unwrap();
+/// let secret = zebrachain::secretseed::generate_secret().unwrap();
 /// let keypair = zebrachain::pksign::KeyPair::new(&secret);
 /// ```
 pub struct KeyPair {

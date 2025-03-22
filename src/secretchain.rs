@@ -288,7 +288,7 @@ impl SecretChainStore {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::secretseed::random_secret;
+    use crate::secretseed::generate_secret;
     use crate::testhelpers::{BitFlipper, random_hash, random_request};
     use blake3::hash;
     use getrandom;
@@ -302,7 +302,7 @@ mod tests {
     fn test_derive_block_secrets_inner() {
         let count: u64 = 4200;
         let mut hset = HashSet::with_capacity(count as usize);
-        let secret = random_secret().unwrap();
+        let secret = generate_secret().unwrap();
         for index in 0..count {
             let (key, nonce) = derive_block_secrets_inner(&secret, index);
             assert!(hset.insert(key));
@@ -316,7 +316,7 @@ mod tests {
         let mut buf = vec![0; SECRET_BLOCK];
         getrandom::fill(&mut buf).unwrap();
         let h = hash(&buf);
-        let secret = random_secret().unwrap();
+        let secret = generate_secret().unwrap();
         for index in 0..420 {
             encrypt_in_place(&mut buf, &secret, index);
             assert_eq!(buf.len(), SECRET_BLOCK_AEAD);
@@ -332,7 +332,7 @@ mod tests {
         let mut buf = vec![0; SECRET_BLOCK];
         getrandom::fill(&mut buf).unwrap();
         let h = hash(&buf);
-        let secret = random_secret().unwrap();
+        let secret = generate_secret().unwrap();
         for index in 0..3 {
             encrypt_in_place(&mut buf, &secret, index);
             for mut bad in BitFlipper::new(&buf) {
@@ -346,7 +346,7 @@ mod tests {
     #[test]
     fn test_chain_create() {
         let file = tempfile().unwrap();
-        let secret = random_secret().unwrap();
+        let secret = generate_secret().unwrap();
         let seed = Seed::auto_create().unwrap();
         let request = random_request();
         let result = SecretChain::create(file, secret, &seed, &request);
@@ -363,7 +363,7 @@ mod tests {
     #[test]
     fn test_chain_open() {
         let mut file = tempfile().unwrap();
-        let secret = random_secret().unwrap();
+        let secret = generate_secret().unwrap();
         assert!(SecretChain::open(file.try_clone().unwrap(), secret.clone()).is_err());
         let mut buf = vec![0; SECRET_BLOCK];
 
@@ -391,7 +391,7 @@ mod tests {
     #[test]
     fn test_chain_advance_and_commit() {
         let file = tempfile().unwrap();
-        let secret = random_secret().unwrap();
+        let secret = generate_secret().unwrap();
         let mut seed = Seed::auto_create().unwrap();
         let request = random_request();
         let mut chain = SecretChain::create(file, secret, &seed, &request).unwrap();
@@ -429,7 +429,7 @@ mod tests {
     #[test]
     fn test_store_chain_filename() {
         let dir = PathBuf::from("/nope");
-        let secret = random_secret().unwrap();
+        let secret = generate_secret().unwrap();
         let store = SecretChainStore::new(dir.as_path(), secret);
         let chain_hash = Hash::from_bytes([69; DIGEST]);
         assert_eq!(

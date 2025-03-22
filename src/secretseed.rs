@@ -17,7 +17,7 @@ pub use getrandom::Error;
 pub type Secret = Hash;
 
 /// Return a [Secret] buffer with entropy from [getrandom::fill()].
-pub fn random_secret() -> Result<Secret, Error> {
+pub fn generate_secret() -> Result<Secret, Error> {
     let mut buf = [0; 32];
     match getrandom::fill(&mut buf) {
         Ok(_) => Ok(Secret::from_bytes(buf)),
@@ -49,10 +49,10 @@ pub fn derive(context: &str, secret: &Secret) -> Secret {
 /// # Examples
 ///
 /// ```
-/// use zebrachain::secretseed::{Seed, random_secret};
-/// let initial_entropy = random_secret().unwrap();
+/// use zebrachain::secretseed::{Seed, generate_secret};
+/// let initial_entropy = generate_secret().unwrap();
 /// let mut seed = Seed::create(&initial_entropy);
-/// let new_entropy = random_secret().unwrap();
+/// let new_entropy = generate_secret().unwrap();
 /// let next = seed.advance(&new_entropy);
 /// assert_eq!(next.secret, seed.next_secret);
 /// assert_ne!(seed, next);
@@ -83,9 +83,9 @@ impl Seed {
         Self::new(secret, next_secret)
     }
 
-    /// Creates a new seed using entropy from [random_secret()].
+    /// Creates a new seed using entropy from [generate_secret()].
     pub fn auto_create() -> Result<Self, Error> {
-        let initial_entropy = random_secret()?; // Only this part can fail
+        let initial_entropy = generate_secret()?; // Only this part can fail
         Ok(Self::create(&initial_entropy))
     }
 
@@ -109,9 +109,9 @@ impl Seed {
         Self::new(self.next_secret, next_next_secret)
     }
 
-    /// Advance chain by mixing in new entropy from [random_secret()].
+    /// Advance chain by mixing in new entropy from [generate_secret()].
     pub fn auto_advance(&self) -> Result<Self, Error> {
-        let new_entropy = random_secret()?; // Only this part can fail
+        let new_entropy = generate_secret()?; // Only this part can fail
         Ok(self.advance(&new_entropy))
     }
 
@@ -135,11 +135,11 @@ mod tests {
     use std::collections::HashSet;
 
     #[test]
-    fn test_random_secret() {
+    fn test_generate_secret() {
         let count = 1024;
         let mut hset = HashSet::new();
         for _ in 0..count {
-            assert!(hset.insert(random_secret().unwrap()));
+            assert!(hset.insert(generate_secret().unwrap()));
         }
         assert_eq!(hset.len(), count);
     }
@@ -190,14 +190,14 @@ mod tests {
     #[test]
     #[should_panic(expected = "derive(): context string length must be 64; got 63")]
     fn test_derive_panic_low() {
-        let secret = random_secret().unwrap();
+        let secret = generate_secret().unwrap();
         derive(&CONTEXT_SECRET[0..63], &secret);
     }
 
     #[test]
     #[should_panic(expected = "derive(): context string length must be 64; got 65")]
     fn test_derive_panic_high() {
-        let secret = random_secret().unwrap();
+        let secret = generate_secret().unwrap();
         let mut context = String::from(CONTEXT_SECRET);
         context.push('7');
         derive(&context, &secret);
