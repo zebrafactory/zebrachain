@@ -105,6 +105,9 @@ impl SecretBlock {
     }
 }
 
+// FIXME
+pub type SecretBlockState = SecretBlock;
+
 /// Builds a new [SecretBlock] up in a buffer.
 #[derive(Debug)]
 pub struct MutSecretBlock<'a> {

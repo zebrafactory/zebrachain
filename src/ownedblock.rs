@@ -20,13 +20,22 @@ Because the public block can be recreated from the secret block, this gives us a
 
 use crate::block::{BlockState, MutBlock, SigningRequest};
 use crate::pksign::SecretSigner;
-use crate::secretblock::{MutSecretBlock, SecretBlock};
+use crate::secretblock::{MutSecretBlock, SecretBlockState};
 use crate::secretseed::Seed;
 use blake3::Hash;
 
-pub enum OwnedBlockState<'a> {
-    Start,
-    Previous(&'a BlockState, &'a SecretBlock),
+pub struct OwnedBlockState {
+    pub block_state: BlockState,
+    pub secret_block_state: SecretBlockState,
+}
+
+impl OwnedBlockState {
+    pub fn new(block_state: BlockState, secret_block_state: SecretBlockState) -> Self {
+        Self {
+            block_state,
+            secret_block_state,
+        }
+    }
 }
 
 pub fn sign(
@@ -34,18 +43,21 @@ pub fn sign(
     request: &SigningRequest,
     buf: &mut [u8],
     secbuf: &mut [u8],
-    prev: OwnedBlockState,
-) -> (Hash, SecretBlock) {
+    prev: Option<OwnedBlockState>,
+) -> (Hash, SecretBlockState) {
     let mut block = MutBlock::new(buf, request);
     let mut secblock = MutSecretBlock::new(secbuf, seed, request);
-    if let OwnedBlockState::Previous(block_state, secret_block_state) = prev {
-        block.set_previous(block_state);
-        secblock.set_previous(secret_block_state);
+    if let Some(obs) = prev.as_ref() {
+        block.set_previous(&obs.block_state);
+        secblock.set_previous(&obs.secret_block_state);
     }
     let signer = SecretSigner::new(seed);
     signer.sign(&mut block);
-    if let OwnedBlockState::Previous(block_state, _) = prev {
-        assert_eq!(block_state.next_pubkey_hash, block.compute_pubkey_hash());
+    if let Some(obs) = prev.as_ref() {
+        assert_eq!(
+            obs.block_state.next_pubkey_hash,
+            block.compute_pubkey_hash()
+        );
     }
     let block_hash = block.finalize();
     let secret_block_state = secblock.finalize();
@@ -66,8 +78,7 @@ mod tests {
         let req = random_request();
         let mut buf = [0; BLOCK];
         let mut secbuf = [0; SECRET_BLOCK];
-        let prev = OwnedBlockState::Start;
-        let (block_hash, _) = sign(&seed, &req, &mut buf, &mut secbuf, prev);
+        let (block_hash, _) = sign(&seed, &req, &mut buf, &mut secbuf, None);
         assert!(Block::from_hash_at_index(&buf, &block_hash, 0).is_ok());
         assert_eq!(pksign::sign_block(&mut buf, &seed, &req, None), block_hash);
     }
