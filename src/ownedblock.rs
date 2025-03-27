@@ -76,8 +76,8 @@ impl<'a> MutOwnedBlock<'a> {
         let block_hash = self.block.finalize();
         // FIXME: We should probably include the resulting public block hash in the secret block,
         // so set that here before calling MutSecretBlock.finalize().
-        let secret_block_state = self.secret_block.finalize();
-        (block_hash, secret_block_state.block_hash)
+        let secret_block_hash = self.secret_block.finalize();
+        (block_hash, secret_block_hash)
     }
 }
 

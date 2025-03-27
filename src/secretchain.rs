@@ -1,9 +1,8 @@
 //! Read and write secret blocks in a chain.
 
 use crate::always::*;
-use crate::block::SigningRequest;
 use crate::fsutil::{create_for_append, open_for_append, secret_chain_filename};
-use crate::secretblock::{MutSecretBlock, SecretBlock};
+use crate::secretblock::SecretBlock;
 use crate::secretseed::{Secret, Seed, derive};
 use blake3::{Hash, keyed_hash};
 use chacha20poly1305::{
@@ -147,20 +146,6 @@ impl SecretChain {
 
     pub fn tail(&self) -> &SecretBlock {
         &self.tail
-    }
-
-    pub fn commit(&mut self, seed: &Seed, request: &SigningRequest) -> io::Result<()> {
-        // FIXME: Check SeedSequence here like Seed.commit() does
-        self.buf.resize(SECRET_BLOCK, 0);
-        let mut block = MutSecretBlock::new(&mut self.buf[..], request);
-        block.set_seed(seed);
-        block.set_previous(&self.tail);
-        let block = block.finalize();
-        encrypt_in_place(&mut self.buf, &self.secret, block.index);
-        assert_eq!(self.buf.len(), SECRET_BLOCK_AEAD);
-        self.file.write_all(&self.buf)?;
-        self.tail = block;
-        Ok(())
     }
 
     pub fn append(&mut self, block_hash: &Hash) -> io::Result<()> {
@@ -308,6 +293,7 @@ impl SecretChainStore {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::secretblock::MutSecretBlock;
     use crate::secretseed::generate_secret;
     use crate::testhelpers::{BitFlipper, random_hash, random_request};
     use blake3::hash;
@@ -371,7 +357,7 @@ mod tests {
 
         let mut seed = Seed::auto_create().unwrap();
         block.set_seed(&seed);
-        let block_hash = block.finalize().block_hash;
+        let block_hash = block.finalize();
 
         let file = tempfile().unwrap();
         let secret = random_hash();
@@ -418,25 +404,29 @@ mod tests {
     }
 
     #[test]
-    fn test_chain_advance_and_commit() {
+    fn test_chain_append() {
         let mut buf = vec![0; SECRET_BLOCK];
         let request = random_request();
         let mut block = MutSecretBlock::new(&mut buf[..], &request);
 
         let mut seed = Seed::auto_create().unwrap();
         block.set_seed(&seed);
-        let block_hash = block.finalize().block_hash;
+        let block_hash = block.finalize();
 
         let file = tempfile().unwrap();
         let secret = random_hash();
         let mut chain = SecretChain::create(file, secret, buf, &block_hash).unwrap();
         assert_eq!(chain.count(), 1);
-        for i in 0..69 {
-            let next = seed.auto_advance().unwrap();
+        for i in 2..69 {
+            seed = seed.auto_advance().unwrap();
             let request = random_request();
-            chain.commit(&next, &request).unwrap();
-            assert_eq!(chain.count(), i + 2);
-            seed.commit(next);
+            let tail = chain.tail().clone();
+            let mut block = MutSecretBlock::new(chain.as_mut_buf(), &request);
+            block.set_previous(&tail);
+            block.set_seed(&seed);
+            let block_hash = block.finalize();
+            chain.append(&block_hash).unwrap();
+            assert_eq!(chain.count(), i);
         }
         let mut file = chain.into_file();
         file.rewind().unwrap();
@@ -522,7 +512,7 @@ mod tests {
 
         let seed = Seed::auto_create().unwrap();
         block.set_seed(&seed);
-        let block_hash = block.finalize().block_hash;
+        let block_hash = block.finalize();
 
         let dir = TempDir::new().unwrap();
         let secret = random_hash();

@@ -136,16 +136,10 @@ impl<'a> MutSecretBlock<'a> {
         set_hash(self.buf, SEC_NEXT_SECRET_RANGE, &seed.next_secret);
     }
 
-    fn finalize_hash(&mut self) -> Hash {
+    pub fn finalize(self) -> Hash {
         let block_hash = hash(&self.buf[DIGEST..]);
         set_hash(self.buf, SEC_HASH_RANGE, &block_hash);
         block_hash
-    }
-
-    pub fn finalize(mut self) -> SecretBlock {
-        let block_hash = self.finalize_hash();
-        let index = get_u64(self.buf, SEC_INDEX_RANGE); // FIXME
-        SecretBlock::from_hash_at_index(self.buf, &block_hash, index).unwrap()
     }
 }
 
@@ -232,7 +226,7 @@ mod tests {
             let request = random_request();
             let mut block = MutSecretBlock::new(&mut buf, &request);
             block.set_seed(&seed);
-            block.finalize_hash();
+            block.finalize();
             assert_eq!(SecretBlock::open(&buf), Err(SecretBlockError::Seed));
         }
     }
@@ -267,7 +261,7 @@ mod tests {
             let request = random_request();
             let mut block = MutSecretBlock::new(&mut buf, &request);
             block.set_seed(&seed);
-            block.finalize_hash();
+            block.finalize();
             assert_eq!(
                 SecretBlock::from_hash_at_index(&buf, &block_hash, 1),
                 Err(SecretBlockError::Seed)
@@ -331,7 +325,7 @@ mod tests {
             let request = random_request();
             let mut block = MutSecretBlock::new(&mut buf, &request);
             block.set_seed(&seed);
-            block.finalize_hash();
+            block.finalize();
             assert_eq!(
                 SecretBlock::from_previous(&buf, &prev),
                 Err(SecretBlockError::Seed)
