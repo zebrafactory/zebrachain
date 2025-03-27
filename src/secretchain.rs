@@ -295,18 +295,6 @@ impl SecretChainStore {
     pub fn create_chain(
         &self,
         chain_hash: &Hash,
-        seed: &Seed,
-        request: &SigningRequest,
-    ) -> io::Result<SecretChain> {
-        let filename = self.chain_filename(chain_hash);
-        let file = create_for_append(&filename)?;
-        let secret = self.derive_secret(chain_hash);
-        SecretChain::create(file, secret, seed, request)
-    }
-
-    pub fn create_chain2(
-        &self,
-        chain_hash: &Hash,
         buf: Vec<u8>,
         block_hash: &Hash,
     ) -> io::Result<SecretChain> {
@@ -520,14 +508,23 @@ mod tests {
 
     #[test]
     fn test_store_create_chain() {
+        let mut buf = vec![0; SECRET_BLOCK];
+        let request = random_request();
+        let mut block = MutSecretBlock::new(&mut buf[..], &request);
+
+        let seed = Seed::auto_create().unwrap();
+        block.set_seed(&seed);
+        let block_hash = block.finalize().block_hash;
+
         let dir = TempDir::new().unwrap();
         let secret = random_hash();
         let store = SecretChainStore::new(dir.path(), secret);
+
         let chain_hash = random_hash();
-        let seed = Seed::auto_create().unwrap();
-        let request = random_request();
-        let chain = store.create_chain(&chain_hash, &seed, &request).unwrap();
-        assert_eq!(chain.tail().seed, seed);
+        let chain = store.create_chain(&chain_hash, buf, &block_hash).unwrap();
+
+        let tail = chain.tail().clone();
+        assert_eq!(tail.seed, seed);
         let chain = store.open_chain(&chain_hash).unwrap();
         assert_eq!(chain.tail().seed, seed);
     }

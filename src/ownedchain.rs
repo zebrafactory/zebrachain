@@ -58,7 +58,7 @@ impl OwnedChainStore {
         let chain = self.store.create_chain(&buf, &chain_hash)?;
         let secret_chain =
             self.secret_store
-                .create_chain2(&chain_hash, secret_buf, &secret_block_hash)?;
+                .create_chain(&chain_hash, secret_buf, &secret_block_hash)?;
         Ok(OwnedChain::new(chain, secret_chain))
     }
 
