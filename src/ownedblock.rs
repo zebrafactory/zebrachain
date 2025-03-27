@@ -46,30 +46,60 @@ impl OwnedBlockState {
     }
 }
 
+pub struct MutOwnedBlock<'a> {
+    pub block: MutBlock<'a>,
+    pub secret_block: MutSecretBlock<'a>,
+}
+
+impl<'a> MutOwnedBlock<'a> {
+    pub fn new(
+        buf: &'a mut [u8],
+        secret_buf: &'a mut [u8],
+        request: &SigningRequest,
+        seed: &Seed,
+    ) -> Self {
+        let block = MutBlock::new(buf, request);
+        let secret_block = MutSecretBlock::new(secret_buf, seed, request);
+        Self {
+            block,
+            secret_block,
+        }
+    }
+
+    pub fn set_previous(&mut self, prev: &OwnedBlockState) {
+        self.block.set_previous(prev.block_state());
+        self.secret_block.set_previous(prev.secret_block_state());
+    }
+
+    pub fn finalize(mut self) -> (Hash, Hash) {
+        let block_hash = self.block.finalize();
+        // FIXME: We should probably include the resulting public block hash in the secret block,
+        // so set that here before calling MutSecretBlock.finalize().
+        let secret_block_state = self.secret_block.finalize();
+        (block_hash, secret_block_state.block_hash)
+    }
+}
+
 pub fn sign(
     seed: &Seed,
     request: &SigningRequest,
     buf: &mut [u8],
-    secbuf: &mut [u8],
+    secret_buf: &mut [u8],
     prev: Option<OwnedBlockState>,
 ) -> (Hash, Hash) {
-    let mut block = MutBlock::new(buf, request);
-    let mut secblock = MutSecretBlock::new(secbuf, seed, request);
+    let mut block = MutOwnedBlock::new(buf, secret_buf, request, seed);
     if let Some(obs) = prev.as_ref() {
-        block.set_previous(obs.block_state());
-        secblock.set_previous(obs.secret_block_state());
+        block.set_previous(&obs);
     }
     let signer = SecretSigner::new(seed);
-    signer.sign(&mut block);
+    signer.sign(&mut block.block);
     if let Some(obs) = prev.as_ref() {
         assert_eq!(
             obs.block_state().next_pubkey_hash,
-            block.compute_pubkey_hash()
+            block.block.compute_pubkey_hash()
         );
     }
-    let block_hash = block.finalize();
-    let secret_block_state = secblock.finalize();
-    (block_hash, secret_block_state.block_hash)
+    block.finalize()
 }
 
 #[cfg(test)]
