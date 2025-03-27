@@ -78,26 +78,6 @@ impl SecretChain {
     pub fn create(
         mut file: File,
         secret: Secret,
-        seed: &Seed,
-        request: &SigningRequest,
-    ) -> io::Result<Self> {
-        let mut buf = vec![0; SECRET_BLOCK];
-        let mut block = MutSecretBlock::new(&mut buf, request);
-        block.set_seed(seed);
-        let tail = block.finalize();
-        encrypt_in_place(&mut buf, &secret, 0);
-        file.write_all(&buf[..])?;
-        Ok(Self {
-            file,
-            tail,
-            secret,
-            buf,
-        })
-    }
-
-    pub fn create2(
-        mut file: File,
-        secret: Secret,
         mut buf: Vec<u8>,
         block_hash: &Hash,
     ) -> io::Result<Self> {
@@ -301,7 +281,7 @@ impl SecretChainStore {
         let filename = self.chain_filename(chain_hash);
         let file = create_for_append(&filename)?;
         let secret = self.derive_secret(chain_hash);
-        SecretChain::create2(file, secret, buf, block_hash)
+        SecretChain::create(file, secret, buf, block_hash)
     }
 
     pub fn remove_chain_file(&self, chain_hash: &Hash) -> io::Result<()> {
@@ -370,11 +350,18 @@ mod tests {
 
     #[test]
     fn test_chain_create() {
-        let file = tempfile().unwrap();
-        let secret = generate_secret().unwrap();
-        let seed = Seed::auto_create().unwrap();
+        let mut buf = vec![0; SECRET_BLOCK];
         let request = random_request();
-        let result = SecretChain::create(file, secret, &seed, &request);
+        let mut block = MutSecretBlock::new(&mut buf[..], &request);
+
+        let mut seed = Seed::auto_create().unwrap();
+        block.set_seed(&seed);
+        let block_hash = block.finalize().block_hash;
+
+        let file = tempfile().unwrap();
+        let secret = random_hash();
+
+        let result = SecretChain::create(file, secret, buf, &block_hash);
         assert!(result.is_ok());
         let mut file = result.unwrap().into_file();
         file.rewind().unwrap();
@@ -417,11 +404,17 @@ mod tests {
 
     #[test]
     fn test_chain_advance_and_commit() {
-        let file = tempfile().unwrap();
-        let secret = generate_secret().unwrap();
-        let mut seed = Seed::auto_create().unwrap();
+        let mut buf = vec![0; SECRET_BLOCK];
         let request = random_request();
-        let mut chain = SecretChain::create(file, secret, &seed, &request).unwrap();
+        let mut block = MutSecretBlock::new(&mut buf[..], &request);
+
+        let mut seed = Seed::auto_create().unwrap();
+        block.set_seed(&seed);
+        let block_hash = block.finalize().block_hash;
+
+        let file = tempfile().unwrap();
+        let secret = random_hash();
+        let mut chain = SecretChain::create(file, secret, buf, &block_hash).unwrap();
         assert_eq!(chain.count(), 1);
         for i in 0..69 {
             let next = seed.auto_advance().unwrap();
