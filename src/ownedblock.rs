@@ -71,7 +71,12 @@ impl<'a> MutOwnedBlock<'a> {
         self.secret_block.set_previous(prev.secret_block_state());
     }
 
-    pub fn finalize(mut self) -> (Hash, Hash) {
+    pub fn sign(&mut self, seed: &Seed) {
+        let signer = SecretSigner::new(seed);
+        signer.sign(&mut self.block);
+    }
+
+    pub fn finalize(self) -> (Hash, Hash) {
         let block_hash = self.block.finalize();
         // FIXME: We should probably include the resulting public block hash in the secret block,
         // so set that here before calling MutSecretBlock.finalize().
@@ -89,10 +94,9 @@ pub fn sign(
 ) -> (Hash, Hash) {
     let mut block = MutOwnedBlock::new(buf, secret_buf, request, seed);
     if let Some(obs) = prev.as_ref() {
-        block.set_previous(&obs);
+        block.set_previous(obs);
     }
-    let signer = SecretSigner::new(seed);
-    signer.sign(&mut block.block);
+    block.sign(seed);
     if let Some(obs) = prev.as_ref() {
         assert_eq!(
             obs.block_state().next_pubkey_hash,
