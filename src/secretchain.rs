@@ -93,6 +93,19 @@ impl SecretChain {
         })
     }
 
+    pub fn create2(mut file: File, secret: Secret, mut secbuf: Vec<u8>) -> io::Result<Self> {
+        assert_eq!(secbuf.len(), SECRET_BLOCK);
+        let tail = SecretBlock::open(&secbuf[0..SECRET_BLOCK]).unwrap();
+        encrypt_in_place(&mut secbuf, &secret, 0);
+        file.write_all(&secbuf[..])?;
+        Ok(Self {
+            file,
+            tail,
+            secret,
+            buf: secbuf,
+        })
+    }
+
     pub fn advance(&self, new_entropy: &Hash) -> Seed {
         self.tail.seed.advance(new_entropy)
     }
@@ -277,6 +290,13 @@ impl SecretChainStore {
         let file = create_for_append(&filename)?;
         let secret = self.derive_secret(chain_hash);
         SecretChain::create(file, secret, seed, request)
+    }
+
+    pub fn create_chain2(&self, chain_hash: &Hash, mut secbuf: Vec<u8>) -> io::Result<SecretChain> {
+        let filename = self.chain_filename(chain_hash);
+        let file = create_for_append(&filename)?;
+        let secret = self.derive_secret(chain_hash);
+        SecretChain::create2(file, secret, secbuf)
     }
 
     pub fn remove_chain_file(&self, chain_hash: &Hash) -> io::Result<()> {

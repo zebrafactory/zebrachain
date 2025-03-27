@@ -9,6 +9,7 @@
 use crate::always::*;
 use crate::block::{BlockState, SigningRequest};
 use crate::chain::{Chain, ChainStore, CheckPoint};
+use crate::ownedblock::{OwnedBlockState, sign};
 use crate::pksign::sign_block;
 use crate::secretchain::{SecretChain, SecretChainStore};
 use crate::secretseed::{Secret, Seed};
@@ -55,6 +56,23 @@ impl OwnedChainStore {
         let secret_chain = self
             .secret_store
             .create_chain(&chain_hash, &seed, request)?;
+        Ok(OwnedChain::new(chain, secret_chain))
+    }
+
+    pub fn create_chain2(
+        &self,
+        initial_entropy: &Hash,
+        request: &SigningRequest,
+    ) -> io::Result<OwnedChain> {
+        let seed = Seed::create(initial_entropy);
+        let mut buf = [0; BLOCK];
+        let mut secbuf: Vec<u8> = vec![0; SECRET_BLOCK_AEAD];
+        secbuf.resize(SECRET_BLOCK, 0);
+        let obs = OwnedBlockState::Start;
+        let (chain_hash, secret_block_state) =
+            sign(&seed, request, &mut buf, &mut secbuf[0..SECRET_BLOCK], obs);
+        let chain = self.store.create_chain(&buf, &chain_hash)?;
+        let secret_chain = self.secret_store.create_chain2(&chain_hash, secbuf)?;
         Ok(OwnedChain::new(chain, secret_chain))
     }
 
