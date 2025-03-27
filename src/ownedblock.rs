@@ -69,7 +69,7 @@ mod tests {
         let mut buf = [0; BLOCK];
         let mut secbuf = [0; SECRET_BLOCK];
         let prev = OwnedBlockState::Start;
-        let (block_hash, secret_block_state) = sign(&seed, &req, &mut buf, &mut secbuf, prev);
+        let (block_hash, _) = sign(&seed, &req, &mut buf, &mut secbuf, prev);
         assert!(Block::from_hash_at_index(&buf, &block_hash, 0).is_ok());
         assert_eq!(pksign::sign_block(&mut buf, &seed, &req, None), block_hash);
     }

@@ -69,8 +69,7 @@ impl OwnedChainStore {
         let mut secbuf: Vec<u8> = vec![0; SECRET_BLOCK_AEAD];
         secbuf.resize(SECRET_BLOCK, 0);
         let obs = OwnedBlockState::Start;
-        let (chain_hash, secret_block_state) =
-            sign(&seed, request, &mut buf, &mut secbuf[0..SECRET_BLOCK], obs);
+        let (chain_hash, _) = sign(&seed, request, &mut buf, &mut secbuf[0..SECRET_BLOCK], obs);
         let chain = self.store.create_chain(&buf, &chain_hash)?;
         let secret_chain = self.secret_store.create_chain2(&chain_hash, secbuf)?;
         Ok(OwnedChain::new(chain, secret_chain))

@@ -292,7 +292,7 @@ impl SecretChainStore {
         SecretChain::create(file, secret, seed, request)
     }
 
-    pub fn create_chain2(&self, chain_hash: &Hash, mut secbuf: Vec<u8>) -> io::Result<SecretChain> {
+    pub fn create_chain2(&self, chain_hash: &Hash, secbuf: Vec<u8>) -> io::Result<SecretChain> {
         let filename = self.chain_filename(chain_hash);
         let file = create_for_append(&filename)?;
         let secret = self.derive_secret(chain_hash);
