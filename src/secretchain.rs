@@ -82,7 +82,9 @@ impl SecretChain {
         request: &SigningRequest,
     ) -> io::Result<Self> {
         let mut buf = vec![0; SECRET_BLOCK];
-        let tail = MutSecretBlock::new(&mut buf, seed, request).finalize();
+        let mut block = MutSecretBlock::new(&mut buf, request);
+        block.set_seed(seed);
+        let tail = block.finalize();
         encrypt_in_place(&mut buf, &secret, 0);
         file.write_all(&buf[..])?;
         Ok(Self {
@@ -165,7 +167,8 @@ impl SecretChain {
     pub fn commit(&mut self, seed: &Seed, request: &SigningRequest) -> io::Result<()> {
         // FIXME: Check SeedSequence here like Seed.commit() does
         self.buf.resize(SECRET_BLOCK, 0);
-        let mut block = MutSecretBlock::new(&mut self.buf[..], seed, request);
+        let mut block = MutSecretBlock::new(&mut self.buf[..], request);
+        block.set_seed(seed);
         block.set_previous(&self.tail);
         let block = block.finalize();
         encrypt_in_place(&mut self.buf, &self.secret, block.index);
@@ -403,7 +406,9 @@ mod tests {
 
         let seed = Seed::auto_create().unwrap();
         let request = random_request();
-        MutSecretBlock::new(&mut buf, &seed, &request).finalize();
+        let mut block = MutSecretBlock::new(&mut buf, &request);
+        block.set_seed(&seed);
+        block.finalize();
         encrypt_in_place(&mut buf, &secret, 0);
 
         file.write_all(&buf[..]).unwrap();
@@ -502,7 +507,9 @@ mod tests {
             chain_secret,
             keyed_hash(secret.as_bytes(), chain_hash.as_bytes())
         );
-        MutSecretBlock::new(&mut buf, &seed, &request).finalize();
+        let mut block = MutSecretBlock::new(&mut buf, &request);
+        block.set_seed(&seed);
+        block.finalize();
         encrypt_in_place(&mut buf, &chain_secret, 0);
         store.remove_chain_file(&chain_hash).unwrap();
         let mut file = create_for_append(&filename).unwrap();

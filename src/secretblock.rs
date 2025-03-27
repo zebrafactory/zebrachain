@@ -115,12 +115,9 @@ pub struct MutSecretBlock<'a> {
 }
 
 impl<'a> MutSecretBlock<'a> {
-    pub fn new(buf: &'a mut [u8], seed: &Seed, request: &SigningRequest) -> Self {
+    pub fn new(buf: &'a mut [u8], request: &SigningRequest) -> Self {
         check_secretblock_buf(buf);
         buf.fill(0);
-
-        set_hash(buf, SEC_SECRET_RANGE, &seed.secret);
-        set_hash(buf, SEC_NEXT_SECRET_RANGE, &seed.next_secret);
 
         set_u64(buf, SEC_TIME_RANGE, request.time);
         set_hash(buf, SEC_AUTH_HASH_RANGE, &request.auth_hash);
@@ -132,6 +129,11 @@ impl<'a> MutSecretBlock<'a> {
     pub fn set_previous(&mut self, prev: &SecretBlock) {
         set_u64(self.buf, SEC_INDEX_RANGE, prev.index + 1);
         set_hash(self.buf, SEC_PREV_HASH_RANGE, &prev.block_hash);
+    }
+
+    pub fn set_seed(&mut self, seed: &Seed) {
+        set_hash(self.buf, SEC_SECRET_RANGE, &seed.secret);
+        set_hash(self.buf, SEC_NEXT_SECRET_RANGE, &seed.next_secret);
     }
 
     fn finalize_hash(&mut self) -> Hash {
@@ -228,7 +230,8 @@ mod tests {
                 next_secret: Hash::from_bytes([i; DIGEST]),
             };
             let request = random_request();
-            let mut block = MutSecretBlock::new(&mut buf, &seed, &request);
+            let mut block = MutSecretBlock::new(&mut buf, &request);
+            block.set_seed(&seed);
             block.finalize_hash();
             assert_eq!(SecretBlock::open(&buf), Err(SecretBlockError::Seed));
         }
@@ -262,7 +265,8 @@ mod tests {
                 next_secret: Hash::from_bytes([i; DIGEST]),
             };
             let request = random_request();
-            let mut block = MutSecretBlock::new(&mut buf, &seed, &request);
+            let mut block = MutSecretBlock::new(&mut buf, &request);
+            block.set_seed(&seed);
             block.finalize_hash();
             assert_eq!(
                 SecretBlock::from_hash_at_index(&buf, &block_hash, 1),
@@ -325,7 +329,8 @@ mod tests {
                 next_secret: Hash::from_bytes([i; DIGEST]),
             };
             let request = random_request();
-            let mut block = MutSecretBlock::new(&mut buf, &seed, &request);
+            let mut block = MutSecretBlock::new(&mut buf, &request);
+            block.set_seed(&seed);
             block.finalize_hash();
             assert_eq!(
                 SecretBlock::from_previous(&buf, &prev),
@@ -343,7 +348,8 @@ mod tests {
             Hash::from_bytes([13; DIGEST]),
             Hash::from_bytes([42; DIGEST]),
         );
-        MutSecretBlock::new(&mut buf, &seed, &request);
+        let mut block = MutSecretBlock::new(&mut buf, &request);
+        block.set_seed(&seed);
         assert_ne!(buf, [69; SECRET_BLOCK]);
         assert_eq!(
             buf,

@@ -52,14 +52,9 @@ pub struct MutOwnedBlock<'a> {
 }
 
 impl<'a> MutOwnedBlock<'a> {
-    pub fn new(
-        buf: &'a mut [u8],
-        secret_buf: &'a mut [u8],
-        request: &SigningRequest,
-        seed: &Seed,
-    ) -> Self {
+    pub fn new(buf: &'a mut [u8], secret_buf: &'a mut [u8], request: &SigningRequest) -> Self {
         let block = MutBlock::new(buf, request);
-        let secret_block = MutSecretBlock::new(secret_buf, seed, request);
+        let secret_block = MutSecretBlock::new(secret_buf, request);
         Self {
             block,
             secret_block,
@@ -74,6 +69,7 @@ impl<'a> MutOwnedBlock<'a> {
     pub fn sign(&mut self, seed: &Seed) {
         let signer = SecretSigner::new(seed);
         signer.sign(&mut self.block);
+        self.secret_block.set_seed(seed);
     }
 
     pub fn finalize(self) -> (Hash, Hash) {
@@ -92,7 +88,7 @@ pub fn sign(
     secret_buf: &mut [u8],
     prev: Option<OwnedBlockState>,
 ) -> (Hash, Hash) {
-    let mut block = MutOwnedBlock::new(buf, secret_buf, request, seed);
+    let mut block = MutOwnedBlock::new(buf, secret_buf, request);
     if let Some(obs) = prev.as_ref() {
         block.set_previous(obs);
     }
