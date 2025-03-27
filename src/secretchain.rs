@@ -106,6 +106,10 @@ impl SecretChain {
         })
     }
 
+    pub fn as_mut_buf(&mut self) -> &mut [u8] {
+        &mut self.buf[0..SECRET_BLOCK]
+    }
+
     pub fn advance(&self, new_entropy: &Hash) -> Seed {
         self.tail.seed.advance(new_entropy)
     }

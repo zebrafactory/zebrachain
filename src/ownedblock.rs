@@ -25,8 +25,8 @@ use crate::secretseed::Seed;
 use blake3::Hash;
 
 pub struct OwnedBlockState {
-    pub block_state: BlockState,
-    pub secret_block_state: SecretBlockState,
+    block_state: BlockState,
+    secret_block_state: SecretBlockState,
 }
 
 impl OwnedBlockState {
@@ -36,6 +36,14 @@ impl OwnedBlockState {
             secret_block_state,
         }
     }
+
+    pub fn block_state(&self) -> &BlockState {
+        &self.block_state
+    }
+
+    pub fn secret_block_state(&self) -> &SecretBlockState {
+        &self.secret_block_state
+    }
 }
 
 pub fn sign(
@@ -44,24 +52,24 @@ pub fn sign(
     buf: &mut [u8],
     secbuf: &mut [u8],
     prev: Option<OwnedBlockState>,
-) -> (Hash, SecretBlockState) {
+) -> (Hash, Hash) {
     let mut block = MutBlock::new(buf, request);
     let mut secblock = MutSecretBlock::new(secbuf, seed, request);
     if let Some(obs) = prev.as_ref() {
-        block.set_previous(&obs.block_state);
-        secblock.set_previous(&obs.secret_block_state);
+        block.set_previous(obs.block_state());
+        secblock.set_previous(obs.secret_block_state());
     }
     let signer = SecretSigner::new(seed);
     signer.sign(&mut block);
     if let Some(obs) = prev.as_ref() {
         assert_eq!(
-            obs.block_state.next_pubkey_hash,
+            obs.block_state().next_pubkey_hash,
             block.compute_pubkey_hash()
         );
     }
     let block_hash = block.finalize();
     let secret_block_state = secblock.finalize();
-    (block_hash, secret_block_state)
+    (block_hash, secret_block_state.block_hash)
 }
 
 #[cfg(test)]

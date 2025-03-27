@@ -51,21 +51,6 @@ impl OwnedChainStore {
     ) -> io::Result<OwnedChain> {
         let seed = Seed::create(initial_entropy);
         let mut buf = [0; BLOCK];
-        let chain_hash = sign_block(&mut buf, &seed, request, None);
-        let chain = self.store.create_chain(&buf, &chain_hash)?;
-        let secret_chain = self
-            .secret_store
-            .create_chain(&chain_hash, &seed, request)?;
-        Ok(OwnedChain::new(chain, secret_chain))
-    }
-
-    pub fn create_chain2(
-        &self,
-        initial_entropy: &Hash,
-        request: &SigningRequest,
-    ) -> io::Result<OwnedChain> {
-        let seed = Seed::create(initial_entropy);
-        let mut buf = [0; BLOCK];
         let mut secbuf: Vec<u8> = vec![0; SECRET_BLOCK_AEAD];
         secbuf.resize(SECRET_BLOCK, 0);
         let (chain_hash, _) = sign(&seed, request, &mut buf, &mut secbuf[0..SECRET_BLOCK], None);
@@ -125,11 +110,19 @@ impl OwnedChain {
         request: &SigningRequest,
     ) -> io::Result<&BlockState> {
         let seed = self.secret_chain.advance(new_entropy);
+        let obs = self.state();
         let mut buf = [0; BLOCK];
-        sign_block(&mut buf, &seed, request, Some(self.tail()));
+        let (block_hash, secret_block_hash) = sign(
+            &seed,
+            request,
+            &mut buf,
+            self.secret_chain.as_mut_buf(),
+            Some(obs),
+        );
         self.secret_chain.commit(&seed, request)?;
+        assert_eq!(self.secret_chain.tail().block_hash, secret_block_hash);
         let result = self.chain.append(&buf)?;
-        //self.seed.commit(seed);
+        assert_eq!(result.block_hash, block_hash);
         Ok(result)
     }
 
@@ -147,6 +140,10 @@ impl OwnedChain {
 
     pub fn chain_hash(&self) -> &Hash {
         self.chain.chain_hash()
+    }
+
+    pub fn state(&self) -> OwnedBlockState {
+        OwnedBlockState::new(self.chain.tail().clone(), self.secret_chain.tail().clone())
     }
 }
 

@@ -30,7 +30,7 @@ fn main() {
     let root_secret = generate_secret().unwrap();
     let ocs = OwnedChainStore::build(tmpdir.path(), tmpdir.path(), root_secret);
     let initial_entropy = generate_secret().unwrap();
-    let mut chain = ocs.create_chain2(&initial_entropy, &requests[0]).unwrap();
+    let mut chain = ocs.create_chain(&initial_entropy, &requests[0]).unwrap();
 
     println!("Created new chain in directory {:?}", tmpdir.path());
 
