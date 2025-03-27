@@ -37,8 +37,10 @@ pub fn sign(
     prev: OwnedBlockState,
 ) -> (Hash, SecretBlock) {
     let mut block = MutBlock::new(buf, request);
-    if let OwnedBlockState::Previous(block_state, _) = prev {
+    let mut secblock = MutSecretBlock::new(secbuf, seed, request);
+    if let OwnedBlockState::Previous(block_state, secret_block_state) = prev {
         block.set_previous(block_state);
+        secblock.set_previous(secret_block_state);
     }
     let signer = SecretSigner::new(seed);
     signer.sign(&mut block);
@@ -46,10 +48,6 @@ pub fn sign(
         assert_eq!(block_state.next_pubkey_hash, block.compute_pubkey_hash());
     }
     let block_hash = block.finalize();
-    let mut secblock = MutSecretBlock::new(secbuf, seed, request);
-    if let OwnedBlockState::Previous(_, secret_block_state) = prev {
-        secblock.set_previous(secret_block_state);
-    }
     let secret_block_state = secblock.finalize();
     (block_hash, secret_block_state)
 }
