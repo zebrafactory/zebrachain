@@ -94,7 +94,12 @@ impl SecretChain {
     }
 
     pub fn as_mut_buf(&mut self) -> &mut [u8] {
-        &mut self.buf[0..SECRET_BLOCK]
+        self.buf.resize(SECRET_BLOCK, 0);
+        &mut self.buf[..]
+    }
+
+    pub fn as_buf(&self) -> &[u8] {
+        &self.buf[0..SECRET_BLOCK]
     }
 
     pub fn advance(&self, new_entropy: &Hash) -> Seed {
@@ -151,6 +156,16 @@ impl SecretChain {
         block.set_seed(seed);
         block.set_previous(&self.tail);
         let block = block.finalize();
+        encrypt_in_place(&mut self.buf, &self.secret, block.index);
+        assert_eq!(self.buf.len(), SECRET_BLOCK_AEAD);
+        self.file.write_all(&self.buf)?;
+        self.tail = block;
+        Ok(())
+    }
+
+    pub fn append(&mut self, block_hash: &Hash) -> io::Result<()> {
+        let block = SecretBlock::from_previous(self.as_buf(), &self.tail).unwrap();
+        assert_eq!(&block.block_hash, block_hash);
         encrypt_in_place(&mut self.buf, &self.secret, block.index);
         assert_eq!(self.buf.len(), SECRET_BLOCK_AEAD);
         self.file.write_all(&self.buf)?;

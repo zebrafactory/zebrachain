@@ -122,7 +122,7 @@ impl OwnedChain {
             self.secret_chain.as_mut_buf(),
             Some(obs),
         );
-        self.secret_chain.commit(&seed, request)?;
+        self.secret_chain.append(&secret_block_hash)?;
         assert_eq!(self.secret_chain.tail().block_hash, secret_block_hash);
         let result = self.chain.append(&buf)?;
         assert_eq!(result.block_hash, block_hash);
