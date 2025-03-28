@@ -37,6 +37,7 @@ impl Payload {
 mod tests {
     use super::*;
     use crate::testhelpers::{random_hash, random_u64};
+    use getrandom;
 
     #[test]
     fn test_payload_from_buf() {
@@ -73,6 +74,19 @@ mod tests {
             let payload = Payload::from_buf(&buf);
             assert_eq!(payload.time, time);
             assert_eq!(payload.state_hash, state_hash);
+        }
+    }
+
+    #[test]
+    fn test_payload_roundtrip_buffer() {
+        for _ in 0..420 {
+            let mut buf = [0; PAYLOAD];
+            getrandom::fill(&mut buf).unwrap();
+            let payload = Payload::from_buf(&buf);
+            let mut buf2 = [0; PAYLOAD];
+            assert_ne!(buf, buf2);
+            payload.write_to_buf(&mut buf2);
+            assert_eq!(buf, buf2);
         }
     }
 }
