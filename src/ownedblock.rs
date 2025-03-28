@@ -18,7 +18,8 @@ We want signing to have robust transactionality using the following sequence:
 Because the public block can be recreated from the secret block, this gives us a nice double commit.
 */
 
-use crate::block::{BlockState, MutBlock, SigningRequest};
+use crate::block::{BlockState, MutBlock};
+use crate::payload::Payload;
 use crate::pksign::SecretSigner;
 use crate::secretblock::{MutSecretBlock, SecretBlockState};
 use crate::secretseed::Seed;
@@ -52,9 +53,9 @@ pub struct MutOwnedBlock<'a> {
 }
 
 impl<'a> MutOwnedBlock<'a> {
-    pub fn new(buf: &'a mut [u8], secret_buf: &'a mut [u8], request: &SigningRequest) -> Self {
-        let block = MutBlock::new(buf, request);
-        let secret_block = MutSecretBlock::new(secret_buf, request);
+    pub fn new(buf: &'a mut [u8], secret_buf: &'a mut [u8], payload: &Payload) -> Self {
+        let block = MutBlock::new(buf, payload);
+        let secret_block = MutSecretBlock::new(secret_buf, payload);
         Self {
             block,
             secret_block,
@@ -83,12 +84,12 @@ impl<'a> MutOwnedBlock<'a> {
 
 pub fn sign(
     seed: &Seed,
-    request: &SigningRequest,
+    payload: &Payload,
     buf: &mut [u8],
     secret_buf: &mut [u8],
     prev: Option<OwnedBlockState>,
 ) -> (Hash, Hash) {
-    let mut block = MutOwnedBlock::new(buf, secret_buf, request);
+    let mut block = MutOwnedBlock::new(buf, secret_buf, payload);
     if let Some(obs) = prev.as_ref() {
         block.set_previous(obs);
     }
@@ -108,16 +109,19 @@ mod tests {
     use crate::always::*;
     use crate::block::Block;
     use crate::pksign;
-    use crate::testhelpers::random_request;
+    use crate::testhelpers::random_payload;
 
     #[test]
     fn test_sign() {
         let seed = Seed::auto_create().unwrap();
-        let req = random_request();
+        let payload = random_payload();
         let mut buf = [0; BLOCK];
         let mut secbuf = [0; SECRET_BLOCK];
-        let (block_hash, _) = sign(&seed, &req, &mut buf, &mut secbuf, None);
+        let (block_hash, _) = sign(&seed, &payload, &mut buf, &mut secbuf, None);
         assert!(Block::from_hash_at_index(&buf, &block_hash, 0).is_ok());
-        assert_eq!(pksign::sign_block(&mut buf, &seed, &req, None), block_hash);
+        assert_eq!(
+            pksign::sign_block(&mut buf, &seed, &payload, None),
+            block_hash
+        );
     }
 }

@@ -1,6 +1,7 @@
 //! Block construction, validation, and wire format.
 
 use crate::always::*;
+use crate::payload::Payload;
 use crate::pksign::verify_block_signature;
 use blake3::{Hash, hash};
 use std::io;
@@ -175,16 +176,8 @@ impl<'a> Block<'a> {
         get_hash(self.buf, NEXT_PUBKEY_HASH_RANGE)
     }
 
-    pub fn time(&self) -> u64 {
-        get_u64(self.buf, TIME_RANGE)
-    }
-
-    pub fn auth_hash(&self) -> Hash {
-        get_hash(self.buf, AUTH_HASH_RANGE)
-    }
-
-    pub fn state_hash(&self) -> Hash {
-        get_hash(self.buf, STATE_HASH_RANGE)
+    pub fn payload(&self) -> Payload {
+        Payload::from_buf(&self.buf[PAYLOAD_RANGE])
     }
 
     pub fn index(&self) -> u64 {
@@ -224,35 +217,16 @@ impl<'a> Block<'a> {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq)]
-pub struct SigningRequest {
-    pub time: u64,
-    pub auth_hash: Hash,
-    pub state_hash: Hash,
-}
-
-impl SigningRequest {
-    pub fn new(time: u64, auth_hash: Hash, state_hash: Hash) -> Self {
-        Self {
-            time,
-            auth_hash,
-            state_hash,
-        }
-    }
-}
-
 /// Build a new block.
 pub struct MutBlock<'a> {
     buf: &'a mut [u8],
 }
 
 impl<'a> MutBlock<'a> {
-    pub fn new(buf: &'a mut [u8], request: &SigningRequest) -> Self {
+    pub fn new(buf: &'a mut [u8], payload: &Payload) -> Self {
         check_block_buf(buf);
         buf.fill(0);
-        set_u64(buf, TIME_RANGE, request.time);
-        set_hash(buf, STATE_HASH_RANGE, &request.state_hash);
-        set_hash(buf, AUTH_HASH_RANGE, &request.auth_hash);
+        payload.write_to_buf(&mut buf[PAYLOAD_RANGE]);
         Self { buf }
     }
 
@@ -303,10 +277,10 @@ mod tests {
     use super::*;
     use crate::pksign::{SecretSigner, sign_block};
     use crate::secretseed::Seed;
-    use crate::testhelpers::{BitFlipper, HashBitFlipper, random_hash, random_request};
+    use crate::testhelpers::{BitFlipper, HashBitFlipper, random_hash, random_payload};
 
-    const HEX0: &str = "5315dee5bc984eaa9fed01510884260fb312234fedff1e31bea4ddeb616291e0";
-    const HEX1: &str = "75982a59864747e5e83b9356814acff88c32d6cc9834ea10001b4e73872d6a52";
+    const HEX0: &str = "1b5b9e083ed55a106552e5dddd8e26d11eaa8cc7d90a67436534378936267707";
+    const HEX1: &str = "28ea8da7bb9e6ac066f40696565ceb19e5b8f399687a17574513990411b6d504";
 
     #[test]
     fn test_blockerror_to_io_error() {
@@ -339,8 +313,8 @@ mod tests {
         let mut buf = vec![0; BLOCK];
         let seed = Seed::create(&Hash::from_bytes([69; 32]));
         let secsign = SecretSigner::new(&seed);
-        let request = SigningRequest::new(0, Hash::from_bytes([1; 32]), Hash::from_bytes([2; 32]));
-        let mut block = MutBlock::new(&mut buf, &request);
+        let payload = Payload::new(0, Hash::from_bytes([1; 32]));
+        let mut block = MutBlock::new(&mut buf, &payload);
         let last = BlockState::new(
             0,
             Hash::from_bytes([3; 32]),
@@ -359,9 +333,10 @@ mod tests {
         buf.extend_from_slice(&[2; SIGNATURE]);
         buf.extend_from_slice(&[3; PUBKEY]);
         buf.extend_from_slice(&[4; DIGEST]); // NEXT_PUBKEY_HASH
+
         buf.extend_from_slice(&[5; 8]); // TIME
-        buf.extend_from_slice(&[6; DIGEST]); // AUTH_HASH
         buf.extend_from_slice(&[7; DIGEST]); // STATE_HASH
+
         buf.extend_from_slice(&[8; 8]); // INDEX
         buf.extend_from_slice(&[9; DIGEST]); // PREVIOUS_HASH
         buf.extend_from_slice(&[10; DIGEST]); // CHAIN_HASH
@@ -375,28 +350,28 @@ mod tests {
     }
 
     #[test]
-    #[should_panic(expected = "Need a 304 byte slice; got 303 bytes")]
+    #[should_panic(expected = "Need a 272 byte slice; got 271 bytes")]
     fn test_block_new_short_panic() {
         let buf: Vec<u8> = vec![0; BLOCK - 1];
         let _block = Block::new(&buf[..]);
     }
 
     #[test]
-    #[should_panic(expected = "Need a 304 byte slice; got 305 bytes")]
+    #[should_panic(expected = "Need a 272 byte slice; got 273 bytes")]
     fn test_block_new_long_panic() {
         let buf: Vec<u8> = vec![0; BLOCK + 1];
         let _block = Block::new(&buf[..]);
     }
 
     #[test]
-    #[should_panic(expected = "Need a 304 byte slice; got 303 bytes")]
+    #[should_panic(expected = "Need a 272 byte slice; got 271 bytes")]
     fn test_block_open_short_panic() {
         let buf: Vec<u8> = vec![0; BLOCK - 1];
         let _block = Block::open(&buf[..]);
     }
 
     #[test]
-    #[should_panic(expected = "Need a 304 byte slice; got 305 bytes")]
+    #[should_panic(expected = "Need a 272 byte slice; got 273 bytes")]
     fn test_block_open_long_panic() {
         let buf: Vec<u8> = vec![0; BLOCK + 1];
         let _block = Block::open(&buf[..]);
@@ -513,13 +488,13 @@ mod tests {
     fn test_block_from_previous_3rd() {
         let mut buf = [0; BLOCK];
         let seed = Seed::auto_create().unwrap();
-        let chain_hash = sign_block(&mut buf, &seed, &random_request(), None);
+        let chain_hash = sign_block(&mut buf, &seed, &random_payload(), None);
         let tail = Block::from_hash_at_index(&buf, &chain_hash, 0)
             .unwrap()
             .state();
 
         let seed = seed.auto_advance().unwrap();
-        sign_block(&mut buf, &seed, &random_request(), Some(&tail));
+        sign_block(&mut buf, &seed, &random_payload(), Some(&tail));
         for bad in HashBitFlipper::new(&chain_hash) {
             let prev = BlockState::new(0, tail.block_hash, bad, tail.next_pubkey_hash);
             // Previous `BlockState.chain_hash` only gets checked in 3rd block and beyond:
@@ -529,7 +504,7 @@ mod tests {
 
         // Sign 3rd block
         let seed = seed.auto_advance().unwrap();
-        sign_block(&mut buf, &seed, &random_request(), Some(&tail));
+        sign_block(&mut buf, &seed, &random_payload(), Some(&tail));
         assert!(Block::from_previous(&buf, &tail).is_ok());
         for bad in HashBitFlipper::new(&chain_hash) {
             let prev = BlockState::new(1, tail.block_hash, bad, tail.next_pubkey_hash);
@@ -555,9 +530,8 @@ mod tests {
         assert_eq!(block.hash(), Hash::from_bytes([1; DIGEST]));
         assert_eq!(block.next_pubkey_hash(), Hash::from_bytes([4; DIGEST]));
 
-        assert_eq!(block.time(), 361700864190383365);
-        assert_eq!(block.auth_hash(), Hash::from_bytes([6; DIGEST]));
-        assert_eq!(block.state_hash(), Hash::from_bytes([7; DIGEST]));
+        assert_eq!(block.payload().time, 361700864190383365);
+        assert_eq!(block.payload().state_hash, Hash::from_bytes([7; DIGEST]));
 
         assert_eq!(block.index(), 578721382704613384);
         assert_eq!(block.previous_hash(), Hash::from_bytes([9; DIGEST]));
@@ -635,12 +609,8 @@ mod tests {
     #[test]
     fn test_mutblock_new() {
         let mut buf = [27; BLOCK];
-        let request = SigningRequest::new(
-            0,
-            Hash::from_bytes([42; DIGEST]),
-            Hash::from_bytes([69; DIGEST]),
-        );
-        MutBlock::new(&mut buf, &request);
+        let payload = Payload::new(0, Hash::from_bytes([42; DIGEST]));
+        MutBlock::new(&mut buf, &payload);
         assert_eq!(hash(&buf), Hash::from_hex(HEX1).unwrap());
     }
 }

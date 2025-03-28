@@ -295,7 +295,7 @@ mod tests {
     use super::*;
     use crate::secretblock::MutSecretBlock;
     use crate::secretseed::generate_secret;
-    use crate::testhelpers::{BitFlipper, random_hash, random_request};
+    use crate::testhelpers::{BitFlipper, random_hash, random_payload};
     use blake3::hash;
     use getrandom;
     use std::collections::HashSet;
@@ -352,10 +352,10 @@ mod tests {
     #[test]
     fn test_chain_create() {
         let mut buf = vec![0; SECRET_BLOCK];
-        let request = random_request();
-        let mut block = MutSecretBlock::new(&mut buf[..], &request);
+        let payload = random_payload();
+        let mut block = MutSecretBlock::new(&mut buf[..], &payload);
 
-        let mut seed = Seed::auto_create().unwrap();
+        let seed = Seed::auto_create().unwrap();
         block.set_seed(&seed);
         let block_hash = block.finalize();
 
@@ -381,8 +381,8 @@ mod tests {
         let mut buf = vec![0; SECRET_BLOCK];
 
         let seed = Seed::auto_create().unwrap();
-        let request = random_request();
-        let mut block = MutSecretBlock::new(&mut buf, &request);
+        let payload = random_payload();
+        let mut block = MutSecretBlock::new(&mut buf, &payload);
         block.set_seed(&seed);
         block.finalize();
         encrypt_in_place(&mut buf, &secret, 0);
@@ -406,8 +406,8 @@ mod tests {
     #[test]
     fn test_chain_append() {
         let mut buf = vec![0; SECRET_BLOCK];
-        let request = random_request();
-        let mut block = MutSecretBlock::new(&mut buf[..], &request);
+        let payload = random_payload();
+        let mut block = MutSecretBlock::new(&mut buf[..], &payload);
 
         let mut seed = Seed::auto_create().unwrap();
         block.set_seed(&seed);
@@ -419,9 +419,9 @@ mod tests {
         assert_eq!(chain.count(), 1);
         for i in 2..69 {
             seed = seed.auto_advance().unwrap();
-            let request = random_request();
+            let payload = random_payload();
             let tail = chain.tail().clone();
-            let mut block = MutSecretBlock::new(chain.as_mut_buf(), &request);
+            let mut block = MutSecretBlock::new(chain.as_mut_buf(), &payload);
             block.set_previous(&tail);
             block.set_seed(&seed);
             let block_hash = block.finalize();
@@ -487,13 +487,13 @@ mod tests {
 
         let mut buf = vec![0; SECRET_BLOCK];
         let seed = Seed::auto_create().unwrap();
-        let request = random_request();
+        let payload = random_payload();
         let chain_secret = store.derive_secret(&chain_hash);
         assert_eq!(
             chain_secret,
             keyed_hash(secret.as_bytes(), chain_hash.as_bytes())
         );
-        let mut block = MutSecretBlock::new(&mut buf, &request);
+        let mut block = MutSecretBlock::new(&mut buf, &payload);
         block.set_seed(&seed);
         block.finalize();
         encrypt_in_place(&mut buf, &chain_secret, 0);
@@ -507,8 +507,8 @@ mod tests {
     #[test]
     fn test_store_create_chain() {
         let mut buf = vec![0; SECRET_BLOCK];
-        let request = random_request();
-        let mut block = MutSecretBlock::new(&mut buf[..], &request);
+        let payload = random_payload();
+        let mut block = MutSecretBlock::new(&mut buf[..], &payload);
 
         let seed = Seed::auto_create().unwrap();
         block.set_seed(&seed);

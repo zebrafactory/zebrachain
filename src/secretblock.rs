@@ -1,7 +1,7 @@
 //! Wire format for secret seeds when written to nonvolatile storage.
 
 use crate::always::*;
-use crate::block::SigningRequest;
+use crate::payload::Payload;
 use crate::secretseed::Seed;
 use blake3::{Hash, hash};
 use std::io;
@@ -49,7 +49,7 @@ pub type SecretBlockResult = Result<SecretBlock, SecretBlockError>;
 pub struct SecretBlock {
     pub block_hash: Hash,
     pub seed: Seed,
-    pub request: SigningRequest,
+    pub payload: Payload,
     pub index: u64,
     pub previous_hash: Hash,
 }
@@ -69,11 +69,7 @@ impl SecretBlock {
             Ok(SecretBlock {
                 block_hash,
                 seed: Seed::new(secret, next_secret),
-                request: SigningRequest::new(
-                    get_u64(buf, SEC_TIME_RANGE),
-                    get_hash(buf, SEC_AUTH_HASH_RANGE),
-                    get_hash(buf, SEC_STATE_HASH_RANGE),
-                ),
+                payload: Payload::from_buf(&buf[SEC_PAYLOAD_RANGE]),
                 index: get_u64(buf, SEC_INDEX_RANGE),
                 previous_hash: get_hash(buf, SEC_PREV_HASH_RANGE),
             })
@@ -115,14 +111,10 @@ pub struct MutSecretBlock<'a> {
 }
 
 impl<'a> MutSecretBlock<'a> {
-    pub fn new(buf: &'a mut [u8], request: &SigningRequest) -> Self {
+    pub fn new(buf: &'a mut [u8], payload: &Payload) -> Self {
         check_secretblock_buf(buf);
         buf.fill(0);
-
-        set_u64(buf, SEC_TIME_RANGE, request.time);
-        set_hash(buf, SEC_AUTH_HASH_RANGE, &request.auth_hash);
-        set_hash(buf, SEC_STATE_HASH_RANGE, &request.state_hash);
-
+        payload.write_to_buf(&mut buf[SEC_PAYLOAD_RANGE]);
         Self { buf }
     }
 
@@ -147,7 +139,7 @@ impl<'a> MutSecretBlock<'a> {
 mod tests {
 
     use super::*;
-    use crate::testhelpers::{BitFlipper, HashBitFlipper, random_request};
+    use crate::testhelpers::{BitFlipper, HashBitFlipper, random_payload};
 
     fn valid_secret_block() -> [u8; SECRET_BLOCK] {
         let mut buf = [0; SECRET_BLOCK];
@@ -157,16 +149,8 @@ mod tests {
             SEC_NEXT_SECRET_RANGE,
             &Hash::from_bytes([2; DIGEST]),
         );
-        set_hash(
-            &mut buf,
-            SEC_AUTH_HASH_RANGE,
-            &Hash::from_bytes([3; DIGEST]),
-        );
-        set_hash(
-            &mut buf,
-            SEC_STATE_HASH_RANGE,
-            &Hash::from_bytes([4; DIGEST]),
-        );
+        let payload = Payload::new(314, Hash::from_bytes([3; DIGEST]));
+        payload.write_to_buf(&mut buf[SEC_PAYLOAD_RANGE]);
         set_u64(&mut buf, SEC_INDEX_RANGE, 1);
         set_hash(
             &mut buf,
@@ -186,14 +170,14 @@ mod tests {
     }
 
     #[test]
-    #[should_panic(expected = "Need a 208 byte slice; got 207 bytes")]
+    #[should_panic(expected = "Need a 176 byte slice; got 175 bytes")]
     fn test_check_secretblock_buf_panic_low() {
         let buf = [0; SECRET_BLOCK - 1];
         check_secretblock_buf(&buf);
     }
 
     #[test]
-    #[should_panic(expected = "Need a 208 byte slice; got 209 bytes")]
+    #[should_panic(expected = "Need a 176 byte slice; got 177 bytes")]
     fn test_check_secretblock_buf_panic_high() {
         let buf = [0; SECRET_BLOCK + 1];
         check_secretblock_buf(&buf);
@@ -205,13 +189,12 @@ mod tests {
         let block = SecretBlock::open(&buf).unwrap();
         assert_eq!(
             block.block_hash,
-            Hash::from_hex("c79720e9f45128d27bce83e91182267b6034702a0506d5d08e52681f12a0c6fc")
+            Hash::from_hex("b747a06f4a8ac8e157213b790c9fc6a43a569fcaef797059757c6442fbc7597c")
                 .unwrap()
         );
         assert_eq!(block.seed.secret, Hash::from_bytes([1; DIGEST]));
         assert_eq!(block.seed.next_secret, Hash::from_bytes([2; DIGEST]));
-        assert_eq!(block.request.auth_hash, Hash::from_bytes([3; DIGEST]));
-        assert_eq!(block.request.state_hash, Hash::from_bytes([4; DIGEST]));
+        assert_eq!(block.payload.state_hash, Hash::from_bytes([3; DIGEST]));
         assert_eq!(block.previous_hash, Hash::from_bytes([5; DIGEST]));
         for bad in BitFlipper::new(&buf) {
             assert_eq!(SecretBlock::open(&bad[..]), Err(SecretBlockError::Content));
@@ -223,8 +206,8 @@ mod tests {
                 secret: Hash::from_bytes([i; DIGEST]),
                 next_secret: Hash::from_bytes([i; DIGEST]),
             };
-            let request = random_request();
-            let mut block = MutSecretBlock::new(&mut buf, &request);
+            let payload = random_payload();
+            let mut block = MutSecretBlock::new(&mut buf, &payload);
             block.set_seed(&seed);
             block.finalize();
             assert_eq!(SecretBlock::open(&buf), Err(SecretBlockError::Seed));
@@ -258,8 +241,8 @@ mod tests {
                 secret: Hash::from_bytes([i; DIGEST]),
                 next_secret: Hash::from_bytes([i; DIGEST]),
             };
-            let request = random_request();
-            let mut block = MutSecretBlock::new(&mut buf, &request);
+            let payload = random_payload();
+            let mut block = MutSecretBlock::new(&mut buf, &payload);
             block.set_seed(&seed);
             block.finalize();
             assert_eq!(
@@ -275,7 +258,7 @@ mod tests {
         let prev = SecretBlock {
             block_hash: get_hash(&buf, SEC_PREV_HASH_RANGE),
             seed: Seed::new(Hash::from_bytes([0; 32]), get_hash(&buf, SEC_SECRET_RANGE)),
-            request: SigningRequest::new(0, Hash::from_bytes([0; 32]), Hash::from_bytes([0; 32])),
+            payload: Payload::new(0, Hash::from_bytes([0; 32])),
             index: 0,
             previous_hash: Hash::from_bytes([0; 32]),
         };
@@ -286,7 +269,7 @@ mod tests {
             let bad_prev = SecretBlock {
                 block_hash: bad_block_hash,
                 seed: prev.seed,
-                request: prev.request,
+                payload: prev.payload,
                 index: 0,
                 previous_hash: prev.previous_hash,
             };
@@ -299,7 +282,7 @@ mod tests {
             let bad_prev = SecretBlock {
                 block_hash: prev.block_hash,
                 seed: Seed::new(prev.seed.secret, bad_next_secret),
-                request: prev.request,
+                payload: prev.payload,
                 index: 0,
                 previous_hash: prev.previous_hash,
             };
@@ -322,8 +305,8 @@ mod tests {
                 secret: Hash::from_bytes([i; DIGEST]),
                 next_secret: Hash::from_bytes([i; DIGEST]),
             };
-            let request = random_request();
-            let mut block = MutSecretBlock::new(&mut buf, &request);
+            let payload = random_payload();
+            let mut block = MutSecretBlock::new(&mut buf, &payload);
             block.set_seed(&seed);
             block.finalize();
             assert_eq!(
@@ -337,12 +320,8 @@ mod tests {
     fn test_mut_block_new() {
         let mut buf = [69; SECRET_BLOCK];
         let seed = Seed::create(&Hash::from_bytes([69; 32]));
-        let request = SigningRequest::new(
-            0,
-            Hash::from_bytes([13; DIGEST]),
-            Hash::from_bytes([42; DIGEST]),
-        );
-        let mut block = MutSecretBlock::new(&mut buf, &request);
+        let payload = Payload::new(0, Hash::from_bytes([13; DIGEST]));
+        let mut block = MutSecretBlock::new(&mut buf, &payload);
         block.set_seed(&seed);
         assert_ne!(buf, [69; SECRET_BLOCK]);
         assert_eq!(
@@ -354,10 +333,8 @@ mod tests {
                 176, 21, 151, 8, 29, 122, 107, 144, 241, 142, 43, 193, 43, 176, 152, 50, 175, 128,
                 168, 219, 8, 72, 38, 149, 74, 180, 245, 26, 0, 0, 0, 0, 0, 0, 0, 0, 13, 13, 13, 13,
                 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13,
-                13, 13, 13, 13, 13, 13, 13, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42,
-                42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 0, 0, 0, 0,
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                0, 0, 0, 0, 0, 0, 0, 0
+                13, 13, 13, 13, 13, 13, 13, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
             ]
         );
     }

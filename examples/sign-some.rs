@@ -2,42 +2,38 @@
 
 use blake3::keyed_hash;
 use tempfile;
-use zebrachain::block::SigningRequest;
 use zebrachain::chain::{Chain, CheckPoint};
 use zebrachain::fsutil::{chain_filename, open_for_append, secret_chain_filename};
 use zebrachain::ownedchain::OwnedChainStore;
+use zebrachain::payload::Payload;
 use zebrachain::secretchain::SecretChain;
 use zebrachain::secretseed::generate_secret;
 
 const COUNT: usize = 42_000;
 
-fn build_requests() -> Vec<SigningRequest> {
-    let mut requests = Vec::with_capacity(COUNT);
+fn build_payloads() -> Vec<Payload> {
+    let mut payloads = Vec::with_capacity(COUNT);
     for _ in 0..COUNT {
-        requests.push(SigningRequest::new(
-            0,
-            generate_secret().unwrap(),
-            generate_secret().unwrap(),
-        ));
+        payloads.push(Payload::new(0, generate_secret().unwrap()));
     }
-    requests
+    payloads
 }
 
 fn main() {
     println!("Pre-generating {} random signing requests...", COUNT);
-    let requests = build_requests();
+    let payloads = build_payloads();
     let tmpdir = tempfile::TempDir::new().unwrap();
     let root_secret = generate_secret().unwrap();
     let ocs = OwnedChainStore::build(tmpdir.path(), tmpdir.path(), root_secret);
     let initial_entropy = generate_secret().unwrap();
-    let mut chain = ocs.create_chain(&initial_entropy, &requests[0]).unwrap();
+    let mut chain = ocs.create_chain(&initial_entropy, &payloads[0]).unwrap();
 
     println!("Created new chain in directory {:?}", tmpdir.path());
 
     println!("Signing remaning {} requests... ", COUNT - 1);
-    for request in &requests[1..] {
+    for payload in &payloads[1..] {
         let new_entropy = generate_secret().unwrap();
-        chain.sign(&new_entropy, &request).unwrap();
+        chain.sign(&new_entropy, &payload).unwrap();
     }
     let chain_hash = chain.tail().chain_hash;
     let head = chain.head().clone();
@@ -67,7 +63,6 @@ fn main() {
     println!("Iterating through secret chain and fully validating...");
     for result in &secchain {
         let _secblock = result.unwrap();
-        //println!("state_hash: {}", secblock.request.state_hash);
     }
 
     println!("Rebuilding public chain from secret chain...");
@@ -80,7 +75,7 @@ fn main() {
     println!("Head: {}", chain.head().block_hash);
     println!("Tead: {}", chain.tail().block_hash);
     println!("Count: {}", chain.count());
-    assert_eq!(chain.count(), requests.len() as u64);
+    assert_eq!(chain.count(), payloads.len() as u64);
     assert_eq!(&head, chain.head());
     assert_eq!(&tail, chain.tail());
 
@@ -90,7 +85,7 @@ fn main() {
     println!("Head: {}", chain.head().block_hash);
     println!("Tead: {}", chain.tail().block_hash);
     println!("Count: {}", chain.count());
-    assert_eq!(chain.count(), requests.len() as u64);
+    assert_eq!(chain.count(), payloads.len() as u64);
     assert_eq!(&head, chain.head());
     assert_eq!(&tail, chain.tail());
 }

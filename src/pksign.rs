@@ -1,7 +1,8 @@
 //! Hybrid signing and verification with ML-DSA + ed25519.
 
 use crate::always::*;
-use crate::block::{Block, BlockState, MutBlock, SigningRequest};
+use crate::block::{Block, BlockState, MutBlock};
+use crate::payload::Payload;
 use crate::secretseed::{Seed, derive};
 use blake3::{Hash, hash};
 use ed25519_dalek;
@@ -127,10 +128,10 @@ impl SecretSigner {
 pub fn sign_block(
     buf: &mut [u8],
     seed: &Seed,
-    request: &SigningRequest,
+    payload: &Payload,
     last: Option<&BlockState>,
 ) -> Hash {
-    let mut block = MutBlock::new(buf, request);
+    let mut block = MutBlock::new(buf, payload);
     if let Some(last) = last {
         block.set_previous(last);
     }
@@ -208,7 +209,7 @@ pub fn verify_block_signature(block: &Block) -> bool {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::testhelpers::random_request;
+    use crate::testhelpers::random_payload;
 
     static HEX0: &str = "450f17b763621657bf0757a314a2162107a4e526950ca22785dc9fdeb0e5ac69";
     //static HEX1: &str = "80eb433447f789410ce5261e94880da671cb61140540512c33ba710b43bed605";
@@ -254,8 +255,8 @@ mod tests {
         // Sign first block
         let mut buf = [69; BLOCK]; // 69 to make sure block gets zeroed first
         let seed = Seed::auto_create().unwrap();
-        let request = random_request();
-        let chain_hash = sign_block(&mut buf, &seed, &request, None);
+        let payload = random_payload();
+        let chain_hash = sign_block(&mut buf, &seed, &payload, None);
 
         // chain_hash and previous_hash are always zeros in 1st block:
         assert_eq!(&buf[0..DIGEST], chain_hash.as_bytes());
@@ -267,8 +268,8 @@ mod tests {
             .state();
         buf.fill(69);
         let seed = seed.auto_advance().unwrap();
-        let request = random_request();
-        let block_hash = sign_block(&mut buf, &seed, &request, Some(&tail));
+        let payload = random_payload();
+        let block_hash = sign_block(&mut buf, &seed, &payload, Some(&tail));
         assert_ne!(chain_hash, block_hash);
         assert_eq!(&buf[0..DIGEST], block_hash.as_bytes());
 
@@ -285,8 +286,8 @@ mod tests {
             .state();
         buf.fill(69);
         let seed = seed.auto_advance().unwrap();
-        let request = random_request();
-        let block2_hash = sign_block(&mut buf, &seed, &request, Some(&tail2));
+        let payload = random_payload();
+        let block2_hash = sign_block(&mut buf, &seed, &payload, Some(&tail2));
         assert_ne!(block_hash, block2_hash);
         assert_ne!(chain_hash, block2_hash);
         assert_eq!(&buf[0..DIGEST], block2_hash.as_bytes());
@@ -303,15 +304,15 @@ mod tests {
         // Sign first block
         let mut buf = [0; BLOCK];
         let seed = Seed::auto_create().unwrap();
-        let request = random_request();
-        let chain_hash = sign_block(&mut buf, &seed, &request, None);
+        let payload = random_payload();
+        let chain_hash = sign_block(&mut buf, &seed, &payload, None);
 
         // Sign 2nd block, but double advance the seed:
         let tail = Block::from_hash_at_index(&buf, &chain_hash, 0)
             .unwrap()
             .state();
         let seed = seed.auto_advance().unwrap().auto_advance().unwrap();
-        let request = random_request();
-        let _block_hash = sign_block(&mut buf, &seed, &request, Some(&tail));
+        let payload = random_payload();
+        let _block_hash = sign_block(&mut buf, &seed, &payload, Some(&tail));
     }
 }

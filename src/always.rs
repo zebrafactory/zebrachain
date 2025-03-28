@@ -4,20 +4,20 @@ use blake3::Hash;
 use std::ops::Range;
 
 /*
-A Block has 10 fields:
+A Block has 8 fields:
 
-    HASH || SIG || PUB || NEXT_PUB_HASH || TIME || AUTH_HASH || STATE_HASH || INDEX || PREV_HASH || CHAIN_HASH
-            ^^^^^^^^^^^^^^^^^^^^^^^^^^^    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-            From the `Seed`                From the `SigningRequest`          From the previous `BlockState`
+    HASH || SIG || PUB || NEXT_PUB_HASH || PAYLOAD || INDEX || PREV_HASH || CHAIN_HASH
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+            From the `Seed`                           From the previous `BlockState`
 Where:
 
-    HASH = hash(SIG || PUB || NEXT_PUB_HASH || TIME || AUTH_HASH || STATE_HASH || INDEX || PREV_HASH || CHAIN_HASH)
-                ^^^^^^^^^^^^^^^^^^^^^^^^^^^    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    HASH = hash(SIG || PUB || NEXT_PUB_HASH || PAYLOAD || INDEX || PREV_HASH || CHAIN_HASH)
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 And where:
 
-    SIG = sign(PUB || NEXT_PUB_HASH || TIME || AUTH_HASH || STATE_HASH || INDEX || PREV_HASH || CHAIN_HASH)
-                                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    SIG = sign(PUB || NEXT_PUB_HASH || PAYLOAD || INDEX || PREV_HASH || CHAIN_HASH)
+                                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 */
 
 pub const PUB_ED25519: usize = 32;
@@ -37,19 +37,17 @@ pub const DIGEST: usize = 32;
 pub const PAYLOAD: usize = 8 + DIGEST;
 pub const SIGNATURE: usize = SIG_ED25519; // + SIG_MLDSA;
 pub const PUBKEY: usize = PUB_ED25519; // + PUB_MLDSA;
-pub const BLOCK: usize = (6 * DIGEST) + SIGNATURE + PUBKEY + (2 * 8);
+pub const BLOCK: usize = (4 * DIGEST) + SIGNATURE + PUBKEY + PAYLOAD + 8;
 
 pub const HASHABLE_RANGE: Range<usize> = DIGEST..BLOCK;
 pub const SIGNABLE_RANGE: Range<usize> = DIGEST + SIGNATURE..BLOCK;
 
-const WIRE: [usize; 10] = [
+const WIRE: [usize; 8] = [
     DIGEST,    // Block hash
     SIGNATURE, // ML-DSA + ed25519 signatures
     PUBKEY,    // ML-DSA + ed25519 public keys
     DIGEST,    // Hash of public key that will be used to sign next block
-    8,         // Time
-    DIGEST,    // AUTH-entication, AUTH-orization hash
-    DIGEST,    // State hash
+    PAYLOAD,   // Stuff to be signed
     8,         // Block index
     DIGEST,    // Previous block hash
     DIGEST,    // Chain hash (hash of first block in chain)
@@ -68,33 +66,29 @@ pub const HASH_RANGE: Range<usize> = get_range(0);
 pub const SIGNATURE_RANGE: Range<usize> = get_range(1);
 pub const PUBKEY_RANGE: Range<usize> = get_range(2);
 pub const NEXT_PUBKEY_HASH_RANGE: Range<usize> = get_range(3);
-pub const TIME_RANGE: Range<usize> = get_range(4);
-pub const AUTH_HASH_RANGE: Range<usize> = get_range(5);
-pub const STATE_HASH_RANGE: Range<usize> = get_range(6);
-pub const INDEX_RANGE: Range<usize> = get_range(7);
-pub const PREVIOUS_HASH_RANGE: Range<usize> = get_range(8);
-pub const CHAIN_HASH_RANGE: Range<usize> = get_range(9);
+pub const PAYLOAD_RANGE: Range<usize> = get_range(4);
+pub const INDEX_RANGE: Range<usize> = get_range(5);
+pub const PREVIOUS_HASH_RANGE: Range<usize> = get_range(6);
+pub const CHAIN_HASH_RANGE: Range<usize> = get_range(7);
 
 /*
-A SecretBlock currently has 8 fields:
+A SecretBlock currently has 6 fields:
 
-    HASH || SECRET || NEXT_SECRET || TIME || AUTH_HASH || STATE_HASH || INDEX || PREVIOUS_HASH
-            ^^^^^^^^^^^^^^^^^^^^^    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^    ^^^^^^^^^^^^^^^^^^^^^^
-            Secret Seed state        From the signing request           From the previous block
+    HASH || SECRET || NEXT_SECRET || PAYLOAD || INDEX || PREVIOUS_HASH
+            ^^^^^^^^^^^^^^^^^^^^^               ^^^^^^^^^^^^^^^^^^^^^^
+            Secret Seed state                   From the previous block
 */
 
-pub const SECRET_BLOCK: usize = 6 * DIGEST + 2 * 8;
+pub const SECRET_BLOCK: usize = 4 * DIGEST + PAYLOAD + 8;
 pub const SECRET_BLOCK_AEAD: usize = SECRET_BLOCK + 16;
 
-const SECWIRE: [usize; 8] = [
-    DIGEST, // Block hash
-    DIGEST, // Secret
-    DIGEST, // Next secret
-    8,      // Time
-    DIGEST, // AUTH hash
-    DIGEST, // State hash
-    8,      // Block index
-    DIGEST, // Previous block hash
+const SECWIRE: [usize; 6] = [
+    DIGEST,  // Block hash
+    DIGEST,  // Secret
+    DIGEST,  // Next secret
+    PAYLOAD, // Stuff to be signed
+    8,       // Block index
+    DIGEST,  // Previous block hash
 ];
 
 const fn get_secrange(index: usize) -> Range<usize> {
@@ -109,11 +103,9 @@ const fn get_secrange(index: usize) -> Range<usize> {
 pub const SEC_HASH_RANGE: Range<usize> = get_secrange(0);
 pub const SEC_SECRET_RANGE: Range<usize> = get_secrange(1);
 pub const SEC_NEXT_SECRET_RANGE: Range<usize> = get_secrange(2);
-pub const SEC_TIME_RANGE: Range<usize> = get_secrange(3);
-pub const SEC_AUTH_HASH_RANGE: Range<usize> = get_secrange(4);
-pub const SEC_STATE_HASH_RANGE: Range<usize> = get_secrange(5);
-pub const SEC_INDEX_RANGE: Range<usize> = get_secrange(6);
-pub const SEC_PREV_HASH_RANGE: Range<usize> = get_secrange(7);
+pub const SEC_PAYLOAD_RANGE: Range<usize> = get_secrange(3);
+pub const SEC_INDEX_RANGE: Range<usize> = get_secrange(4);
+pub const SEC_PREV_HASH_RANGE: Range<usize> = get_secrange(5);
 
 pub const BLOCK_READ_BUF: usize = BLOCK * 64;
 pub const SECRET_BLOCK_AEAD_READ_BUF: usize = SECRET_BLOCK_AEAD * 64;
@@ -159,8 +151,8 @@ mod tests {
 
     #[test]
     fn test_ranges() {
-        assert_eq!(HASHABLE_RANGE, 32..304);
-        assert_eq!(SIGNABLE_RANGE, 96..304);
+        assert_eq!(HASHABLE_RANGE, 32..272);
+        assert_eq!(SIGNABLE_RANGE, 96..272);
 
         assert_eq!(HASH_RANGE, 0..32);
 
@@ -168,13 +160,11 @@ mod tests {
         assert_eq!(PUBKEY_RANGE, 96..128);
         assert_eq!(NEXT_PUBKEY_HASH_RANGE, 128..160);
 
-        assert_eq!(TIME_RANGE, 160..168);
-        assert_eq!(AUTH_HASH_RANGE, 168..200);
-        assert_eq!(STATE_HASH_RANGE, 200..232);
+        assert_eq!(PAYLOAD_RANGE, 160..200);
 
-        assert_eq!(INDEX_RANGE, 232..240);
-        assert_eq!(PREVIOUS_HASH_RANGE, 240..272);
-        assert_eq!(CHAIN_HASH_RANGE, 272..304);
+        assert_eq!(INDEX_RANGE, 200..208);
+        assert_eq!(PREVIOUS_HASH_RANGE, 208..240);
+        assert_eq!(CHAIN_HASH_RANGE, 240..272);
 
         assert_eq!(HASHABLE_RANGE.end, BLOCK);
         assert_eq!(SIGNABLE_RANGE.end, BLOCK);
@@ -186,11 +176,9 @@ mod tests {
         assert_eq!(SEC_HASH_RANGE, 0..32);
         assert_eq!(SEC_SECRET_RANGE, 32..64);
         assert_eq!(SEC_NEXT_SECRET_RANGE, 64..96);
-        assert_eq!(SEC_TIME_RANGE, 96..104);
-        assert_eq!(SEC_AUTH_HASH_RANGE, 104..136);
-        assert_eq!(SEC_STATE_HASH_RANGE, 136..168);
-        assert_eq!(SEC_INDEX_RANGE, 168..176);
-        assert_eq!(SEC_PREV_HASH_RANGE, 176..208);
+        assert_eq!(SEC_PAYLOAD_RANGE, 96..136);
+        assert_eq!(SEC_INDEX_RANGE, 136..144);
+        assert_eq!(SEC_PREV_HASH_RANGE, 144..176);
         assert_eq!(SEC_PREV_HASH_RANGE.end, SECRET_BLOCK);
     }
 }

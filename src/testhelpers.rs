@@ -1,6 +1,6 @@
 //! Some test fixtures only built on `cfg(test)`.
 
-use crate::block::SigningRequest;
+use crate::payload::Payload;
 use blake3::Hash;
 use getrandom;
 
@@ -16,16 +16,16 @@ pub fn random_hash() -> Hash {
     Hash::from_bytes(buf)
 }
 
-pub fn random_request() -> SigningRequest {
-    SigningRequest::new(random_u64(), random_hash(), random_hash())
+pub fn random_payload() -> Payload {
+    Payload::new(random_u64(), random_hash())
 }
 
-pub fn random_request_vec(count: usize) -> Vec<SigningRequest> {
-    let mut requests = Vec::with_capacity(count);
+pub fn random_payload_vec(count: usize) -> Vec<Payload> {
+    let mut payload_vec = Vec::with_capacity(count);
     for _ in 0..count {
-        requests.push(random_request());
+        payload_vec.push(random_payload());
     }
-    requests
+    payload_vec
 }
 
 fn flip_bit(buf: &mut [u8], counter: usize) {

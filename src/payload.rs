@@ -1,6 +1,4 @@
 //! Abstraction over the content to be signed.
-//!
-//! FIXME: Payload should replace SignigRequest
 
 use crate::always::*;
 use blake3::Hash;
@@ -9,6 +7,7 @@ use std::ops::Range;
 const TIME_RANGE: Range<usize> = 0..8;
 const STATE_HASH_RANGE: Range<usize> = 8..8 + DIGEST;
 
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub struct Payload {
     pub time: u64,
     pub state_hash: Hash,
@@ -29,8 +28,8 @@ impl Payload {
 
     pub fn write_to_buf(&self, buf: &mut [u8]) {
         assert_eq!(buf.len(), PAYLOAD);
-        set_hash(buf, STATE_HASH_RANGE, &self.state_hash);
         set_u64(buf, TIME_RANGE, self.time);
+        set_hash(buf, STATE_HASH_RANGE, &self.state_hash);
     }
 }
 

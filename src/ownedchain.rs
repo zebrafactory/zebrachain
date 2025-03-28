@@ -7,9 +7,10 @@
 //! which can fail, to be inside calls to the top-level signing method.
 
 use crate::always::*;
-use crate::block::{BlockState, SigningRequest};
+use crate::block::BlockState;
 use crate::chain::{Chain, ChainStore, CheckPoint};
 use crate::ownedblock::{OwnedBlockState, sign};
+use crate::payload::Payload;
 use crate::pksign::sign_block;
 use crate::secretchain::{SecretChain, SecretChainStore};
 use crate::secretseed::{Secret, Seed};
@@ -47,14 +48,14 @@ impl OwnedChainStore {
     pub fn create_chain(
         &self,
         initial_entropy: &Hash,
-        request: &SigningRequest,
+        payload: &Payload,
     ) -> io::Result<OwnedChain> {
         let seed = Seed::create(initial_entropy);
         let mut buf = [0; BLOCK];
         let mut secret_buf: Vec<u8> = vec![0; SECRET_BLOCK_AEAD];
         secret_buf.resize(SECRET_BLOCK, 0);
         let (chain_hash, secret_block_hash) =
-            sign(&seed, request, &mut buf, &mut secret_buf[..], None);
+            sign(&seed, payload, &mut buf, &mut secret_buf[..], None);
         let chain = self.store.create_chain(&buf, &chain_hash)?;
         let secret_chain =
             self.secret_store
@@ -78,12 +79,12 @@ impl OwnedChainStore {
         let mut buf = [0; BLOCK];
         let mut iter = secret_chain.iter();
         let sec = iter.nth(0).unwrap()?;
-        let chain_hash = sign_block(&mut buf, &sec.seed, &sec.request, None);
+        let chain_hash = sign_block(&mut buf, &sec.seed, &sec.payload, None);
         let mut chain = self.store.create_chain(&buf, &chain_hash)?;
         let mut tail = chain.head().clone();
         for result in iter {
             let sec = result?;
-            sign_block(&mut buf, &sec.seed, &sec.request, Some(&tail));
+            sign_block(&mut buf, &sec.seed, &sec.payload, Some(&tail));
             tail = chain.append(&buf)?.clone();
         }
         Ok(chain)
@@ -107,17 +108,13 @@ impl OwnedChain {
         }
     }
 
-    pub fn sign(
-        &mut self,
-        new_entropy: &Hash,
-        request: &SigningRequest,
-    ) -> io::Result<&BlockState> {
+    pub fn sign(&mut self, new_entropy: &Hash, payload: &Payload) -> io::Result<&BlockState> {
         let seed = self.secret_chain.advance(new_entropy);
         let obs = self.state();
         let mut buf = [0; BLOCK];
         let (block_hash, secret_block_hash) = sign(
             &seed,
-            request,
+            payload,
             &mut buf,
             self.secret_chain.as_mut_buf(),
             Some(obs),
@@ -154,12 +151,12 @@ impl OwnedChain {
 mod tests {
     use super::*;
     use crate::secretseed::generate_secret;
-    use crate::testhelpers::random_request;
+    use crate::testhelpers::random_payload;
     use tempfile;
 
     #[test]
     fn test_ownedchainstore() {
-        let request = random_request();
+        let payload = random_payload();
 
         let tmpdir1 = tempfile::TempDir::new().unwrap();
         let tmpdir2 = tempfile::TempDir::new().unwrap();
@@ -168,12 +165,12 @@ mod tests {
         let ocs = OwnedChainStore::new(store, secstore);
 
         let initial_entropy = generate_secret().unwrap();
-        let mut chain = ocs.create_chain(&initial_entropy, &request).unwrap();
+        let mut chain = ocs.create_chain(&initial_entropy, &payload).unwrap();
         assert_eq!(chain.tail().index, 0);
         let chain_hash = chain.chain_hash().clone();
         for i in 1..=420 {
             let new_entropy = generate_secret().unwrap();
-            chain.sign(&new_entropy, &random_request()).unwrap();
+            chain.sign(&new_entropy, &random_payload()).unwrap();
             assert_eq!(chain.tail().index, i);
         }
         assert_eq!(chain.count(), 421);
@@ -188,9 +185,9 @@ mod tests {
         let tmpdir = tempfile::TempDir::new().unwrap();
         let secret = generate_secret().unwrap();
         let ocs = OwnedChainStore::build(tmpdir.path(), tmpdir.path(), secret);
-        let request = random_request();
+        let payload = random_payload();
         let initial_entropy = generate_secret().unwrap();
-        let oc = ocs.create_chain(&initial_entropy, &request).unwrap();
+        let oc = ocs.create_chain(&initial_entropy, &payload).unwrap();
         let chain_hash = oc.chain_hash();
         let tail = oc.tail();
         let oc = ocs.open_chain(&chain_hash).unwrap();
@@ -203,12 +200,12 @@ mod tests {
         let tmpdir = tempfile::TempDir::new().unwrap();
         let secret = generate_secret().unwrap();
         let ocs = OwnedChainStore::build(tmpdir.path(), tmpdir.path(), secret);
-        let request = random_request();
+        let payload = random_payload();
         let initial_entropy = generate_secret().unwrap();
-        let mut chain = ocs.create_chain(&initial_entropy, &request).unwrap();
+        let mut chain = ocs.create_chain(&initial_entropy, &payload).unwrap();
         for _ in 0..420 {
             let new_entropy = generate_secret().unwrap();
-            chain.sign(&new_entropy, &random_request()).unwrap();
+            chain.sign(&new_entropy, &random_payload()).unwrap();
         }
         let tail = chain.tail().clone();
         ocs.store().remove_chain_file(&tail.chain_hash).unwrap();
