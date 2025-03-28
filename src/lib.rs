@@ -16,6 +16,7 @@ pub mod chain;
 pub mod fsutil;
 pub mod ownedblock;
 pub mod ownedchain;
+pub mod payload;
 pub mod pksign;
 pub mod secretblock;
 pub mod secretchain;
