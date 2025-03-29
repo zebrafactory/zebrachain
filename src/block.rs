@@ -59,15 +59,23 @@ pub struct BlockState {
     pub block_hash: Hash,
     pub chain_hash: Hash,
     pub next_pubkey_hash: Hash,
+    pub payload: Payload,
 }
 
 impl BlockState {
-    pub fn new(index: u64, block_hash: Hash, chain_hash: Hash, next_pubkey_hash: Hash) -> Self {
+    pub fn new(
+        index: u64,
+        block_hash: Hash,
+        chain_hash: Hash,
+        next_pubkey_hash: Hash,
+        payload: Payload,
+    ) -> Self {
         Self {
             index,
             block_hash,
             chain_hash,
             next_pubkey_hash,
+            payload,
         }
     }
 
@@ -149,6 +157,7 @@ impl<'a> Block<'a> {
             block_hash: self.hash(),
             chain_hash: self.chain_hash(),
             next_pubkey_hash: self.next_pubkey_hash(),
+            payload: self.payload(),
         }
     }
 
@@ -299,9 +308,10 @@ mod tests {
         let h1 = random_hash();
         let h2 = random_hash();
         let h3 = random_hash();
-        let bs = BlockState::new(0, h1, h2, h3);
+        let payload = random_payload();
+        let bs = BlockState::new(0, h1, h2, h3, payload);
         assert_eq!(bs.effective_chain_hash(), h1);
-        let bs = BlockState::new(1, h1, h2, h3);
+        let bs = BlockState::new(1, h1, h2, h3, payload);
         assert_eq!(bs.effective_chain_hash(), h2);
     }
 
@@ -320,6 +330,7 @@ mod tests {
             Hash::from_bytes([3; 32]),
             ZERO_HASH,
             Hash::from_bytes([5; 32]),
+            payload,
         );
         block.set_previous(&last);
         secsign.sign(&mut block);
@@ -437,6 +448,7 @@ mod tests {
             block.previous_hash(),
             ZERO_HASH,
             block.compute_pubkey_hash(),
+            block.payload(),
         );
         assert!(Block::from_previous(&buf[..], &p).is_ok());
 
@@ -456,27 +468,33 @@ mod tests {
 
         // Block::from_previous() specific errors
         for bad in HashBitFlipper::new(&p.next_pubkey_hash) {
-            let prev = BlockState::new(0, p.block_hash, p.chain_hash, bad);
+            let prev = BlockState::new(0, p.block_hash, p.chain_hash, bad, p.payload);
             assert_eq!(
                 Block::from_previous(&buf[..], &prev),
                 Err(BlockError::PubKeyHash)
             );
         }
         for bad in HashBitFlipper::new(&p.block_hash) {
-            let prev = BlockState::new(0, bad, p.chain_hash, p.next_pubkey_hash);
+            let prev = BlockState::new(0, bad, p.chain_hash, p.next_pubkey_hash, p.payload);
             assert_eq!(
                 Block::from_previous(&buf[..], &prev),
                 Err(BlockError::PreviousHash)
             );
         }
         for bad in HashBitFlipper::new(&p.chain_hash) {
-            let prev = BlockState::new(0, p.block_hash, bad, p.next_pubkey_hash);
+            let prev = BlockState::new(0, p.block_hash, bad, p.next_pubkey_hash, p.payload);
             // Previous `BlockState.chain_hash` only gets checked in 3rd block and beyond:
             assert!(Block::from_previous(&buf[..], &prev).is_ok());
         }
         for bad in BitFlipper::new(&[0; 8]) {
             let bad_index = u64::from_le_bytes(bad.try_into().unwrap());
-            let last = BlockState::new(bad_index, p.block_hash, p.chain_hash, p.next_pubkey_hash);
+            let last = BlockState::new(
+                bad_index,
+                p.block_hash,
+                p.chain_hash,
+                p.next_pubkey_hash,
+                p.payload,
+            );
             assert_eq!(
                 Block::from_previous(&buf[..], &last),
                 Err(BlockError::Index)
@@ -496,7 +514,8 @@ mod tests {
         let seed = seed.auto_advance().unwrap();
         sign_block(&mut buf, &seed, &random_payload(), Some(&tail));
         for bad in HashBitFlipper::new(&chain_hash) {
-            let prev = BlockState::new(0, tail.block_hash, bad, tail.next_pubkey_hash);
+            let prev =
+                BlockState::new(0, tail.block_hash, bad, tail.next_pubkey_hash, tail.payload);
             // Previous `BlockState.chain_hash` only gets checked in 3rd block and beyond:
             assert!(Block::from_previous(&buf[..], &prev).is_ok());
         }
@@ -507,7 +526,8 @@ mod tests {
         sign_block(&mut buf, &seed, &random_payload(), Some(&tail));
         assert!(Block::from_previous(&buf, &tail).is_ok());
         for bad in HashBitFlipper::new(&chain_hash) {
-            let prev = BlockState::new(1, tail.block_hash, bad, tail.next_pubkey_hash);
+            let prev =
+                BlockState::new(1, tail.block_hash, bad, tail.next_pubkey_hash, tail.payload);
             assert_eq!(
                 Block::from_previous(&buf[..], &prev),
                 Err(BlockError::ChainHash)
