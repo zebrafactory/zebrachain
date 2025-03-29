@@ -26,8 +26,8 @@ use crate::secretseed::Seed;
 use blake3::Hash;
 
 pub struct OwnedBlockState {
-    block_state: BlockState,
-    secret_block_state: SecretBlockState,
+    pub block_state: BlockState,
+    pub secret_block_state: SecretBlockState,
 }
 
 impl OwnedBlockState {
@@ -36,14 +36,6 @@ impl OwnedBlockState {
             block_state,
             secret_block_state,
         }
-    }
-
-    pub fn block_state(&self) -> &BlockState {
-        &self.block_state
-    }
-
-    pub fn secret_block_state(&self) -> &SecretBlockState {
-        &self.secret_block_state
     }
 }
 
@@ -63,8 +55,8 @@ impl<'a> MutOwnedBlock<'a> {
     }
 
     pub fn set_previous(&mut self, prev: &OwnedBlockState) {
-        self.block.set_previous(prev.block_state());
-        self.secret_block.set_previous(prev.secret_block_state());
+        self.block.set_previous(&prev.block_state);
+        self.secret_block.set_previous(&prev.secret_block_state);
     }
 
     pub fn sign(&mut self, seed: &Seed) {
@@ -83,10 +75,10 @@ impl<'a> MutOwnedBlock<'a> {
 }
 
 pub fn sign(
-    seed: &Seed,
-    payload: &Payload,
     buf: &mut [u8],
     secret_buf: &mut [u8],
+    seed: &Seed,
+    payload: &Payload,
     prev: Option<OwnedBlockState>,
 ) -> (Hash, Hash) {
     let mut block = MutOwnedBlock::new(buf, secret_buf, payload);
@@ -96,7 +88,7 @@ pub fn sign(
     block.sign(seed);
     if let Some(obs) = prev.as_ref() {
         assert_eq!(
-            obs.block_state().next_pubkey_hash,
+            obs.block_state.next_pubkey_hash,
             block.block.compute_pubkey_hash()
         );
     }
@@ -116,8 +108,8 @@ mod tests {
         let seed = Seed::auto_create().unwrap();
         let payload = random_payload();
         let mut buf = [0; BLOCK];
-        let mut secbuf = [0; SECRET_BLOCK];
-        let (block_hash, _) = sign(&seed, &payload, &mut buf, &mut secbuf, None);
+        let mut secret_buf = [0; SECRET_BLOCK];
+        let (block_hash, _) = sign(&mut buf, &mut secret_buf, &seed, &payload, None);
         assert!(Block::from_hash_at_index(&buf, &block_hash, 0).is_ok());
         assert_eq!(
             pksign::sign_block(&mut buf, &seed, &payload, None),

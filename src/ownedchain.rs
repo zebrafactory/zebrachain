@@ -54,7 +54,7 @@ impl OwnedChainStore {
         let mut buf = [0; BLOCK];
         let mut secret_buf: Vec<u8> = vec![0; SECRET_BLOCK_AEAD];
         secret_buf.resize(SECRET_BLOCK, 0);
-        let (chain_hash, secret_block_hash) = sign(&seed, payload, &mut buf, &mut secret_buf, None);
+        let (chain_hash, secret_block_hash) = sign(&mut buf, &mut secret_buf, &seed, payload, None);
         let chain = self.store.create_chain(&buf, &chain_hash)?;
         let secret_chain =
             self.secret_store
@@ -112,10 +112,10 @@ impl OwnedChain {
         let obs = self.state();
         let mut buf = [0; BLOCK];
         let (block_hash, secret_block_hash) = sign(
-            &seed,
-            payload,
             &mut buf,
             self.secret_chain.as_mut_buf(),
+            &seed,
+            payload,
             Some(obs),
         );
         self.secret_chain.append(&secret_block_hash)?;
