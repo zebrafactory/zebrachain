@@ -93,7 +93,7 @@ impl SecretChain {
     }
 
     pub fn as_mut_buf(&mut self) -> &mut [u8] {
-        self.buf.resize(SECRET_BLOCK, 0);
+        self.buf.resize(SECRET_BLOCK, 0); // FIXME: Probably put this somewhere else
         &mut self.buf[..]
     }
 
@@ -103,10 +103,6 @@ impl SecretChain {
 
     pub fn advance(&self, new_entropy: &Hash) -> Seed {
         self.tail.seed.advance(new_entropy)
-    }
-
-    pub fn auto_advance(&self) -> Seed {
-        self.tail.seed.auto_advance().unwrap()
     }
 
     pub fn open(file: File, secret: Secret) -> io::Result<Self> {
