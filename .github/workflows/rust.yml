@@ -15,7 +15,7 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
-        rust: [1.85, beta, nightly]
+        rust: [stable, beta, nightly]
     steps:
       - uses: actions/checkout@v4
       - name: Set up Rust

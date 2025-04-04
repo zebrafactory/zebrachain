@@ -13,7 +13,7 @@ repository = "https://github.com/zebrafactory/zebrachain"
 keywords = ["pqc", "awesomeness"]
 categories = ["cryptography"]
 edition = "2024"
-rust-version = "1.85"
+rust-version = "1.86"
 
 [dependencies]
 blake3 = { version = "1.5.4", features = ["zeroize"] }
