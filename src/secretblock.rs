@@ -120,10 +120,6 @@ impl<'a> MutSecretBlock<'a> {
         Self { buf }
     }
 
-    pub fn as_buf(&self) -> &[u8] {
-        self.buf
-    }
-
     pub fn set_previous(&mut self, prev: &SecretBlock) {
         set_u64(self.buf, SEC_INDEX_RANGE, prev.index + 1);
         set_hash(self.buf, SEC_PREV_HASH_RANGE, &prev.block_hash);
@@ -364,8 +360,8 @@ mod tests {
         let mut buf = [0; SECRET_BLOCK];
         let payload = random_payload();
         let mut block = MutSecretBlock::new(&mut buf, &payload);
-        assert_eq!(block.as_buf()[SEC_INDEX_RANGE], [0; 8]);
-        assert_eq!(block.as_buf()[SEC_PREV_HASH_RANGE], [0; 32]);
+        assert_eq!(block.buf[SEC_INDEX_RANGE], [0; 8]);
+        assert_eq!(block.buf[SEC_PREV_HASH_RANGE], [0; 32]);
         let prev = SecretBlock {
             block_hash: random_hash(),
             public_block_hash: random_hash(),
@@ -375,11 +371,8 @@ mod tests {
             previous_hash: random_hash(),
         };
         block.set_previous(&prev);
-        assert_eq!(block.as_buf()[SEC_INDEX_RANGE], [70, 0, 0, 0, 0, 0, 0, 0]);
-        assert_eq!(
-            &block.as_buf()[SEC_PREV_HASH_RANGE],
-            prev.block_hash.as_bytes()
-        );
+        assert_eq!(block.buf[SEC_INDEX_RANGE], [70, 0, 0, 0, 0, 0, 0, 0]);
+        assert_eq!(&block.buf[SEC_PREV_HASH_RANGE], prev.block_hash.as_bytes());
     }
 
     #[test]
@@ -388,14 +381,14 @@ mod tests {
         let payload = random_payload();
         let mut block = MutSecretBlock::new(&mut buf, &payload);
         let seed = Seed::auto_create().unwrap();
-        assert_eq!(&block.as_buf()[SEC_SECRET_RANGE], &[0; DIGEST]);
-        assert_eq!(&block.as_buf()[SEC_NEXT_SECRET_RANGE], &[0; DIGEST]);
+        assert_eq!(&block.buf[SEC_SECRET_RANGE], &[0; DIGEST]);
+        assert_eq!(&block.buf[SEC_NEXT_SECRET_RANGE], &[0; DIGEST]);
         block.set_seed(&seed);
-        assert_ne!(&block.as_buf()[SEC_SECRET_RANGE], &[0; DIGEST]);
-        assert_ne!(&block.as_buf()[SEC_NEXT_SECRET_RANGE], &[0; DIGEST]);
-        assert_eq!(&block.as_buf()[SEC_SECRET_RANGE], seed.secret.as_bytes());
+        assert_ne!(&block.buf[SEC_SECRET_RANGE], &[0; DIGEST]);
+        assert_ne!(&block.buf[SEC_NEXT_SECRET_RANGE], &[0; DIGEST]);
+        assert_eq!(&block.buf[SEC_SECRET_RANGE], seed.secret.as_bytes());
         assert_eq!(
-            &block.as_buf()[SEC_NEXT_SECRET_RANGE],
+            &block.buf[SEC_NEXT_SECRET_RANGE],
             seed.next_secret.as_bytes()
         );
         let block_hash = block.finalize();
@@ -412,12 +405,12 @@ mod tests {
         let mut block = MutSecretBlock::new(&mut buf, &payload);
         let seed = Seed::auto_create().unwrap();
         block.set_seed(&seed);
-        assert_eq!(&block.as_buf()[SEC_PUBLIC_HASH_RANGE], &[0; DIGEST]);
+        assert_eq!(&block.buf[SEC_PUBLIC_HASH_RANGE], &[0; DIGEST]);
         let public_block_hash = random_hash();
         block.set_public_block_hash(&public_block_hash);
-        assert_ne!(&block.as_buf()[SEC_PUBLIC_HASH_RANGE], &[0; DIGEST]);
+        assert_ne!(&block.buf[SEC_PUBLIC_HASH_RANGE], &[0; DIGEST]);
         assert_eq!(
-            &block.as_buf()[SEC_PUBLIC_HASH_RANGE],
+            &block.buf[SEC_PUBLIC_HASH_RANGE],
             public_block_hash.as_bytes()
         );
         let block_hash = block.finalize();
@@ -426,5 +419,16 @@ mod tests {
         assert_eq!(blockstate.public_block_hash, public_block_hash);
         assert_eq!(blockstate.payload, payload);
         assert_eq!(blockstate.seed, seed);
+    }
+
+    #[test]
+    fn test_mutblock_finalize() {
+        let mut buf = [0; SECRET_BLOCK];
+        let payload = random_payload();
+        let mut block = MutSecretBlock::new(&mut buf, &payload);
+        assert_eq!(block.buf[SEC_HASH_RANGE], [0; DIGEST]);
+        let block_hash = block.finalize();
+        assert_ne!(buf[SEC_HASH_RANGE], [0; DIGEST]);
+        assert_eq!(&buf[SEC_HASH_RANGE], block_hash.as_bytes());
     }
 }
