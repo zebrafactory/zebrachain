@@ -430,5 +430,6 @@ mod tests {
         let block_hash = block.finalize();
         assert_ne!(buf[SEC_HASH_RANGE], [0; DIGEST]);
         assert_eq!(&buf[SEC_HASH_RANGE], block_hash.as_bytes());
+        assert_eq!(block_hash, hash(&buf[DIGEST..]));
     }
 }
