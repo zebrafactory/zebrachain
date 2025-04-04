@@ -2,7 +2,7 @@
 
 use crate::always::*;
 use crate::fsutil::{create_for_append, open_for_append, secret_chain_filename};
-use crate::secretblock::SecretBlock;
+use crate::secretblock::{SecretBlock, SecretBlockError};
 use crate::secretseed::{Secret, Seed, derive};
 use blake3::{Hash, keyed_hash};
 use chacha20poly1305::{
@@ -14,18 +14,6 @@ use std::io;
 use std::io::{BufReader, Read, Seek, Write};
 use std::path::{Path, PathBuf};
 use zeroize::Zeroize;
-
-#[derive(Debug)]
-pub enum StorageError {
-    Bad,
-}
-
-impl StorageError {
-    // FIXME: Is there is a Rustier way of doing this? Feedback encouraged.
-    pub fn to_io_error(&self) -> io::Error {
-        io::Error::other(format!("StorageError::{self:?}"))
-    }
-}
 
 // Split out of derive_block_secrets() for testability
 #[inline]
@@ -53,12 +41,16 @@ fn encrypt_in_place(buf: &mut Vec<u8>, secret: &Secret, index: u64) {
     assert_eq!(buf.len(), SECRET_BLOCK_AEAD);
 }
 
-fn decrypt_in_place(buf: &mut Vec<u8>, secret: &Secret, index: u64) -> Result<(), StorageError> {
+fn decrypt_in_place(
+    buf: &mut Vec<u8>,
+    secret: &Secret,
+    index: u64,
+) -> Result<(), SecretBlockError> {
     assert_eq!(buf.len(), SECRET_BLOCK_AEAD);
     let (key, nonce) = derive_block_secrets(secret, index);
     let cipher = ChaCha20Poly1305::new(&key);
     if cipher.decrypt_in_place(&nonce, b"", buf).is_err() {
-        Err(StorageError::Bad)
+        Err(SecretBlockError::Storage)
     } else {
         assert_eq!(buf.len(), SECRET_BLOCK);
         Ok(())

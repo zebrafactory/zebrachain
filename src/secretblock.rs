@@ -32,6 +32,9 @@ pub enum SecretBlockError {
 
     /// Previous hash in block does not match expected external value.
     PreviousHash,
+
+    /// Failure decrypting the secret block (chacha20poly1305).
+    Storage,
 }
 
 impl SecretBlockError {
@@ -335,7 +338,7 @@ mod tests {
     fn test_mutblock_new() {
         let mut buf = [69; SECRET_BLOCK];
         let payload = Payload::new(1234567890, Hash::from_bytes([13; DIGEST]));
-        let mut block = MutSecretBlock::new(&mut buf, &payload);
+        MutSecretBlock::new(&mut buf, &payload);
         assert_ne!(buf, [69; SECRET_BLOCK]);
         assert_eq!(
             buf,
@@ -388,6 +391,7 @@ mod tests {
                 123, 123, 123, 123, 123, 123, 123, 123, 123, 123, 123, 123, 123, 123, 123
             ]
         );
+        assert_eq!(&buf[0..DIGEST], block_hash.as_bytes());
     }
 
     #[test]
@@ -460,7 +464,7 @@ mod tests {
     fn test_mutblock_finalize() {
         let mut buf = [0; SECRET_BLOCK];
         let payload = random_payload();
-        let mut block = MutSecretBlock::new(&mut buf, &payload);
+        let block = MutSecretBlock::new(&mut buf, &payload);
         assert_eq!(block.buf[SEC_HASH_RANGE], [0; DIGEST]);
         let block_hash = block.finalize();
         assert_ne!(buf[SEC_HASH_RANGE], [0; DIGEST]);
