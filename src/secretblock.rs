@@ -360,6 +360,29 @@ mod tests {
     }
 
     #[test]
+    fn test_mutblock_set_previous() {
+        let mut buf = [0; SECRET_BLOCK];
+        let payload = random_payload();
+        let mut block = MutSecretBlock::new(&mut buf, &payload);
+        assert_eq!(block.as_buf()[SEC_INDEX_RANGE], [0; 8]);
+        assert_eq!(block.as_buf()[SEC_PREV_HASH_RANGE], [0; 32]);
+        let prev = SecretBlock {
+            block_hash: random_hash(),
+            public_block_hash: random_hash(),
+            seed: Seed::auto_create().unwrap(),
+            payload: random_payload(),
+            index: 69,
+            previous_hash: random_hash(),
+        };
+        block.set_previous(&prev);
+        assert_eq!(block.as_buf()[SEC_INDEX_RANGE], [70, 0, 0, 0, 0, 0, 0, 0]);
+        assert_eq!(
+            &block.as_buf()[SEC_PREV_HASH_RANGE],
+            prev.block_hash.as_bytes()
+        );
+    }
+
+    #[test]
     fn test_mutblock_set_seed() {
         let mut buf = [0; SECRET_BLOCK];
         let payload = random_payload();
