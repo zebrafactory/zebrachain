@@ -48,6 +48,7 @@ pub type SecretBlockResult = Result<SecretBlock, SecretBlockError>;
 #[derive(Debug, PartialEq, Clone)]
 pub struct SecretBlock {
     pub block_hash: Hash,
+    pub public_block_hash: Hash,
     pub seed: Seed,
     pub payload: Payload,
     pub index: u64,
@@ -68,6 +69,7 @@ impl SecretBlock {
         } else {
             Ok(SecretBlock {
                 block_hash,
+                public_block_hash: get_hash(buf, SEC_PUBLIC_HASH_RANGE),
                 seed: Seed::new(secret, next_secret),
                 payload: Payload::from_buf(&buf[SEC_PAYLOAD_RANGE]),
                 index: get_u64(buf, SEC_INDEX_RANGE),
@@ -126,6 +128,10 @@ impl<'a> MutSecretBlock<'a> {
     pub fn set_seed(&mut self, seed: &Seed) {
         set_hash(self.buf, SEC_SECRET_RANGE, &seed.secret);
         set_hash(self.buf, SEC_NEXT_SECRET_RANGE, &seed.next_secret);
+    }
+
+    pub fn set_public_block_hash(&mut self, public_block_hash: &Hash) {
+        set_hash(self.buf, SEC_PUBLIC_HASH_RANGE, public_block_hash);
     }
 
     pub fn finalize(self) -> Hash {
@@ -257,6 +263,7 @@ mod tests {
         let buf = valid_secret_block();
         let prev = SecretBlock {
             block_hash: get_hash(&buf, SEC_PREV_HASH_RANGE),
+            public_block_hash: get_hash(&buf, SEC_PUBLIC_HASH_RANGE),
             seed: Seed::new(Hash::from_bytes([0; 32]), get_hash(&buf, SEC_SECRET_RANGE)),
             payload: Payload::new(0, Hash::from_bytes([0; 32])),
             index: 0,
@@ -268,6 +275,7 @@ mod tests {
         for bad_block_hash in HashBitFlipper::new(&prev.block_hash) {
             let bad_prev = SecretBlock {
                 block_hash: bad_block_hash,
+                public_block_hash: prev.public_block_hash,
                 seed: prev.seed,
                 payload: prev.payload,
                 index: 0,
@@ -281,6 +289,7 @@ mod tests {
         for bad_next_secret in HashBitFlipper::new(&prev.seed.next_secret) {
             let bad_prev = SecretBlock {
                 block_hash: prev.block_hash,
+                public_block_hash: prev.public_block_hash,
                 seed: Seed::new(prev.seed.secret, bad_next_secret),
                 payload: prev.payload,
                 index: 0,

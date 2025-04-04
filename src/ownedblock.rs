@@ -65,10 +65,9 @@ impl<'a> MutOwnedBlock<'a> {
         self.secret_block.set_seed(seed);
     }
 
-    pub fn finalize(self) -> (Hash, Hash) {
+    pub fn finalize(mut self) -> (Hash, Hash) {
         let block_hash = self.block.finalize();
-        // FIXME: We should probably include the resulting public block hash in the secret block,
-        // so set that here before calling MutSecretBlock.finalize().
+        self.secret_block.set_public_block_hash(&block_hash);
         let secret_block_hash = self.secret_block.finalize();
         (block_hash, secret_block_hash)
     }
