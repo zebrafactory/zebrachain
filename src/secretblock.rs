@@ -120,6 +120,10 @@ impl<'a> MutSecretBlock<'a> {
         Self { buf }
     }
 
+    pub fn as_buf(&self) -> &[u8] {
+        self.buf
+    }
+
     pub fn set_previous(&mut self, prev: &SecretBlock) {
         set_u64(self.buf, SEC_INDEX_RANGE, prev.index + 1);
         set_hash(self.buf, SEC_PREV_HASH_RANGE, &prev.block_hash);
@@ -145,10 +149,15 @@ impl<'a> MutSecretBlock<'a> {
 mod tests {
 
     use super::*;
-    use crate::testhelpers::{BitFlipper, HashBitFlipper, random_payload};
+    use crate::testhelpers::{BitFlipper, HashBitFlipper, random_hash, random_payload};
 
     fn valid_secret_block() -> [u8; SECRET_BLOCK] {
         let mut buf = [0; SECRET_BLOCK];
+        set_hash(
+            &mut buf,
+            SEC_PUBLIC_HASH_RANGE,
+            &Hash::from_bytes([7; DIGEST]),
+        );
         set_hash(&mut buf, SEC_SECRET_RANGE, &Hash::from_bytes([1; DIGEST]));
         set_hash(
             &mut buf,
@@ -195,9 +204,10 @@ mod tests {
         let block = SecretBlock::open(&buf).unwrap();
         assert_eq!(
             block.block_hash,
-            Hash::from_hex("7c91488e8a1e9b8e846395d1982e74073fce0f89af18d8732b307fa1ae13ac06")
+            Hash::from_hex("3c244ad689b7bcefc05f77b8b385d58bdc356d7b0801de8774eaec7c5b0d2fd8")
                 .unwrap()
         );
+        assert_eq!(block.public_block_hash, Hash::from_bytes([7; DIGEST]));
         assert_eq!(block.seed.secret, Hash::from_bytes([1; DIGEST]));
         assert_eq!(block.seed.next_secret, Hash::from_bytes([2; DIGEST]));
         assert_eq!(block.payload.state_hash, Hash::from_bytes([3; DIGEST]));
@@ -326,7 +336,7 @@ mod tests {
     }
 
     #[test]
-    fn test_mut_block_new() {
+    fn test_mutblock_new() {
         let mut buf = [69; SECRET_BLOCK];
         let seed = Seed::create(&Hash::from_bytes([69; 32]));
         let payload = Payload::new(0, Hash::from_bytes([13; DIGEST]));
@@ -347,5 +357,51 @@ mod tests {
                 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
             ]
         );
+    }
+
+    #[test]
+    fn test_mutblock_set_seed() {
+        let mut buf = [0; SECRET_BLOCK];
+        let payload = random_payload();
+        let mut block = MutSecretBlock::new(&mut buf, &payload);
+        let seed = Seed::auto_create().unwrap();
+        assert_eq!(&block.as_buf()[SEC_SECRET_RANGE], &[0; DIGEST]);
+        assert_eq!(&block.as_buf()[SEC_NEXT_SECRET_RANGE], &[0; DIGEST]);
+        block.set_seed(&seed);
+        assert_ne!(&block.as_buf()[SEC_SECRET_RANGE], &[0; DIGEST]);
+        assert_ne!(&block.as_buf()[SEC_NEXT_SECRET_RANGE], &[0; DIGEST]);
+        assert_eq!(&block.as_buf()[SEC_SECRET_RANGE], seed.secret.as_bytes());
+        assert_eq!(
+            &block.as_buf()[SEC_NEXT_SECRET_RANGE],
+            seed.next_secret.as_bytes()
+        );
+        let block_hash = block.finalize();
+        let blockstate = SecretBlock::from_hash_at_index(&buf, &block_hash, 0).unwrap();
+        assert_eq!(blockstate.block_hash, block_hash);
+        assert_eq!(blockstate.payload, payload);
+        assert_eq!(blockstate.seed, seed);
+    }
+
+    #[test]
+    fn test_mutblock_set_public_block_hash() {
+        let mut buf = [0; SECRET_BLOCK];
+        let payload = random_payload();
+        let mut block = MutSecretBlock::new(&mut buf, &payload);
+        let seed = Seed::auto_create().unwrap();
+        block.set_seed(&seed);
+        assert_eq!(&block.as_buf()[SEC_PUBLIC_HASH_RANGE], &[0; DIGEST]);
+        let public_block_hash = random_hash();
+        block.set_public_block_hash(&public_block_hash);
+        assert_ne!(&block.as_buf()[SEC_PUBLIC_HASH_RANGE], &[0; DIGEST]);
+        assert_eq!(
+            &block.as_buf()[SEC_PUBLIC_HASH_RANGE],
+            public_block_hash.as_bytes()
+        );
+        let block_hash = block.finalize();
+        let blockstate = SecretBlock::from_hash_at_index(&buf, &block_hash, 0).unwrap();
+        assert_eq!(blockstate.block_hash, block_hash);
+        assert_eq!(blockstate.public_block_hash, public_block_hash);
+        assert_eq!(blockstate.payload, payload);
+        assert_eq!(blockstate.seed, seed);
     }
 }
