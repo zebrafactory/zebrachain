@@ -72,18 +72,19 @@ pub const PREVIOUS_HASH_RANGE: Range<usize> = get_range(6);
 pub const CHAIN_HASH_RANGE: Range<usize> = get_range(7);
 
 /*
-A SecretBlock currently has 6 fields:
+A SecretBlock currently has 7 fields:
 
-    HASH || SECRET || NEXT_SECRET || PAYLOAD || INDEX || PREVIOUS_HASH
-            ^^^^^^^^^^^^^^^^^^^^^               ^^^^^^^^^^^^^^^^^^^^^^
-            Secret Seed state                   From the previous block
+    HASH || PUBLIC_HASH || SECRET || NEXT_SECRET || PAYLOAD || INDEX || PREVIOUS_HASH
+                           ^^^^^^^^^^^^^^^^^^^^^               ^^^^^^^^^^^^^^^^^^^^^^
+                           Secret Seed state                   From the previous block
 */
 
-pub const SECRET_BLOCK: usize = 4 * DIGEST + PAYLOAD + 8;
+pub const SECRET_BLOCK: usize = 5 * DIGEST + PAYLOAD + 8;
 pub const SECRET_BLOCK_AEAD: usize = SECRET_BLOCK + 16;
 
-const SECWIRE: [usize; 6] = [
+const SECWIRE: [usize; 7] = [
     DIGEST,  // Block hash
+    DIGEST,  // Public block hash
     DIGEST,  // Secret
     DIGEST,  // Next secret
     PAYLOAD, // Stuff to be signed
@@ -101,11 +102,12 @@ const fn get_secrange(index: usize) -> Range<usize> {
 }
 
 pub const SEC_HASH_RANGE: Range<usize> = get_secrange(0);
-pub const SEC_SECRET_RANGE: Range<usize> = get_secrange(1);
-pub const SEC_NEXT_SECRET_RANGE: Range<usize> = get_secrange(2);
-pub const SEC_PAYLOAD_RANGE: Range<usize> = get_secrange(3);
-pub const SEC_INDEX_RANGE: Range<usize> = get_secrange(4);
-pub const SEC_PREV_HASH_RANGE: Range<usize> = get_secrange(5);
+pub const SEC_PUBLIC_HASH_RANGE: Range<usize> = get_secrange(1);
+pub const SEC_SECRET_RANGE: Range<usize> = get_secrange(2);
+pub const SEC_NEXT_SECRET_RANGE: Range<usize> = get_secrange(3);
+pub const SEC_PAYLOAD_RANGE: Range<usize> = get_secrange(4);
+pub const SEC_INDEX_RANGE: Range<usize> = get_secrange(5);
+pub const SEC_PREV_HASH_RANGE: Range<usize> = get_secrange(6);
 
 pub const BLOCK_READ_BUF: usize = BLOCK * 64;
 pub const SECRET_BLOCK_AEAD_READ_BUF: usize = SECRET_BLOCK_AEAD * 64;
@@ -174,11 +176,12 @@ mod tests {
     #[test]
     fn test_sec_ranges() {
         assert_eq!(SEC_HASH_RANGE, 0..32);
-        assert_eq!(SEC_SECRET_RANGE, 32..64);
-        assert_eq!(SEC_NEXT_SECRET_RANGE, 64..96);
-        assert_eq!(SEC_PAYLOAD_RANGE, 96..136);
-        assert_eq!(SEC_INDEX_RANGE, 136..144);
-        assert_eq!(SEC_PREV_HASH_RANGE, 144..176);
+        assert_eq!(SEC_PUBLIC_HASH_RANGE, 32..64);
+        assert_eq!(SEC_SECRET_RANGE, 64..96);
+        assert_eq!(SEC_NEXT_SECRET_RANGE, 96..128);
+        assert_eq!(SEC_PAYLOAD_RANGE, 128..168);
+        assert_eq!(SEC_INDEX_RANGE, 168..176);
+        assert_eq!(SEC_PREV_HASH_RANGE, 176..208);
         assert_eq!(SEC_PREV_HASH_RANGE.end, SECRET_BLOCK);
     }
 }
