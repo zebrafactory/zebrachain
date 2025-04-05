@@ -5,6 +5,7 @@
 //! the [Secret] abstraction we use likewise ensures constant time comparison.
 
 use crate::always::*;
+use crate::errors::SecretBlockError;
 use blake3::{Hash, Hasher, keyed_hash};
 use getrandom;
 pub use getrandom::Error;
@@ -80,13 +81,18 @@ impl Seed {
         }
     }
 
-    pub fn from_buf(buf: &[u8]) -> Self {
+    pub fn from_buf(buf: &[u8]) -> Result<Self, SecretBlockError> {
         assert_eq!(buf.len(), SEED);
         let secret = get_hash(buf, SECRET_RANGE);
         let next_secret = get_hash(buf, NEXT_SECRET_RANGE);
-        Self {
-            secret,
-            next_secret,
+        let zero_hash = Hash::from_bytes([0; DIGEST]);
+        if secret == zero_hash || next_secret == zero_hash || secret == next_secret {
+            Err(SecretBlockError::Seed)
+        } else {
+            Ok(Self {
+                secret,
+                next_secret,
+            })
         }
     }
 
@@ -248,7 +254,7 @@ mod tests {
             let seed = Seed::new(secret, next_secret);
             let mut buf = [0; SEED];
             seed.write_to_buf(&mut buf);
-            let seed2 = Seed::from_buf(&buf);
+            let seed2 = Seed::from_buf(&buf).unwrap();
             assert_eq!(seed2.secret, secret);
             assert_eq!(seed2.next_secret, next_secret);
             assert_eq!(seed2, seed);
@@ -261,7 +267,7 @@ mod tests {
             let mut buf = [0; SEED];
             getrandom::fill(&mut buf).unwrap();
             let buf = buf;
-            let seed = Seed::from_buf(&buf);
+            let seed = Seed::from_buf(&buf).unwrap();
             assert_eq!(seed.secret, Hash::from_slice(&buf[SECRET_RANGE]).unwrap());
             assert_eq!(
                 seed.next_secret,
