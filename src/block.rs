@@ -1,51 +1,16 @@
 //! Block construction, validation, and wire format.
 
 use crate::always::*;
+use crate::errors::BlockError;
 use crate::payload::Payload;
 use crate::pksign::verify_block_signature;
 use blake3::{Hash, hash};
-use std::io;
 
 const ZERO_HASH: Hash = Hash::from_bytes([0; DIGEST]);
 
 fn check_block_buf(buf: &[u8]) {
     if buf.len() != BLOCK {
         panic!("Need a {BLOCK} byte slice; got {} bytes", buf.len());
-    }
-}
-
-/// Expresses different error conditions hit during block validation.
-#[derive(Debug, PartialEq)]
-pub enum BlockError {
-    /// Hash of block content does not match hash in block.
-    Content,
-
-    /// Public key or signature is invalid.
-    Signature,
-
-    /// Hash in block does not match expected external value.
-    Hash,
-
-    /// Hash of public key bytes does not match expected external value.
-    PubKeyHash,
-
-    /// Previous hash does not match expected external value.
-    PreviousHash,
-
-    /// Chain hash does not match expected external value.
-    ChainHash,
-
-    /// Index does not match expected external value (previous block index + 1).
-    Index,
-
-    /// First block does not meet 1st block constraints
-    FirstBlock,
-}
-
-impl BlockError {
-    // FIXME: Is there is a Rustier way of doing this? Feedback encouraged.
-    pub fn to_io_error(&self) -> io::Error {
-        io::Error::other(format!("BlockError::{self:?}"))
     }
 }
 

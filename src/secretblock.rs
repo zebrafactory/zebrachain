@@ -1,46 +1,14 @@
 //! Wire format for secret seeds when written to nonvolatile storage.
 
 use crate::always::*;
+use crate::errors::SecretBlockError;
 use crate::payload::Payload;
 use crate::secretseed::Seed;
 use blake3::{Hash, hash};
-use std::io;
 
 fn check_secretblock_buf(buf: &[u8]) {
     if buf.len() != SECRET_BLOCK {
         panic!("Need a {SECRET_BLOCK} byte slice; got {} bytes", buf.len());
-    }
-}
-
-/// Expresses different error conditions hit when validating a [SecretBlock].
-#[derive(Debug, PartialEq)]
-pub enum SecretBlockError {
-    /// Hash of block content does not match hash in block.
-    Content,
-
-    /// Block contains a bad seed where `secret == next_secret`.
-    Seed,
-
-    /// Block is out of sequence (`seed.secret != previous.next_secret`).
-    SeedSequence,
-
-    /// Hash in block does not match expected external value.
-    Hash,
-
-    /// Block index is wrong.
-    Index,
-
-    /// Previous hash in block does not match expected external value.
-    PreviousHash,
-
-    /// Failure decrypting the secret block (chacha20poly1305).
-    Storage,
-}
-
-impl SecretBlockError {
-    // FIXME: Is there is a Rustier way of doing this? Feedback encouraged.
-    pub fn to_io_error(&self) -> io::Error {
-        io::Error::other(format!("SecretBlockError::{self:?}"))
     }
 }
 

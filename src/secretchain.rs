@@ -1,8 +1,9 @@
 //! Read and write secret blocks in a chain.
 
 use crate::always::*;
+use crate::errors::SecretBlockError;
 use crate::fsutil::{create_for_append, open_for_append, secret_chain_filename};
-use crate::secretblock::{SecretBlock, SecretBlockError};
+use crate::secretblock::SecretBlock;
 use crate::secretseed::{Secret, Seed, derive};
 use blake3::{Hash, keyed_hash};
 use chacha20poly1305::{

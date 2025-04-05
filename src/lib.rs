@@ -13,6 +13,7 @@
 pub mod always;
 pub mod block;
 pub mod chain;
+pub mod errors;
 pub mod fsutil;
 pub mod ownedblock;
 pub mod ownedchain;
