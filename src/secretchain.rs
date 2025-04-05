@@ -60,6 +60,7 @@ fn decrypt_in_place(
 /// Save secret chain to non-volitile storage (encrypted and authenticated).
 pub struct SecretChain {
     file: File,
+    first_block_hash: Hash,
     tail: SecretBlock,
     secret: Secret,
     buf: Vec<u8>,
@@ -74,10 +75,12 @@ impl SecretChain {
     ) -> io::Result<Self> {
         assert_eq!(buf.len(), SECRET_BLOCK);
         let tail = SecretBlock::from_hash_at_index(&buf[0..SECRET_BLOCK], block_hash, 0).unwrap();
+        let first_block_hash = tail.block_hash;
         encrypt_in_place(&mut buf, &secret, 0);
         file.write_all(&buf[..])?;
         Ok(Self {
             file,
+            first_block_hash,
             tail,
             secret,
             buf,
@@ -108,6 +111,7 @@ impl SecretChain {
             Ok(block) => block,
             Err(err) => return Err(err.to_io_error()),
         };
+        let first_block_hash = tail.block_hash;
         buf.resize(SECRET_BLOCK_AEAD, 0);
         while file.read_exact(&mut buf[..]).is_ok() {
             if let Err(err) = decrypt_in_place(&mut buf, &secret, tail.index + 1) {
@@ -122,6 +126,7 @@ impl SecretChain {
         buf.zeroize();
         Ok(Self {
             file: file.into_inner(),
+            first_block_hash,
             tail,
             secret,
             buf,
@@ -151,7 +156,12 @@ impl SecretChain {
     }
 
     pub fn iter(&self) -> SecretChainIter {
-        SecretChainIter::new(self.file.try_clone().unwrap(), self.secret, self.count())
+        SecretChainIter::new(
+            self.file.try_clone().unwrap(),
+            self.secret,
+            self.count(),
+            self.first_block_hash,
+        )
     }
 }
 
@@ -168,17 +178,19 @@ pub struct SecretChainIter {
     file: BufReader<File>,
     secret: Hash,
     count: u64,
+    first_block_hash: Hash,
     tail: Option<SecretBlock>,
     buf: Vec<u8>,
 }
 
 impl SecretChainIter {
-    pub fn new(file: File, secret: Hash, count: u64) -> Self {
+    pub fn new(file: File, secret: Hash, count: u64, first_block_hash: Hash) -> Self {
         let file = BufReader::with_capacity(SECRET_BLOCK_AEAD_READ_BUF, file);
         Self {
             file,
             secret,
             count,
+            first_block_hash,
             tail: None,
             buf: vec![0; SECRET_BLOCK_AEAD],
         }
@@ -205,7 +217,7 @@ impl SecretChainIter {
         let result = if let Some(tail) = self.tail.as_ref() {
             SecretBlock::from_previous(&self.buf, tail)
         } else {
-            SecretBlock::open(&self.buf)
+            SecretBlock::from_hash_at_index(&self.buf, &self.first_block_hash, 0)
         };
         match result {
             Ok(block) => {
