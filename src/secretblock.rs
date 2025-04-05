@@ -31,14 +31,13 @@ impl SecretBlock {
         check_secretblock_buf(buf);
         let computed_hash = hash(&buf[DIGEST..]);
         let block_hash = get_hash(buf, SEC_HASH_RANGE);
-        let seed = Seed::from_buf(&buf[SEC_SEED_RANGE])?;
         if computed_hash != block_hash {
             Err(SecretBlockError::Content)
         } else {
             Ok(SecretBlock {
                 block_hash,
                 public_block_hash: get_hash(buf, SEC_PUBLIC_HASH_RANGE),
-                seed,
+                seed: Seed::from_buf(&buf[SEC_SEED_RANGE])?,
                 payload: Payload::from_buf(&buf[SEC_PAYLOAD_RANGE]),
                 index: get_u64(buf, SEC_INDEX_RANGE),
                 previous_hash: get_hash(buf, SEC_PREV_HASH_RANGE),
