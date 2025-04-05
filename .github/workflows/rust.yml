@@ -22,6 +22,7 @@ jobs:
         run: |
           rustup toolchain add ${{ matrix.rust }}
           rustup default ${{ matrix.rust }}
+          rustup component add clippy
       - name: Check
         run: cargo check
       - name: Clippy
