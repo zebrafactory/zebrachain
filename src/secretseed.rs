@@ -8,6 +8,10 @@ use crate::always::*;
 use blake3::{Hash, Hasher, keyed_hash};
 use getrandom;
 pub use getrandom::Error;
+use std::ops::Range;
+
+const SECRET_RANGE: Range<usize> = 0..DIGEST;
+const NEXT_SECRET_RANGE: Range<usize> = DIGEST..DIGEST * 2;
 
 /// A secret buffer with constant time comparison and zeroize.
 ///
@@ -28,7 +32,7 @@ pub fn generate_secret() -> Result<Secret, Error> {
 /// Derive a domain specific [Secret] from a context string and a root secret.
 ///
 /// When doing hybrid signing, it is critical to derive a unique secret for each algorithm (say,
-/// one for ed25519 and another for Dilithium).
+/// one for ed25519 and another for ML-DSA).
 ///
 /// And even if signing with a single algorithm, we still should use a derived secret instead of the
 /// root secret directly.
@@ -74,6 +78,22 @@ impl Seed {
             secret,
             next_secret,
         }
+    }
+
+    pub fn from_buf(buf: &[u8]) -> Self {
+        assert_eq!(buf.len(), SEED);
+        let secret = get_hash(buf, SECRET_RANGE);
+        let next_secret = get_hash(buf, NEXT_SECRET_RANGE);
+        Self {
+            secret,
+            next_secret,
+        }
+    }
+
+    pub fn write_to_buf(&self, buf: &mut [u8]) {
+        assert_eq!(buf.len(), SEED);
+        set_hash(buf, SECRET_RANGE, &self.secret);
+        set_hash(buf, NEXT_SECRET_RANGE, &self.next_secret);
     }
 
     /// Create a new seed by deriving [Seed::secret], [Seed::next_secret] from `initial_entropy`.
@@ -218,6 +238,39 @@ mod tests {
         let secret = hash(&[42; 32]);
         let next_secret = hash(&[42; 32]);
         Seed::new(secret, next_secret);
+    }
+
+    #[test]
+    fn test_seed_roundtrip() {
+        for _ in 0..420 {
+            let secret = generate_secret().unwrap();
+            let next_secret = generate_secret().unwrap();
+            let seed = Seed::new(secret, next_secret);
+            let mut buf = [0; SEED];
+            seed.write_to_buf(&mut buf);
+            let seed2 = Seed::from_buf(&buf);
+            assert_eq!(seed2.secret, secret);
+            assert_eq!(seed2.next_secret, next_secret);
+            assert_eq!(seed2, seed);
+        }
+    }
+
+    #[test]
+    fn test_seed_roundtrip_buffer() {
+        for _ in 0..420 {
+            let mut buf = [0; SEED];
+            getrandom::fill(&mut buf).unwrap();
+            let buf = buf;
+            let seed = Seed::from_buf(&buf);
+            assert_eq!(seed.secret, Hash::from_slice(&buf[SECRET_RANGE]).unwrap());
+            assert_eq!(
+                seed.next_secret,
+                Hash::from_slice(&buf[NEXT_SECRET_RANGE]).unwrap()
+            );
+            let mut buf2 = [0; SEED];
+            seed.write_to_buf(&mut buf2);
+            assert_eq!(buf2, buf);
+        }
     }
 
     #[test]

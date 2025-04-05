@@ -35,6 +35,7 @@ pub const SIG_ED25519_RANGE: Range<usize> = 0..SIG_ED25519;
 
 pub const DIGEST: usize = 32;
 pub const PAYLOAD: usize = 8 + DIGEST;
+pub const SEED: usize = 2 * DIGEST;
 pub const SIGNATURE: usize = SIG_ED25519; // + SIG_MLDSA;
 pub const PUBKEY: usize = PUB_ED25519; // + PUB_MLDSA;
 pub const BLOCK: usize = (4 * DIGEST) + SIGNATURE + PUBKEY + PAYLOAD + 8;
