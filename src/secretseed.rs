@@ -247,6 +247,33 @@ mod tests {
     }
 
     #[test]
+    fn test_seed_from_buf() {
+        let zero = Hash::from_bytes([0; DIGEST]);
+        let a = Hash::from_bytes([41; DIGEST]);
+        let b = Hash::from_bytes([42; DIGEST]);
+
+        // (zero, zero)
+        let mut buf = [0; SEED];
+        assert_eq!(Seed::from_buf(&buf), Err(SecretBlockError::Seed));
+
+        // (a, zero)
+        buf[SECRET_RANGE].copy_from_slice(a.as_bytes());
+        assert_eq!(Seed::from_buf(&buf), Err(SecretBlockError::Seed));
+
+        // (a, a)
+        buf[NEXT_SECRET_RANGE].copy_from_slice(a.as_bytes());
+        assert_eq!(Seed::from_buf(&buf), Err(SecretBlockError::Seed));
+
+        // (a, b)
+        buf[NEXT_SECRET_RANGE].copy_from_slice(b.as_bytes());
+        assert_eq!(Seed::from_buf(&buf), Ok(Seed::new(a, b)));
+
+        // (zero, b)
+        buf[SECRET_RANGE].copy_from_slice(zero.as_bytes());
+        assert_eq!(Seed::from_buf(&buf), Err(SecretBlockError::Seed));
+    }
+
+    #[test]
     fn test_seed_roundtrip() {
         for _ in 0..420 {
             let secret = generate_secret().unwrap();
