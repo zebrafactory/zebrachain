@@ -48,7 +48,7 @@ impl KeyPair {
     /// Write Public Keys into buffer (both ed25519 and ML-DSA).
     pub fn write_pubkey(&self, dst: &mut [u8]) {
         dst[PUB_ED25519_RANGE].copy_from_slice(self.ed25519.verifying_key().as_bytes());
-        //dst[PUB_MLDSA_RANGE].copy_from_slice(self.mldsa.verifying_key().encode().as_slice());
+        dst[PUB_MLDSA_RANGE].copy_from_slice(self.mldsa.verifying_key().encode().as_slice());
     }
 
     /// Returns hash of public key byte representation.
@@ -72,7 +72,7 @@ impl KeyPair {
             .sign_deterministic(block.as_signable(), b"")
             .unwrap();
         block.as_mut_signature()[SIG_ED25519_RANGE].copy_from_slice(&sig1.to_bytes());
-        //block.as_mut_signature()[SIG_MLDSA_RANGE].copy_from_slice(sig2.encode().as_slice());
+        block.as_mut_signature()[SIG_MLDSA_RANGE].copy_from_slice(sig2.encode().as_slice());
     }
 }
 
@@ -186,7 +186,7 @@ impl<'a> Hybrid<'a> {
     }
 
     fn verify(&self) -> bool {
-        self.verify_ed25519() // && self.verify_mldsa()
+        self.verify_ed25519() && self.verify_mldsa()
     }
 }
 
@@ -201,9 +201,9 @@ mod tests {
     use super::*;
     use crate::testhelpers::random_payload;
 
-    static HEX0: &str = "450f17b763621657bf0757a314a2162107a4e526950ca22785dc9fdeb0e5ac69";
+    static HEX0: &str = "8e4bb3dfe69f0720a9fc6eb5770c035be4db78a4c127f48691f3c0291711e165";
     static HEX1: &str = "80eb433447f789410ce5261e94880da671cb61140540512c33ba710b43bed605";
-    static HEX2: &str = "1d2f71a2cfc7de50ed8ed98daea47c56f8948326c9315ba13810c3fe6226a98d";
+    static HEX2: &str = "9a847a51072b98ddaaf55dbae220ef8f13a18a4511165587677d00e9bb19418d";
 
     #[test]
     fn test_ml_dsa() {

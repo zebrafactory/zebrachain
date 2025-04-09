@@ -26,18 +26,15 @@ pub const PUB_MLDSA: usize = 1952;
 pub const SIG_MLDSA: usize = 3309;
 
 pub const PUB_MLDSA_RANGE: Range<usize> = 0..PUB_MLDSA;
-//pub const PUB_ED25519_RANGE: Range<usize> = PUB_MLDSA..PUB_MLDSA + PUB_ED25519;
+pub const PUB_ED25519_RANGE: Range<usize> = PUB_MLDSA..PUB_MLDSA + PUB_ED25519;
 pub const SIG_MLDSA_RANGE: Range<usize> = 0..SIG_MLDSA;
-//pub const SIG_ED25519_RANGE: Range<usize> = SIG_MLDSA..SIG_MLDSA + SIG_ED25519;
-
-pub const PUB_ED25519_RANGE: Range<usize> = 0..PUB_ED25519;
-pub const SIG_ED25519_RANGE: Range<usize> = 0..SIG_ED25519;
+pub const SIG_ED25519_RANGE: Range<usize> = SIG_MLDSA..SIG_MLDSA + SIG_ED25519;
 
 pub const DIGEST: usize = 32;
 pub const PAYLOAD: usize = 8 + DIGEST;
 pub const SEED: usize = 2 * DIGEST;
-pub const SIGNATURE: usize = SIG_ED25519; // + SIG_MLDSA;
-pub const PUBKEY: usize = PUB_ED25519; // + PUB_MLDSA;
+pub const SIGNATURE: usize = SIG_ED25519 + SIG_MLDSA;
+pub const PUBKEY: usize = PUB_ED25519 + PUB_MLDSA;
 pub const BLOCK: usize = (4 * DIGEST) + SIGNATURE + PUBKEY + PAYLOAD + 8;
 
 pub const HASHABLE_RANGE: Range<usize> = DIGEST..BLOCK;
@@ -152,20 +149,20 @@ mod tests {
 
     #[test]
     fn test_ranges() {
-        assert_eq!(HASHABLE_RANGE, 32..272);
-        assert_eq!(SIGNABLE_RANGE, 96..272);
+        assert_eq!(HASHABLE_RANGE, 32..5533);
+        assert_eq!(SIGNABLE_RANGE, 3405..5533);
 
         assert_eq!(HASH_RANGE, 0..32);
 
-        assert_eq!(SIGNATURE_RANGE, 32..96);
-        assert_eq!(PUBKEY_RANGE, 96..128);
-        assert_eq!(NEXT_PUBKEY_HASH_RANGE, 128..160);
+        assert_eq!(SIGNATURE_RANGE, 32..3405);
+        assert_eq!(PUBKEY_RANGE, 3405..5389);
+        assert_eq!(NEXT_PUBKEY_HASH_RANGE, 5389..5421);
 
-        assert_eq!(PAYLOAD_RANGE, 160..200);
+        assert_eq!(PAYLOAD_RANGE, 5421..5461);
 
-        assert_eq!(INDEX_RANGE, 200..208);
-        assert_eq!(PREVIOUS_HASH_RANGE, 208..240);
-        assert_eq!(CHAIN_HASH_RANGE, 240..272);
+        assert_eq!(INDEX_RANGE, 5461..5469);
+        assert_eq!(PREVIOUS_HASH_RANGE, 5469..5501);
+        assert_eq!(CHAIN_HASH_RANGE, 5501..5533);
 
         assert_eq!(HASHABLE_RANGE.end, BLOCK);
         assert_eq!(SIGNABLE_RANGE.end, BLOCK);
