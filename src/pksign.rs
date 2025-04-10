@@ -21,24 +21,13 @@ fn build_mldsa_keypair(secret: &Hash) -> ml_dsa::KeyPair<MlDsa65> {
     MlDsa65::key_gen_internal(&hack)
 }
 
-/// Abstraction over specific public key algorithms (and hybrid combinations thereof).
-///
-/// Currently this does hybrid signing with ML-DSA-65 and ed25519. This needs to be configurable in
-/// the near future.
-///
-/// # Examples
-///
-/// ```
-/// let secret = zebrachain::secretseed::generate_secret().unwrap();
-/// let keypair = zebrachain::pksign::KeyPair::new(&secret);
-/// ```
-pub struct KeyPair {
+struct KeyPair {
     ed25519: ed25519_dalek::SigningKey,
     mldsa: ml_dsa::KeyPair<MlDsa65>,
 }
 
 impl KeyPair {
-    pub fn new(secret: &Hash) -> Self {
+    fn new(secret: &Hash) -> Self {
         Self {
             ed25519: build_ed25519_keypair(secret),
             mldsa: build_mldsa_keypair(secret),
@@ -46,7 +35,7 @@ impl KeyPair {
     }
 
     /// Write Public Keys into buffer (both ed25519 and ML-DSA).
-    pub fn write_pubkey(&self, dst: &mut [u8]) {
+    fn write_pubkey(&self, dst: &mut [u8]) {
         dst[PUB_ED25519_RANGE].copy_from_slice(self.ed25519.verifying_key().as_bytes());
         dst[PUB_MLDSA_RANGE].copy_from_slice(self.mldsa.verifying_key().encode().as_slice());
     }
@@ -54,7 +43,7 @@ impl KeyPair {
     /// Returns hash of public key byte representation.
     ///
     /// Consumes instance becase we should either make a signature or hash the pubkey, not both.
-    pub fn pubkey_hash(self) -> Hash {
+    fn pubkey_hash(self) -> Hash {
         let mut buf = [0; PUBKEY];
         self.write_pubkey(&mut buf);
         hash(&buf)
@@ -63,7 +52,7 @@ impl KeyPair {
     /// Sign a block being built up.
     ///
     /// Consumes instance because we should only make one signature per KeyPair.
-    pub fn sign(self, block: &mut MutBlock) {
+    fn sign(self, block: &mut MutBlock) {
         self.write_pubkey(block.as_mut_pubkey());
         let sig1 = self.ed25519.sign(block.as_signable());
         let sig2 = self
@@ -139,7 +128,7 @@ pub fn sign_block(
     block.finalize()
 }
 
-pub struct Hybrid<'a> {
+struct Hybrid<'a> {
     block: &'a Block<'a>,
 }
 
