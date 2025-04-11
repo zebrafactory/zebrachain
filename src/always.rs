@@ -39,6 +39,7 @@ pub const BLOCK: usize = (4 * DIGEST) + SIGNATURE + PUBKEY + PAYLOAD + 8;
 
 pub const HASHABLE_RANGE: Range<usize> = DIGEST..BLOCK;
 pub const SIGNABLE_RANGE: Range<usize> = DIGEST + SIGNATURE..BLOCK;
+pub const SIGNABLE2_RANGE: Range<usize> = SIGNABLE_RANGE.start - SIG_ED25519..BLOCK;
 
 const WIRE: [usize; 8] = [
     DIGEST,    // Block hash
@@ -151,6 +152,7 @@ mod tests {
     fn test_ranges() {
         assert_eq!(HASHABLE_RANGE, 32..5533);
         assert_eq!(SIGNABLE_RANGE, 3405..5533);
+        assert_eq!(SIGNABLE2_RANGE, 3341..5533);
 
         assert_eq!(HASH_RANGE, 0..32);
 

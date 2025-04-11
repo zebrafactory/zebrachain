@@ -134,6 +134,10 @@ impl<'a> Block<'a> {
         &self.buf[SIGNABLE_RANGE]
     }
 
+    pub fn as_signable2(&self) -> &[u8] {
+        &self.buf[SIGNABLE2_RANGE]
+    }
+
     pub fn as_signature(&self) -> &[u8] {
         &self.buf[SIGNATURE_RANGE]
     }
@@ -233,6 +237,10 @@ impl<'a> MutBlock<'a> {
 
     pub fn as_signable(&self) -> &[u8] {
         &self.buf[SIGNABLE_RANGE]
+    }
+
+    pub fn as_signable2(&self) -> &[u8] {
+        &self.buf[SIGNABLE2_RANGE]
     }
 
     pub fn compute_pubkey_hash(&self) -> Hash {

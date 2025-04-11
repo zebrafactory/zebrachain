@@ -53,14 +53,20 @@ impl KeyPair {
     ///
     /// Consumes instance because we should only make one signature per KeyPair.
     fn sign(self, block: &mut MutBlock) {
+        // Write pubkey to buffer because we sign that:
         self.write_pubkey(block.as_mut_pubkey());
+
+        // Compute ed25519 signature. Then write it to the buffer because ML-DSA signs the
+        // the ed25519 signature plus the rest of the block (SIGNABLE2_RANGE):
         let sig1 = self.ed25519.sign(block.as_signable());
+        block.as_mut_signature()[SIG_ED25519_RANGE].copy_from_slice(&sig1.to_bytes());
+
+        // Compute ML-DSA signature over SIGNABLE2_RANGE, then write it to the buffer:
         let sig2 = self
             .mldsa
             .signing_key()
-            .sign_deterministic(block.as_signable(), b"")
+            .sign_deterministic(block.as_signable2(), b"")
             .unwrap();
-        block.as_mut_signature()[SIG_ED25519_RANGE].copy_from_slice(&sig1.to_bytes());
         block.as_mut_signature()[SIG_MLDSA_RANGE].copy_from_slice(sig2.encode().as_slice());
     }
 }
@@ -158,7 +164,7 @@ impl<'a> Hybrid<'a> {
         let pubkey = ml_dsa::VerifyingKey::<MlDsa65>::decode(&pubenc);
         let sigenc = ml_dsa::EncodedSignature::<MlDsa65>::try_from(self.as_sig_mldsa()).unwrap();
         if let Some(sig) = ml_dsa::Signature::<MlDsa65>::decode(&sigenc) {
-            pubkey.verify_with_context(self.block.as_signable(), b"", &sig)
+            pubkey.verify_with_context(self.block.as_signable2(), b"", &sig)
         } else {
             false
         }
