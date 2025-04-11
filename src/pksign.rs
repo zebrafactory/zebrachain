@@ -71,7 +71,7 @@ impl KeyPair {
     }
 }
 
-/// Used to get current KeyPair and next PubKey hash from a Seed.
+/// High-level [MutBlock] signing API.
 ///
 /// # Examples
 ///
@@ -93,19 +93,9 @@ impl SecretSigner {
         }
     }
 
-    /*
-        The SecretSigner must first copy the pubkey and next_pubkey_hash byte
-        representations into the PUBKEY_RANGE and NEXT_PUBKEY_HASH_RANGE, respectively.
-
-        The signature is then computed over the SIGNABLE_RAGE.
-
-        Finally, the byte representation of the signature is copied into
-        SIGNATURE_RANGE.
-
-        The SecrectSigner should not compute or set the block hash.
-    */
-
+    /// Sign a [MutBlock].
     pub fn sign(self, block: &mut MutBlock) {
+        // First write next_pubkey_hash because that's part of what we sign:
         block.set_next_pubkey_hash(&self.next_pubkey_hash);
         self.keypair.sign(block);
     }

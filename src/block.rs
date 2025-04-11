@@ -17,7 +17,7 @@ fn check_block_buf(buf: &[u8]) {
 /// Alias for `Result<Block<'a>, BlockError>`.
 pub type BlockResult<'a> = Result<Block<'a>, BlockError>;
 
-/// Contains state from current block needed to validate next block.
+/// Contains state from current block needed to validate next block, plus the payload.
 #[derive(Clone, Debug, PartialEq)]
 pub struct BlockState {
     pub index: u64,
