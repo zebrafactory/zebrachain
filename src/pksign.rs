@@ -3,18 +3,18 @@
 use crate::always::*;
 use crate::block::{Block, BlockState, MutBlock};
 use crate::payload::Payload;
-use crate::secretseed::{Seed, derive};
+use crate::secretseed::{Secret, Seed, derive};
 use blake3::{Hash, hash};
 use ed25519_dalek;
 use ml_dsa;
 use ml_dsa::{B32, KeyGen, MlDsa65};
 use signature::Signer;
 
-fn build_ed25519_keypair(secret: &Hash) -> ed25519_dalek::SigningKey {
+fn build_ed25519_keypair(secret: &Secret) -> ed25519_dalek::SigningKey {
     ed25519_dalek::SigningKey::from_bytes(derive(CONTEXT_ED25519, secret).as_bytes())
 }
 
-fn build_mldsa_keypair(secret: &Hash) -> ml_dsa::KeyPair<MlDsa65> {
+fn build_mldsa_keypair(secret: &Secret) -> ml_dsa::KeyPair<MlDsa65> {
     let mut hack = B32::default();
     hack.0
         .copy_from_slice(derive(CONTEXT_ML_DSA, secret).as_bytes()); // FIXME: Do more better
@@ -27,7 +27,7 @@ struct KeyPair {
 }
 
 impl KeyPair {
-    fn new(secret: &Hash) -> Self {
+    fn new(secret: &Secret) -> Self {
         Self {
             ed25519: build_ed25519_keypair(secret),
             mldsa: build_mldsa_keypair(secret),
@@ -58,16 +58,16 @@ impl KeyPair {
 
         // Compute ed25519 signature. Then write it to the buffer because ML-DSA signs the
         // the ed25519 signature plus the rest of the block (SIGNABLE2_RANGE):
-        let sig1 = self.ed25519.sign(block.as_signable());
-        block.as_mut_signature()[SIG_ED25519_RANGE].copy_from_slice(&sig1.to_bytes());
+        let sig = self.ed25519.sign(block.as_signable());
+        block.as_mut_signature()[SIG_ED25519_RANGE].copy_from_slice(&sig.to_bytes());
 
         // Compute ML-DSA signature over SIGNABLE2_RANGE, then write it to the buffer:
-        let sig2 = self
+        let sig = self
             .mldsa
             .signing_key()
             .sign_deterministic(block.as_signable2(), b"")
             .unwrap();
-        block.as_mut_signature()[SIG_MLDSA_RANGE].copy_from_slice(sig2.encode().as_slice());
+        block.as_mut_signature()[SIG_MLDSA_RANGE].copy_from_slice(sig.encode().as_slice());
     }
 }
 
@@ -190,6 +190,13 @@ mod tests {
     static HEX1: &str = "80eb433447f789410ce5261e94880da671cb61140540512c33ba710b43bed605";
     static HEX2: &str = "9a847a51072b98ddaaf55dbae220ef8f13a18a4511165587677d00e9bb19418d";
 
+    fn build_mldsa_test(secret: &Secret) -> ml_dsa::KeyPair<MlDsa65> {
+        // Does not use a derived secret, don't use for realsies!
+        let mut hack = B32::default();
+        hack.0.copy_from_slice(secret.as_bytes()); // FIXME: Do more better
+        MlDsa65::key_gen_internal(&hack)
+    }
+
     #[test]
     fn test_ml_dsa() {
         use ml_dsa::{B32, KeyGen, MlDsa65};
@@ -204,6 +211,42 @@ mod tests {
         assert_eq!(
             hash(keypair.verifying_key().encode().as_slice()),
             Hash::from_hex(HEX1).unwrap()
+        );
+    }
+
+    #[test]
+    fn test_build_ed25519_keypair() {
+        // Make sure a derived secret is used and not the parent secret directly
+        let secret = Hash::from_bytes([69; DIGEST]);
+        let derived_secret = derive(CONTEXT_ED25519, &secret);
+        let bad = ed25519_dalek::SigningKey::from_bytes(secret.as_bytes());
+        let good = ed25519_dalek::SigningKey::from_bytes(derived_secret.as_bytes());
+        let ret = build_ed25519_keypair(&secret);
+        assert_ne!(
+            ret.verifying_key().as_bytes(),
+            bad.verifying_key().as_bytes()
+        );
+        assert_eq!(
+            ret.verifying_key().as_bytes(),
+            good.verifying_key().as_bytes()
+        );
+    }
+
+    #[test]
+    fn test_build_mldsa_keypair() {
+        // Make sure a derived secret is used and not the parent secret directly
+        let secret = Hash::from_bytes([69; DIGEST]);
+        let derived_secret = derive(CONTEXT_ML_DSA, &secret);
+        let bad = build_mldsa_test(&secret);
+        let good = build_mldsa_test(&derived_secret);
+        let ret = build_mldsa_keypair(&secret);
+        assert_ne!(
+            ret.verifying_key().encode().as_slice(),
+            bad.verifying_key().encode().as_slice()
+        );
+        assert_eq!(
+            ret.verifying_key().encode().as_slice(),
+            good.verifying_key().encode().as_slice()
         );
     }
 
