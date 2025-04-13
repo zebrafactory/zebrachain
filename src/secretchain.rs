@@ -112,19 +112,23 @@ impl SecretChain {
             Ok(block) => block,
             Err(err) => return Err(err.to_io_error()),
         };
-        let first_block_hash = tail.block_hash;
+        buf.zeroize();
         buf.resize(SECRET_BLOCK_AEAD, 0);
+        let first_block_hash = tail.block_hash;
         while file.read_exact(&mut buf[..]).is_ok() {
             if let Err(err) = decrypt_in_place(&mut buf, &secret, tail.index + 1) {
                 return Err(err.to_io_error());
             }
             tail = match SecretBlock::from_previous(&buf[..], &tail) {
                 Ok(block) => block,
-                Err(err) => return Err(err.to_io_error()),
+                Err(err) => {
+                    buf.zeroize();
+                    return Err(err.to_io_error());
+                }
             };
+            buf.zeroize();
             buf.resize(SECRET_BLOCK_AEAD, 0);
         }
-        buf.zeroize();
         Ok(Self {
             file: file.into_inner(),
             first_block_hash,
@@ -220,6 +224,7 @@ impl SecretChainIter {
         } else {
             SecretBlock::from_hash_at_index(&self.buf, &self.first_block_hash, 0)
         };
+        self.buf.zeroize();
         match result {
             Ok(block) => {
                 self.tail = Some(block.clone());
@@ -237,7 +242,6 @@ impl Iterator for SecretChainIter {
         if self.index() < self.count {
             Some(self.next_inner())
         } else {
-            self.buf.zeroize();
             None
         }
     }
