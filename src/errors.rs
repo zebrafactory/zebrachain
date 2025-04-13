@@ -2,7 +2,7 @@
 
 use std::io;
 
-/// Expresses different error conditions hit during block validation.
+/// Error conditions hit when validating a [Block][crate::block::Block].
 #[derive(Debug, PartialEq)]
 pub enum BlockError {
     /// Hash of block content does not match hash in block.
@@ -37,7 +37,7 @@ impl BlockError {
     }
 }
 
-/// Expresses different error conditions hit when validating a [SecretBlock].
+/// Error conditions hit when validating a [SecretBlock][crate::secretblock::SecretBlock].
 #[derive(Debug, PartialEq)]
 pub enum SecretBlockError {
     /// Hash of block content does not match hash in block.
