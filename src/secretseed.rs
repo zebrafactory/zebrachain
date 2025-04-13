@@ -37,10 +37,10 @@ pub fn generate_secret() -> Result<Secret, Error> {
 ///
 /// And even if signing with a single algorithm, we still should use a derived secret instead of the
 /// root secret directly.
-pub fn derive(context: &str, secret: &Secret) -> Secret {
+pub fn derive_secret(context: &str, secret: &Secret) -> Secret {
     if context.len() != 64 {
         panic!(
-            "derive(): context string length must be 64; got {}",
+            "derive_secret(): context string length must be 64; got {}",
             context.len()
         );
     }
@@ -104,8 +104,8 @@ impl Seed {
 
     /// Create a new seed by deriving [Seed::secret], [Seed::next_secret] from `initial_entropy`.
     pub fn create(initial_entropy: &Secret) -> Self {
-        let secret = derive(CONTEXT_SECRET, initial_entropy);
-        let next_secret = derive(CONTEXT_SECRET_NEXT, initial_entropy);
+        let secret = derive_secret(CONTEXT_SECRET, initial_entropy);
+        let next_secret = derive_secret(CONTEXT_SECRET_NEXT, initial_entropy);
         Self::new(secret, next_secret)
     }
 
@@ -171,10 +171,10 @@ mod tests {
     }
 
     #[test]
-    fn test_derive() {
+    fn test_derive_secret() {
         let secret = Hash::from_bytes([7; 32]);
 
-        let h = derive(CONTEXT_SECRET, &secret);
+        let h = derive_secret(CONTEXT_SECRET, &secret);
         assert_eq!(
             h.as_bytes(),
             &[
@@ -183,7 +183,7 @@ mod tests {
             ]
         );
 
-        let h = derive(CONTEXT_SECRET_NEXT, &secret);
+        let h = derive_secret(CONTEXT_SECRET_NEXT, &secret);
         assert_eq!(
             h.as_bytes(),
             &[
@@ -194,7 +194,7 @@ mod tests {
 
         let secret = Hash::from_bytes([8; 32]);
 
-        let h = derive(CONTEXT_SECRET, &secret);
+        let h = derive_secret(CONTEXT_SECRET, &secret);
         assert_eq!(
             h.as_bytes(),
             &[
@@ -203,7 +203,7 @@ mod tests {
             ]
         );
 
-        let h = derive(CONTEXT_SECRET_NEXT, &secret);
+        let h = derive_secret(CONTEXT_SECRET_NEXT, &secret);
         assert_eq!(
             h.as_bytes(),
             &[
@@ -214,19 +214,19 @@ mod tests {
     }
 
     #[test]
-    #[should_panic(expected = "derive(): context string length must be 64; got 63")]
-    fn test_derive_panic_low() {
+    #[should_panic(expected = "derive_secret(): context string length must be 64; got 63")]
+    fn test_derive_secret_panic_low() {
         let secret = generate_secret().unwrap();
-        derive(&CONTEXT_SECRET[0..63], &secret);
+        derive_secret(&CONTEXT_SECRET[0..63], &secret);
     }
 
     #[test]
-    #[should_panic(expected = "derive(): context string length must be 64; got 65")]
-    fn test_derive_panic_high() {
+    #[should_panic(expected = "derive_secret(): context string length must be 64; got 65")]
+    fn test_derive_secret_panic_high() {
         let secret = generate_secret().unwrap();
         let mut context = String::from(CONTEXT_SECRET);
         context.push('7');
-        derive(&context, &secret);
+        derive_secret(&context, &secret);
     }
 
     #[test]

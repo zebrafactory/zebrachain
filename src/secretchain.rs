@@ -4,7 +4,7 @@ use crate::always::*;
 use crate::errors::SecretBlockError;
 use crate::fsutil::{create_for_append, open_for_append, secret_chain_filename};
 use crate::secretblock::SecretBlock;
-use crate::secretseed::{Secret, Seed, derive};
+use crate::secretseed::{Secret, Seed, derive_secret};
 use blake3::{Hash, keyed_hash};
 use chacha20poly1305::{
     ChaCha20Poly1305, Key, Nonce,
@@ -20,8 +20,8 @@ use zeroize::Zeroize;
 #[inline]
 fn derive_block_secrets_inner(secret: &Secret, index: u64) -> (Secret, Secret) {
     let root = keyed_hash(secret.as_bytes(), &index.to_le_bytes());
-    let key = derive(CONTEXT_STORE_KEY, &root);
-    let nonce = derive(CONTEXT_STORE_NONCE, &root);
+    let key = derive_secret(CONTEXT_STORE_KEY, &root);
+    let nonce = derive_secret(CONTEXT_STORE_NONCE, &root);
     assert_ne!(key, nonce);
     (key, nonce)
 }
