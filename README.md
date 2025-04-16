@@ -30,13 +30,20 @@ introduced at each signature, minimizing the problem of whether there was high e
 entropy when the ZebraChain was created.
 
 * Entropy accumulation throughout the lifetime of a ZebraChain. At each signature, a new call to
-`getrandom()` is made. This new entropy is securely mixed with the current seed (using a keyed hash), and the result is the next seed.
+`getrandom()` is made. This new entropy is securely mixed with the current seed (using a keyed
+hash), and the result is the next seed.
 
 * Quantum safe. ZebraChain uses the recently standardized
 [FIPS 204 ML-DSA](https://csrc.nist.gov/pubs/fips/204/final) quantum secure algorithm in a hybrid
 construction with the classically secure [ed25519](https://ed25519.cr.yp.to/) algorithm (as
 recommended by the ML-DSA authors). Support for
 [FIPS 205 SLH-DSA](https://csrc.nist.gov/pubs/fips/205/final) will be added soon.
+
+The current implementaion has low abstraction and is not configurable, making it easy to review the
+protocol. So please jump in and help!
+
+The next step is to make the implemntation configuable for single, double, and tripple hrybrid
+signing with ed25519, ML-DSA, and SLH-DSA, supporting all ML-DSA and SLH-DSA parameter sets.
 
 ## 🦀 Dependencies of Interest
 
@@ -70,20 +77,13 @@ And where:
 SIG = sign(PUB || NEXT_PUB_HASH || PAYLOAD || INDEX || PREV_HASH || CHAIN_HASH)
 ```
 
-The `PAYLOAD` field is the content being signed, but the exact size and meaning of this field is
-defined by higher level code built on ZebraChain. The `PAYLOAD` would typically contain the hash
-of the top level state object being tracked by the ZebraChain.
-
-As ZebraChain supports hybrid signing, the `SIG` and `PUB` fields can contain multiple signatures
-and multiple public keys.
-
-For example, if doing hybrid signing with ML-DSA and ed25519, the `PUB` field expands into:
+The `PUB` field contains both ML-DSA and ed25519 public keys:
 
 ```
 PUB = (PUB_ML_DSA || PUB_ED25519)
 ```
 
-And the `SIG` field expands into:
+And the `SIG` field contains both ML-DSA and ed25519 signatures:
 
 ```
 SIG = (SIG_ML_DSA || SIG_ED25519)
@@ -100,6 +100,10 @@ And where:
 ```
 SIG_ML_DSA = sign_ml_dsa(SIG_ED25519 || SIGNABLE)
 ```
+
+The `PAYLOAD` field is the content being signed. Currently it contains a timestamp and a hash,
+but it will soon be reworked into a trait, allowing higher level code to define the the size of
+palyoad and interpret the payload content however needed.
 
 ## 📜 License
 
