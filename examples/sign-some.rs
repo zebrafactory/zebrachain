@@ -1,10 +1,8 @@
 //! Create a new chain and some signatures.
 
-use blake3::keyed_hash;
 use tempfile;
 use zf_zebrachain::{
-    chain::{Chain, CheckPoint},
-    fsutil::{chain_filename, open_for_append, secret_chain_filename},
+    chain::CheckPoint,
     ownedchain::OwnedChainStore,
     payload::Payload,
     secretchain::SecretChain,
@@ -44,23 +42,18 @@ fn main() {
     println!("Tead: {}", tail.block_hash);
     println!("Count: {}", chain.count());
 
-    let filename = chain_filename(tmpdir.path(), &chain_hash);
-    let file = open_for_append(&filename).unwrap();
     println!("Opening chain and fully validating...");
-    let chain = Chain::open(file, &chain_hash).unwrap();
+    let chain = ocs.store().open_chain(&chain_hash).unwrap();
     println!("Iterating through chain and fully validating...");
     for result in &chain {
         let _state = result.unwrap();
         //println!("{}", state.block_hash);
     }
-    println!("Removing public chain file {:?}", filename);
+    println!("Removing public chain file...");
     ocs.store().remove_chain_file(&chain_hash).unwrap();
 
-    let chain_secret = keyed_hash(root_secret.as_bytes(), chain_hash.as_bytes());
-    let filename = secret_chain_filename(tmpdir.path(), &chain_hash);
-    let file = open_for_append(&filename).unwrap();
     println!("Opening secret chain and fully validating...");
-    let secchain = SecretChain::open(file, chain_secret).unwrap();
+    let secchain = ocs.secret_store().open_chain(&chain_hash).unwrap();
 
     println!("Iterating through secret chain and fully validating...");
     for result in &secchain {
