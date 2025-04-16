@@ -15,7 +15,7 @@ use std::path::{Path, PathBuf};
 /// # Example
 ///
 /// ```
-/// use zebrachain::fsutil::chain_filename;
+/// use zf_zebrachain::fsutil::chain_filename;
 /// use blake3::Hash;
 /// use std::path::PathBuf;
 /// let dir = PathBuf::from("/tmp");
@@ -34,7 +34,7 @@ pub fn chain_filename(dir: &Path, chain_hash: &Hash) -> PathBuf {
 /// # Example
 ///
 /// ```
-/// use zebrachain::fsutil::secret_chain_filename;
+/// use zf_zebrachain::fsutil::secret_chain_filename;
 /// use blake3::Hash;
 /// use std::path::PathBuf;
 /// let dir = PathBuf::from("/tmp");

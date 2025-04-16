@@ -2,12 +2,14 @@
 
 use blake3::keyed_hash;
 use tempfile;
-use zebrachain::chain::{Chain, CheckPoint};
-use zebrachain::fsutil::{chain_filename, open_for_append, secret_chain_filename};
-use zebrachain::ownedchain::OwnedChainStore;
-use zebrachain::payload::Payload;
-use zebrachain::secretchain::SecretChain;
-use zebrachain::secretseed::generate_secret;
+use zf_zebrachain::{
+    chain::{Chain, CheckPoint},
+    fsutil::{chain_filename, open_for_append, secret_chain_filename},
+    ownedchain::OwnedChainStore,
+    payload::Payload,
+    secretchain::SecretChain,
+    secretseed::generate_secret,
+};
 
 const COUNT: usize = 42_000;
 
