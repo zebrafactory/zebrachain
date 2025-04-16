@@ -38,14 +38,6 @@ construction with the classically secure [ed25519](https://ed25519.cr.yp.to/) al
 recommended by the ML-DSA authors). Support for
 [FIPS 205 SLH-DSA](https://csrc.nist.gov/pubs/fips/205/final) will be added soon.
 
-* *Some* quantum mitigation, even if ML-DSA is broken.  A sufficiently large quantum computer can
-get the secret key from an ed25519 public key (that's the whole problem).  But that same quantum
-computer *cannot* get the ed25519 public key from the *hash* of that public key. So if consumers of
-the chain locally checkpoint the hash of the latest block, a quantum attack cannot be attempted
-until the owner of the ZebraChain publishes their next valid signature block (after which the public
-key for the block is exposed, allowing a quantum attacker to get the secret key and forge arbitrary
-signatures for that position in the chain).
-
 ## 🦀 Dependencies of Interest
 
 ZebraChain is built on existing implementations of established cryptographic primitives.
