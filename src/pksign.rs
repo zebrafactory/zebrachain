@@ -36,6 +36,7 @@ impl KeyPair {
 
     /// Write Public Keys into buffer (both ed25519 and ML-DSA).
     fn write_pubkey(&self, dst: &mut [u8]) {
+        assert_eq!(dst.len(), PUBKEY);
         dst[PUB_ED25519_RANGE].copy_from_slice(self.ed25519.verifying_key().as_bytes());
         dst[PUB_MLDSA_RANGE].copy_from_slice(self.mldsa.verifying_key().encode().as_slice());
     }

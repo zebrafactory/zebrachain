@@ -127,10 +127,6 @@ impl Seed {
     ///
     /// See the source code for sure because it's simple, but important to understand.
     pub fn advance(&self, new_entropy: &Secret) -> Self {
-        // We need to securely mix the previous entropy with new_entropy.  Hashing the concatenation
-        // hash(next_secret || new_entropy) should be sufficient (right?), but
-        // keyed_hash(next_secret, new_entropy) is definitely a more conservative construction with
-        // little overhead, so we might as well do that (feedback encouraged).
         let next_next_secret = keyed_hash(self.next_secret.as_bytes(), new_entropy.as_bytes());
         Self::new(self.next_secret, next_next_secret)
     }
