@@ -2,14 +2,10 @@
 
 use tempfile;
 use zf_zebrachain::{
-    chain::CheckPoint,
-    ownedchain::OwnedChainStore,
-    payload::Payload,
-    secretchain::SecretChain,
-    secretseed::generate_secret,
+    chain::CheckPoint, ownedchain::OwnedChainStore, payload::Payload, secretseed::generate_secret,
 };
 
-const COUNT: usize = 42_000;
+const COUNT: usize = 420;
 
 fn build_payloads() -> Vec<Payload> {
     let mut payloads = Vec::with_capacity(COUNT);

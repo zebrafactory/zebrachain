@@ -31,4 +31,6 @@ jobs:
         run: cargo build --verbose
       - name: Test
         run: cargo test --verbose
+      - name: Run example
+        run: cargo run --example sign-some --release
 
