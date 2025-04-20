@@ -308,11 +308,11 @@ mod tests {
         assert_ne!(block_hash, block2_hash);
         assert_ne!(chain_hash, block2_hash);
         assert_eq!(&buf[0..DIGEST], block2_hash.as_bytes());
-        assert_eq!(&buf[BLOCK - DIGEST..], chain_hash.as_bytes());
         assert_eq!(
             &buf[BLOCK - DIGEST * 2..BLOCK - DIGEST],
-            block_hash.as_bytes()
+            chain_hash.as_bytes()
         );
+        assert_eq!(&buf[BLOCK - DIGEST..], block_hash.as_bytes());
     }
 
     #[test]

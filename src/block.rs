@@ -261,7 +261,7 @@ mod tests {
     use crate::secretseed::Seed;
     use crate::testhelpers::{BitFlipper, HashBitFlipper, random_hash, random_payload};
 
-    const HEX0: &str = "e8014b22e4a5029778ba42f3d3538d6fdd9a912d4406f280f86aeeeb6bdd15b0";
+    const HEX0: &str = "885b6784a7cc0ab9703bfd885cf3c54d20e9a844357813814dae304ea83822aa";
     const HEX1: &str = "50997820b97129d2f50964e3438b2232a9ffe61050c9d32537cc1b863083961b";
 
     #[test]
@@ -322,8 +322,8 @@ mod tests {
         buf.extend_from_slice(&[7; DIGEST]); // STATE_HASH
 
         buf.extend_from_slice(&[8; 8]); // INDEX
-        buf.extend_from_slice(&[9; DIGEST]); // PREVIOUS_HASH
         buf.extend_from_slice(&[10; DIGEST]); // CHAIN_HASH
+        buf.extend_from_slice(&[9; DIGEST]); // PREVIOUS_HASH
         buf
     }
 

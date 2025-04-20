@@ -62,19 +62,19 @@ These key crates are used:
 The generic ZebraChain block structure has 8 fields:
 
 ```
-HASH || SIG || PUB || NEXT_PUB_HASH || PAYLOAD || INDEX || PREV_HASH || CHAIN_HASH
+HASH || SIG || PUB || NEXT_PUB_HASH || PAYLOAD || INDEX || CHAIN_HASH || PREV_HASH
 ```
 
 Where:
 
 ```
-HASH = hash(SIG || PUB || NEXT_PUB_HASH || PAYLOAD || INDEX || PREV_HASH || CHAIN_HASH)
+HASH = hash(SIG || PUB || NEXT_PUB_HASH || PAYLOAD || INDEX || CHAIN_HASH || PREV_HASH)
 ```
 
 And where:
 
 ```
-SIG = sign(PUB || NEXT_PUB_HASH || PAYLOAD || INDEX || PREV_HASH || CHAIN_HASH)
+SIG = sign(PUB || NEXT_PUB_HASH || PAYLOAD || INDEX || CHAIN_HASH || PREV_HASH)
 ```
 
 The `PUB` field contains both ML-DSA and ed25519 public keys:

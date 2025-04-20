@@ -6,18 +6,16 @@ use std::ops::Range;
 /*
 A Block has 8 fields:
 
-    HASH || SIG || PUB || NEXT_PUB_HASH || PAYLOAD || INDEX || PREV_HASH || CHAIN_HASH
+    HASH || SIG || PUB || NEXT_PUB_HASH || PAYLOAD || INDEX || CHAIN_HASH || PREV_HASH
             ^^^^^^^^^^^^^^^^^^^^^^^^^^^               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
             From the `Seed`                           From the previous `BlockState`
 Where:
 
-    HASH = hash(SIG || PUB || NEXT_PUB_HASH || PAYLOAD || INDEX || PREV_HASH || CHAIN_HASH)
-                ^^^^^^^^^^^^^^^^^^^^^^^^^^^               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    HASH = hash(SIG || PUB || NEXT_PUB_HASH || PAYLOAD || INDEX || CHAIN_HASH || PREV_HASH)
 
 And where:
 
-    SIG = sign(PUB || NEXT_PUB_HASH || PAYLOAD || INDEX || PREV_HASH || CHAIN_HASH)
-                                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    SIG = sign(PUB || NEXT_PUB_HASH || PAYLOAD || INDEX || CHAIN_HASH || PREV_HASH)
 */
 
 pub const PUB_ED25519: usize = 32;
@@ -48,8 +46,8 @@ const WIRE: [usize; 8] = [
     DIGEST,    // Hash of public key that will be used to sign next block
     PAYLOAD,   // Stuff to be signed
     8,         // Block index
-    DIGEST,    // Previous block hash
     DIGEST,    // Chain hash (hash of first block in chain)
+    DIGEST,    // Previous block hash
 ];
 
 const fn get_range(index: usize) -> Range<usize> {
@@ -67,8 +65,8 @@ pub const PUBKEY_RANGE: Range<usize> = get_range(2);
 pub const NEXT_PUBKEY_HASH_RANGE: Range<usize> = get_range(3);
 pub const PAYLOAD_RANGE: Range<usize> = get_range(4);
 pub const INDEX_RANGE: Range<usize> = get_range(5);
-pub const PREVIOUS_HASH_RANGE: Range<usize> = get_range(6);
-pub const CHAIN_HASH_RANGE: Range<usize> = get_range(7);
+pub const CHAIN_HASH_RANGE: Range<usize> = get_range(6);
+pub const PREVIOUS_HASH_RANGE: Range<usize> = get_range(7);
 
 /*
 A SecretBlock currently has 6 fields:
@@ -163,12 +161,12 @@ mod tests {
         assert_eq!(PAYLOAD_RANGE, 5421..5461);
 
         assert_eq!(INDEX_RANGE, 5461..5469);
-        assert_eq!(PREVIOUS_HASH_RANGE, 5469..5501);
-        assert_eq!(CHAIN_HASH_RANGE, 5501..5533);
+        assert_eq!(CHAIN_HASH_RANGE, 5469..5501);
+        assert_eq!(PREVIOUS_HASH_RANGE, 5501..5533);
 
         assert_eq!(HASHABLE_RANGE.end, BLOCK);
         assert_eq!(SIGNABLE_RANGE.end, BLOCK);
-        assert_eq!(CHAIN_HASH_RANGE.end, BLOCK);
+        assert_eq!(PREVIOUS_HASH_RANGE.end, BLOCK);
     }
 
     #[test]
