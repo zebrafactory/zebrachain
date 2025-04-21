@@ -7,7 +7,6 @@
 use crate::always::*;
 use crate::errors::SecretBlockError;
 use blake3::{Hash, Hasher, keyed_hash};
-use getrandom;
 pub use getrandom::Error;
 use std::ops::Range;
 

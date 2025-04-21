@@ -5,8 +5,6 @@ use crate::block::{Block, BlockState, MutBlock};
 use crate::payload::Payload;
 use crate::secretseed::{Secret, Seed, derive_secret};
 use blake3::{Hash, hash};
-use ed25519_dalek;
-use ml_dsa;
 use ml_dsa::{B32, KeyGen, MlDsa65};
 use signature::Signer;
 

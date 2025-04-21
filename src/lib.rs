@@ -12,7 +12,7 @@
 //! [ML-DSA]: https://csrc.nist.gov/pubs/fips/204/final
 //! [ed25519]: https://ed25519.cr.yp.to/
 
-pub mod always;
+mod always;
 mod block;
 mod chain;
 mod errors;
@@ -28,6 +28,7 @@ mod secretseed;
 #[cfg(test)]
 pub mod testhelpers;
 
+pub use always::*;
 pub use block::{Block, BlockResult, BlockState, MutBlock};
 pub use chain::{Chain, ChainIter, ChainStore, CheckPoint};
 pub use errors::{BlockError, SecretBlockError};
