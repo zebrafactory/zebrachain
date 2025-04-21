@@ -13,17 +13,27 @@
 //! [ed25519]: https://ed25519.cr.yp.to/
 
 pub mod always;
-pub mod block;
-pub mod chain;
-pub mod errors;
-pub mod fsutil;
-pub mod ownedblock;
-pub mod ownedchain;
-pub mod payload;
-pub mod pksign;
-pub mod secretblock;
-pub mod secretchain;
-pub mod secretseed;
+mod block;
+mod chain;
+mod errors;
+mod fsutil;
+mod ownedblock;
+mod ownedchain;
+mod payload;
+mod pksign;
+mod secretblock;
+mod secretchain;
+mod secretseed;
 
 #[cfg(test)]
 pub mod testhelpers;
+
+pub use block::{Block, BlockResult, BlockState, MutBlock};
+pub use chain::{Chain, ChainIter, ChainStore, CheckPoint};
+pub use errors::{BlockError, SecretBlockError};
+pub use ownedblock::{MutOwnedBlock, OwnedBlockState, sign};
+pub use ownedchain::{OwnedChain, OwnedChainStore};
+pub use payload::Payload;
+pub use secretblock::{MutSecretBlock, SecretBlock, SecretBlockResult};
+pub use secretchain::{SecretChain, SecretChainIter, SecretChainStore};
+pub use secretseed::{Error, Secret, Seed, generate_secret};

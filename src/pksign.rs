@@ -72,14 +72,6 @@ impl KeyPair {
     }
 }
 
-/// High-level [MutBlock] signing API.
-///
-/// # Examples
-///
-/// ```
-/// let seed = zf_zebrachain::secretseed::Seed::auto_create().unwrap();
-/// let secsign = zf_zebrachain::pksign::SecretSigner::new(&seed);
-/// ```
 pub struct SecretSigner {
     keypair: KeyPair,
     next_pubkey_hash: Hash,

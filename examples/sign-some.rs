@@ -1,9 +1,7 @@
 //! Create a new chain and some signatures.
 
 use tempfile;
-use zf_zebrachain::{
-    chain::CheckPoint, ownedchain::OwnedChainStore, payload::Payload, secretseed::generate_secret,
-};
+use zf_zebrachain::{CheckPoint, OwnedChainStore, Payload, generate_secret};
 
 const COUNT: usize = 420;
 

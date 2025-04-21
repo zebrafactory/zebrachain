@@ -1,61 +1,21 @@
-//! File system related utilities.
-//!
-//! For correctness and security, only open files using [create_for_append()] and
-//! [open_for_append()].
-//!
-//! See [std::fs::OpenOptions] for more details.
+// File system related utilities.
 
 use blake3::Hash;
 use std::fs::File;
 use std::io;
 use std::path::{Path, PathBuf};
 
-/// Build a chain filename in `dir` using hex representation of `chain_hash`.
-///
-/// # Example
-///
-/// ```
-/// use zf_zebrachain::fsutil::chain_filename;
-/// use blake3::Hash;
-/// use std::path::PathBuf;
-/// let dir = PathBuf::from("/tmp");
-/// let chain_hash = Hash::from_bytes([69; 32]);
-/// assert_eq!(
-///     chain_filename(&dir, &chain_hash),
-///     PathBuf::from("/tmp/4545454545454545454545454545454545454545454545454545454545454545")
-/// );
-/// ```
-pub fn chain_filename(dir: &Path, chain_hash: &Hash) -> PathBuf {
+pub(crate) fn chain_filename(dir: &Path, chain_hash: &Hash) -> PathBuf {
     dir.join(format!("{chain_hash}"))
 }
 
-/// Build a secret chain filename in `dir` using hex representation of `chain_hash`.
-///
-/// # Example
-///
-/// ```
-/// use zf_zebrachain::fsutil::secret_chain_filename;
-/// use blake3::Hash;
-/// use std::path::PathBuf;
-/// let dir = PathBuf::from("/tmp");
-/// let chain_hash = Hash::from_bytes([69; 32]);
-/// assert_eq!(
-///     secret_chain_filename(&dir, &chain_hash),
-///     PathBuf::from("/tmp/4545454545454545454545454545454545454545454545454545454545454545.secret")
-/// );
-/// ```
-pub fn secret_chain_filename(dir: &Path, chain_hash: &Hash) -> PathBuf {
+pub(crate) fn secret_chain_filename(dir: &Path, chain_hash: &Hash) -> PathBuf {
     let mut filename = chain_filename(dir, chain_hash);
     filename.set_extension("secret");
     filename
 }
 
-/// Create a new file for read + append.
-///
-/// # Errors
-///
-/// This will return an `Err` if the path already exists.
-pub fn create_for_append(path: &Path) -> io::Result<File> {
+pub(crate) fn create_for_append(path: &Path) -> io::Result<File> {
     File::options()
         .read(true)
         .append(true)
@@ -63,12 +23,7 @@ pub fn create_for_append(path: &Path) -> io::Result<File> {
         .open(path)
 }
 
-/// Open an existing file for read + append.
-///
-/// # Errors
-///
-/// This will return an `Err` if the path is not a file.
-pub fn open_for_append(path: &Path) -> io::Result<File> {
+pub(crate) fn open_for_append(path: &Path) -> io::Result<File> {
     File::options().read(true).append(true).open(path)
 }
 

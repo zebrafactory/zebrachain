@@ -123,22 +123,22 @@ pub static CONTEXT_STORE_NONCE: &str =
     "dc49809016fca0a126c5df6d373e90c48683e664ecba0440ae59523d93e13515";
 
 #[inline]
-pub fn get_hash(buf: &[u8], range: Range<usize>) -> Hash {
+pub(crate) fn get_hash(buf: &[u8], range: Range<usize>) -> Hash {
     Hash::from_bytes(buf[range].try_into().unwrap())
 }
 
 #[inline]
-pub fn set_hash(buf: &mut [u8], range: Range<usize>, value: &Hash) {
+pub(crate) fn set_hash(buf: &mut [u8], range: Range<usize>, value: &Hash) {
     buf[range].copy_from_slice(value.as_bytes());
 }
 
 #[inline]
-pub fn get_u64(buf: &[u8], range: Range<usize>) -> u64 {
+pub(crate) fn get_u64(buf: &[u8], range: Range<usize>) -> u64 {
     u64::from_le_bytes(buf[range].try_into().unwrap())
 }
 
 #[inline]
-pub fn set_u64(buf: &mut [u8], range: Range<usize>, value: u64) {
+pub(crate) fn set_u64(buf: &mut [u8], range: Range<usize>, value: u64) {
     buf[range].copy_from_slice(&value.to_le_bytes());
 }
 

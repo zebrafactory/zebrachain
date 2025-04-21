@@ -54,7 +54,7 @@ pub fn derive_secret(context: &str, secret: &Secret) -> Secret {
 /// # Examples
 ///
 /// ```
-/// use zf_zebrachain::secretseed::{Seed, generate_secret};
+/// use zf_zebrachain::{Seed, generate_secret};
 /// let initial_entropy = generate_secret().unwrap();
 /// let mut seed = Seed::create(&initial_entropy);
 /// let new_entropy = generate_secret().unwrap();
