@@ -7,17 +7,23 @@ use std::ops::Range;
 const TIME_RANGE: Range<usize> = 0..8;
 const STATE_HASH_RANGE: Range<usize> = 8..8 + DIGEST;
 
+/// Content to be included in block and signed.
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct Payload {
+    /// Timestamp.
     pub time: u64,
+
+    /// Hash of top-level state object in a hypothetical object store.
     pub state_hash: Hash,
 }
 
 impl Payload {
+    /// Create a new payload.
     pub fn new(time: u64, state_hash: Hash) -> Self {
         Self { time, state_hash }
     }
 
+    /// Extract payload from buffer.
     pub fn from_buf(buf: &[u8]) -> Self {
         assert_eq!(buf.len(), PAYLOAD);
         Self {
@@ -26,6 +32,7 @@ impl Payload {
         }
     }
 
+    /// Write payload into buffer.
     pub fn write_to_buf(&self, buf: &mut [u8]) {
         assert_eq!(buf.len(), PAYLOAD);
         set_u64(buf, TIME_RANGE, self.time);

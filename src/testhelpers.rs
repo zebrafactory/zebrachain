@@ -4,22 +4,26 @@ use crate::payload::Payload;
 use blake3::Hash;
 use getrandom;
 
+/// Returns a random u64 created with [getradom::fill()].
 pub fn random_u64() -> u64 {
     let mut buf = [0; 8];
     getrandom::fill(&mut buf).unwrap();
     u64::from_le_bytes(buf)
 }
 
+/// Returns a random [blake3::Hash] created with [getradom::fill()].
 pub fn random_hash() -> Hash {
     let mut buf = [0; 32];
     getrandom::fill(&mut buf).unwrap();
     Hash::from_bytes(buf)
 }
 
+/// Returns a random [Payload].
 pub fn random_payload() -> Payload {
     Payload::new(random_u64(), random_hash())
 }
 
+/// Returns a vec of random payloads.
 pub fn random_payload_vec(count: usize) -> Vec<Payload> {
     let mut payload_vec = Vec::with_capacity(count);
     for _ in 0..count {
@@ -34,6 +38,7 @@ fn flip_bit(buf: &mut [u8], counter: usize) {
     buf[i] ^= 1 << b; // Flip bit `b` in byte `i`
 }
 
+/// Iteration through all 1-bit flip permutations in a buffer.
 #[derive(Debug)]
 pub struct BitFlipper {
     good: Vec<u8>,
@@ -41,6 +46,7 @@ pub struct BitFlipper {
 }
 
 impl BitFlipper {
+    /// Create a new [BitFlipper].
     pub fn new(orig: &[u8]) -> Self {
         let mut good = Vec::with_capacity(orig.len());
         good.extend_from_slice(orig);
@@ -64,6 +70,7 @@ impl Iterator for BitFlipper {
     }
 }
 
+/// Iteration through all 1-bit flip permutations in a [blake3::Hash].
 #[derive(Debug)]
 pub struct HashBitFlipper {
     orig: Hash,
@@ -71,6 +78,7 @@ pub struct HashBitFlipper {
 }
 
 impl HashBitFlipper {
+    /// Create a new [HashBitFlipper].
     pub fn new(orig: &Hash) -> Self {
         Self {
             orig: *orig,

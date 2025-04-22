@@ -18,15 +18,27 @@ pub type SecretBlockResult = Result<SecretBlock, SecretBlockError>;
 /// Wire format for saving secret chain to nonvolatile storage.
 #[derive(Debug, PartialEq, Clone)]
 pub struct SecretBlock {
+    /// Hash of this secret block.
     pub block_hash: Hash,
+
+    /// Hash of corresponding public block.
     pub public_block_hash: Hash,
+
+    /// Seed use to sign this block position.
     pub seed: Seed,
+
+    /// Payload to be signed.
     pub payload: Payload,
+
+    /// Block index.
     pub index: u64,
+
+    /// Hash of previous secret block.
     pub previous_hash: Hash,
 }
 
 impl SecretBlock {
+    /// Open secret block and perform internal validation.
     pub fn open(buf: &[u8]) -> SecretBlockResult {
         check_secretblock_buf(buf);
         let computed_hash = hash(&buf[DIGEST..]);
@@ -45,6 +57,7 @@ impl SecretBlock {
         }
     }
 
+    /// Open secret block at `index` in chain and verify hash matches `block_hash`.
     pub fn from_hash_at_index(buf: &[u8], block_hash: &Hash, index: u64) -> SecretBlockResult {
         let block = Self::open(buf)?;
         if block_hash != &block.block_hash {
@@ -56,6 +69,7 @@ impl SecretBlock {
         }
     }
 
+    /// Open a secret block, ensure it is a valid block and previous [SecretBlock] `prev`.S
     pub fn from_previous(buf: &[u8], prev: &SecretBlock) -> SecretBlockResult {
         let block = Self::open(buf)?;
         if block.previous_hash != prev.block_hash {
@@ -70,7 +84,7 @@ impl SecretBlock {
     }
 }
 
-// FIXME
+/// FIXME
 pub type SecretBlockState = SecretBlock;
 
 /// Builds a new [SecretBlock] up in a buffer.
@@ -80,6 +94,7 @@ pub struct MutSecretBlock<'a> {
 }
 
 impl<'a> MutSecretBlock<'a> {
+    /// Zero secret block buffer and set payload.
     pub fn new(buf: &'a mut [u8], payload: &Payload) -> Self {
         check_secretblock_buf(buf);
         buf.fill(0);
@@ -87,19 +102,23 @@ impl<'a> MutSecretBlock<'a> {
         Self { buf }
     }
 
+    /// Set needed secret block fields for block after `prev`.
     pub fn set_previous(&mut self, prev: &SecretBlock) {
         set_u64(self.buf, SEC_INDEX_RANGE, prev.index + 1);
         set_hash(self.buf, SEC_PREV_HASH_RANGE, &prev.block_hash);
     }
 
+    /// Write seed to buffer.
     pub fn set_seed(&mut self, seed: &Seed) {
         seed.write_to_buf(&mut self.buf[SEC_SEED_RANGE]);
     }
 
+    /// Set hash of resulting public block (used for integrity check).
     pub fn set_public_block_hash(&mut self, public_block_hash: &Hash) {
         set_hash(self.buf, SEC_PUBLIC_HASH_RANGE, public_block_hash);
     }
 
+    /// Set and return block hash.
     pub fn finalize(self) -> Hash {
         let block_hash = hash(&self.buf[DIGEST..]);
         set_hash(self.buf, SEC_HASH_RANGE, &block_hash);

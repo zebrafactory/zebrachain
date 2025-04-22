@@ -18,12 +18,14 @@ use blake3::Hash;
 use std::io;
 use std::path::Path;
 
+/// Used to create new blocks in a chain you own.
 pub struct OwnedChainStore {
     store: ChainStore,
     secret_store: SecretChainStore,
 }
 
 impl OwnedChainStore {
+    /// Create a new [OwnedChainStore].
     pub fn new(store: ChainStore, secret_store: SecretChainStore) -> Self {
         Self {
             store,
@@ -31,20 +33,24 @@ impl OwnedChainStore {
         }
     }
 
+    /// Convenience method for creating an [OwnedChainStore].
     pub fn build(store_dir: &Path, secret_store_dir: &Path, secret: Secret) -> Self {
         let store = ChainStore::new(store_dir);
         let secret_store = SecretChainStore::new(secret_store_dir, secret);
         Self::new(store, secret_store)
     }
 
+    /// Reference to underlying [ChainStore].
     pub fn store(&self) -> &ChainStore {
         &self.store
     }
 
+    /// Reference to underlying [SecretChainStore].
     pub fn secret_store(&self) -> &SecretChainStore {
         &self.secret_store
     }
 
+    /// Create a new [OwnedChain].
     pub fn create_chain(
         &self,
         initial_entropy: &Hash,
@@ -62,18 +68,24 @@ impl OwnedChainStore {
         Ok(OwnedChain::new(chain, secret_chain))
     }
 
+    /// Open and full validate both chain and secret chain.
     pub fn open_chain(&self, chain_hash: &Hash) -> io::Result<OwnedChain> {
         let chain = self.store.open_chain(chain_hash)?;
         let secret_chain = self.secret_store.open_chain(chain_hash)?;
         Ok(OwnedChain::new(chain, secret_chain))
     }
 
+    /// Open and partially validate chain from a [CheckPoint] forward.
+    ///
+    /// FIXME: secret chains don't yet support resuming from a checkpoint, so
+    /// the secret chain is always fully validated.
     pub fn resume_chain(&self, checkpoint: &CheckPoint) -> io::Result<OwnedChain> {
         let chain = self.store.resume_chain(checkpoint)?;
         let secret_chain = self.secret_store.open_chain(&checkpoint.chain_hash)?;
         Ok(OwnedChain::new(chain, secret_chain))
     }
 
+    /// Reconstruct public chain from its secret chain.
     pub fn secret_to_public(&self, secret_chain: &SecretChain) -> io::Result<Chain> {
         let mut buf = [0; BLOCK];
         let mut iter = secret_chain.iter();
@@ -84,6 +96,7 @@ impl OwnedChainStore {
         for result in iter {
             let sec = result?;
             sign_block(&mut buf, &sec.seed, &sec.payload, Some(&tail));
+            // FIXME: check public block hash
             tail = chain.append(&buf)?.clone();
         }
         Ok(chain)
@@ -100,6 +113,7 @@ pub struct OwnedChain {
 }
 
 impl OwnedChain {
+    /// Construct an owned chain.
     pub fn new(chain: Chain, secret_chain: SecretChain) -> Self {
         Self {
             chain,
@@ -107,6 +121,7 @@ impl OwnedChain {
         }
     }
 
+    /// Sign next block.
     pub fn sign(&mut self, new_entropy: &Hash, payload: &Payload) -> io::Result<&BlockState> {
         let seed = self.secret_chain.advance(new_entropy);
         let obs = self.state();
@@ -125,22 +140,27 @@ impl OwnedChain {
         Ok(result)
     }
 
+    /// Number of blocks in this owned chain.
     pub fn count(&self) -> u64 {
         self.chain.count()
     }
 
+    /// [Chain.tail()].
     pub fn head(&self) -> &BlockState {
         self.chain.head()
     }
 
+    /// [Chain.tail()].
     pub fn tail(&self) -> &BlockState {
         self.chain.tail()
     }
 
+    /// Chain hash.
     pub fn chain_hash(&self) -> &Hash {
         self.chain.chain_hash()
     }
 
+    /// Returns current [OwnedBlockState].
     pub fn state(&self) -> OwnedBlockState {
         OwnedBlockState::new(self.chain.tail().clone(), self.secret_chain.tail().clone())
     }

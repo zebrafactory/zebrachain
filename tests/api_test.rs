@@ -79,8 +79,6 @@ fn test_chain_store() {
     let tmpdir = tempfile::TempDir::new().unwrap();
     let store = ChainStore::new(tmpdir.path());
     let chain_hash = generate_secret().unwrap();
-
-    assert!(store.open_chain_file(&chain_hash).is_err());
     assert!(store.open_chain(&chain_hash).is_err());
 }
 
@@ -122,7 +120,9 @@ fn test_owned_chain_store() {
     );
     assert_eq!(chain.head(), chain.tail());
     for index in 0..420 {
-        chain.sign(&sample_entropy(index), &sample_payload(index)).unwrap();
+        chain
+            .sign(&sample_entropy(index), &sample_payload(index))
+            .unwrap();
     }
     assert_eq!(
         chain.head().block_hash,

@@ -65,11 +65,15 @@ pub fn derive_secret(context: &str, secret: &Secret) -> Secret {
 /// ```
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Seed {
+    /// Root secret used to sign current block.
     pub secret: Secret,
+
+    /// Root secret used for signing the next block.
     pub next_secret: Secret,
 }
 
 impl Seed {
+    /// FIXME: Remove from public API.
     pub fn new(secret: Secret, next_secret: Secret) -> Self {
         if secret == next_secret {
             panic!("new(): secret and next_secret cannot be equal");
@@ -80,6 +84,7 @@ impl Seed {
         }
     }
 
+    /// Load a seed from a buffer.
     pub fn from_buf(buf: &[u8]) -> Result<Self, SecretBlockError> {
         assert_eq!(buf.len(), SEED);
         let secret = get_hash(buf, SECRET_RANGE);
@@ -95,6 +100,7 @@ impl Seed {
         }
     }
 
+    /// Write seed to buffer.
     pub fn write_to_buf(&self, buf: &mut [u8]) {
         assert_eq!(buf.len(), SEED);
         set_hash(buf, SECRET_RANGE, &self.secret);

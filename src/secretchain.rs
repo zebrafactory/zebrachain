@@ -68,6 +68,7 @@ pub struct SecretChain {
 }
 
 impl SecretChain {
+    /// Create a new secret chain.
     pub fn create(
         mut file: File,
         secret: Secret,
@@ -88,19 +89,23 @@ impl SecretChain {
         })
     }
 
+    /// Exposes internal secret block buffer as mutable bytes.
     pub fn as_mut_buf(&mut self) -> &mut [u8] {
         self.buf.resize(SECRET_BLOCK, 0); // FIXME: Probably put this somewhere else
         &mut self.buf[..]
     }
 
+    /// Exposed secret block buffer as bytes.
     pub fn as_buf(&self) -> &[u8] {
         &self.buf[0..SECRET_BLOCK]
     }
 
+    /// Mix need entropy into chain and return next [Seed].
     pub fn advance(&self, new_entropy: &Hash) -> Seed {
         self.tail.seed.advance(new_entropy)
     }
 
+    /// FIXME: Probably remove from public API.
     pub fn open(file: File, secret: Secret) -> io::Result<Self> {
         let mut file = BufReader::with_capacity(SECRET_BLOCK_AEAD_READ_BUF, file);
         let mut buf = vec![0; SECRET_BLOCK_AEAD];
@@ -138,14 +143,17 @@ impl SecretChain {
         })
     }
 
+    /// Number of blocks in this secret chain.
     pub fn count(&self) -> u64 {
         self.tail.index + 1
     }
 
+    /// The [SecretBlock] of the latest block in this secret chain.
     pub fn tail(&self) -> &SecretBlock {
         &self.tail
     }
 
+    /// Append secret block that has been built up in the internal buffer.
     pub fn append(&mut self, block_hash: &Hash) -> io::Result<()> {
         let block = SecretBlock::from_previous(self.as_buf(), &self.tail).unwrap();
         assert_eq!(&block.block_hash, block_hash);
@@ -156,10 +164,12 @@ impl SecretChain {
         Ok(())
     }
 
+    /// Consume instance and return underlying file.
     pub fn into_file(self) -> File {
         self.file
     }
 
+    /// Iterate through secret blocks in this secret chain.
     pub fn iter(&self) -> SecretChainIter {
         SecretChainIter::new(
             self.file.try_clone().unwrap(),
@@ -179,6 +189,7 @@ impl IntoIterator for &SecretChain {
     }
 }
 
+/// Iterate through secret blocks contained in a secret chain file.
 pub struct SecretChainIter {
     file: BufReader<File>,
     secret: Hash,
@@ -189,7 +200,7 @@ pub struct SecretChainIter {
 }
 
 impl SecretChainIter {
-    pub fn new(file: File, secret: Hash, count: u64, first_block_hash: Hash) -> Self {
+    fn new(file: File, secret: Hash, count: u64, first_block_hash: Hash) -> Self {
         let file = BufReader::with_capacity(SECRET_BLOCK_AEAD_READ_BUF, file);
         Self {
             file,
@@ -254,6 +265,7 @@ pub struct SecretChainStore {
 }
 
 impl SecretChainStore {
+    /// Create a new [SecretChainStore.]
     pub fn new(dir: &Path, secret: Secret) -> Self {
         Self {
             dir: dir.to_path_buf(),
@@ -270,6 +282,7 @@ impl SecretChainStore {
         secret_chain_filename(&self.dir, chain_hash)
     }
 
+    /// Open secret chain with b
     pub fn open_chain(&self, chain_hash: &Hash) -> io::Result<SecretChain> {
         let filename = self.chain_filename(chain_hash);
         let file = open_for_append(&filename)?;
@@ -277,6 +290,7 @@ impl SecretChainStore {
         SecretChain::open(file, secret)
     }
 
+    /// Create a new secret chain.
     pub fn create_chain(
         &self,
         chain_hash: &Hash,
@@ -289,6 +303,7 @@ impl SecretChainStore {
         SecretChain::create(file, secret, buf, block_hash)
     }
 
+    /// Remove secret chain file.
     pub fn remove_chain_file(&self, chain_hash: &Hash) -> io::Result<()> {
         let filename = self.chain_filename(chain_hash);
         remove_file(&filename)

@@ -29,10 +29,14 @@ pub const SIG_MLDSA_RANGE: Range<usize> = 0..SIG_MLDSA;
 pub const SIG_ED25519_RANGE: Range<usize> = SIG_MLDSA..SIG_MLDSA + SIG_ED25519;
 
 pub const DIGEST: usize = 32;
-pub const PAYLOAD: usize = 8 + DIGEST;
 pub const SEED: usize = 2 * DIGEST;
 pub const SIGNATURE: usize = SIG_ED25519 + SIG_MLDSA;
 pub const PUBKEY: usize = PUB_ED25519 + PUB_MLDSA;
+
+/// Size of the (non-configurable) ZebraChain payload (40 bytes).
+pub const PAYLOAD: usize = 8 + DIGEST;
+
+/// Size of the (non-configurable) ZebraChain block (5533 bytes).
 pub const BLOCK: usize = (4 * DIGEST) + SIGNATURE + PUBKEY + PAYLOAD + 8;
 
 pub const HASHABLE_RANGE: Range<usize> = DIGEST..BLOCK;
@@ -115,8 +119,8 @@ pub static CONTEXT_ED25519: &str =
     "e3481172dcedab349a13152e9d002494f1ae292c868e049d93926c3a58a48408";
 pub static CONTEXT_ML_DSA: &str =
     "e665ee96123e46d74e76dc53bdc64df06d72c238d574b7c153305f5e63063350";
-pub static CONTEXT_SLH_DSA: &str =
-    "b5de7bead4cac0fb4fe60cbb2ef31cb2c0590adb10f0764769cd5b0e0d7d11c1";
+//pub static CONTEXT_SLH_DSA: &str =
+//    "b5de7bead4cac0fb4fe60cbb2ef31cb2c0590adb10f0764769cd5b0e0d7d11c1";
 pub static CONTEXT_STORE_KEY: &str =
     "0179f9dd9cb5b0af47079d3a102872a32744b7f7aa8a5f22f7c0a16ba8549601";
 pub static CONTEXT_STORE_NONCE: &str =

@@ -24,12 +24,18 @@ Or when resuming from a checkpoint, the chain validation process is:
 
 /// Check point a chain for fast reload.
 pub struct CheckPoint {
+    /// Chain hash
     pub chain_hash: Hash,
+
+    /// Block hash
     pub block_hash: Hash,
+
+    /// Block-wise position in chain, starting from zero.
     pub index: u64,
 }
 
 impl CheckPoint {
+    /// Create a checkpoint.
     pub fn new(chain_hash: Hash, block_hash: Hash, index: u64) -> Self {
         Self {
             chain_hash,
@@ -38,6 +44,7 @@ impl CheckPoint {
         }
     }
 
+    /// Build a checkpoint corresponding to the supplied [BlockState].
     pub fn from_block_state(state: &BlockState) -> Self {
         Self::new(state.chain_hash, state.block_hash, state.index)
     }
@@ -133,6 +140,7 @@ impl Chain {
         self.tail.index + 1
     }
 
+    /// Create a new Chain file.
     pub fn create(mut file: File, buf: &[u8], chain_hash: &Hash) -> io::Result<Self> {
         match Block::from_hash_at_index(buf, chain_hash, 0) {
             Ok(block) => {
@@ -147,19 +155,23 @@ impl Chain {
         }
     }
 
+    /// Reference to [BlockState] of first block in chain.
     pub fn head(&self) -> &BlockState {
         &self.head
     }
 
+    /// Reference to [BlockState] of latest block in chain.
     pub fn tail(&self) -> &BlockState {
         &self.tail
     }
 
+    /// The chain hash.
     #[allow(clippy::misnamed_getters)] // Clippy is wrong here
     pub fn chain_hash(&self) -> &Hash {
         &self.head.block_hash
     }
 
+    /// Validate block in buffer and append to chain if valid.
     pub fn append(&mut self, buf: &[u8]) -> io::Result<&BlockState> {
         match Block::from_previous(buf, &self.tail) {
             Ok(block) => {
@@ -171,10 +183,12 @@ impl Chain {
         }
     }
 
+    /// Consume instance and return underlying file.
     pub fn into_file(self) -> File {
         self.file
     }
 
+    /// Iterate through block in this chain.
     pub fn iter(&self) -> ChainIter {
         ChainIter::new(
             self.file.try_clone().unwrap(),
@@ -203,7 +217,7 @@ pub struct ChainIter {
 }
 
 impl ChainIter {
-    pub fn new(file: File, chain_hash: Hash, count: u64) -> Self {
+    fn new(file: File, chain_hash: Hash, count: u64) -> Self {
         let file = BufReader::with_capacity(BLOCK_READ_BUF, file);
         Self {
             file,
@@ -260,6 +274,7 @@ pub struct ChainStore {
 }
 
 impl ChainStore {
+    /// Create a chain store.
     pub fn new(dir: &Path) -> Self {
         Self {
             dir: dir.to_path_buf(),
@@ -270,31 +285,35 @@ impl ChainStore {
         chain_filename(&self.dir, chain_hash)
     }
 
-    pub fn open_chain_file(&self, chain_hash: &Hash) -> io::Result<File> {
+    fn open_chain_file(&self, chain_hash: &Hash) -> io::Result<File> {
         let filename = self.chain_filename(chain_hash);
         open_for_append(&filename)
     }
 
-    pub fn create_chain_file(&self, chain_hash: &Hash) -> io::Result<File> {
+    fn create_chain_file(&self, chain_hash: &Hash) -> io::Result<File> {
         let filename = self.chain_filename(chain_hash);
         create_for_append(&filename)
     }
 
+    /// Remove file for specified chain.
     pub fn remove_chain_file(&self, chain_hash: &Hash) -> io::Result<()> {
         let filename = self.chain_filename(chain_hash);
         remove_file(&filename)
     }
 
+    /// Open chain and fully validate.
     pub fn open_chain(&self, chain_hash: &Hash) -> io::Result<Chain> {
         let file = self.open_chain_file(chain_hash)?;
         Chain::open(file, chain_hash)
     }
 
+    /// Open chain and partially validate from a [CheckPoint] forward.
     pub fn resume_chain(&self, checkpoint: &CheckPoint) -> io::Result<Chain> {
         let file = self.open_chain_file(&checkpoint.chain_hash)?;
         Chain::resume(file, checkpoint)
     }
 
+    /// Create a new chain.
     pub fn create_chain(&self, buf: &[u8], chain_hash: &Hash) -> io::Result<Chain> {
         let file = self.create_chain_file(chain_hash)?;
         Chain::create(file, buf, chain_hash)

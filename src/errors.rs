@@ -31,7 +31,7 @@ pub enum BlockError {
 }
 
 impl BlockError {
-    // FIXME: Is there is a Rustier way of doing this? Feedback encouraged.
+    /// Map into an io Error with appropriate msg text.
     pub fn to_io_error(&self) -> io::Error {
         io::Error::other(format!("BlockError::{self:?}"))
     }
@@ -63,7 +63,7 @@ pub enum SecretBlockError {
 }
 
 impl SecretBlockError {
-    // FIXME: Is there is a Rustier way of doing this? Feedback encouraged.
+    /// Map into an io Error with appropriate msg text.
     pub fn to_io_error(&self) -> io::Error {
         io::Error::other(format!("SecretBlockError::{self:?}"))
     }

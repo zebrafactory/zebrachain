@@ -1,3 +1,5 @@
+#![deny(missing_docs)]
+
 //! 🦓 🔗 ZebraChain: A futuristic cryptographic identity system.
 //!
 //! ZebraChain is a logged, quantum safe signing protocol designed to replace the long lived
@@ -28,13 +30,13 @@ mod secretseed;
 #[cfg(test)]
 pub mod testhelpers;
 
-pub use always::*;
+pub use always::{BLOCK, PAYLOAD};
 pub use block::{Block, BlockResult, BlockState, MutBlock};
 pub use chain::{Chain, ChainIter, ChainStore, CheckPoint};
 pub use errors::{BlockError, SecretBlockError};
 pub use ownedblock::{MutOwnedBlock, OwnedBlockState, sign};
 pub use ownedchain::{OwnedChain, OwnedChainStore};
 pub use payload::Payload;
-pub use secretblock::{MutSecretBlock, SecretBlock, SecretBlockResult};
+pub use secretblock::{MutSecretBlock, SecretBlock, SecretBlockState, SecretBlockResult};
 pub use secretchain::{SecretChain, SecretChainIter, SecretChainStore};
 pub use secretseed::{Error, Secret, Seed, generate_secret};

@@ -25,12 +25,17 @@ use crate::secretblock::{MutSecretBlock, SecretBlockState};
 use crate::secretseed::Seed;
 use blake3::Hash;
 
+/// Combines [BlockState] and [SecretBlockState].
 pub struct OwnedBlockState {
+    /// The public block state.
     pub block_state: BlockState,
+
+    /// The secret block state.
     pub secret_block_state: SecretBlockState,
 }
 
 impl OwnedBlockState {
+    /// Return a new [OwnedBlockState].
     pub fn new(block_state: BlockState, secret_block_state: SecretBlockState) -> Self {
         Self {
             block_state,
@@ -39,12 +44,14 @@ impl OwnedBlockState {
     }
 }
 
+/// Builds up both public and secret block for new block being signed.
 pub struct MutOwnedBlock<'a> {
-    pub block: MutBlock<'a>,
-    pub secret_block: MutSecretBlock<'a>,
+    block: MutBlock<'a>,
+    secret_block: MutSecretBlock<'a>,
 }
 
 impl<'a> MutOwnedBlock<'a> {
+    /// Zero buffers and set payload in both public and secret buffers.
     pub fn new(buf: &'a mut [u8], secret_buf: &'a mut [u8], payload: &Payload) -> Self {
         let block = MutBlock::new(buf, payload);
         let secret_block = MutSecretBlock::new(secret_buf, payload);
@@ -54,17 +61,20 @@ impl<'a> MutOwnedBlock<'a> {
         }
     }
 
+    /// Set current public and secret block states based on previous [OwnedBlockState].
     pub fn set_previous(&mut self, prev: &OwnedBlockState) {
         self.block.set_previous(&prev.block_state);
         self.secret_block.set_previous(&prev.secret_block_state);
     }
 
+    /// Signed public block using `seed` and then save seed in secret block.
     pub fn sign(&mut self, seed: &Seed) {
         let signer = SecretSigner::new(seed);
         signer.sign(&mut self.block);
         self.secret_block.set_seed(seed);
     }
 
+    /// Finalize both public and secret blocks, returning their hashes.
     pub fn finalize(mut self) -> (Hash, Hash) {
         let block_hash = self.block.finalize();
         self.secret_block.set_public_block_hash(&block_hash);
@@ -73,6 +83,7 @@ impl<'a> MutOwnedBlock<'a> {
     }
 }
 
+/// High-level signing function.
 pub fn sign(
     buf: &mut [u8],
     secret_buf: &mut [u8],
