@@ -29,6 +29,9 @@ pub struct BlockState {
     /// Hash of first block in chain.
     pub chain_hash: Hash,
 
+    /// Hash of previous block.
+    pub previous_hash: Hash,
+
     /// Hash of the public key that will be used when signing the next block.
     pub next_pubkey_hash: Hash,
 
@@ -42,6 +45,7 @@ impl BlockState {
         index: u64,
         block_hash: Hash,
         chain_hash: Hash,
+        previous_hash: Hash,
         next_pubkey_hash: Hash,
         payload: Payload,
     ) -> Self {
@@ -49,6 +53,7 @@ impl BlockState {
             index,
             block_hash,
             chain_hash,
+            previous_hash,
             next_pubkey_hash,
             payload,
         }
@@ -62,18 +67,31 @@ impl BlockState {
             self.chain_hash
         }
     }
+
+    fn from_buf(buf: &[u8]) -> Self {
+        Self {
+            index: get_u64(buf, INDEX_RANGE),
+            block_hash: get_hash(buf, HASH_RANGE),
+            chain_hash: get_hash(buf, CHAIN_HASH_RANGE),
+            previous_hash: get_hash(buf, PREVIOUS_HASH_RANGE),
+            next_pubkey_hash: get_hash(buf, NEXT_PUBKEY_HASH_RANGE),
+            payload: Payload::from_buf(&buf[PAYLOAD_RANGE]),
+        }
+    }
 }
 
 /// Validate block wire format, extract items from the same.
 #[derive(Debug, PartialEq)]
 pub struct Block<'a> {
     buf: &'a [u8],
+    state: BlockState,
 }
 
 impl<'a> Block<'a> {
     fn new(buf: &'a [u8]) -> Self {
         check_block_buf(buf);
-        Self { buf }
+        let state = BlockState::from_buf(buf);
+        Self { buf, state }
     }
 
     /// Underlying buffer as read-only bytes.
@@ -101,9 +119,9 @@ impl<'a> Block<'a> {
     /// [CheckPoint][crate::chain::CheckPoint].
     pub fn from_hash_at_index(buf: &'a [u8], block_hash: &Hash, index: u64) -> BlockResult<'a> {
         let block = Block::open(buf)?;
-        if block_hash != &block.hash() {
+        if block_hash != &block.state.block_hash {
             Err(BlockError::Hash)
-        } else if index != block.index() {
+        } else if index != block.state.index {
             Err(BlockError::Index)
         } else {
             Ok(block)
@@ -118,11 +136,11 @@ impl<'a> Block<'a> {
         let block = Block::open(buf)?;
         if block.compute_pubkey_hash() != prev.next_pubkey_hash {
             Err(BlockError::PubKeyHash)
-        } else if block.index() != prev.index + 1 {
+        } else if block.state.index != prev.index + 1 {
             Err(BlockError::Index)
-        } else if block.previous_hash() != prev.block_hash {
+        } else if block.state.previous_hash != prev.block_hash {
             Err(BlockError::PreviousHash)
-        } else if block.chain_hash() != prev.effective_chain_hash() {
+        } else if block.state.chain_hash != prev.effective_chain_hash() {
             Err(BlockError::ChainHash)
         } else {
             Ok(block)
@@ -131,13 +149,7 @@ impl<'a> Block<'a> {
 
     /// Return [BlockState] extracted from this block.
     pub fn state(&self) -> BlockState {
-        BlockState {
-            index: self.index(),
-            block_hash: self.hash(),
-            chain_hash: self.chain_hash(),
-            next_pubkey_hash: self.next_pubkey_hash(),
-            payload: self.payload(),
-        }
+        self.state.clone()
     }
 
     fn as_hashable(&self) -> &[u8] {
@@ -164,36 +176,6 @@ impl<'a> Block<'a> {
         &self.buf[PUBKEY_RANGE]
     }
 
-    /// Block hash.
-    pub fn hash(&self) -> Hash {
-        get_hash(self.buf, HASH_RANGE)
-    }
-
-    /// Hash of public key that will be used to sign next block.
-    pub fn next_pubkey_hash(&self) -> Hash {
-        get_hash(self.buf, NEXT_PUBKEY_HASH_RANGE)
-    }
-
-    /// The [Payload] extracted from the block buffer.
-    pub fn payload(&self) -> Payload {
-        Payload::from_buf(&self.buf[PAYLOAD_RANGE])
-    }
-
-    /// Index of this block.
-    pub fn index(&self) -> u64 {
-        get_u64(self.buf, INDEX_RANGE)
-    }
-
-    /// Hash of previous block.
-    pub fn previous_hash(&self) -> Hash {
-        get_hash(self.buf, PREVIOUS_HASH_RANGE)
-    }
-
-    /// Chain hash.
-    pub fn chain_hash(&self) -> Hash {
-        get_hash(self.buf, CHAIN_HASH_RANGE)
-    }
-
     fn compute_hash(&self) -> Hash {
         hash(self.as_hashable())
     }
@@ -203,7 +185,7 @@ impl<'a> Block<'a> {
     }
 
     fn content_is_valid(&self) -> bool {
-        self.compute_hash() == self.hash()
+        self.compute_hash() == self.state.block_hash
     }
 
     fn signature_is_valid(&self) -> bool {
@@ -211,8 +193,8 @@ impl<'a> Block<'a> {
     }
 
     fn first_block_is_valid(&self) -> bool {
-        if self.index() == 0 {
-            self.chain_hash() == ZERO_HASH && self.previous_hash() == ZERO_HASH
+        if self.state.index == 0 {
+            self.state.chain_hash == ZERO_HASH && self.state.previous_hash == ZERO_HASH
         } else {
             true
         }
@@ -311,10 +293,11 @@ mod tests {
         let h1 = random_hash();
         let h2 = random_hash();
         let h3 = random_hash();
+        let h4 = random_hash();
         let payload = random_payload();
-        let bs = BlockState::new(0, h1, h2, h3, payload);
+        let bs = BlockState::new(0, h1, h2, h3, h4, payload);
         assert_eq!(bs.effective_chain_hash(), h1);
-        let bs = BlockState::new(1, h1, h2, h3, payload);
+        let bs = BlockState::new(1, h1, h2, h3, h4, payload);
         assert_eq!(bs.effective_chain_hash(), h2);
     }
 
@@ -331,6 +314,7 @@ mod tests {
         let last = BlockState::new(
             0,
             Hash::from_bytes([3; 32]),
+            ZERO_HASH,
             ZERO_HASH,
             Hash::from_bytes([5; 32]),
             payload,
@@ -410,7 +394,7 @@ mod tests {
     #[test]
     fn test_block_from_hash_at_index() {
         let buf = new_valid_block();
-        let good = Block::open(&buf[..]).unwrap().hash();
+        let good = Block::open(&buf[..]).unwrap().state.block_hash;
         assert!(Block::from_hash_at_index(&buf[..], &good, 1).is_ok());
 
         // Make sure Block::open() is getting called
@@ -448,10 +432,11 @@ mod tests {
         let p = BlockState::new(
             // Previous block state
             0,
-            block.previous_hash(),
+            block.state.previous_hash,
+            ZERO_HASH,
             ZERO_HASH,
             block.compute_pubkey_hash(),
-            block.payload(),
+            block.state.payload,
         );
         assert!(Block::from_previous(&buf[..], &p).is_ok());
 
@@ -471,21 +456,42 @@ mod tests {
 
         // Block::from_previous() specific errors
         for bad in HashBitFlipper::new(&p.next_pubkey_hash) {
-            let prev = BlockState::new(0, p.block_hash, p.chain_hash, bad, p.payload);
+            let prev = BlockState::new(
+                0,
+                p.block_hash,
+                p.chain_hash,
+                p.previous_hash,
+                bad,
+                p.payload,
+            );
             assert_eq!(
                 Block::from_previous(&buf[..], &prev),
                 Err(BlockError::PubKeyHash)
             );
         }
         for bad in HashBitFlipper::new(&p.block_hash) {
-            let prev = BlockState::new(0, bad, p.chain_hash, p.next_pubkey_hash, p.payload);
+            let prev = BlockState::new(
+                0,
+                bad,
+                p.chain_hash,
+                p.previous_hash,
+                p.next_pubkey_hash,
+                p.payload,
+            );
             assert_eq!(
                 Block::from_previous(&buf[..], &prev),
                 Err(BlockError::PreviousHash)
             );
         }
         for bad in HashBitFlipper::new(&p.chain_hash) {
-            let prev = BlockState::new(0, p.block_hash, bad, p.next_pubkey_hash, p.payload);
+            let prev = BlockState::new(
+                0,
+                p.block_hash,
+                bad,
+                p.previous_hash,
+                p.next_pubkey_hash,
+                p.payload,
+            );
             // Previous `BlockState.chain_hash` only gets checked in 3rd block and beyond:
             assert!(Block::from_previous(&buf[..], &prev).is_ok());
         }
@@ -495,6 +501,7 @@ mod tests {
                 bad_index,
                 p.block_hash,
                 p.chain_hash,
+                p.previous_hash,
                 p.next_pubkey_hash,
                 p.payload,
             );
@@ -517,8 +524,14 @@ mod tests {
         let seed = seed.auto_advance().unwrap();
         sign_block(&mut buf, &seed, &random_payload(), Some(&tail));
         for bad in HashBitFlipper::new(&chain_hash) {
-            let prev =
-                BlockState::new(0, tail.block_hash, bad, tail.next_pubkey_hash, tail.payload);
+            let prev = BlockState::new(
+                0,
+                tail.block_hash,
+                bad,
+                tail.previous_hash,
+                tail.next_pubkey_hash,
+                tail.payload,
+            );
             // Previous `BlockState.chain_hash` only gets checked in 3rd block and beyond:
             assert!(Block::from_previous(&buf[..], &prev).is_ok());
         }
@@ -529,8 +542,14 @@ mod tests {
         sign_block(&mut buf, &seed, &random_payload(), Some(&tail));
         assert!(Block::from_previous(&buf, &tail).is_ok());
         for bad in HashBitFlipper::new(&chain_hash) {
-            let prev =
-                BlockState::new(1, tail.block_hash, bad, tail.next_pubkey_hash, tail.payload);
+            let prev = BlockState::new(
+                1,
+                tail.block_hash,
+                bad,
+                tail.previous_hash,
+                tail.next_pubkey_hash,
+                tail.payload,
+            );
             assert_eq!(
                 Block::from_previous(&buf[..], &prev),
                 Err(BlockError::ChainHash)
@@ -550,15 +569,18 @@ mod tests {
     fn test_block_hash_accessors() {
         let buf = new_dummy_block();
         let block = Block::new(&buf[..]);
-        assert_eq!(block.hash(), Hash::from_bytes([1; DIGEST]));
-        assert_eq!(block.next_pubkey_hash(), Hash::from_bytes([4; DIGEST]));
+        assert_eq!(block.state.block_hash, Hash::from_bytes([1; DIGEST]));
+        assert_eq!(block.state.next_pubkey_hash, Hash::from_bytes([4; DIGEST]));
 
-        assert_eq!(block.payload().time, 361700864190383365);
-        assert_eq!(block.payload().state_hash, Hash::from_bytes([7; DIGEST]));
+        assert_eq!(block.state.payload.time, 361700864190383365);
+        assert_eq!(
+            block.state.payload.state_hash,
+            Hash::from_bytes([7; DIGEST])
+        );
 
-        assert_eq!(block.index(), 578721382704613384);
-        assert_eq!(block.previous_hash(), Hash::from_bytes([9; DIGEST]));
-        assert_eq!(block.chain_hash(), Hash::from_bytes([10; DIGEST]));
+        assert_eq!(block.state.index, 578721382704613384);
+        assert_eq!(block.state.previous_hash, Hash::from_bytes([9; DIGEST]));
+        assert_eq!(block.state.chain_hash, Hash::from_bytes([10; DIGEST]));
     }
 
     #[test]
