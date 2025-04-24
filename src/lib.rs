@@ -10,9 +10,8 @@
 //! # Quickstart
 //!
 //! ```
-//! use blake3::Hash;
 //! use tempfile;
-//! use zf_zebrachain::{ChainStore, OwnedChainStore, Payload, generate_secret};
+//! use zf_zebrachain::{ChainStore, OwnedChainStore, Hash, Payload, generate_secret};
 //!
 //! // Chains are just files in a directory (for now). To get started you need a directory for
 //! // your public chain files and a `ChainStore`:
@@ -20,7 +19,7 @@
 //! let store = ChainStore::new(chain_dir.path());
 //!
 //! // To create signatures in a chain that you own, you also need a directory for your secret
-//! // chain files and secret key that will be used to encrypt the secret blocks:
+//! // chain files and secret key that will be used to encrypt them:
 //! let secret_chain_dir = tempfile::TempDir::new().unwrap();
 //! let storage_secret = generate_secret().unwrap(); // Uses getrandom::fill()
 //! let mystore = OwnedChainStore::build(
@@ -90,3 +89,5 @@ pub use payload::Payload;
 pub use secretblock::{MutSecretBlock, SecretBlock, SecretBlockResult, SecretBlockState};
 pub use secretchain::{SecretChain, SecretChainIter, SecretChainStore};
 pub use secretseed::{Error, Secret, Seed, generate_secret};
+
+pub use blake3::Hash;

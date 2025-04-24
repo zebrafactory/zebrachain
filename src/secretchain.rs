@@ -265,7 +265,7 @@ pub struct SecretChainStore {
 }
 
 impl SecretChainStore {
-    /// Create a new [SecretChainStore.]
+    /// Creates a new place for your super secret chains.
     pub fn new(dir: &Path, secret: Secret) -> Self {
         Self {
             dir: dir.to_path_buf(),
@@ -282,7 +282,7 @@ impl SecretChainStore {
         secret_chain_filename(&self.dir, chain_hash)
     }
 
-    /// Open secret chain with b
+    /// Open a secret chain identified by its public chain-hash.
     pub fn open_chain(&self, chain_hash: &Hash) -> io::Result<SecretChain> {
         let filename = self.chain_filename(chain_hash);
         let file = open_for_append(&filename)?;
