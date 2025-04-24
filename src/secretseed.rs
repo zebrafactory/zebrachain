@@ -7,7 +7,7 @@
 use crate::always::*;
 use crate::errors::SecretBlockError;
 use blake3::{Hash, Hasher, keyed_hash};
-pub use getrandom::Error;
+pub use getrandom::Error as EntropyError;
 use std::ops::Range;
 
 const SECRET_RANGE: Range<usize> = 0..DIGEST;
@@ -21,7 +21,7 @@ const NEXT_SECRET_RANGE: Range<usize> = DIGEST..DIGEST * 2;
 pub type Secret = Hash;
 
 /// Return a [Secret] buffer with entropy from [getrandom::fill()].
-pub fn generate_secret() -> Result<Secret, Error> {
+pub fn generate_secret() -> Result<Secret, EntropyError> {
     let mut buf = [0; 32];
     match getrandom::fill(&mut buf) {
         Ok(_) => Ok(Secret::from_bytes(buf)),
@@ -115,7 +115,7 @@ impl Seed {
     }
 
     /// Creates a new seed using entropy from [generate_secret()].
-    pub fn auto_create() -> Result<Self, Error> {
+    pub fn auto_create() -> Result<Self, EntropyError> {
         let initial_entropy = generate_secret()?; // Only this part can fail
         Ok(Self::create(&initial_entropy))
     }
@@ -137,7 +137,7 @@ impl Seed {
     }
 
     /// Advance chain by mixing in new entropy from [generate_secret()].
-    pub fn auto_advance(&self) -> Result<Self, Error> {
+    pub fn auto_advance(&self) -> Result<Self, EntropyError> {
         let new_entropy = generate_secret()?; // Only this part can fail
         Ok(self.advance(&new_entropy))
     }
