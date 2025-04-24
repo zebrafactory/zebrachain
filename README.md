@@ -14,6 +14,8 @@ This is a nascent implementation of a yet to be finalized protocol. It's also bu
 [ML-DSA](https://github.com/RustCrypto/signatures/tree/master/ml-dsa) and
 [SLH-DSA](https://github.com/RustCrypto/signatures/tree/master/slh-dsa).
 
+There will likely still be breaking changes in the ZebraChain protocol.
+
 ## 🦓 Overview
 
 Consider the GPG key used to sign updates for your favorite Linux distribution.  You could replace
@@ -31,7 +33,7 @@ entropy when the ZebraChain was created.
 
 * Entropy accumulation throughout the lifetime of a ZebraChain. At each signature, a new call to
 `getrandom()` is made. This new entropy is securely mixed with the current seed (using a keyed
-hash), and the result is the next seed.
+hash), and the result is the next seed. What to rotate your keys? Just make a new signature.
 
 * Quantum safe. ZebraChain uses the recently standardized
 [FIPS 204 ML-DSA](https://csrc.nist.gov/pubs/fips/204/final) quantum secure algorithm in a hybrid
@@ -39,11 +41,21 @@ construction with the classically secure [ed25519](https://ed25519.cr.yp.to/) al
 recommended by the ML-DSA authors). Support for
 [FIPS 205 SLH-DSA](https://csrc.nist.gov/pubs/fips/205/final) will be added soon.
 
-The current implementaion has low abstraction and is not configurable, making it easy to review the
-protocol. So please jump in and help!
+## Development Status
 
-The next step is to make the implemntation configuable for single, double, and tripple hrybrid
+The current implementation has low abstraction and is not configurable, making it easy to review the
+protocol. So please jump in and help! Feedback and pull requests welcome!
+
+The next step is to make the implementation configurable for single, double, and triple hybrid
 signing with ed25519, ML-DSA, and SLH-DSA, supporting all ML-DSA and SLH-DSA parameter sets.
+Likewise, the hash function and digest size needs to be configurable.
+
+The Payload also needs to be abstracted into a trait to allow higher level code to define the size
+of payload and interpret its contents as needed.
+
+The current ZebraChain API is close to what it will be as the dust settles, except for it will
+soon be generic on two items: something that implements a parameter trait and something that
+implements a payload trait.
 
 ## 🦀 Dependencies of Interest
 
@@ -80,30 +92,30 @@ SIG = sign(PUB || NEXT_PUB_HASH || PAYLOAD || INDEX || CHAIN_HASH || PREV_HASH)
 The `PUB` field contains both ML-DSA and ed25519 public keys:
 
 ```
-PUB = (PUB_ML_DSA || PUB_ED25519)
+PUB = PUB_ML_DSA || PUB_ED25519
 ```
 
 And the `SIG` field contains both ML-DSA and ed25519 signatures:
 
 ```
-SIG = (SIG_ML_DSA || SIG_ED25519)
+SIG = SIG_ML_DSA || SIG_ED25519
 ```
 
 Where:
 
 ```
-SIG_ED25519 = sign_ed25519(SIGNABLE)
+SIG_ED25519 = sign_ed25519(PUB || NEXT_PUB_HASH || PAYLOAD || INDEX || CHAIN_HASH || PREV_HASH)
 ```
 
 And where:
 
 ```
-SIG_ML_DSA = sign_ml_dsa(SIG_ED25519 || SIGNABLE)
+SIG_ML_DSA = sign_ml_dsa(SIG_ED25519 || PUB || NEXT_PUB_HASH || PAYLOAD || INDEX || CHAIN_HASH || PREV_HASH)
 ```
 
 The `PAYLOAD` field is the content being signed. Currently it contains a timestamp and a hash,
 but it will soon be reworked into a trait, allowing higher level code to define the the size of
-palyoad and interpret the payload content however needed.
+the payload and interpret the payload content however needed.
 
 ## 📜 License
 
