@@ -12,7 +12,7 @@ fn check_secretblock_buf(buf: &[u8]) {
     }
 }
 
-/// Alias for `Result<SecretBlock, SecretBlockError`.
+/// Alias for `Result<SecretBlock, SecretBlockError>`.
 pub type SecretBlockResult = Result<SecretBlock, SecretBlockError>;
 
 /// Wire format for saving secret chain to nonvolatile storage.

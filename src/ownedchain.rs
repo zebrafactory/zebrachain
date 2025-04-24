@@ -40,12 +40,12 @@ impl OwnedChainStore {
         Self::new(store, secret_store)
     }
 
-    /// Reference to underlying [ChainStore].
+    /// Reference to the underlying [ChainStore].
     pub fn store(&self) -> &ChainStore {
         &self.store
     }
 
-    /// Reference to underlying [SecretChainStore].
+    /// Reference to the underlying [SecretChainStore].
     pub fn secret_store(&self) -> &SecretChainStore {
         &self.secret_store
     }
