@@ -100,8 +100,9 @@ impl<'a> Block<'a> {
         self.buf
     }
 
-    /// Open a block and perform internal validation.
-    pub fn open(buf: &'a [u8]) -> BlockResult<'a> {
+    // Warning: This only performs internal validation on the block!
+    // It does not validate relative to the chain!
+    fn open(buf: &'a [u8]) -> BlockResult<'a> {
         let block = Block::new(buf);
         if !block.content_is_valid() {
             Err(BlockError::Content)
