@@ -68,6 +68,7 @@ impl BlockState {
         }
     }
 
+    // Warning: this does ZERO validation!
     fn from_buf(buf: &[u8]) -> Self {
         Self {
             index: get_u64(buf, INDEX_RANGE),
@@ -272,6 +273,7 @@ mod tests {
     use crate::pksign::{SecretSigner, sign_block};
     use crate::secretseed::Seed;
     use crate::testhelpers::{BitFlipper, HashBitFlipper, random_hash, random_payload};
+    use getrandom;
 
     const HEX0: &str = "885b6784a7cc0ab9703bfd885cf3c54d20e9a844357813814dae304ea83822aa";
     const HEX1: &str = "50997820b97129d2f50964e3438b2232a9ffe61050c9d32537cc1b863083961b";
@@ -299,6 +301,28 @@ mod tests {
         assert_eq!(bs.effective_chain_hash(), h1);
         let bs = BlockState::new(1, h1, h2, h3, h4, payload);
         assert_eq!(bs.effective_chain_hash(), h2);
+    }
+
+    #[test]
+    fn test_blockstate_from_buf() {
+        let mut buf = [0; BLOCK];
+        getrandom::fill(&mut buf).unwrap();
+        buf[HASH_RANGE].copy_from_slice(&[1; DIGEST]);
+        buf[NEXT_PUBKEY_HASH_RANGE].copy_from_slice(&[2; DIGEST]);
+        buf[PAYLOAD_RANGE].copy_from_slice(&[3; PAYLOAD]);
+        buf[INDEX_RANGE].copy_from_slice(&[4; 8]);
+        buf[CHAIN_HASH_RANGE].copy_from_slice(&[5; DIGEST]);
+        buf[PREVIOUS_HASH_RANGE].copy_from_slice(&[6; DIGEST]);
+
+        let expected = BlockState {
+            index: 289360691352306692,
+            block_hash: Hash::from_bytes([1; DIGEST]),
+            chain_hash: Hash::from_bytes([5; DIGEST]),
+            previous_hash: Hash::from_bytes([6; DIGEST]),
+            next_pubkey_hash: Hash::from_bytes([2; DIGEST]),
+            payload: Payload::new(217020518514230019, Hash::from_bytes([3; DIGEST])),
+        };
+        assert_eq!(BlockState::from_buf(&buf), expected);
     }
 
     fn new_expected() -> Hash {
