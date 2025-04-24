@@ -18,30 +18,32 @@ And where:
     SIG = sign(PUB || NEXT_PUB_HASH || PAYLOAD || INDEX || CHAIN_HASH || PREV_HASH)
 */
 
-pub const PUB_ED25519: usize = 32;
-pub const SIG_ED25519: usize = 64;
-pub const PUB_MLDSA: usize = 1952;
-pub const SIG_MLDSA: usize = 3309;
+pub(crate) const PUB_ED25519: usize = 32;
+pub(crate) const SIG_ED25519: usize = 64;
+pub(crate) const PUB_MLDSA: usize = 1952;
+pub(crate) const SIG_MLDSA: usize = 3309;
 
-pub const PUB_MLDSA_RANGE: Range<usize> = 0..PUB_MLDSA;
-pub const PUB_ED25519_RANGE: Range<usize> = PUB_MLDSA..PUB_MLDSA + PUB_ED25519;
-pub const SIG_MLDSA_RANGE: Range<usize> = 0..SIG_MLDSA;
-pub const SIG_ED25519_RANGE: Range<usize> = SIG_MLDSA..SIG_MLDSA + SIG_ED25519;
+pub(crate) const PUB_MLDSA_RANGE: Range<usize> = 0..PUB_MLDSA;
+pub(crate) const PUB_ED25519_RANGE: Range<usize> = PUB_MLDSA..PUB_MLDSA + PUB_ED25519;
+pub(crate) const SIG_MLDSA_RANGE: Range<usize> = 0..SIG_MLDSA;
+pub(crate) const SIG_ED25519_RANGE: Range<usize> = SIG_MLDSA..SIG_MLDSA + SIG_ED25519;
 
+/// Size of hash output digest (32 bytes).
 pub const DIGEST: usize = 32;
-pub const SEED: usize = 2 * DIGEST;
-pub const SIGNATURE: usize = SIG_ED25519 + SIG_MLDSA;
-pub const PUBKEY: usize = PUB_ED25519 + PUB_MLDSA;
 
-/// Size of the (non-configurable) ZebraChain payload (40 bytes).
+pub(crate) const SEED: usize = 2 * DIGEST;
+pub(crate) const SIGNATURE: usize = SIG_ED25519 + SIG_MLDSA;
+pub(crate) const PUBKEY: usize = PUB_ED25519 + PUB_MLDSA;
+
+/// Size of the ZebraChain payload (40 bytes).
 pub const PAYLOAD: usize = 8 + DIGEST;
 
-/// Size of the (non-configurable) ZebraChain block (5533 bytes).
+/// Size of the ZebraChain block (5533 bytes).
 pub const BLOCK: usize = (4 * DIGEST) + SIGNATURE + PUBKEY + PAYLOAD + 8;
 
-pub const HASHABLE_RANGE: Range<usize> = DIGEST..BLOCK;
-pub const SIGNABLE_RANGE: Range<usize> = DIGEST + SIGNATURE..BLOCK;
-pub const SIGNABLE2_RANGE: Range<usize> = SIGNABLE_RANGE.start - SIG_ED25519..BLOCK;
+pub(crate) const HASHABLE_RANGE: Range<usize> = DIGEST..BLOCK;
+pub(crate) const SIGNABLE_RANGE: Range<usize> = DIGEST + SIGNATURE..BLOCK;
+pub(crate) const SIGNABLE2_RANGE: Range<usize> = SIGNABLE_RANGE.start - SIG_ED25519..BLOCK;
 
 const WIRE: [usize; 8] = [
     DIGEST,    // Block hash
@@ -63,14 +65,14 @@ const fn get_range(index: usize) -> Range<usize> {
     }
 }
 
-pub const HASH_RANGE: Range<usize> = get_range(0);
-pub const SIGNATURE_RANGE: Range<usize> = get_range(1);
-pub const PUBKEY_RANGE: Range<usize> = get_range(2);
-pub const NEXT_PUBKEY_HASH_RANGE: Range<usize> = get_range(3);
-pub const PAYLOAD_RANGE: Range<usize> = get_range(4);
-pub const INDEX_RANGE: Range<usize> = get_range(5);
-pub const CHAIN_HASH_RANGE: Range<usize> = get_range(6);
-pub const PREVIOUS_HASH_RANGE: Range<usize> = get_range(7);
+pub(crate) const HASH_RANGE: Range<usize> = get_range(0);
+pub(crate) const SIGNATURE_RANGE: Range<usize> = get_range(1);
+pub(crate) const PUBKEY_RANGE: Range<usize> = get_range(2);
+pub(crate) const NEXT_PUBKEY_HASH_RANGE: Range<usize> = get_range(3);
+pub(crate) const PAYLOAD_RANGE: Range<usize> = get_range(4);
+pub(crate) const INDEX_RANGE: Range<usize> = get_range(5);
+pub(crate) const CHAIN_HASH_RANGE: Range<usize> = get_range(6);
+pub(crate) const PREVIOUS_HASH_RANGE: Range<usize> = get_range(7);
 
 /*
 A SecretBlock currently has 6 fields:
@@ -80,8 +82,8 @@ A SecretBlock currently has 6 fields:
                                               From the previous block
 */
 
-pub const SECRET_BLOCK: usize = 5 * DIGEST + PAYLOAD + 8;
-pub const SECRET_BLOCK_AEAD: usize = SECRET_BLOCK + 16;
+pub(crate) const SECRET_BLOCK: usize = 5 * DIGEST + PAYLOAD + 8;
+pub(crate) const SECRET_BLOCK_AEAD: usize = SECRET_BLOCK + 16;
 
 const SECWIRE: [usize; 6] = [
     DIGEST,  // Block hash
@@ -101,15 +103,15 @@ const fn get_secrange(index: usize) -> Range<usize> {
     }
 }
 
-pub const SEC_HASH_RANGE: Range<usize> = get_secrange(0);
-pub const SEC_PUBLIC_HASH_RANGE: Range<usize> = get_secrange(1);
-pub const SEC_SEED_RANGE: Range<usize> = get_secrange(2);
-pub const SEC_PAYLOAD_RANGE: Range<usize> = get_secrange(3);
-pub const SEC_INDEX_RANGE: Range<usize> = get_secrange(4);
-pub const SEC_PREV_HASH_RANGE: Range<usize> = get_secrange(5);
+pub(crate) const SEC_HASH_RANGE: Range<usize> = get_secrange(0);
+pub(crate) const SEC_PUBLIC_HASH_RANGE: Range<usize> = get_secrange(1);
+pub(crate) const SEC_SEED_RANGE: Range<usize> = get_secrange(2);
+pub(crate) const SEC_PAYLOAD_RANGE: Range<usize> = get_secrange(3);
+pub(crate) const SEC_INDEX_RANGE: Range<usize> = get_secrange(4);
+pub(crate) const SEC_PREV_HASH_RANGE: Range<usize> = get_secrange(5);
 
-pub const BLOCK_READ_BUF: usize = BLOCK * 64;
-pub const SECRET_BLOCK_AEAD_READ_BUF: usize = SECRET_BLOCK_AEAD * 64;
+pub(crate) const BLOCK_READ_BUF: usize = BLOCK * 64;
+pub(crate) const SECRET_BLOCK_AEAD_READ_BUF: usize = SECRET_BLOCK_AEAD * 64;
 
 pub static CONTEXT_SECRET: &str =
     "ed149ef77826374035fd3a1e2c1bf3b39539333d5a8bc1f7e788736430efc7f2";
