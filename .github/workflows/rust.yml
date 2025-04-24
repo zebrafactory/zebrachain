@@ -25,6 +25,8 @@ jobs:
           rustup component add clippy
       - name: Check
         run: cargo check
+      - name: Check code formatting
+        run: cargo fmt --all --check
       - name: Clippy
         run: cargo clippy
       - name: Build
@@ -33,4 +35,3 @@ jobs:
         run: cargo test --verbose
       - name: Run example
         run: cargo run --example sign-some --release
-
