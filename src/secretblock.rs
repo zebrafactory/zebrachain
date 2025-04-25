@@ -3,8 +3,13 @@
 use crate::always::*;
 use crate::errors::SecretBlockError;
 use crate::payload::Payload;
-use crate::secretseed::Seed;
-use blake3::{Hash, hash};
+use crate::secretseed::{Secret, Seed, derive_secret};
+use blake3::{Hash, hash, keyed_hash};
+use chacha20poly1305::{
+    ChaCha20Poly1305, Key, Nonce,
+    aead::{AeadInPlace, KeyInit},
+};
+use zeroize::{Zeroize, ZeroizeOnDrop};
 
 fn check_secretblock_buf(buf: &[u8]) {
     if buf.len() != SECRET_BLOCK {
@@ -69,7 +74,7 @@ impl SecretBlock {
         }
     }
 
-    /// Open a secret block, ensure it is a valid block and previous [SecretBlock] `prev`.S
+    /// Open a secret block, ensure it is a valid block after the previous [SecretBlock] `prev`.
     pub fn from_previous(buf: &[u8], prev: &SecretBlock) -> SecretBlockResult {
         let block = Self::open(buf)?;
         if block.previous_hash != prev.block_hash {
@@ -86,6 +91,134 @@ impl SecretBlock {
 
 /// FIXME
 pub type SecretBlockState = SecretBlock;
+
+// Split out of derive_block_secrets() for testability
+#[inline]
+fn derive_block_secrets_inner(secret: Secret) -> (Secret, Secret) {
+    let key = derive_secret(CONTEXT_STORE_KEY, &secret);
+    let nonce = derive_secret(CONTEXT_STORE_NONCE, &secret);
+    assert_ne!(key, nonce);
+    (key, nonce)
+}
+
+// A unique key and nonce derived from the block secret.
+fn derive_block_secrets(secret: Secret) -> (Key, Nonce) {
+    let (key, nonce) = derive_block_secrets_inner(secret);
+    let key = Key::from_slice(&key.as_bytes()[..]);
+    let nonce = Nonce::from_slice(&nonce.as_bytes()[0..12]);
+    (*key, *nonce)
+}
+
+fn encrypt_in_place(buf: &mut Vec<u8>, secret: Secret, index: u64) {
+    assert_eq!(buf.len(), SECRET_BLOCK);
+    let (key, nonce) = derive_block_secrets(secret);
+    let cipher = ChaCha20Poly1305::new(&key);
+    cipher.encrypt_in_place(&nonce, &index.to_le_bytes(), buf).unwrap(); // This should not fail
+    assert_eq!(buf.len(), SECRET_BLOCK_AEAD);
+}
+
+fn decrypt_in_place(buf: &mut Vec<u8>, secret: Secret, index: u64) -> Result<(), SecretBlockError> {
+    assert_eq!(buf.len(), SECRET_BLOCK_AEAD);
+    let (key, nonce) = derive_block_secrets(secret);
+    let cipher = ChaCha20Poly1305::new(&key);
+    if cipher.decrypt_in_place(&nonce, &index.to_le_bytes(), buf).is_err() {
+        Err(SecretBlockError::Storage)
+    } else {
+        assert_eq!(buf.len(), SECRET_BLOCK);
+        Ok(())
+    }
+}
+
+/// FIXME
+#[derive(Debug, PartialEq, Clone, Copy)]
+pub struct SecretBlockState2 {
+    /// Hash of this secret block.
+    pub block_hash: Hash,
+
+    /// Hash of corresponding public block.
+    pub public_block_hash: Hash,
+
+    /// Seed use to sign this block position.
+    pub seed: Seed,
+
+    /// Payload to be signed.
+    pub payload: Payload,
+
+    /// Block index.
+    pub index: u64,
+
+    /// Hash of previous secret block.
+    pub previous_hash: Hash,
+}
+
+impl SecretBlockState2 {
+    fn from_buf(buf: &[u8]) -> Result<Self, SecretBlockError> {
+        check_secretblock_buf(buf);
+        let computed_hash = hash(&buf[DIGEST..]);
+        let block_hash = get_hash(buf, SEC_HASH_RANGE);
+        if computed_hash != block_hash {
+            Err(SecretBlockError::Content)
+        } else {
+            Ok(Self {
+                block_hash,
+                public_block_hash: get_hash(buf, SEC_PUBLIC_HASH_RANGE),
+                seed: Seed::from_buf(&buf[SEC_SEED_RANGE])?,
+                payload: Payload::from_buf(&buf[SEC_PAYLOAD_RANGE]),
+                index: get_u64(buf, SEC_INDEX_RANGE),
+                previous_hash: get_hash(buf, SEC_PREV_HASH_RANGE),
+            })
+        }
+    }
+}
+
+pub struct SecretBlock2<'a> {
+    buf: &'a mut Vec<u8>,
+}
+
+impl<'a> SecretBlock2<'a> {
+    pub fn new(buf: &'a mut Vec<u8>) -> Self {
+        assert_eq!(buf.len(), SECRET_BLOCK_AEAD);
+        Self { buf }
+    }
+
+    pub fn from_index(
+        self,
+        secret: Secret,
+        index: u64,
+    ) -> Result<SecretBlockState2, SecretBlockError> {
+        decrypt_in_place(self.buf, secret, index)?;
+        let state = SecretBlockState2::from_buf(&self.buf[0..SECRET_BLOCK])?;
+        if index != state.index {
+            Err(SecretBlockError::Index)
+        } else {
+            Ok(state)
+        }
+    }
+
+    pub fn from_hash_at_index(self, secret: Secret, index: u64, block_hash: &Hash) -> Result<SecretBlockState2, SecretBlockError> {
+        let state = self.from_index(secret, index)?;
+        Ok(state)
+    }
+
+    pub fn from_previous(self, secret: Secret, prev: &SecretBlockState2) -> Result<SecretBlockState2, SecretBlockError> {
+        let state = self.from_index(secret, prev.index + 1)?;
+        if state.previous_hash != prev.block_hash {
+            Err(SecretBlockError::PreviousHash)
+        } else if state.seed.secret != prev.seed.next_secret {
+            Err(SecretBlockError::SeedSequence)
+        } else {
+            Ok(state)
+        }
+    }
+}
+
+impl<'a> Drop for SecretBlock2<'a> {
+    fn drop(&mut self) {
+        self.buf.zeroize();
+    }
+}
+
+impl<'a> ZeroizeOnDrop for SecretBlock2<'a> {}
 
 /// Builds a new [SecretBlock] up in a buffer.
 #[derive(Debug)]
@@ -131,6 +264,7 @@ mod tests {
 
     use super::*;
     use crate::testhelpers::{BitFlipper, HashBitFlipper, random_hash, random_payload};
+    use getrandom;
 
     fn valid_secret_block() -> [u8; SECRET_BLOCK] {
         let mut buf = [0; SECRET_BLOCK];
@@ -173,6 +307,16 @@ mod tests {
     fn test_check_secretblock_buf_panic_high() {
         let buf = [0; SECRET_BLOCK + 1];
         check_secretblock_buf(&buf);
+    }
+
+    #[test]
+    fn test_secretblock2_zeroize() {
+        let mut buf = vec![69; SECRET_BLOCK_AEAD];
+        {
+            let block = SecretBlock2::new(&mut buf);
+            assert_eq!(block.buf, &vec![69; SECRET_BLOCK_AEAD]);
+        }
+        assert_eq!(buf, vec![]);
     }
 
     #[test]

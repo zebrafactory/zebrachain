@@ -89,6 +89,11 @@ impl SecretChain {
         })
     }
 
+    // Use a unique secret for each block, derived from the chain secret.
+    fn derive_block_secret(&self, block_index: u64) -> Secret {
+        keyed_hash(self.secret.as_bytes(), &block_index.to_le_bytes())
+    }
+
     /// Exposes internal secret block buffer as mutable bytes.
     pub fn as_mut_buf(&mut self) -> &mut [u8] {
         self.buf.resize(SECRET_BLOCK, 0); // FIXME: Probably put this somewhere else
