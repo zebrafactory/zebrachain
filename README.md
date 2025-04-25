@@ -131,3 +131,12 @@ at your option.
 Unless you explicitly state otherwise, any contribution intentionally submitted
 for inclusion in the work by you, as defined in the Apache-2.0 license, shall be
 dual licensed as above, without any additional terms or conditions.
+
+## Code of Conduct
+
+We follow the [Rust Code of Conduct](http://www.rust-lang.org/conduct.html),
+with the following additional clauses:
+
+* We respect the rights to privacy and anonymity for contributors and people in
+  the community.  If someone wishes to contribute under a pseudonym different to
+  their primary identity, that wish is to be respected by all contributors.
