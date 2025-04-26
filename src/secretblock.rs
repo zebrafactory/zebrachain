@@ -107,15 +107,18 @@ pub struct SecretBlock<'a> {
 }
 
 impl<'a> SecretBlock<'a> {
+    /// Create a new secret block wrapper but perform no validation.
     pub fn new(buf: &'a mut Vec<u8>) -> Self {
         Self { buf }
     }
 
+    /// FIXME
     pub fn as_mut_read_buf(&mut self) -> &mut [u8] {
         self.buf.resize(SECRET_BLOCK_AEAD, 0);
         &mut self.buf
     }
 
+    /// FIXME
     pub fn from_index(
         self,
         secret: Secret,
@@ -130,6 +133,7 @@ impl<'a> SecretBlock<'a> {
         }
     }
 
+    /// FIXME
     pub fn from_hash_at_index(
         self,
         secret: Secret,
@@ -140,6 +144,7 @@ impl<'a> SecretBlock<'a> {
         Ok(state)
     }
 
+    /// FIXME
     pub fn from_previous(
         self,
         secret: Secret,
