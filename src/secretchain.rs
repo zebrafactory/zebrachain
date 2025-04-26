@@ -213,7 +213,7 @@ impl SecretChainIter {
         };
         match result {
             Ok(state) => {
-                self.tail = Some(state.clone());
+                self.tail = Some(state);
                 Ok(state)
             }
             Err(err) => Err(err.to_io_error()),

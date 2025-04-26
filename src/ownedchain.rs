@@ -161,7 +161,7 @@ impl OwnedChain {
 
     /// Returns current [OwnedBlockState].
     pub fn state(&self) -> OwnedBlockState {
-        OwnedBlockState::new(self.chain.tail().clone(), self.secret_chain.tail().clone())
+        OwnedBlockState::new(self.chain.tail().clone(), *self.secret_chain.tail())
     }
 }
 

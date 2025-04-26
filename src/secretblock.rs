@@ -115,7 +115,7 @@ impl<'a> SecretBlock<'a> {
     /// FIXME
     pub fn as_mut_read_buf(&mut self) -> &mut [u8] {
         self.buf.resize(SECRET_BLOCK_AEAD, 0);
-        &mut self.buf
+        self.buf
     }
 
     /// FIXME
@@ -191,8 +191,8 @@ impl<'a> MutSecretBlock<'a> {
 
     /// Set needed secret block fields for block after `prev`.
     pub fn set_previous(&mut self, prev: &SecretBlockState) {
-        set_u64(&mut self.buf, SEC_INDEX_RANGE, prev.index + 1);
-        set_hash(&mut self.buf, SEC_PREV_HASH_RANGE, &prev.block_hash);
+        set_u64(self.buf, SEC_INDEX_RANGE, prev.index + 1);
+        set_hash(self.buf, SEC_PREV_HASH_RANGE, &prev.block_hash);
     }
 
     /// Write seed to buffer.
@@ -202,13 +202,13 @@ impl<'a> MutSecretBlock<'a> {
 
     /// Set hash of resulting public block (used for integrity check).
     pub fn set_public_block_hash(&mut self, public_block_hash: &Hash) {
-        set_hash(&mut self.buf, SEC_PUBLIC_HASH_RANGE, public_block_hash);
+        set_hash(self.buf, SEC_PUBLIC_HASH_RANGE, public_block_hash);
     }
 
     /// Set and return block hash.
-    pub fn finalize(mut self, block_secret: Secret) -> Hash {
+    pub fn finalize(self, block_secret: Secret) -> Hash {
         let block_hash = hash(&self.buf[DIGEST..]);
-        set_hash(&mut self.buf, SEC_HASH_RANGE, &block_hash);
+        set_hash(self.buf, SEC_HASH_RANGE, &block_hash);
         encrypt_in_place(self.buf, block_secret);
         block_hash
     }
