@@ -4,7 +4,7 @@ use crate::always::*;
 use crate::errors::SecretBlockError;
 use crate::payload::Payload;
 use crate::secretseed::{Secret, Seed, derive_secret};
-use blake3::{Hash, hash, keyed_hash};
+use blake3::{Hash, hash};
 use chacha20poly1305::{
     ChaCha20Poly1305, Key, Nonce,
     aead::{AeadInPlace, KeyInit},
@@ -141,7 +141,11 @@ impl<'a> SecretBlock<'a> {
         index: u64,
     ) -> Result<SecretBlockState, SecretBlockError> {
         let state = self.from_index(secret, index)?;
-        Ok(state)
+        if &state.block_hash != block_hash {
+            Err(SecretBlockError::Hash)
+        } else {
+            Ok(state)
+        }
     }
 
     /// FIXME

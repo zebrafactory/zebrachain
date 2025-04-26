@@ -1,10 +1,9 @@
 //! Read and write secret blocks in a chain.
 
 use crate::always::*;
-use crate::errors::SecretBlockError;
 use crate::fsutil::{create_for_append, open_for_append, secret_chain_filename};
 use crate::secretblock::{SecretBlock, SecretBlockState};
-use crate::secretseed::{Secret, Seed, derive_secret};
+use crate::secretseed::{Secret, Seed};
 use blake3::{Hash, keyed_hash};
 use std::fs::{File, remove_file};
 use std::io;
@@ -250,13 +249,8 @@ impl SecretChainStore {
     }
 
     // Use a different key for each secret chain file
-    fn derive_secret(&self, chain_hash: &Hash) -> Secret {
-        keyed_hash(self.secret.as_bytes(), chain_hash.as_bytes())
-    }
-
-    // Use a different key for each secret chain file
     fn derive_chain_secret(&self, chain_hash: &Hash) -> Secret {
-        keyed_hash(self.secret.as_bytes(), chain_hash.as_bytes())
+        derive_chain_secret(&self.secret, chain_hash)
     }
 
     pub(crate) fn derive_first_block_secret(&self, chain_hash: &Hash) -> Secret {
@@ -272,7 +266,7 @@ impl SecretChainStore {
     pub fn open_chain(&self, chain_hash: &Hash) -> io::Result<SecretChain> {
         let filename = self.chain_filename(chain_hash);
         let file = open_for_append(&filename)?;
-        let secret = self.derive_secret(chain_hash);
+        let secret = self.derive_chain_secret(chain_hash);
         SecretChain::open(file, secret)
     }
 
@@ -285,7 +279,7 @@ impl SecretChainStore {
     ) -> io::Result<SecretChain> {
         let filename = self.chain_filename(chain_hash);
         let file = create_for_append(&filename)?;
-        let secret = self.derive_secret(chain_hash);
+        let secret = self.derive_chain_secret(chain_hash);
         SecretChain::create(file, secret, buf, block_hash)
     }
 

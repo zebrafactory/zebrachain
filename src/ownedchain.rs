@@ -12,7 +12,7 @@ use crate::chain::{Chain, ChainStore, CheckPoint};
 use crate::ownedblock::{MutOwnedBlock, OwnedBlockState};
 use crate::payload::Payload;
 use crate::pksign::sign_block;
-use crate::secretchain::{SecretChain, SecretChainStore, derive_first_block_secret};
+use crate::secretchain::{SecretChain, SecretChainStore};
 use crate::secretseed::{Secret, Seed};
 use blake3::Hash;
 use std::io;
