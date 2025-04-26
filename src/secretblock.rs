@@ -232,7 +232,9 @@ mod tests {
 
     use super::*;
     use crate::secretseed::generate_secret;
-    use crate::testhelpers::{BitFlipper, HashBitFlipper, random_hash, random_payload};
+    use crate::testhelpers::{
+        BitFlipper, HashBitFlipper, U64BitFlipper, random_hash, random_payload, random_u64,
+    };
     use getrandom;
     use std::collections::HashSet;
 
@@ -263,16 +265,18 @@ mod tests {
 
     #[test]
     fn test_derive_block_sub_secrets_inner() {
-        let count = 420;
+        let count = 420u64;
         let mut hset = HashSet::new();
         let chain_secret = generate_secret().unwrap();
         assert!(hset.insert(chain_secret));
         for block_index in 0..count {
+            let block_secret = keyed_hash(chain_secret.as_bytes(), &block_index.to_le_bytes());
+            assert!(hset.insert(block_secret));
             let (key, nonce) = derive_block_sub_secrets(&chain_secret, block_index);
             assert!(hset.insert(key));
             assert!(hset.insert(nonce));
         }
-        assert_eq!(hset.len(), (2 * count + 1) as usize);
+        assert_eq!(hset.len(), (3 * count + 1) as usize);
     }
 
     #[test]
@@ -303,6 +307,29 @@ mod tests {
         }
         decrypt_in_place(&mut buf, &secret, 0).unwrap();
         assert_eq!(hash(&buf), h);
+    }
+
+    #[test]
+    fn test_chacha20poly1305_additional_data() {
+        let mut buf = vec![0; SECRET_BLOCK];
+        let buf_hash = hash(&buf);
+        let chain_secret = generate_secret().unwrap();
+        for block_index in 0..420 {
+            let (key, nonce) = get_block_key_and_nonce(&chain_secret, block_index);
+            for bad_block_index in U64BitFlipper::new(block_index) {
+                buf.resize(SECRET_BLOCK, 42);
+                buf.fill(69);
+                let cipher = ChaCha20Poly1305::new(&key);
+                let additional_data = bad_block_index.to_le_bytes();
+                cipher
+                    .encrypt_in_place(&nonce, &additional_data, &mut buf)
+                    .unwrap(); // This should not fail
+                assert_eq!(
+                    decrypt_in_place(&mut buf, &chain_secret, block_index),
+                    Err(SecretBlockError::Storage)
+                );
+            }
+        }
     }
 
     #[test]

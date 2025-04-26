@@ -102,6 +102,38 @@ impl Iterator for HashBitFlipper {
     }
 }
 
+/// Iteration through all 1-bit flip permutations in a u64.
+#[derive(Debug)]
+pub struct U64BitFlipper {
+    orig: [u8; 8],
+    counter: usize,
+}
+
+impl U64BitFlipper {
+    /// Create a new [HashBitFlipper].
+    pub fn new(orig: u64) -> Self {
+        Self {
+            orig: orig.to_le_bytes(),
+            counter: 0,
+        }
+    }
+}
+
+impl Iterator for U64BitFlipper {
+    type Item = u64;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.counter < self.orig.len() * 8 {
+            let mut bad = self.orig;
+            flip_bit(&mut bad, self.counter);
+            self.counter += 1;
+            Some(u64::from_le_bytes(bad))
+        } else {
+            None
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -161,5 +193,16 @@ mod tests {
             assert!(hset.insert(bad));
         }
         assert_eq!(hset.len(), 32 * 8 + 1);
+    }
+
+    #[test]
+    fn test_u64_bit_flipper() {
+        let orig = random_u64();
+        let mut hset: HashSet<u64> = HashSet::new();
+        assert!(hset.insert(orig));
+        for bad in U64BitFlipper::new(orig) {
+            assert!(hset.insert(bad));
+        }
+        assert_eq!(hset.len(), 65);
     }
 }
