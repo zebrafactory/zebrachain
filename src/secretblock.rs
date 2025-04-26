@@ -113,7 +113,9 @@ fn encrypt_in_place(buf: &mut Vec<u8>, secret: Secret, index: u64) {
     assert_eq!(buf.len(), SECRET_BLOCK);
     let (key, nonce) = derive_block_secrets(secret);
     let cipher = ChaCha20Poly1305::new(&key);
-    cipher.encrypt_in_place(&nonce, &index.to_le_bytes(), buf).unwrap(); // This should not fail
+    cipher
+        .encrypt_in_place(&nonce, &index.to_le_bytes(), buf)
+        .unwrap(); // This should not fail
     assert_eq!(buf.len(), SECRET_BLOCK_AEAD);
 }
 
@@ -121,7 +123,10 @@ fn decrypt_in_place(buf: &mut Vec<u8>, secret: Secret, index: u64) -> Result<(),
     assert_eq!(buf.len(), SECRET_BLOCK_AEAD);
     let (key, nonce) = derive_block_secrets(secret);
     let cipher = ChaCha20Poly1305::new(&key);
-    if cipher.decrypt_in_place(&nonce, &index.to_le_bytes(), buf).is_err() {
+    if cipher
+        .decrypt_in_place(&nonce, &index.to_le_bytes(), buf)
+        .is_err()
+    {
         Err(SecretBlockError::Storage)
     } else {
         assert_eq!(buf.len(), SECRET_BLOCK);
@@ -195,12 +200,21 @@ impl<'a> SecretBlock2<'a> {
         }
     }
 
-    pub fn from_hash_at_index(self, secret: Secret, index: u64, block_hash: &Hash) -> Result<SecretBlockState2, SecretBlockError> {
+    pub fn from_hash_at_index(
+        self,
+        secret: Secret,
+        index: u64,
+        block_hash: &Hash,
+    ) -> Result<SecretBlockState2, SecretBlockError> {
         let state = self.from_index(secret, index)?;
         Ok(state)
     }
 
-    pub fn from_previous(self, secret: Secret, prev: &SecretBlockState2) -> Result<SecretBlockState2, SecretBlockError> {
+    pub fn from_previous(
+        self,
+        secret: Secret,
+        prev: &SecretBlockState2,
+    ) -> Result<SecretBlockState2, SecretBlockError> {
         let state = self.from_index(secret, prev.index + 1)?;
         if state.previous_hash != prev.block_hash {
             Err(SecretBlockError::PreviousHash)
