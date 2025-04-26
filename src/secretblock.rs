@@ -461,16 +461,17 @@ mod tests {
             );
         }
     }
+    */
 
     #[test]
     fn test_mutblock_new() {
-        let mut buf = [69; SECRET_BLOCK];
+        let mut buf = vec![69; SECRET_BLOCK];
         let payload = Payload::new(1234567890, Hash::from_bytes([13; DIGEST]));
         MutSecretBlock::new(&mut buf, &payload);
         assert_ne!(buf, [69; SECRET_BLOCK]);
         assert_eq!(
             buf,
-            [
+            vec![
                 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
                 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
                 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -484,52 +485,13 @@ mod tests {
     }
 
     #[test]
-    fn test_mutblock_kat() {
-        let mut buf = [0; SECRET_BLOCK];
-        let payload = Payload::new(314, Hash::from_bytes([42; DIGEST]));
-        let prev = SecretBlockState {
-            block_hash: Hash::from_bytes([123; DIGEST]),
-            public_block_hash: random_hash(),
-            seed: Seed::auto_create().unwrap(),
-            payload: random_payload(),
-            index: 987,
-            previous_hash: random_hash(),
-        };
-        let seed = Seed::create(&Hash::from_bytes([69; DIGEST]));
-        let public_block_hash = Hash::from_bytes([42; DIGEST]);
-
-        let mut block = MutSecretBlock::new(&mut buf, &payload);
-        block.set_previous(&prev);
-        block.set_seed(&seed);
-        block.set_public_block_hash(&public_block_hash);
-        let block_hash = block.finalize();
-        assert_eq!(
-            buf,
-            [
-                237, 26, 54, 206, 239, 59, 62, 215, 7, 77, 207, 123, 33, 224, 169, 136, 13, 162,
-                74, 136, 232, 230, 31, 78, 111, 186, 123, 18, 236, 94, 136, 167, 42, 42, 42, 42,
-                42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42,
-                42, 42, 42, 42, 42, 42, 42, 9, 253, 30, 6, 249, 18, 171, 84, 19, 62, 24, 21, 201,
-                205, 86, 68, 150, 57, 60, 28, 90, 199, 222, 217, 117, 98, 117, 95, 85, 68, 13, 139,
-                81, 71, 83, 252, 176, 21, 151, 8, 29, 122, 107, 144, 241, 142, 43, 193, 43, 176,
-                152, 50, 175, 128, 168, 219, 8, 72, 38, 149, 74, 180, 245, 26, 58, 1, 0, 0, 0, 0,
-                0, 0, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42,
-                42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 220, 3, 0, 0, 0, 0, 0, 0, 123,
-                123, 123, 123, 123, 123, 123, 123, 123, 123, 123, 123, 123, 123, 123, 123, 123,
-                123, 123, 123, 123, 123, 123, 123, 123, 123, 123, 123, 123, 123, 123, 123
-            ]
-        );
-        assert_eq!(&buf[0..DIGEST], block_hash.as_bytes());
-    }
-
-    #[test]
     fn test_mutblock_set_previous() {
-        let mut buf = [0; SECRET_BLOCK];
+        let mut buf = vec![0; SECRET_BLOCK];
         let payload = random_payload();
         let mut block = MutSecretBlock::new(&mut buf, &payload);
         assert_eq!(block.buf[SEC_INDEX_RANGE], [0; 8]);
         assert_eq!(block.buf[SEC_PREV_HASH_RANGE], [0; 32]);
-        let prev = SecretBlock {
+        let prev = SecretBlockState {
             block_hash: random_hash(),
             public_block_hash: random_hash(),
             seed: Seed::auto_create().unwrap(),
@@ -544,7 +506,7 @@ mod tests {
 
     #[test]
     fn test_mutblock_set_seed() {
-        let mut buf = [0; SECRET_BLOCK];
+        let mut buf = vec![0; SECRET_BLOCK];
         let payload = random_payload();
         let mut block = MutSecretBlock::new(&mut buf, &payload);
         let seed = Seed::auto_create().unwrap();
@@ -559,8 +521,9 @@ mod tests {
             &block.buf[SEC_SEED_RANGE][DIGEST..DIGEST * 2],
             seed.next_secret.as_bytes()
         );
-        let block_hash = block.finalize();
-        let blockstate = SecretBlock::from_hash_at_index(&buf, &block_hash, 0).unwrap();
+        let block_secret = generate_secret().unwrap();
+        let block_hash = block.finalize(block_secret);
+        let blockstate = SecretBlock::new(&mut buf).from_hash_at_index(block_secret, &block_hash, 0).unwrap();
         assert_eq!(blockstate.block_hash, block_hash);
         assert_eq!(blockstate.payload, payload);
         assert_eq!(blockstate.seed, seed);
@@ -568,7 +531,7 @@ mod tests {
 
     #[test]
     fn test_mutblock_set_public_block_hash() {
-        let mut buf = [0; SECRET_BLOCK];
+        let mut buf = vec![0; SECRET_BLOCK];
         let payload = random_payload();
         let mut block = MutSecretBlock::new(&mut buf, &payload);
         let seed = Seed::auto_create().unwrap();
@@ -581,24 +544,12 @@ mod tests {
             &block.buf[SEC_PUBLIC_HASH_RANGE],
             public_block_hash.as_bytes()
         );
-        let block_hash = block.finalize();
-        let blockstate = SecretBlock::from_hash_at_index(&buf, &block_hash, 0).unwrap();
+        let block_secret = generate_secret().unwrap();
+        let block_hash = block.finalize(block_secret);
+        let blockstate = SecretBlock::new(&mut buf).from_hash_at_index(block_secret, &block_hash, 0).unwrap();
         assert_eq!(blockstate.block_hash, block_hash);
         assert_eq!(blockstate.public_block_hash, public_block_hash);
         assert_eq!(blockstate.payload, payload);
         assert_eq!(blockstate.seed, seed);
     }
-
-    #[test]
-    fn test_mutblock_finalize() {
-        let mut buf = [0; SECRET_BLOCK];
-        let payload = random_payload();
-        let block = MutSecretBlock::new(&mut buf, &payload);
-        assert_eq!(block.buf[SEC_HASH_RANGE], [0; DIGEST]);
-        let block_hash = block.finalize();
-        assert_ne!(buf[SEC_HASH_RANGE], [0; DIGEST]);
-        assert_eq!(&buf[SEC_HASH_RANGE], block_hash.as_bytes());
-        assert_eq!(block_hash, hash(&buf[DIGEST..]));
-    }
-    */
 }
