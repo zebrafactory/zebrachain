@@ -17,16 +17,16 @@ fn check_secretblock_buf(buf: &[u8]) {
     }
 }
 
-// Split out of derive_block_secrets() for testability
+// Split out of derive_block_key_and_nonce() for testability
 #[inline]
-fn derive_block_sub_secrets(secret: Secret) -> (Secret, Secret) {
-    let key = derive_secret(CONTEXT_STORE_KEY, &secret);
-    let nonce = derive_secret(CONTEXT_STORE_NONCE, &secret);
+fn derive_block_sub_secrets(block_secret: Secret) -> (Secret, Secret) {
+    let key = derive_secret(CONTEXT_STORE_KEY, &block_secret);
+    let nonce = derive_secret(CONTEXT_STORE_NONCE, &block_secret);
     (key, nonce)
 }
 
 // A unique key and nonce derived from the block secret.
-fn derive_block_key_and_nonce(block_secret: Secret) -> (Key, Nonce) {
+fn get_block_key_and_nonce(block_secret: Secret) -> (Key, Nonce) {
     let (key, nonce) = derive_block_sub_secrets(block_secret);
     assert_ne!(key, nonce);
     let key = Key::from_slice(&key.as_bytes()[..]);
@@ -34,19 +34,19 @@ fn derive_block_key_and_nonce(block_secret: Secret) -> (Key, Nonce) {
     (*key, *nonce)
 }
 
-fn encrypt_in_place(buf: &mut Vec<u8>, secret: Secret) {
+fn encrypt_in_place(buf: &mut Vec<u8>, block_secret: Secret) {
     // FIXME: probably use &index.to_le_bytes() as additional data
     assert_eq!(buf.len(), SECRET_BLOCK);
-    let (key, nonce) = derive_block_key_and_nonce(secret);
+    let (key, nonce) = get_block_key_and_nonce(block_secret);
     let cipher = ChaCha20Poly1305::new(&key);
     cipher.encrypt_in_place(&nonce, b"", buf).unwrap(); // This should not fail
     assert_eq!(buf.len(), SECRET_BLOCK_AEAD);
 }
 
-fn decrypt_in_place(buf: &mut Vec<u8>, secret: Secret) -> Result<(), SecretBlockError> {
+fn decrypt_in_place(buf: &mut Vec<u8>, block_secret: Secret) -> Result<(), SecretBlockError> {
     // FIXME: probably use &index.to_le_bytes() as additional data
     assert_eq!(buf.len(), SECRET_BLOCK_AEAD);
-    let (key, nonce) = derive_block_key_and_nonce(secret);
+    let (key, nonce) = get_block_key_and_nonce(block_secret);
     let cipher = ChaCha20Poly1305::new(&key);
     if cipher.decrypt_in_place(&nonce, b"", buf).is_err() {
         Err(SecretBlockError::Storage)
@@ -56,7 +56,7 @@ fn decrypt_in_place(buf: &mut Vec<u8>, secret: Secret) -> Result<(), SecretBlock
     }
 }
 
-/// FIXME
+/// State needed to validate next secret block.
 #[derive(Debug, PartialEq, Clone, Copy)]
 pub struct SecretBlockState {
     /// Hash of this secret block.
@@ -121,10 +121,10 @@ impl<'a> SecretBlock<'a> {
     /// FIXME
     pub fn from_index(
         self,
-        secret: Secret,
+        block_secret: Secret,
         index: u64,
     ) -> Result<SecretBlockState, SecretBlockError> {
-        decrypt_in_place(self.buf, secret)?;
+        decrypt_in_place(self.buf, block_secret)?;
         let state = SecretBlockState::from_buf(&self.buf[0..SECRET_BLOCK])?;
         if index != state.index {
             Err(SecretBlockError::Index)
@@ -136,11 +136,11 @@ impl<'a> SecretBlock<'a> {
     /// FIXME
     pub fn from_hash_at_index(
         self,
-        secret: Secret,
+        block_secret: Secret,
         block_hash: &Hash,
         index: u64,
     ) -> Result<SecretBlockState, SecretBlockError> {
-        let state = self.from_index(secret, index)?;
+        let state = self.from_index(block_secret, index)?;
         if &state.block_hash != block_hash {
             Err(SecretBlockError::Hash)
         } else {
@@ -151,10 +151,10 @@ impl<'a> SecretBlock<'a> {
     /// FIXME
     pub fn from_previous(
         self,
-        secret: Secret,
+        block_secret: Secret,
         prev: &SecretBlockState,
     ) -> Result<SecretBlockState, SecretBlockError> {
-        let state = self.from_index(secret, prev.index + 1)?;
+        let state = self.from_index(block_secret, prev.index + 1)?;
         if state.previous_hash != prev.block_hash {
             Err(SecretBlockError::PreviousHash)
         } else if state.seed.secret != prev.seed.next_secret {
@@ -206,10 +206,10 @@ impl<'a> MutSecretBlock<'a> {
     }
 
     /// Set and return block hash.
-    pub fn finalize(mut self, secret: Secret) -> Hash {
+    pub fn finalize(mut self, block_secret: Secret) -> Hash {
         let block_hash = hash(&self.buf[DIGEST..]);
         set_hash(&mut self.buf, SEC_HASH_RANGE, &block_hash);
-        encrypt_in_place(self.buf, secret);
+        encrypt_in_place(self.buf, block_secret);
         block_hash
     }
 }
