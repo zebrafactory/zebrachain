@@ -22,7 +22,8 @@ use crate::block::{BlockState, MutBlock};
 use crate::payload::Payload;
 use crate::pksign::SecretSigner;
 use crate::secretblock::{MutSecretBlock, SecretBlockState};
-use crate::secretseed::Seed;
+use crate::secretchain::derive_first_block_secret;
+use crate::secretseed::{Secret, Seed};
 use blake3::Hash;
 
 /// Combines [BlockState] and [SecretBlockState].
@@ -52,7 +53,7 @@ pub struct MutOwnedBlock<'a> {
 
 impl<'a> MutOwnedBlock<'a> {
     /// Zero buffers and set payload in both public and secret buffers.
-    pub fn new(buf: &'a mut [u8], secret_buf: &'a mut [u8], payload: &Payload) -> Self {
+    pub fn new(buf: &'a mut [u8], secret_buf: &'a mut Vec<u8>, payload: &Payload) -> Self {
         let block = MutBlock::new(buf, payload);
         let secret_block = MutSecretBlock::new(secret_buf, payload);
         Self {
@@ -67,7 +68,7 @@ impl<'a> MutOwnedBlock<'a> {
         self.secret_block.set_previous(&prev.secret_block_state);
     }
 
-    /// Signed public block using `seed` and then save seed in secret block.
+    /// Sign public block using `seed` and then save seed in secret block.
     pub fn sign(&mut self, seed: &Seed) {
         let signer = SecretSigner::new(seed);
         signer.sign(&mut self.block);
@@ -75,18 +76,28 @@ impl<'a> MutOwnedBlock<'a> {
     }
 
     /// Finalize both public and secret blocks, returning their hashes.
-    pub fn finalize(mut self) -> (Hash, Hash) {
+    pub fn finalize(mut self, block_secret: Secret) -> (Hash, Hash) {
         let block_hash = self.block.finalize();
         self.secret_block.set_public_block_hash(&block_hash);
-        let secret_block_hash = self.secret_block.finalize();
+        let secret_block_hash = self.secret_block.finalize(block_secret);
         (block_hash, secret_block_hash)
+    }
+
+    /// FIXME: Kinda hacky, but works for now.
+    pub fn finalize_first(mut self, store_secret: &Secret) -> (Hash, Hash) {
+        let chain_hash = self.block.finalize();
+        self.secret_block.set_public_block_hash(&chain_hash);
+        let block_secret = derive_first_block_secret(store_secret, &chain_hash);
+        let secret_block_hash = self.secret_block.finalize(block_secret);
+        (chain_hash, secret_block_hash)
     }
 }
 
 /// High-level signing function.
 pub fn sign(
     buf: &mut [u8],
-    secret_buf: &mut [u8],
+    secret_buf: &mut Vec<u8>,
+    storage_secret: Secret,
     seed: &Seed,
     payload: &Payload,
     prev: Option<OwnedBlockState>,
@@ -102,7 +113,7 @@ pub fn sign(
             block.block.compute_pubkey_hash()
         );
     }
-    block.finalize()
+    block.finalize(storage_secret)
 }
 
 #[cfg(test)]
@@ -111,15 +122,24 @@ mod tests {
     use crate::always::*;
     use crate::block::Block;
     use crate::pksign;
+    use crate::secretseed::generate_secret;
     use crate::testhelpers::random_payload;
 
     #[test]
     fn test_sign() {
+        let storage_secret = generate_secret().unwrap();
         let seed = Seed::auto_create().unwrap();
         let payload = random_payload();
         let mut buf = [0; BLOCK];
-        let mut secret_buf = [0; SECRET_BLOCK];
-        let (block_hash, _) = sign(&mut buf, &mut secret_buf, &seed, &payload, None);
+        let mut secret_buf = vec![0; SECRET_BLOCK];
+        let (block_hash, _) = sign(
+            &mut buf,
+            &mut secret_buf,
+            storage_secret,
+            &seed,
+            &payload,
+            None,
+        );
         assert!(Block::from_hash_at_index(&buf, &block_hash, 0).is_ok());
         assert_eq!(
             pksign::sign_block(&mut buf, &seed, &payload, None),

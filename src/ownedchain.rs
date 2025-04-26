@@ -9,10 +9,10 @@
 use crate::always::*;
 use crate::block::BlockState;
 use crate::chain::{Chain, ChainStore, CheckPoint};
-use crate::ownedblock::{OwnedBlockState, sign};
+use crate::ownedblock::{MutOwnedBlock, OwnedBlockState};
 use crate::payload::Payload;
 use crate::pksign::sign_block;
-use crate::secretchain::{SecretChain, SecretChainStore};
+use crate::secretchain::{SecretChain, SecretChainStore, derive_first_block_secret};
 use crate::secretseed::{Secret, Seed};
 use blake3::Hash;
 use std::io;
@@ -56,11 +56,12 @@ impl OwnedChainStore {
         initial_entropy: &Hash,
         payload: &Payload,
     ) -> io::Result<OwnedChain> {
-        let seed = Seed::create(initial_entropy);
         let mut buf = [0; BLOCK];
-        let mut secret_buf: Vec<u8> = vec![0; SECRET_BLOCK_AEAD];
-        secret_buf.resize(SECRET_BLOCK, 0);
-        let (chain_hash, secret_block_hash) = sign(&mut buf, &mut secret_buf, &seed, payload, None);
+        let mut secret_buf = vec![0u8; SECRET_BLOCK_AEAD];
+        let mut block = MutOwnedBlock::new(&mut buf, &mut secret_buf, payload);
+        let seed = Seed::create(initial_entropy);
+        block.sign(&seed);
+        let (chain_hash, secret_block_hash) = block.finalize_first(&self.secret_store.secret);
         let chain = self.store.create_chain(&buf, &chain_hash)?;
         let secret_chain =
             self.secret_store
@@ -126,13 +127,11 @@ impl OwnedChain {
         let seed = self.secret_chain.advance(new_entropy);
         let obs = self.state();
         let mut buf = [0; BLOCK];
-        let (block_hash, secret_block_hash) = sign(
-            &mut buf,
-            self.secret_chain.as_mut_buf(),
-            &seed,
-            payload,
-            Some(obs),
-        );
+        let storage_secret = self.secret_chain.next_block_secret();
+        let mut block = MutOwnedBlock::new(&mut buf, self.secret_chain.as_mut_buf2(), payload);
+        block.set_previous(&obs);
+        block.sign(&seed);
+        let (block_hash, secret_block_hash) = block.finalize(storage_secret);
         self.secret_chain.append(&secret_block_hash)?;
         assert_eq!(self.secret_chain.tail().block_hash, secret_block_hash);
         let result = self.chain.append(&buf)?;
