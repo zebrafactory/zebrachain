@@ -17,21 +17,18 @@ fn check_secretblock_buf(buf: &[u8]) {
     }
 }
 
-/// Alias for `Result<SecretBlock, SecretBlockError>`.
-pub type SecretBlockResult<'a> = Result<SecretBlock<'a>, SecretBlockError>;
-
 // Split out of derive_block_secrets() for testability
 #[inline]
-fn derive_block_secrets_inner(secret: Secret) -> (Secret, Secret) {
+fn derive_block_sub_secrets(secret: Secret) -> (Secret, Secret) {
     let key = derive_secret(CONTEXT_STORE_KEY, &secret);
     let nonce = derive_secret(CONTEXT_STORE_NONCE, &secret);
-    assert_ne!(key, nonce);
     (key, nonce)
 }
 
 // A unique key and nonce derived from the block secret.
-fn derive_block_secrets(secret: Secret) -> (Key, Nonce) {
-    let (key, nonce) = derive_block_secrets_inner(secret);
+fn derive_block_key_and_nonce(block_secret: Secret) -> (Key, Nonce) {
+    let (key, nonce) = derive_block_sub_secrets(block_secret);
+    assert_ne!(key, nonce);
     let key = Key::from_slice(&key.as_bytes()[..]);
     let nonce = Nonce::from_slice(&nonce.as_bytes()[0..12]);
     (*key, *nonce)
@@ -40,7 +37,7 @@ fn derive_block_secrets(secret: Secret) -> (Key, Nonce) {
 fn encrypt_in_place(buf: &mut Vec<u8>, secret: Secret) {
     // FIXME: probably use &index.to_le_bytes() as additional data
     assert_eq!(buf.len(), SECRET_BLOCK);
-    let (key, nonce) = derive_block_secrets(secret);
+    let (key, nonce) = derive_block_key_and_nonce(secret);
     let cipher = ChaCha20Poly1305::new(&key);
     cipher.encrypt_in_place(&nonce, b"", buf).unwrap(); // This should not fail
     assert_eq!(buf.len(), SECRET_BLOCK_AEAD);
@@ -49,7 +46,7 @@ fn encrypt_in_place(buf: &mut Vec<u8>, secret: Secret) {
 fn decrypt_in_place(buf: &mut Vec<u8>, secret: Secret) -> Result<(), SecretBlockError> {
     // FIXME: probably use &index.to_le_bytes() as additional data
     assert_eq!(buf.len(), SECRET_BLOCK_AEAD);
-    let (key, nonce) = derive_block_secrets(secret);
+    let (key, nonce) = derive_block_key_and_nonce(secret);
     let cipher = ChaCha20Poly1305::new(&key);
     if cipher.decrypt_in_place(&nonce, b"", buf).is_err() {
         Err(SecretBlockError::Storage)
@@ -100,6 +97,9 @@ impl SecretBlockState {
         }
     }
 }
+
+/// Alias for `Result<SecretBlock, SecretBlockError>`.
+pub type SecretBlockResult<'a> = Result<SecretBlock<'a>, SecretBlockError>;
 
 /// Decrypts and validates a secret block.
 pub struct SecretBlock<'a> {
@@ -209,8 +209,10 @@ impl<'a> MutSecretBlock<'a> {
 mod tests {
 
     use super::*;
+    use crate::secretseed::generate_secret;
     use crate::testhelpers::{BitFlipper, HashBitFlipper, random_hash, random_payload};
     use getrandom;
+    use std::collections::HashSet;
 
     fn valid_secret_block() -> [u8; SECRET_BLOCK] {
         let mut buf = [0; SECRET_BLOCK];
@@ -232,6 +234,50 @@ mod tests {
         let block_hash = hash(&buf[DIGEST..]);
         set_hash(&mut buf, SEC_HASH_RANGE, &block_hash);
         buf
+    }
+
+    #[test]
+    fn test_derive_block_sub_secrets_inner() {
+        let count: usize = 420;
+        let mut hset = HashSet::new();
+        for _ in 0..count {
+            let secret = generate_secret().unwrap();
+            assert!(hset.insert(secret));
+            let (key, nonce) = derive_block_sub_secrets(secret);
+            assert!(hset.insert(key));
+            assert!(hset.insert(nonce));
+        }
+        assert_eq!(hset.len(), 3 * count);
+    }
+    
+    #[test]
+    fn test_chacha20poly1305_roundtrip() {
+        let mut buf = vec![0; SECRET_BLOCK];
+        getrandom::fill(&mut buf).unwrap();
+        let h = hash(&buf);
+        let secret = generate_secret().unwrap();
+        for index in 0..420 {
+            encrypt_in_place(&mut buf, secret.clone());
+            assert_eq!(buf.len(), SECRET_BLOCK_AEAD);
+            assert_ne!(hash(&buf[0..SECRET_BLOCK]), h);
+            decrypt_in_place(&mut buf, secret.clone()).unwrap();
+            assert_eq!(hash(&buf[0..SECRET_BLOCK]), h);
+            assert_eq!(hash(&buf), h);
+        }
+    }
+
+    #[test]
+    fn test_chacha20poly1305_error() {
+        let mut buf = vec![0; SECRET_BLOCK];
+        getrandom::fill(&mut buf).unwrap();
+        let h = hash(&buf);
+        let secret = generate_secret().unwrap();
+        encrypt_in_place(&mut buf, secret.clone());
+        for mut bad in BitFlipper::new(&buf) {
+            assert!(decrypt_in_place(&mut bad, secret.clone()).is_err());
+        }
+        decrypt_in_place(&mut buf, secret.clone()).unwrap();
+        assert_eq!(hash(&buf), h);
     }
 
     /*

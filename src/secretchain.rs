@@ -310,18 +310,6 @@ mod tests {
 
     const HEX0: &str = "1b695d50d6105777ed7b5a0bb0bce5484ddca1d6b16bbb0c7bac90599c59370e";
     /*
-    #[test]
-    fn test_derive_block_secrets_inner() {
-        let count: u64 = 4200;
-        let mut hset = HashSet::with_capacity(count as usize);
-        let secret = generate_secret().unwrap();
-        for index in 0..count {
-            let (key, nonce) = derive_block_secrets_inner(&secret, index);
-            assert!(hset.insert(key));
-            assert!(hset.insert(nonce));
-        }
-        assert_eq!(hset.len(), 2 * count as usize);
-    }
 
     #[test]
     fn test_chacha20poly1305_roundtrip() {
