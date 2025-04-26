@@ -4,7 +4,7 @@ use crate::always::*;
 use crate::errors::SecretBlockError;
 use crate::payload::Payload;
 use crate::secretseed::{Secret, Seed, derive_secret};
-use blake3::{Hash, hash};
+use blake3::{Hash, hash, keyed_hash};
 use chacha20poly1305::{
     ChaCha20Poly1305, Key, Nonce,
     aead::{AeadInPlace, KeyInit},
@@ -19,36 +19,46 @@ fn check_secretblock_buf(buf: &[u8]) {
 
 // Split out of derive_block_key_and_nonce() for testability
 #[inline]
-fn derive_block_sub_secrets(block_secret: Secret) -> (Secret, Secret) {
-    let key = derive_secret(CONTEXT_STORE_KEY, &block_secret);
-    let nonce = derive_secret(CONTEXT_STORE_NONCE, &block_secret);
-    (key, nonce)
+fn derive_block_sub_secrets(chain_secret: &Secret, block_index: u64) -> (Secret, Secret) {
+    let block_secret = keyed_hash(chain_secret.as_bytes(), &block_index.to_le_bytes());
+    let block_key_secret = derive_secret(CONTEXT_STORE_KEY, &block_secret);
+    let block_nonce_secret = derive_secret(CONTEXT_STORE_NONCE, &block_secret);
+    (block_key_secret, block_nonce_secret)
 }
 
-// A unique key and nonce derived from the block secret.
-fn get_block_key_and_nonce(block_secret: Secret) -> (Key, Nonce) {
-    let (key, nonce) = derive_block_sub_secrets(block_secret);
+// A unique key and nonce derived from the chain_secret and block_index
+fn get_block_key_and_nonce(chain_secret: &Secret, block_index: u64) -> (Key, Nonce) {
+    let (key, nonce) = derive_block_sub_secrets(chain_secret, block_index);
     assert_ne!(key, nonce);
     let key = Key::from_slice(&key.as_bytes()[..]);
     let nonce = Nonce::from_slice(&nonce.as_bytes()[0..12]);
     (*key, *nonce)
 }
 
-fn encrypt_in_place(buf: &mut Vec<u8>, block_secret: Secret) {
-    // FIXME: probably use &index.to_le_bytes() as additional data
+fn encrypt_in_place(buf: &mut Vec<u8>, chain_secret: &Secret, block_index: u64) {
     assert_eq!(buf.len(), SECRET_BLOCK);
-    let (key, nonce) = get_block_key_and_nonce(block_secret);
+    let (key, nonce) = get_block_key_and_nonce(chain_secret, block_index);
     let cipher = ChaCha20Poly1305::new(&key);
-    cipher.encrypt_in_place(&nonce, b"", buf).unwrap(); // This should not fail
+    let additional_data = block_index.to_le_bytes();
+    cipher
+        .encrypt_in_place(&nonce, &additional_data, buf)
+        .unwrap(); // This should not fail
     assert_eq!(buf.len(), SECRET_BLOCK_AEAD);
 }
 
-fn decrypt_in_place(buf: &mut Vec<u8>, block_secret: Secret) -> Result<(), SecretBlockError> {
-    // FIXME: probably use &index.to_le_bytes() as additional data
+fn decrypt_in_place(
+    buf: &mut Vec<u8>,
+    chain_secret: &Secret,
+    block_index: u64,
+) -> Result<(), SecretBlockError> {
     assert_eq!(buf.len(), SECRET_BLOCK_AEAD);
-    let (key, nonce) = get_block_key_and_nonce(block_secret);
+    let (key, nonce) = get_block_key_and_nonce(chain_secret, block_index);
     let cipher = ChaCha20Poly1305::new(&key);
-    if cipher.decrypt_in_place(&nonce, b"", buf).is_err() {
+    let additional_data = block_index.to_le_bytes();
+    if cipher
+        .decrypt_in_place(&nonce, &additional_data, buf)
+        .is_err()
+    {
         Err(SecretBlockError::Storage)
     } else {
         assert_eq!(buf.len(), SECRET_BLOCK);
@@ -123,12 +133,12 @@ impl<'a> SecretBlock<'a> {
     /// FIXME
     pub fn from_index(
         self,
-        block_secret: Secret,
-        index: u64,
+        chain_secret: &Secret,
+        block_index: u64,
     ) -> Result<SecretBlockState, SecretBlockError> {
-        decrypt_in_place(self.buf, block_secret)?;
+        decrypt_in_place(self.buf, chain_secret, block_index)?;
         let state = SecretBlockState::from_buf(&self.buf[0..SECRET_BLOCK])?;
-        if index != state.index {
+        if block_index != state.index {
             Err(SecretBlockError::Index)
         } else {
             Ok(state)
@@ -138,11 +148,11 @@ impl<'a> SecretBlock<'a> {
     /// FIXME
     pub fn from_hash_at_index(
         self,
-        block_secret: Secret,
+        chain_secret: &Secret,
         block_hash: &Hash,
-        index: u64,
+        block_index: u64,
     ) -> Result<SecretBlockState, SecretBlockError> {
-        let state = self.from_index(block_secret, index)?;
+        let state = self.from_index(chain_secret, block_index)?;
         if &state.block_hash != block_hash {
             Err(SecretBlockError::Hash)
         } else {
@@ -153,10 +163,10 @@ impl<'a> SecretBlock<'a> {
     /// FIXME
     pub fn from_previous(
         self,
-        block_secret: Secret,
+        chain_secret: &Secret,
         prev: &SecretBlockState,
     ) -> Result<SecretBlockState, SecretBlockError> {
-        let state = self.from_index(block_secret, prev.index + 1)?;
+        let state = self.from_index(chain_secret, prev.index + 1)?;
         if state.previous_hash != prev.block_hash {
             Err(SecretBlockError::PreviousHash)
         } else if state.seed.secret != prev.seed.next_secret {
@@ -208,10 +218,11 @@ impl<'a> MutSecretBlock<'a> {
     }
 
     /// Set and return block hash.
-    pub fn finalize(self, block_secret: Secret) -> Hash {
+    pub fn finalize(self, chain_secret: &Secret) -> Hash {
+        let block_index = get_u64(self.buf, SEC_INDEX_RANGE);
         let block_hash = hash(&self.buf[DIGEST..]);
         set_hash(self.buf, SEC_HASH_RANGE, &block_hash);
-        encrypt_in_place(self.buf, block_secret);
+        encrypt_in_place(self.buf, chain_secret, block_index);
         block_hash
     }
 }
@@ -252,16 +263,16 @@ mod tests {
 
     #[test]
     fn test_derive_block_sub_secrets_inner() {
-        let count: usize = 420;
+        let count = 420;
         let mut hset = HashSet::new();
-        for _ in 0..count {
-            let secret = generate_secret().unwrap();
-            assert!(hset.insert(secret));
-            let (key, nonce) = derive_block_sub_secrets(secret);
+        let chain_secret = generate_secret().unwrap();
+        assert!(hset.insert(chain_secret));
+        for block_index in 0..count {
+            let (key, nonce) = derive_block_sub_secrets(&chain_secret, block_index);
             assert!(hset.insert(key));
             assert!(hset.insert(nonce));
         }
-        assert_eq!(hset.len(), 3 * count);
+        assert_eq!(hset.len(), (2 * count + 1) as usize);
     }
 
     #[test]
@@ -271,10 +282,10 @@ mod tests {
         let h = hash(&buf);
         let secret = generate_secret().unwrap();
         for index in 0..420 {
-            encrypt_in_place(&mut buf, secret.clone());
+            encrypt_in_place(&mut buf, &secret, index);
             assert_eq!(buf.len(), SECRET_BLOCK_AEAD);
             assert_ne!(hash(&buf[0..SECRET_BLOCK]), h);
-            decrypt_in_place(&mut buf, secret.clone()).unwrap();
+            decrypt_in_place(&mut buf, &secret, index).unwrap();
             assert_eq!(hash(&buf[0..SECRET_BLOCK]), h);
             assert_eq!(hash(&buf), h);
         }
@@ -286,11 +297,11 @@ mod tests {
         getrandom::fill(&mut buf).unwrap();
         let h = hash(&buf);
         let secret = generate_secret().unwrap();
-        encrypt_in_place(&mut buf, secret.clone());
+        encrypt_in_place(&mut buf, &secret, 0);
         for mut bad in BitFlipper::new(&buf) {
-            assert!(decrypt_in_place(&mut bad, secret.clone()).is_err());
+            assert!(decrypt_in_place(&mut bad, &secret, 0).is_err());
         }
-        decrypt_in_place(&mut buf, secret.clone()).unwrap();
+        decrypt_in_place(&mut buf, &secret, 0).unwrap();
         assert_eq!(hash(&buf), h);
     }
 
@@ -538,9 +549,9 @@ mod tests {
             seed.next_secret.as_bytes()
         );
         let block_secret = generate_secret().unwrap();
-        let block_hash = block.finalize(block_secret);
+        let block_hash = block.finalize(&block_secret);
         let blockstate = SecretBlock::new(&mut buf)
-            .from_hash_at_index(block_secret, &block_hash, 0)
+            .from_hash_at_index(&block_secret, &block_hash, 0)
             .unwrap();
         assert_eq!(blockstate.block_hash, block_hash);
         assert_eq!(blockstate.payload, payload);
@@ -563,9 +574,9 @@ mod tests {
             public_block_hash.as_bytes()
         );
         let block_secret = generate_secret().unwrap();
-        let block_hash = block.finalize(block_secret);
+        let block_hash = block.finalize(&block_secret);
         let blockstate = SecretBlock::new(&mut buf)
-            .from_hash_at_index(block_secret, &block_hash, 0)
+            .from_hash_at_index(&block_secret, &block_hash, 0)
             .unwrap();
         assert_eq!(blockstate.block_hash, block_hash);
         assert_eq!(blockstate.public_block_hash, public_block_hash);

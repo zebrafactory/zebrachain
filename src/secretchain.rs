@@ -14,20 +14,12 @@ pub(crate) fn derive_chain_secret(store_secret: &Secret, chain_hash: &Hash) -> S
     keyed_hash(store_secret.as_bytes(), chain_hash.as_bytes())
 }
 
-pub(crate) fn derive_block_secret(chain_secret: &Secret, block_index: u64) -> Secret {
-    keyed_hash(chain_secret.as_bytes(), &block_index.to_le_bytes())
-}
-
-pub(crate) fn derive_first_block_secret(store_secret: &Secret, chain_hash: &Hash) -> Secret {
-    derive_block_secret(&derive_chain_secret(store_secret, chain_hash), 0)
-}
-
 /// Save secret chain to non-volitile storage (encrypted and authenticated).
 pub struct SecretChain {
     file: File,
     first_block_hash: Hash,
     tail: SecretBlockState,
-    secret: Secret,
+    pub(crate) secret: Secret,
     buf: Vec<u8>,
 }
 
@@ -42,9 +34,7 @@ impl SecretChain {
         assert_eq!(buf.len(), SECRET_BLOCK_AEAD);
         file.write_all(&buf)?;
         let block = SecretBlock::new(&mut buf);
-        let tail = block
-            .from_hash_at_index(derive_block_secret(&secret, 0), block_hash, 0)
-            .unwrap();
+        let tail = block.from_hash_at_index(&secret, block_hash, 0).unwrap();
         let first_block_hash = tail.block_hash;
         Ok(Self {
             file,
@@ -53,15 +43,6 @@ impl SecretChain {
             secret,
             buf,
         })
-    }
-
-    // Use a unique secret for each block, derived from the chain secret.
-    pub(crate) fn derive_block_secret(&self, index: u64) -> Secret {
-        derive_block_secret(&self.secret, index)
-    }
-
-    pub(crate) fn next_block_secret(&self) -> Secret {
-        self.derive_block_secret(self.tail.index + 1)
     }
 
     /// Exposes internal secret block buffer as mutable bytes.
@@ -86,13 +67,13 @@ impl SecretChain {
     }
 
     /// FIXME: Probably remove from public API.
-    pub fn open(file: File, secret: Secret) -> io::Result<Self> {
+    pub fn open(file: File, chain_secret: Secret) -> io::Result<Self> {
         let mut file = BufReader::with_capacity(SECRET_BLOCK_AEAD_READ_BUF, file);
         let mut buf = vec![0; SECRET_BLOCK_AEAD];
         let mut tail = {
             let mut block = SecretBlock::new(&mut buf);
             file.read_exact(block.as_mut_read_buf())?;
-            match block.from_index(derive_block_secret(&secret, 0), 0) {
+            match block.from_index(&chain_secret, 0) {
                 Ok(state) => state,
                 Err(err) => return Err(err.to_io_error()),
             }
@@ -104,8 +85,7 @@ impl SecretChain {
                 if file.read_exact(block.as_mut_read_buf()).is_err() {
                     break;
                 }
-                let index = tail.index + 1;
-                match block.from_previous(derive_block_secret(&secret, index), &tail) {
+                match block.from_previous(&chain_secret, &tail) {
                     Ok(state) => state,
                     Err(err) => return Err(err.to_io_error()),
                 }
@@ -115,7 +95,7 @@ impl SecretChain {
             file: file.into_inner(),
             first_block_hash,
             tail,
-            secret,
+            secret: chain_secret,
             buf,
         })
     }
@@ -134,9 +114,8 @@ impl SecretChain {
     pub fn append(&mut self, block_hash: &Hash) -> io::Result<()> {
         self.file.write_all(&self.buf)?;
         self.tail = {
-            let next_block_secret = self.next_block_secret();
             let block = SecretBlock::new(&mut self.buf);
-            block.from_previous(next_block_secret, &self.tail).unwrap()
+            block.from_previous(&self.secret, &self.tail).unwrap()
         };
         assert_eq!(&self.tail.block_hash, block_hash);
         Ok(())
@@ -202,14 +181,12 @@ impl SecretChainIter {
         if self.tail.is_none() {
             self.file.rewind()?;
         }
-        let index = self.index();
         let mut block = SecretBlock::new(&mut self.buf);
         self.file.read_exact(block.as_mut_read_buf())?;
-        let block_secret = derive_block_secret(&self.secret, index);
         let result = if let Some(tail) = self.tail.as_ref() {
-            block.from_previous(block_secret, tail)
+            block.from_previous(&self.secret, tail)
         } else {
-            block.from_hash_at_index(block_secret, &self.first_block_hash, 0)
+            block.from_hash_at_index(&self.secret, &self.first_block_hash, 0)
         };
         match result {
             Ok(state) => {

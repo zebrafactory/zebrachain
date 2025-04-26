@@ -22,7 +22,7 @@ use crate::block::{BlockState, MutBlock};
 use crate::payload::Payload;
 use crate::pksign::SecretSigner;
 use crate::secretblock::{MutSecretBlock, SecretBlockState};
-use crate::secretchain::derive_first_block_secret;
+use crate::secretchain::derive_chain_secret;
 use crate::secretseed::{Secret, Seed};
 use blake3::Hash;
 
@@ -76,10 +76,10 @@ impl<'a> MutOwnedBlock<'a> {
     }
 
     /// Finalize both public and secret blocks, returning their hashes.
-    pub fn finalize(mut self, block_secret: Secret) -> (Hash, Hash) {
+    pub fn finalize(mut self, chain_secret: &Secret) -> (Hash, Hash) {
         let block_hash = self.block.finalize();
         self.secret_block.set_public_block_hash(&block_hash);
-        let secret_block_hash = self.secret_block.finalize(block_secret);
+        let secret_block_hash = self.secret_block.finalize(chain_secret);
         (block_hash, secret_block_hash)
     }
 
@@ -87,8 +87,8 @@ impl<'a> MutOwnedBlock<'a> {
     pub fn finalize_first(mut self, store_secret: &Secret) -> (Hash, Hash) {
         let chain_hash = self.block.finalize();
         self.secret_block.set_public_block_hash(&chain_hash);
-        let block_secret = derive_first_block_secret(store_secret, &chain_hash);
-        let secret_block_hash = self.secret_block.finalize(block_secret);
+        let chain_secret = derive_chain_secret(store_secret, &chain_hash);
+        let secret_block_hash = self.secret_block.finalize(&chain_secret);
         (chain_hash, secret_block_hash)
     }
 }
@@ -97,7 +97,7 @@ impl<'a> MutOwnedBlock<'a> {
 pub fn sign(
     buf: &mut [u8],
     secret_buf: &mut Vec<u8>,
-    storage_secret: Secret,
+    chain_secret: &Secret,
     seed: &Seed,
     payload: &Payload,
     prev: Option<OwnedBlockState>,
@@ -113,7 +113,7 @@ pub fn sign(
             block.block.compute_pubkey_hash()
         );
     }
-    block.finalize(storage_secret)
+    block.finalize(chain_secret)
 }
 
 #[cfg(test)]
@@ -127,7 +127,7 @@ mod tests {
 
     #[test]
     fn test_sign() {
-        let storage_secret = generate_secret().unwrap();
+        let chain_secret = generate_secret().unwrap();
         let seed = Seed::auto_create().unwrap();
         let payload = random_payload();
         let mut buf = [0; BLOCK];
@@ -135,7 +135,7 @@ mod tests {
         let (block_hash, _) = sign(
             &mut buf,
             &mut secret_buf,
-            storage_secret,
+            &chain_secret,
             &seed,
             &payload,
             None,

@@ -127,11 +127,11 @@ impl OwnedChain {
         let seed = self.secret_chain.advance(new_entropy);
         let obs = self.state();
         let mut buf = [0; BLOCK];
-        let storage_secret = self.secret_chain.next_block_secret();
+        let chain_secret = self.secret_chain.secret;
         let mut block = MutOwnedBlock::new(&mut buf, self.secret_chain.as_mut_buf2(), payload);
         block.set_previous(&obs);
         block.sign(&seed);
-        let (block_hash, secret_block_hash) = block.finalize(storage_secret);
+        let (block_hash, secret_block_hash) = block.finalize(&chain_secret);
         self.secret_chain.append(&secret_block_hash)?;
         assert_eq!(self.secret_chain.tail().block_hash, secret_block_hash);
         let result = self.chain.append(&buf)?;
