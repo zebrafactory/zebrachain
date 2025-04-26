@@ -109,6 +109,8 @@ pub struct SecretBlock<'a> {
 impl<'a> SecretBlock<'a> {
     /// Create a new secret block wrapper but perform no validation.
     pub fn new(buf: &'a mut Vec<u8>) -> Self {
+        // This does nothing with the buffer content. The reason for this is so that
+        // the buffer gets zeroized when the SecretBlock gets dropped.
         Self { buf }
     }
 
@@ -223,8 +225,11 @@ mod tests {
     use getrandom;
     use std::collections::HashSet;
 
-    fn valid_secret_block() -> [u8; SECRET_BLOCK] {
-        let mut buf = [0; SECRET_BLOCK];
+    const HEX_VALID_BUFF: &str = "77b482e206ccff70e5dc2ebf55648e4b350b596b5d3ebaecfe9e6a6fef9c737f";
+
+    // Returns a vec with a valid *unencrypted* secret block
+    fn valid_secret_block() -> Vec<u8> {
+        let mut buf = vec![0; SECRET_BLOCK];
         set_hash(
             &mut buf,
             SEC_PUBLIC_HASH_RANGE,
@@ -234,7 +239,7 @@ mod tests {
         seed.write_to_buf(&mut buf[SEC_SEED_RANGE]);
         let payload = Payload::new(314, Hash::from_bytes([3; DIGEST]));
         payload.write_to_buf(&mut buf[SEC_PAYLOAD_RANGE]);
-        set_u64(&mut buf, SEC_INDEX_RANGE, 1);
+        set_u64(&mut buf, SEC_INDEX_RANGE, 1234567890);
         set_hash(
             &mut buf,
             SEC_PREV_HASH_RANGE,
@@ -320,40 +325,51 @@ mod tests {
         assert_eq!(buf, vec![]);
     }
 
-    /*
-
     #[test]
-    fn test_block_open() {
-        let buf = valid_secret_block();
-        let block = SecretBlock::open(&buf).unwrap();
-        assert_eq!(
-            block.block_hash,
-            Hash::from_hex("3c244ad689b7bcefc05f77b8b385d58bdc356d7b0801de8774eaec7c5b0d2fd8")
-                .unwrap()
-        );
-        assert_eq!(block.public_block_hash, Hash::from_bytes([7; DIGEST]));
-        assert_eq!(block.seed.secret, Hash::from_bytes([1; DIGEST]));
-        assert_eq!(block.seed.next_secret, Hash::from_bytes([2; DIGEST]));
-        assert_eq!(block.payload.state_hash, Hash::from_bytes([3; DIGEST]));
-        assert_eq!(block.previous_hash, Hash::from_bytes([5; DIGEST]));
-        for bad in BitFlipper::new(&buf) {
-            assert_eq!(SecretBlock::open(&bad[..]), Err(SecretBlockError::Content));
-        }
+    fn test_secretblock_new() {
+        let mut buf = Vec::new();
+        let block = SecretBlock::new(&mut buf);
+        assert_eq!(block.buf, &vec![0; 0]);
 
         let mut buf = valid_secret_block();
-        for i in 0..=255 {
-            let seed = Seed {
-                secret: Hash::from_bytes([i; DIGEST]),
-                next_secret: Hash::from_bytes([i; DIGEST]),
-            };
-            let payload = random_payload();
-            let mut block = MutSecretBlock::new(&mut buf, &payload);
-            block.set_seed(&seed);
-            block.finalize();
-            assert_eq!(SecretBlock::open(&buf), Err(SecretBlockError::Seed));
-        }
+        assert_eq!(hash(&buf), Hash::from_hex(HEX_VALID_BUFF).unwrap());
+        let block = SecretBlock::new(&mut buf);
+        assert_eq!(hash(block.buf), Hash::from_hex(HEX_VALID_BUFF).unwrap());
     }
 
+    #[test]
+    fn test_secrcetblock_as_mut_read_buf() {
+        let mut buf = Vec::new();
+        let mut block = SecretBlock::new(&mut buf);
+        assert_eq!(block.as_mut_read_buf().len(), SECRET_BLOCK_AEAD);
+        assert_eq!(block.buf, &vec![0; SECRET_BLOCK_AEAD]);
+    }
+
+    /*
+    assert_eq!(block.public_block_hash, Hash::from_bytes([7; DIGEST]));
+    assert_eq!(block.seed.secret, Hash::from_bytes([1; DIGEST]));
+    assert_eq!(block.seed.next_secret, Hash::from_bytes([2; DIGEST]));
+    assert_eq!(block.payload.state_hash, Hash::from_bytes([3; DIGEST]));
+    assert_eq!(block.previous_hash, Hash::from_bytes([5; DIGEST]));
+    for bad in BitFlipper::new(&buf) {
+        assert_eq!(SecretBlock::open(&bad[..]), Err(SecretBlockError::Content));
+    }
+
+    let mut buf = valid_secret_block();
+    for i in 0..=255 {
+        let seed = Seed {
+            secret: Hash::from_bytes([i; DIGEST]),
+            next_secret: Hash::from_bytes([i; DIGEST]),
+        };
+        let payload = random_payload();
+        let mut block = MutSecretBlock::new(&mut buf, &payload);
+        block.set_seed(&seed);
+        block.finalize();
+        assert_eq!(SecretBlock::open(&buf), Err(SecretBlockError::Seed));
+    }
+    */
+
+    /*
     #[test]
     fn test_block_from_hash_at_index() {
         let buf = valid_secret_block();
