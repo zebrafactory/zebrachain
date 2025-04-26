@@ -253,11 +253,6 @@ impl SecretChainStore {
         derive_chain_secret(&self.secret, chain_hash)
     }
 
-    pub(crate) fn derive_first_block_secret(&self, chain_hash: &Hash) -> Secret {
-        let chain_secret = self.derive_chain_secret(chain_hash);
-        derive_block_secret(&chain_secret, 0)
-    }
-
     fn chain_filename(&self, chain_hash: &Hash) -> PathBuf {
         secret_chain_filename(&self.dir, chain_hash)
     }
