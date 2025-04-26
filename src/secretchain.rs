@@ -206,7 +206,7 @@ impl SecretChainIter {
         let index = self.index();
         let mut block = SecretBlock::new(&mut self.buf);
         self.file.read_exact(block.as_mut_read_buf())?;
-        let block_secret = derive_block_secret(&self.secret, index + 1);
+        let block_secret = derive_block_secret(&self.secret, index);
         let result = if let Some(tail) = self.tail.as_ref() {
             block.from_previous(block_secret, tail)
         } else {
@@ -310,39 +310,6 @@ mod tests {
 
     const HEX0: &str = "1b695d50d6105777ed7b5a0bb0bce5484ddca1d6b16bbb0c7bac90599c59370e";
     /*
-
-    #[test]
-    fn test_chacha20poly1305_roundtrip() {
-        let mut buf = vec![0; SECRET_BLOCK];
-        getrandom::fill(&mut buf).unwrap();
-        let h = hash(&buf);
-        let secret = generate_secret().unwrap();
-        for index in 0..420 {
-            encrypt_in_place(&mut buf, &secret, index);
-            assert_eq!(buf.len(), SECRET_BLOCK_AEAD);
-            assert_ne!(hash(&buf[0..SECRET_BLOCK]), h);
-            decrypt_in_place(&mut buf, &secret, index).unwrap();
-            assert_eq!(hash(&buf[0..SECRET_BLOCK]), h);
-            assert_eq!(hash(&buf), h);
-        }
-    }
-
-    #[test]
-    fn test_chacha20poly1305_error() {
-        let mut buf = vec![0; SECRET_BLOCK];
-        getrandom::fill(&mut buf).unwrap();
-        let h = hash(&buf);
-        let secret = generate_secret().unwrap();
-        for index in 0..3 {
-            encrypt_in_place(&mut buf, &secret, index);
-            for mut bad in BitFlipper::new(&buf) {
-                assert!(decrypt_in_place(&mut bad, &secret, index).is_err());
-            }
-            decrypt_in_place(&mut buf, &secret, index).unwrap();
-            assert_eq!(hash(&buf), h);
-        }
-    }
-
     #[test]
     fn test_chain_create() {
         let mut buf = vec![0; SECRET_BLOCK];
