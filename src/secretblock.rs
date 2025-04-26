@@ -258,7 +258,7 @@ mod tests {
         }
         assert_eq!(hset.len(), 3 * count);
     }
-    
+
     #[test]
     fn test_chacha20poly1305_roundtrip() {
         let mut buf = vec![0; SECRET_BLOCK];
@@ -523,7 +523,9 @@ mod tests {
         );
         let block_secret = generate_secret().unwrap();
         let block_hash = block.finalize(block_secret);
-        let blockstate = SecretBlock::new(&mut buf).from_hash_at_index(block_secret, &block_hash, 0).unwrap();
+        let blockstate = SecretBlock::new(&mut buf)
+            .from_hash_at_index(block_secret, &block_hash, 0)
+            .unwrap();
         assert_eq!(blockstate.block_hash, block_hash);
         assert_eq!(blockstate.payload, payload);
         assert_eq!(blockstate.seed, seed);
@@ -546,7 +548,9 @@ mod tests {
         );
         let block_secret = generate_secret().unwrap();
         let block_hash = block.finalize(block_secret);
-        let blockstate = SecretBlock::new(&mut buf).from_hash_at_index(block_secret, &block_hash, 0).unwrap();
+        let blockstate = SecretBlock::new(&mut buf)
+            .from_hash_at_index(block_secret, &block_hash, 0)
+            .unwrap();
         assert_eq!(blockstate.block_hash, block_hash);
         assert_eq!(blockstate.public_block_hash, public_block_hash);
         assert_eq!(blockstate.payload, payload);
