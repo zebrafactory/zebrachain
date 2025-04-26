@@ -289,7 +289,6 @@ mod tests {
         assert_eq!(hash(&buf), h);
     }
 
-    /*
     #[test]
     fn test_check_secretblock_buf() {
         let buf = [0; SECRET_BLOCK];
@@ -320,6 +319,8 @@ mod tests {
         }
         assert_eq!(buf, vec![]);
     }
+
+    /*
 
     #[test]
     fn test_block_open() {
