@@ -315,7 +315,15 @@ mod tests {
         let buf_hash = hash(&buf);
         let chain_secret = generate_secret().unwrap();
         for block_index in 0..420 {
+            buf.resize(SECRET_BLOCK, 42);
+            buf.fill(69);
             let (key, nonce) = get_block_key_and_nonce(&chain_secret, block_index);
+            let cipher = ChaCha20Poly1305::new(&key);
+            cipher.encrypt_in_place(&nonce, b"", &mut buf).unwrap();
+            assert_eq!(
+                decrypt_in_place(&mut buf, &chain_secret, block_index),
+                Err(SecretBlockError::Storage)
+            );
             for bad_block_index in U64BitFlipper::new(block_index) {
                 buf.resize(SECRET_BLOCK, 42);
                 buf.fill(69);
