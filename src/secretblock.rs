@@ -522,45 +522,41 @@ mod tests {
         }
     }
 
-    /*
     #[test]
-    fn test_block_from_hash_at_index() {
-        let buf = valid_secret_block();
-        let block_hash = hash(&buf[DIGEST..]);
-        SecretBlock::from_hash_at_index(&buf, &block_hash, 1).unwrap();
+    fn test_secretblock_from_hash_at_index() {
+        let chain_secret = generate_secret().unwrap();
+        for block_index in 0..420 {
+            let (block_hash, orig) = build_simirandom_valid_block(block_index);
+            let state_in = SecretBlockState::from_buf(&orig).unwrap();
 
-        // Test errors specific to SecretBlock::from_hash_at_index():
-        for bad in HashBitFlipper::new(&block_hash) {
-            assert_eq!(
-                SecretBlock::from_hash_at_index(&buf, &bad, 1),
-                Err(SecretBlockError::Hash)
-            );
-        }
+            let mut buf = orig.clone();
+            encrypt_in_place(&mut buf, &chain_secret, block_index);
+            {
+                let mut block = SecretBlock::new(&mut buf);
+                let state_out = block
+                    .from_hash_at_index(&chain_secret, &block_hash, block_index)
+                    .unwrap();
+                assert_eq!(state_out, state_in);
+            }
+            assert_eq!(buf.len(), 0); // Make sure it was zeroized
 
-        // Make sure SecretBlock::open() is getting called:
-        for bad in BitFlipper::new(&buf) {
-            assert_eq!(
-                SecretBlock::from_hash_at_index(&bad[..], &block_hash, 1),
-                Err(SecretBlockError::Content)
-            );
-        }
-        let mut buf = valid_secret_block();
-        for i in 0..=255 {
-            let seed = Seed {
-                secret: Hash::from_bytes([i; DIGEST]),
-                next_secret: Hash::from_bytes([i; DIGEST]),
-            };
-            let payload = random_payload();
-            let mut block = MutSecretBlock::new(&mut buf, &payload);
-            block.set_seed(&seed);
-            block.finalize();
-            assert_eq!(
-                SecretBlock::from_hash_at_index(&buf, &block_hash, 1),
-                Err(SecretBlockError::Seed)
-            );
+            // Bit flipped in provided block_hash:
+            for bad_block_hash in HashBitFlipper::new(&block_hash) {
+                let mut buf = orig.clone();
+                encrypt_in_place(&mut buf, &chain_secret, block_index);
+                {
+                    let mut block = SecretBlock::new(&mut buf);
+                    assert_eq!(
+                        block.from_hash_at_index(&chain_secret, &bad_block_hash, block_index),
+                        Err(SecretBlockError::Hash)
+                    );
+                }
+                assert_eq!(buf.len(), 0); // Make sure it was zeroized
+            }
         }
     }
 
+    /*
     #[test]
     fn test_block_from_previous() {
         let buf = valid_secret_block();
