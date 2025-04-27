@@ -7,6 +7,11 @@
 //!
 //! This is a pre-release crate. The API is still being finalized.
 //!
+//! # ⚠️ Security Warning
+//!
+//! This is a nascent implementation of a yet to be finalized protocol. It's also built an quite
+//! new Rust implementations of [ML-DSA] and [SLH-DSA].
+//!
 //! # Quickstart
 //!
 //! ```
@@ -19,7 +24,7 @@
 //! let store = ChainStore::new(chain_dir.path());
 //!
 //! // To create signatures in a chain that you own, you also need a directory for your secret
-//! // chain files and secret key that will be used to encrypt them:
+//! // chain files and a secret storage key that will be used to encrypt them:
 //! let secret_chain_dir = tempfile::TempDir::new().unwrap();
 //! let storage_secret = generate_secret().unwrap(); // Uses getrandom::fill()
 //! let mystore = OwnedChainStore::build(
@@ -59,9 +64,8 @@
 //! assert_eq!(chain.tail().payload, p2);
 //! ```
 //!
-//! [nist.gov]: https://www.nist.gov/news-events/news/2024/08/nist-releases-first-3-finalized-post-quantum-encryption-standards
-//! [ML-DSA]: https://csrc.nist.gov/pubs/fips/204/final
-//! [ed25519]: https://ed25519.cr.yp.to/
+//! [ML-DSA]: https://github.com/RustCrypto/signatures/tree/master/ml-dsa
+//! [SLH-DSA]: https://github.com/RustCrypto/signatures/tree/master/slh-dsa
 
 mod always;
 mod block;

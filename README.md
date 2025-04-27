@@ -35,7 +35,7 @@ entropy when the ZebraChain was created.
 
 * Entropy accumulation throughout the lifetime of a ZebraChain. At each signature, a new call to
 `getrandom()` is made. This new entropy is securely mixed with the current seed (using a keyed
-hash), and the result is the next seed. What to rotate your keys? Just make a new signature.
+hash), and the result is the next seed. Want to rotate your keys? Just make a new signature.
 
 * Quantum safe. ZebraChain uses the recently standardized
 [FIPS 204 ML-DSA](https://csrc.nist.gov/pubs/fips/204/final) quantum secure algorithm in a hybrid
