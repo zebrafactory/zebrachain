@@ -391,29 +391,136 @@ mod tests {
         assert_eq!(block.buf, &vec![0; SECRET_BLOCK_AEAD]);
     }
 
-    /*
-    assert_eq!(block.public_block_hash, Hash::from_bytes([7; DIGEST]));
-    assert_eq!(block.seed.secret, Hash::from_bytes([1; DIGEST]));
-    assert_eq!(block.seed.next_secret, Hash::from_bytes([2; DIGEST]));
-    assert_eq!(block.payload.state_hash, Hash::from_bytes([3; DIGEST]));
-    assert_eq!(block.previous_hash, Hash::from_bytes([5; DIGEST]));
-    for bad in BitFlipper::new(&buf) {
-        assert_eq!(SecretBlock::open(&bad[..]), Err(SecretBlockError::Content));
+    fn build_simirandom_valid_block(block_index: u64) -> (Hash, Vec<u8>) {
+        let mut buf = vec![0; SECRET_BLOCK];
+        getrandom::fill(&mut buf).unwrap();
+        set_u64(&mut buf, SEC_INDEX_RANGE, block_index);
+        let block_hash = hash(&buf[DIGEST..]);
+        buf[0..DIGEST].copy_from_slice(block_hash.as_bytes());
+        (block_hash, buf)
     }
 
-    let mut buf = valid_secret_block();
-    for i in 0..=255 {
-        let seed = Seed {
-            secret: Hash::from_bytes([i; DIGEST]),
-            next_secret: Hash::from_bytes([i; DIGEST]),
-        };
-        let payload = random_payload();
-        let mut block = MutSecretBlock::new(&mut buf, &payload);
-        block.set_seed(&seed);
-        block.finalize();
-        assert_eq!(SecretBlock::open(&buf), Err(SecretBlockError::Seed));
+    #[test]
+    fn test_secretblock_from_index() {
+        let chain_secret = generate_secret().unwrap();
+        for block_index in 0..420 {
+            let (block_hash, orig) = build_simirandom_valid_block(block_index);
+            let state_in = SecretBlockState::from_buf(&orig).unwrap();
+
+            let mut buf = orig.clone();
+            encrypt_in_place(&mut buf, &chain_secret, block_index);
+            {
+                let mut block = SecretBlock::new(&mut buf);
+                let state_out = block.from_index(&chain_secret, block_index).unwrap();
+                assert_eq!(state_out, state_in);
+            }
+            assert_eq!(buf.len(), 0); // Make sure it was zeroized
+
+            // Bit flipped in encrypted bytes
+            let mut buf = orig.clone();
+            encrypt_in_place(&mut buf, &chain_secret, block_index);
+            for mut buf in BitFlipper::new(&buf) {
+                {
+                    let mut block = SecretBlock::new(&mut buf);
+                    assert_eq!(
+                        block.from_index(&chain_secret, block_index),
+                        Err(SecretBlockError::Storage)
+                    );
+                }
+                assert_eq!(buf.len(), 0); // Make sure it was zeroized
+            }
+
+            // Bit flipped in provided block_index (derived key and nonce will be wrong, causing
+            // decryption error)
+            for bad_block_index in U64BitFlipper::new(block_index) {
+                let mut buf = orig.clone();
+                {
+                    encrypt_in_place(&mut buf, &chain_secret, block_index);
+                    let mut block = SecretBlock::new(&mut buf);
+                    assert_eq!(
+                        block.from_index(&chain_secret, bad_block_index),
+                        Err(SecretBlockError::Storage)
+                    );
+                }
+                assert_eq!(buf.len(), 0); // Make sure it was zeroized
+            }
+
+            // Bit flipped in cleartext before encryption
+            for mut buf in BitFlipper::new(&orig) {
+                encrypt_in_place(&mut buf, &chain_secret, block_index);
+                {
+                    let mut block = SecretBlock::new(&mut buf);
+                    assert_eq!(
+                        block.from_index(&chain_secret, block_index),
+                        Err(SecretBlockError::Content)
+                    );
+                }
+                assert_eq!(buf.len(), 0); // Make sure it was zeroized
+            }
+
+            // Bit flipped in internal block_index before hashing:
+            for bad_block_index in U64BitFlipper::new(block_index) {
+                let mut buf = orig.clone();
+                set_u64(&mut buf, SEC_INDEX_RANGE, bad_block_index);
+                let bad_block_hash = hash(&buf[DIGEST..]);
+                set_hash(&mut buf, SEC_HASH_RANGE, &bad_block_hash);
+                encrypt_in_place(&mut buf, &chain_secret, block_index);
+                {
+                    let mut block = SecretBlock::new(&mut buf);
+                    assert_eq!(
+                        block.from_index(&chain_secret, block_index),
+                        Err(SecretBlockError::Index)
+                    );
+                }
+                assert_eq!(buf.len(), 0); // Make sure it was zeroized
+            }
+
+            // Seed.secret, Seed.next_secret are the same:
+            let mut buf = orig.clone();
+            buf[SEC_SEED_RANGE][0..DIGEST].copy_from_slice(state_in.seed.next_secret.as_bytes());
+            let bad_block_hash = hash(&buf[DIGEST..]);
+            set_hash(&mut buf, SEC_HASH_RANGE, &bad_block_hash);
+            encrypt_in_place(&mut buf, &chain_secret, block_index);
+            {
+                let mut block = SecretBlock::new(&mut buf);
+                assert_eq!(
+                    block.from_index(&chain_secret, block_index),
+                    Err(SecretBlockError::Seed)
+                );
+            }
+            assert_eq!(buf.len(), 0); // Make sure it was zeroized
+
+            // Seed.secret is zeros:
+            let mut buf = orig.clone();
+            buf[SEC_SEED_RANGE][0..DIGEST].copy_from_slice(&[0; DIGEST]);
+            let bad_block_hash = hash(&buf[DIGEST..]);
+            set_hash(&mut buf, SEC_HASH_RANGE, &bad_block_hash);
+            encrypt_in_place(&mut buf, &chain_secret, block_index);
+            {
+                let mut block = SecretBlock::new(&mut buf);
+                assert_eq!(
+                    block.from_index(&chain_secret, block_index),
+                    Err(SecretBlockError::Seed)
+                );
+            }
+            assert_eq!(buf.len(), 0); // Make sure it was zeroized
+
+            // Seed.next_secret is zeros:
+            let mut buf = orig.clone();
+            buf[SEC_SEED_RANGE][DIGEST..DIGEST * 2].copy_from_slice(&[0; DIGEST]);
+            let bad_block_hash = hash(&buf[DIGEST..]);
+            set_hash(&mut buf, SEC_HASH_RANGE, &bad_block_hash);
+            encrypt_in_place(&mut buf, &chain_secret, block_index);
+            {
+                let mut block = SecretBlock::new(&mut buf);
+                assert_eq!(
+                    block.from_index(&chain_secret, block_index),
+                    Err(SecretBlockError::Seed)
+                );
+            }
+            assert_eq!(buf.len(), 0); // Make sure it was zeroized
+        }
     }
-    */
 
     /*
     #[test]
