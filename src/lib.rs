@@ -9,6 +9,8 @@
 //!
 //! # ⚠️ Security Warning
 //!
+//! ZebraChain is not yet suitable for production use.
+//!
 //! This is a nascent implementation of a yet to be finalized protocol. It's also built an quite
 //! new Rust implementations of [ML-DSA] and [SLH-DSA].
 //!

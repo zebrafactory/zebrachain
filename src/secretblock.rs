@@ -124,13 +124,13 @@ impl<'a> SecretBlock<'a> {
         Self { buf }
     }
 
-    /// FIXME
+    /// Resize internal buffer and expose it as mutable bytes for reading from a file.
     pub fn as_mut_read_buf(&mut self) -> &mut [u8] {
         self.buf.resize(SECRET_BLOCK_AEAD, 0);
         self.buf
     }
 
-    /// FIXME
+    /// Decrypt and validate this block at block-wise position `block_index`.
     pub fn from_index(
         self,
         chain_secret: &Secret,
@@ -145,7 +145,7 @@ impl<'a> SecretBlock<'a> {
         }
     }
 
-    /// FIXME
+    /// Decrypt and validate at `block_index`, ensuring `block_hash` matches.
     pub fn from_hash_at_index(
         self,
         chain_secret: &Secret,
@@ -160,7 +160,7 @@ impl<'a> SecretBlock<'a> {
         }
     }
 
-    /// FIXME
+    /// Decrypt and ensure block is after the block with [SecretBlockState] `prev`.
     pub fn from_previous(
         self,
         chain_secret: &Secret,
