@@ -58,8 +58,8 @@ pub enum SecretBlockError {
     /// Previous hash in block does not match expected external value.
     PreviousHash,
 
-    /// Failure decrypting the secret block (chacha20poly1305).
-    Storage,
+    /// Authenticated decryption of the secret block failed.
+    Decryption,
 }
 
 impl SecretBlockError {

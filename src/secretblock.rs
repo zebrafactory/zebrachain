@@ -59,7 +59,7 @@ fn decrypt_in_place(
         .decrypt_in_place(&nonce, &additional_data, buf)
         .is_err()
     {
-        Err(SecretBlockError::Storage)
+        Err(SecretBlockError::Decryption)
     } else {
         assert_eq!(buf.len(), SECRET_BLOCK);
         Ok(())
@@ -321,7 +321,7 @@ mod tests {
             cipher.encrypt_in_place(&nonce, b"", &mut buf).unwrap();
             assert_eq!(
                 decrypt_in_place(&mut buf, &chain_secret, block_index),
-                Err(SecretBlockError::Storage)
+                Err(SecretBlockError::Decryption)
             );
             for bad_block_index in U64BitFlipper::new(block_index) {
                 buf.resize(SECRET_BLOCK, 42);
@@ -333,7 +333,7 @@ mod tests {
                     .unwrap(); // This should not fail
                 assert_eq!(
                     decrypt_in_place(&mut buf, &chain_secret, block_index),
-                    Err(SecretBlockError::Storage)
+                    Err(SecretBlockError::Decryption)
                 );
             }
         }
@@ -423,7 +423,7 @@ mod tests {
                     let block = SecretBlock::new(&mut buf);
                     assert_eq!(
                         block.from_index(&chain_secret, block_index),
-                        Err(SecretBlockError::Storage)
+                        Err(SecretBlockError::Decryption)
                     );
                 }
                 assert_eq!(buf.len(), 0); // Make sure it was zeroized
@@ -438,7 +438,7 @@ mod tests {
                     let block = SecretBlock::new(&mut buf);
                     assert_eq!(
                         block.from_index(&chain_secret, bad_block_index),
-                        Err(SecretBlockError::Storage)
+                        Err(SecretBlockError::Decryption)
                     );
                 }
                 assert_eq!(buf.len(), 0); // Make sure it was zeroized
