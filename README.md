@@ -1,5 +1,7 @@
 # ZebraChain 🦓 🔗
 
+[![crate][crate-image]][crate-link]
+[![Docs][docs-image]][docs-link]
 [![Build Status](https://github.com/zebrafactory/zebrachain/actions/workflows/rust.yml/badge.svg)](https://github.com/zebrafactory/zebrachain/actions)
 
 ZebraChain is a logged, quantum safe signing protocol designed to replace the long lived asymmetric
@@ -41,7 +43,7 @@ construction with the classically secure [ed25519](https://ed25519.cr.yp.to/) al
 recommended by the ML-DSA authors). Support for
 [FIPS 205 SLH-DSA](https://csrc.nist.gov/pubs/fips/205/final) will be added soon.
 
-## Development Status
+## 🧑‍🏭 Development Status
 
 The current implementation has low abstraction and is not configurable, making it easy to review the
 protocol. So please jump in and help! Feedback and pull requests welcome!
@@ -132,7 +134,7 @@ Unless you explicitly state otherwise, any contribution intentionally submitted
 for inclusion in the work by you, as defined in the Apache-2.0 license, shall be
 dual licensed as above, without any additional terms or conditions.
 
-## Code of Conduct
+## 🖖 Code of Conduct
 
 We follow the [Rust Code of Conduct](http://www.rust-lang.org/conduct.html),
 with the following additional clauses:
@@ -140,3 +142,8 @@ with the following additional clauses:
 * We respect the rights to privacy and anonymity for contributors and people in
   the community.  If someone wishes to contribute under a pseudonym different to
   their primary identity, that wish is to be respected by all contributors.
+
+[crate-image]: https://img.shields.io/crates/v/zf-zebrachain?logo=rust
+[crate-link]: https://crates.io/crates/zf-zebrachain
+[docs-image]: https://docs.rs/zf-zebrachain/badge.svg
+[docs-link]: https://docs.rs/zf-zebrachain
