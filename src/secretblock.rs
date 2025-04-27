@@ -233,7 +233,7 @@ mod tests {
     use super::*;
     use crate::secretseed::generate_secret;
     use crate::testhelpers::{
-        BitFlipper, HashBitFlipper, U64BitFlipper, random_hash, random_payload, random_u64,
+        BitFlipper, HashBitFlipper, U64BitFlipper, random_hash, random_payload,
     };
     use getrandom;
     use std::collections::HashSet;
@@ -312,7 +312,6 @@ mod tests {
     #[test]
     fn test_chacha20poly1305_additional_data() {
         let mut buf = vec![0; SECRET_BLOCK];
-        let buf_hash = hash(&buf);
         let chain_secret = generate_secret().unwrap();
         for block_index in 0..420 {
             buf.resize(SECRET_BLOCK, 42);
@@ -404,13 +403,13 @@ mod tests {
     fn test_secretblock_from_index() {
         let chain_secret = generate_secret().unwrap();
         for block_index in 0..420 {
-            let (block_hash, orig) = build_simirandom_valid_block(block_index);
+            let (_block_hash, orig) = build_simirandom_valid_block(block_index);
             let state_in = SecretBlockState::from_buf(&orig).unwrap();
 
             let mut buf = orig.clone();
             encrypt_in_place(&mut buf, &chain_secret, block_index);
             {
-                let mut block = SecretBlock::new(&mut buf);
+                let block = SecretBlock::new(&mut buf);
                 let state_out = block.from_index(&chain_secret, block_index).unwrap();
                 assert_eq!(state_out, state_in);
             }
@@ -421,7 +420,7 @@ mod tests {
             encrypt_in_place(&mut buf, &chain_secret, block_index);
             for mut buf in BitFlipper::new(&buf) {
                 {
-                    let mut block = SecretBlock::new(&mut buf);
+                    let block = SecretBlock::new(&mut buf);
                     assert_eq!(
                         block.from_index(&chain_secret, block_index),
                         Err(SecretBlockError::Storage)
@@ -436,7 +435,7 @@ mod tests {
                 let mut buf = orig.clone();
                 {
                     encrypt_in_place(&mut buf, &chain_secret, block_index);
-                    let mut block = SecretBlock::new(&mut buf);
+                    let block = SecretBlock::new(&mut buf);
                     assert_eq!(
                         block.from_index(&chain_secret, bad_block_index),
                         Err(SecretBlockError::Storage)
@@ -449,7 +448,7 @@ mod tests {
             for mut buf in BitFlipper::new(&orig) {
                 encrypt_in_place(&mut buf, &chain_secret, block_index);
                 {
-                    let mut block = SecretBlock::new(&mut buf);
+                    let block = SecretBlock::new(&mut buf);
                     assert_eq!(
                         block.from_index(&chain_secret, block_index),
                         Err(SecretBlockError::Content)
@@ -466,7 +465,7 @@ mod tests {
                 set_hash(&mut buf, SEC_HASH_RANGE, &bad_block_hash);
                 encrypt_in_place(&mut buf, &chain_secret, block_index);
                 {
-                    let mut block = SecretBlock::new(&mut buf);
+                    let block = SecretBlock::new(&mut buf);
                     assert_eq!(
                         block.from_index(&chain_secret, block_index),
                         Err(SecretBlockError::Index)
@@ -482,7 +481,7 @@ mod tests {
             set_hash(&mut buf, SEC_HASH_RANGE, &bad_block_hash);
             encrypt_in_place(&mut buf, &chain_secret, block_index);
             {
-                let mut block = SecretBlock::new(&mut buf);
+                let block = SecretBlock::new(&mut buf);
                 assert_eq!(
                     block.from_index(&chain_secret, block_index),
                     Err(SecretBlockError::Seed)
@@ -497,7 +496,7 @@ mod tests {
             set_hash(&mut buf, SEC_HASH_RANGE, &bad_block_hash);
             encrypt_in_place(&mut buf, &chain_secret, block_index);
             {
-                let mut block = SecretBlock::new(&mut buf);
+                let block = SecretBlock::new(&mut buf);
                 assert_eq!(
                     block.from_index(&chain_secret, block_index),
                     Err(SecretBlockError::Seed)
@@ -512,7 +511,7 @@ mod tests {
             set_hash(&mut buf, SEC_HASH_RANGE, &bad_block_hash);
             encrypt_in_place(&mut buf, &chain_secret, block_index);
             {
-                let mut block = SecretBlock::new(&mut buf);
+                let block = SecretBlock::new(&mut buf);
                 assert_eq!(
                     block.from_index(&chain_secret, block_index),
                     Err(SecretBlockError::Seed)
@@ -532,7 +531,7 @@ mod tests {
             let mut buf = orig.clone();
             encrypt_in_place(&mut buf, &chain_secret, block_index);
             {
-                let mut block = SecretBlock::new(&mut buf);
+                let block = SecretBlock::new(&mut buf);
                 let state_out = block
                     .from_hash_at_index(&chain_secret, &block_hash, block_index)
                     .unwrap();
@@ -545,7 +544,7 @@ mod tests {
                 let mut buf = orig.clone();
                 encrypt_in_place(&mut buf, &chain_secret, block_index);
                 {
-                    let mut block = SecretBlock::new(&mut buf);
+                    let block = SecretBlock::new(&mut buf);
                     assert_eq!(
                         block.from_hash_at_index(&chain_secret, &bad_block_hash, block_index),
                         Err(SecretBlockError::Hash)

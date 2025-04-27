@@ -264,6 +264,7 @@ impl SecretChainStore {
 
 #[cfg(test)]
 mod tests {
+    /*
     use super::*;
     use crate::secretblock::MutSecretBlock;
     use crate::secretseed::generate_secret;
@@ -275,7 +276,7 @@ mod tests {
     use tempfile::{TempDir, tempfile};
 
     const HEX0: &str = "1b695d50d6105777ed7b5a0bb0bce5484ddca1d6b16bbb0c7bac90599c59370e";
-    /*
+
     #[test]
     fn test_chain_create() {
         let mut buf = vec![0; SECRET_BLOCK];
