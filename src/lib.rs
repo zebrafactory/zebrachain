@@ -92,7 +92,7 @@ pub use errors::{BlockError, SecretBlockError};
 pub use ownedblock::{MutOwnedBlock, OwnedBlockState, sign};
 pub use ownedchain::{OwnedChain, OwnedChainStore};
 pub use payload::Payload;
-pub use secretblock::{MutSecretBlock, SecretBlock, SecretBlockResult, SecretBlockState};
+pub use secretblock::{MutSecretBlock, SecretBlock, SecretBlockState};
 pub use secretchain::{SecretChain, SecretChainIter, SecretChainStore};
 pub use secretseed::{EntropyError, Secret, Seed, generate_secret};
 

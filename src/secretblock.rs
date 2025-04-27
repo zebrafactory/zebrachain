@@ -108,9 +108,6 @@ impl SecretBlockState {
     }
 }
 
-/// Alias for `Result<SecretBlock, SecretBlockError>`.
-pub type SecretBlockResult<'a> = Result<SecretBlock<'a>, SecretBlockError>;
-
 /// Decrypts and validates a secret block.
 pub struct SecretBlock<'a> {
     buf: &'a mut Vec<u8>,
