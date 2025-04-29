@@ -11,9 +11,21 @@ use chacha20poly1305::{
 };
 use zeroize::{Zeroize, ZeroizeOnDrop};
 
-fn check_secretblock_buf(buf: &[u8]) {
+fn check_secretblock_buf(buf: &Vec<u8>) {
     if buf.len() != SECRET_BLOCK {
-        panic!("Need a {SECRET_BLOCK} byte slice; got {} bytes", buf.len());
+        panic!(
+            "Need a {SECRET_BLOCK} byte Vec<u8>; got {} bytes",
+            buf.len()
+        );
+    }
+}
+
+fn check_secretblock_buf_aead(buf: &Vec<u8>) {
+    if buf.len() != SECRET_BLOCK_AEAD {
+        panic!(
+            "Need a {SECRET_BLOCK_AEAD} byte Vec<u8>; got {} bytes",
+            buf.len()
+        );
     }
 }
 
@@ -36,14 +48,14 @@ fn get_block_key_and_nonce(chain_secret: &Secret, block_index: u64) -> (Key, Non
 }
 
 fn encrypt_in_place(buf: &mut Vec<u8>, chain_secret: &Secret, block_index: u64) {
-    assert_eq!(buf.len(), SECRET_BLOCK);
+    check_secretblock_buf(buf);
     let (key, nonce) = get_block_key_and_nonce(chain_secret, block_index);
     let cipher = ChaCha20Poly1305::new(&key);
     let additional_data = block_index.to_le_bytes();
     cipher
         .encrypt_in_place(&nonce, &additional_data, buf)
         .unwrap(); // This should not fail
-    assert_eq!(buf.len(), SECRET_BLOCK_AEAD);
+    check_secretblock_buf_aead(buf);
 }
 
 fn decrypt_in_place(
@@ -51,7 +63,7 @@ fn decrypt_in_place(
     chain_secret: &Secret,
     block_index: u64,
 ) -> Result<(), SecretBlockError> {
-    assert_eq!(buf.len(), SECRET_BLOCK_AEAD);
+    check_secretblock_buf_aead(buf);
     let (key, nonce) = get_block_key_and_nonce(chain_secret, block_index);
     let cipher = ChaCha20Poly1305::new(&key);
     let additional_data = block_index.to_le_bytes();
@@ -61,7 +73,7 @@ fn decrypt_in_place(
     {
         Err(SecretBlockError::Decryption)
     } else {
-        assert_eq!(buf.len(), SECRET_BLOCK);
+        check_secretblock_buf(buf);
         Ok(())
     }
 }
@@ -90,7 +102,7 @@ pub struct SecretBlockState {
 
 impl SecretBlockState {
     fn from_buf(buf: &[u8]) -> Result<Self, SecretBlockError> {
-        check_secretblock_buf(buf);
+        assert_eq!(buf.len(), SECRET_BLOCK);
         let computed_hash = hash(&buf[DIGEST..]);
         let block_hash = get_hash(buf, SEC_HASH_RANGE);
         if computed_hash != block_hash {
@@ -313,23 +325,44 @@ mod tests {
 
     #[test]
     fn test_check_secretblock_buf() {
-        let buf = [0; SECRET_BLOCK];
+        let buf = vec![0; SECRET_BLOCK];
         check_secretblock_buf(&buf);
-        assert_eq!(buf, [0; SECRET_BLOCK]);
+        assert_eq!(buf, vec![0; SECRET_BLOCK]);
     }
 
     #[test]
-    #[should_panic(expected = "Need a 208 byte slice; got 207 bytes")]
+    #[should_panic(expected = "Need a 208 byte Vec<u8>; got 207 bytes")]
     fn test_check_secretblock_buf_panic_low() {
-        let buf = [0; SECRET_BLOCK - 1];
+        let buf = vec![0; SECRET_BLOCK - 1];
         check_secretblock_buf(&buf);
     }
 
     #[test]
-    #[should_panic(expected = "Need a 208 byte slice; got 209 bytes")]
+    #[should_panic(expected = "Need a 208 byte Vec<u8>; got 209 bytes")]
     fn test_check_secretblock_buf_panic_high() {
-        let buf = [0; SECRET_BLOCK + 1];
+        let buf = vec![0; SECRET_BLOCK + 1];
         check_secretblock_buf(&buf);
+    }
+
+    #[test]
+    fn test_check_secretblock_buf_aead() {
+        let buf = vec![0; SECRET_BLOCK_AEAD];
+        check_secretblock_buf_aead(&buf);
+        assert_eq!(buf, vec![0; SECRET_BLOCK_AEAD]);
+    }
+
+    #[test]
+    #[should_panic(expected = "Need a 224 byte Vec<u8>; got 223 bytes")]
+    fn test_check_secretblock_buf_aead_panic_low() {
+        let buf = vec![0; SECRET_BLOCK_AEAD - 1];
+        check_secretblock_buf_aead(&buf);
+    }
+
+    #[test]
+    #[should_panic(expected = "Need a 224 byte Vec<u8>; got 225 bytes")]
+    fn test_check_secretblock_buf_aead_panic_high() {
+        let buf = vec![0; SECRET_BLOCK_AEAD + 1];
+        check_secretblock_buf_aead(&buf);
     }
 
     #[test]
