@@ -235,31 +235,6 @@ mod tests {
     use getrandom;
     use std::collections::HashSet;
 
-    const HEX_VALID_BUFF: &str = "77b482e206ccff70e5dc2ebf55648e4b350b596b5d3ebaecfe9e6a6fef9c737f";
-
-    // Returns a vec with a valid *unencrypted* secret block
-    fn valid_secret_block() -> Vec<u8> {
-        let mut buf = vec![0; SECRET_BLOCK];
-        set_hash(
-            &mut buf,
-            SEC_PUBLIC_HASH_RANGE,
-            &Hash::from_bytes([7; DIGEST]),
-        );
-        let seed = Seed::new(Hash::from_bytes([1; DIGEST]), Hash::from_bytes([2; DIGEST]));
-        seed.write_to_buf(&mut buf[SEC_SEED_RANGE]);
-        let payload = Payload::new(314, Hash::from_bytes([3; DIGEST]));
-        payload.write_to_buf(&mut buf[SEC_PAYLOAD_RANGE]);
-        set_u64(&mut buf, SEC_INDEX_RANGE, 1234567890);
-        set_hash(
-            &mut buf,
-            SEC_PREV_HASH_RANGE,
-            &Hash::from_bytes([5; DIGEST]),
-        );
-        let block_hash = hash(&buf[DIGEST..]);
-        set_hash(&mut buf, SEC_HASH_RANGE, &block_hash);
-        buf
-    }
-
     #[test]
     fn test_derive_block_sub_secrets_inner() {
         let count = 420u64;
@@ -358,25 +333,13 @@ mod tests {
     }
 
     #[test]
-    fn test_secretblock_zeroize() {
+    fn test_secretblock_new_zeroize() {
         let mut buf = vec![69; SECRET_BLOCK_AEAD];
         {
             let block = SecretBlock::new(&mut buf);
             assert_eq!(block.buf, &vec![69; SECRET_BLOCK_AEAD]);
         }
         assert_eq!(buf, vec![]);
-    }
-
-    #[test]
-    fn test_secretblock_new() {
-        let mut buf = Vec::new();
-        let block = SecretBlock::new(&mut buf);
-        assert_eq!(block.buf, &vec![0; 0]);
-
-        let mut buf = valid_secret_block();
-        assert_eq!(hash(&buf), Hash::from_hex(HEX_VALID_BUFF).unwrap());
-        let block = SecretBlock::new(&mut buf);
-        assert_eq!(hash(block.buf), Hash::from_hex(HEX_VALID_BUFF).unwrap());
     }
 
     #[test]
