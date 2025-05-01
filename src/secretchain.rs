@@ -45,30 +45,10 @@ impl SecretChain {
         })
     }
 
-    /// Exposes internal secret block buffer as mutable bytes.
-    pub fn as_mut_buf(&mut self) -> &mut [u8] {
-        self.buf.resize(SECRET_BLOCK, 0); // FIXME: Probably put this somewhere else
-        &mut self.buf[..]
-    }
-
-    /// Exposes internal secret block buffer as mutable bytes.
-    pub fn as_mut_buf2(&mut self) -> &mut Vec<u8> {
-        &mut self.buf
-    }
-
-    /// Exposed secret block buffer as bytes.
-    pub fn as_buf(&self) -> &[u8] {
-        &self.buf[0..SECRET_BLOCK]
-    }
-
-    /// Mix new entropy into chain and return next [Seed].
-    pub fn advance(&self, new_entropy: &Hash) -> Seed {
-        self.tail.seed.advance(new_entropy)
-    }
-
     /// FIXME: Probably remove from public API.
     pub fn open(file: File, chain_secret: Secret) -> io::Result<Self> {
         let mut file = BufReader::with_capacity(SECRET_BLOCK_AEAD_READ_BUF, file);
+        file.rewind()?;
         let mut buf = vec![0; SECRET_BLOCK_AEAD];
         let mut tail = {
             let mut block = SecretBlock::new(&mut buf);
@@ -98,6 +78,27 @@ impl SecretChain {
             secret: chain_secret,
             buf,
         })
+    }
+
+    /// Exposes internal secret block buffer as mutable bytes.
+    pub fn as_mut_buf(&mut self) -> &mut [u8] {
+        self.buf.resize(SECRET_BLOCK, 0); // FIXME: Probably put this somewhere else
+        &mut self.buf[..]
+    }
+
+    /// Exposes internal secret block buffer as mutable bytes.
+    pub fn as_mut_buf2(&mut self) -> &mut Vec<u8> {
+        &mut self.buf
+    }
+
+    /// Exposed secret block buffer as bytes.
+    pub fn as_buf(&self) -> &[u8] {
+        &self.buf[0..SECRET_BLOCK]
+    }
+
+    /// Mix new entropy into chain and return next [Seed].
+    pub fn advance(&self, new_entropy: &Hash) -> Seed {
+        self.tail.seed.advance(new_entropy)
     }
 
     /// Number of blocks in this secret chain.
@@ -264,7 +265,6 @@ impl SecretChainStore {
 
 #[cfg(test)]
 mod tests {
-    /*
     use super::*;
     use crate::secretblock::MutSecretBlock;
     use crate::secretseed::generate_secret;
@@ -275,62 +275,52 @@ mod tests {
     use std::io::Seek;
     use tempfile::{TempDir, tempfile};
 
-    const HEX0: &str = "1b695d50d6105777ed7b5a0bb0bce5484ddca1d6b16bbb0c7bac90599c59370e";
+    //const HEX0: &str = "1b695d50d6105777ed7b5a0bb0bce5484ddca1d6b16bbb0c7bac90599c59370e";
 
     #[test]
-    fn test_chain_create() {
+    fn test_chain_create_open() {
         let mut buf = vec![0; SECRET_BLOCK];
         let payload = random_payload();
-        let mut block = MutSecretBlock::new(&mut buf[..], &payload);
+        let mut block = MutSecretBlock::new(&mut buf, &payload);
 
         let seed = Seed::auto_create().unwrap();
         block.set_seed(&seed);
-        let block_hash = block.finalize();
+
+        let chain_secret = random_hash();
+        let block_hash = block.finalize(&chain_secret);
+
+        let mut buf2 = buf.clone();
+        let state = SecretBlock::new(&mut buf2)
+            .from_hash_at_index(&chain_secret, &block_hash, 0)
+            .unwrap();
 
         let file = tempfile().unwrap();
-        let secret = random_hash();
+        let chain =
+            SecretChain::create(file.try_clone().unwrap(), chain_secret, buf, &block_hash).unwrap();
+        assert_eq!(chain.tail(), &state);
 
-        let result = SecretChain::create(file, secret, buf, &block_hash);
-        assert!(result.is_ok());
-        let mut file = result.unwrap().into_file();
-        file.rewind().unwrap();
-        let mut buf = vec![0; SECRET_BLOCK_AEAD];
-        file.read_exact(&mut buf[..]).unwrap();
-        decrypt_in_place(&mut buf, &secret, 0).unwrap();
-        let block = SecretBlock::open(&buf[..]).unwrap();
-        assert_eq!(seed, block.seed);
+        // Reopen chain, test SecretChain::open()
+        let chain = SecretChain::open(file, chain_secret).unwrap();
+        assert_eq!(chain.tail(), &state);
     }
 
     #[test]
     fn test_chain_open() {
         let mut file = tempfile().unwrap();
-        let secret = generate_secret().unwrap();
-        assert!(SecretChain::open(file.try_clone().unwrap(), secret.clone()).is_err());
-        let mut buf = vec![0; SECRET_BLOCK];
+        let chain_secret = generate_secret().unwrap();
 
-        let seed = Seed::auto_create().unwrap();
-        let payload = random_payload();
-        let mut block = MutSecretBlock::new(&mut buf, &payload);
-        block.set_seed(&seed);
-        block.finalize();
-        encrypt_in_place(&mut buf, &secret, 0);
+        // Empty file
+        assert!(SecretChain::open(file.try_clone().unwrap(), chain_secret).is_err());
 
-        file.write_all(&buf[..]).unwrap();
-        file.rewind().unwrap();
-        assert_eq!(
-            SecretChain::open(file.try_clone().unwrap(), secret)
-                .unwrap()
-                .tail()
-                .seed,
-            seed
-        );
-
+        // A secret aead block full of random data
+        let mut buf = vec![0; SECRET_BLOCK_AEAD];
         getrandom::fill(&mut buf).unwrap();
         file.write_all(&buf).unwrap();
         file.rewind().unwrap();
-        assert!(SecretChain::open(file, secret).is_err());
+        assert!(SecretChain::open(file, chain_secret).is_err());
     }
 
+    /*
     #[test]
     fn test_chain_append() {
         let mut buf = vec![0; SECRET_BLOCK];
