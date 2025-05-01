@@ -421,28 +421,34 @@ mod tests {
         let chain = store.open_chain(&chain_hash).unwrap();
         assert_eq!(chain.tail().seed, seed);
     }
+    */
 
     #[test]
-    fn test_store_create_chain() {
-        let mut buf = vec![0; SECRET_BLOCK];
-        let payload = random_payload();
-        let mut block = MutSecretBlock::new(&mut buf[..], &payload);
-
+    fn test_store_create_chain_open() {
+        let store_secret = random_hash();
+        let chain_hash = random_hash();
+        let chain_secret = derive_chain_secret(&store_secret, &chain_hash);
         let seed = Seed::auto_create().unwrap();
+        let payload = random_payload();
+
+        let mut buf = vec![0; SECRET_BLOCK];
+        let mut block = MutSecretBlock::new(&mut buf, &payload);
         block.set_seed(&seed);
-        let block_hash = block.finalize();
+        let block_hash = block.finalize(&chain_secret);
 
         let dir = TempDir::new().unwrap();
-        let secret = random_hash();
-        let store = SecretChainStore::new(dir.path(), secret);
-
-        let chain_hash = random_hash();
+        let store = SecretChainStore::new(dir.path(), store_secret);
         let chain = store.create_chain(&chain_hash, buf, &block_hash).unwrap();
 
-        let tail = chain.tail().clone();
-        assert_eq!(tail.seed, seed);
+        assert_ne!(chain.secret, store_secret);
+        assert_eq!(chain.secret, chain_secret);
+        let state = chain.tail().clone();
+        assert_eq!(state.payload, payload);
+        assert_eq!(state.seed, seed);
+
+        // Reopen the chain
         let chain = store.open_chain(&chain_hash).unwrap();
-        assert_eq!(chain.tail().seed, seed);
+        assert_eq!(chain.tail(), &state);
     }
 
     #[test]
@@ -457,5 +463,4 @@ mod tests {
         assert!(store.remove_chain_file(&chain_hash).is_ok());
         assert!(store.remove_chain_file(&chain_hash).is_err());
     }
-    */
 }
