@@ -128,7 +128,7 @@ impl OwnedChain {
         let obs = self.state();
         let mut buf = [0; BLOCK];
         let chain_secret = self.secret_chain.secret;
-        let mut block = MutOwnedBlock::new(&mut buf, self.secret_chain.as_mut_buf2(), payload);
+        let mut block = MutOwnedBlock::new(&mut buf, self.secret_chain.as_mut_buf(), payload);
         block.set_previous(&obs);
         block.sign(&seed);
         let (block_hash, secret_block_hash) = block.finalize(&chain_secret);

@@ -81,19 +81,8 @@ impl SecretChain {
     }
 
     /// Exposes internal secret block buffer as mutable bytes.
-    pub fn as_mut_buf(&mut self) -> &mut [u8] {
-        self.buf.resize(SECRET_BLOCK, 0); // FIXME: Probably put this somewhere else
-        &mut self.buf[..]
-    }
-
-    /// Exposes internal secret block buffer as mutable bytes.
-    pub fn as_mut_buf2(&mut self) -> &mut Vec<u8> {
+    pub fn as_mut_buf(&mut self) -> &mut Vec<u8> {
         &mut self.buf
-    }
-
-    /// Exposed secret block buffer as bytes.
-    pub fn as_buf(&self) -> &[u8] {
-        &self.buf[0..SECRET_BLOCK]
     }
 
     /// Mix new entropy into chain and return next [Seed].
