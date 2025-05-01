@@ -257,10 +257,8 @@ mod tests {
     use super::*;
     use crate::secretblock::MutSecretBlock;
     use crate::secretseed::generate_secret;
-    use crate::testhelpers::{BitFlipper, random_hash, random_payload};
-    use blake3::hash;
+    use crate::testhelpers::{random_hash, random_payload};
     use getrandom;
-    use std::collections::HashSet;
     use std::io::Seek;
     use tempfile::{TempDir, tempfile};
 

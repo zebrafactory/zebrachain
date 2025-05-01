@@ -11,7 +11,7 @@ use chacha20poly1305::{
 };
 use zeroize::{Zeroize, ZeroizeOnDrop};
 
-fn check_secretblock_buf(buf: &Vec<u8>) {
+fn check_secretblock_buf(buf: &[u8]) {
     if buf.len() != SECRET_BLOCK {
         panic!(
             "Need a {SECRET_BLOCK} byte Vec<u8>; got {} bytes",
@@ -20,7 +20,7 @@ fn check_secretblock_buf(buf: &Vec<u8>) {
     }
 }
 
-fn check_secretblock_buf_aead(buf: &Vec<u8>) {
+fn check_secretblock_buf_aead(buf: &[u8]) {
     if buf.len() != SECRET_BLOCK_AEAD {
         panic!(
             "Need a {SECRET_BLOCK_AEAD} byte Vec<u8>; got {} bytes",
