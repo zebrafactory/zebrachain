@@ -264,7 +264,7 @@ mod tests {
     use std::io::Seek;
     use tempfile::{TempDir, tempfile};
 
-    //const HEX0: &str = "1b695d50d6105777ed7b5a0bb0bce5484ddca1d6b16bbb0c7bac90599c59370e";
+    const HEX0: &str = "1b695d50d6105777ed7b5a0bb0bce5484ddca1d6b16bbb0c7bac90599c59370e";
 
     #[test]
     fn test_chain_create_open() {
@@ -339,6 +339,7 @@ mod tests {
         file.rewind().unwrap();
         SecretChain::open(file, secret).unwrap();
     }
+    */
 
     #[test]
     fn test_store_derive_secret() {
@@ -346,14 +347,14 @@ mod tests {
         let secret = Hash::from_bytes([42; DIGEST]);
         let store = SecretChainStore::new(&dir, secret);
         let chain_hash = Hash::from_bytes([69; DIGEST]);
-        let sec = store.derive_secret(&chain_hash);
+        let sec = store.derive_chain_secret(&chain_hash);
         assert_eq!(sec, Hash::from_hex(HEX0).unwrap());
         assert_eq!(sec, keyed_hash(secret.as_bytes(), chain_hash.as_bytes()));
         let secret = random_hash();
         let chain_hash = random_hash();
         let store = SecretChainStore::new(&dir, secret);
         assert_eq!(
-            store.derive_secret(&chain_hash),
+            store.derive_chain_secret(&chain_hash),
             keyed_hash(secret.as_bytes(), chain_hash.as_bytes())
         );
     }
@@ -380,37 +381,20 @@ mod tests {
     #[test]
     fn test_store_open_chain() {
         let dir = TempDir::new().unwrap();
-        let secret = random_hash();
-        let store = SecretChainStore::new(dir.path(), secret);
+        let store_secret = random_hash();
+        let store = SecretChainStore::new(dir.path(), store_secret);
+
         let chain_hash = random_hash();
         assert!(store.open_chain(&chain_hash).is_err());
         let filename = store.chain_filename(&chain_hash);
+
         let mut file = create_for_append(&filename).unwrap();
         let mut buf = [0; SECRET_BLOCK_AEAD];
         getrandom::fill(&mut buf).unwrap();
         file.write_all(&buf).unwrap();
         file.rewind().unwrap();
         assert!(store.open_chain(&chain_hash).is_err()); // Not valid ChaCha20Poly1305 content
-
-        let mut buf = vec![0; SECRET_BLOCK];
-        let seed = Seed::auto_create().unwrap();
-        let payload = random_payload();
-        let chain_secret = store.derive_secret(&chain_hash);
-        assert_eq!(
-            chain_secret,
-            keyed_hash(secret.as_bytes(), chain_hash.as_bytes())
-        );
-        let mut block = MutSecretBlock::new(&mut buf, &payload);
-        block.set_seed(&seed);
-        block.finalize();
-        encrypt_in_place(&mut buf, &chain_secret, 0);
-        store.remove_chain_file(&chain_hash).unwrap();
-        let mut file = create_for_append(&filename).unwrap();
-        file.write_all(&buf).unwrap();
-        let chain = store.open_chain(&chain_hash).unwrap();
-        assert_eq!(chain.tail().seed, seed);
     }
-    */
 
     #[test]
     fn test_store_create_chain_open() {
