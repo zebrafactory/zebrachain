@@ -6,8 +6,6 @@ use crate::payload::Payload;
 use crate::pksign::verify_block_signature;
 use blake3::{Hash, hash};
 
-//const ZERO_HASH: Hash = Hash::from_bytes([0; DIGEST]);
-
 fn check_block_buf(buf: &[u8]) {
     if buf.len() != BLOCK {
         panic!("Need a {BLOCK} byte slice; got {} bytes", buf.len());
@@ -386,14 +384,14 @@ mod tests {
         let buf = new_valid_block();
         assert!(Block::new(&buf).open().is_ok());
         for bad in BitFlipper::new(&buf) {
-            assert_eq!(Block::new(&bad[..]).open(), Err(BlockError::Content));
+            assert_eq!(Block::new(&bad).open(), Err(BlockError::Content));
         }
         let mut bad = vec![0; BLOCK];
         for end in BitFlipper::new(&buf[HASHABLE_RANGE]) {
-            let h = hash(&end[..]);
+            let h = hash(&end);
             bad[HASH_RANGE].copy_from_slice(h.as_bytes());
-            bad[HASHABLE_RANGE].copy_from_slice(&end[..]);
-            assert_eq!(Block::new(&bad[..]).open(), Err(BlockError::Signature));
+            bad[HASHABLE_RANGE].copy_from_slice(&end);
+            assert_eq!(Block::new(&bad).open(), Err(BlockError::Signature));
         }
     }
 
@@ -406,7 +404,7 @@ mod tests {
         // Make sure Block::open() is getting called
         for bad in BitFlipper::new(&buf) {
             assert_eq!(
-                Block::new(&bad[..]).from_hash_at_index(&good, 0),
+                Block::new(&bad).from_hash_at_index(&good, 0),
                 Err(BlockError::Content)
             );
         }
@@ -453,7 +451,7 @@ mod tests {
         // Make sure Block::open() is getting called
         for bad in BitFlipper::new(&buf) {
             assert_eq!(
-                Block::new(&bad[..]).from_previous(&prev),
+                Block::new(&bad).from_previous(&prev),
                 Err(BlockError::Content)
             );
         }
