@@ -35,11 +35,14 @@ pub(crate) const SEED: usize = 2 * DIGEST;
 pub(crate) const SIGNATURE: usize = SIG_ED25519 + SIG_MLDSA;
 pub(crate) const PUBKEY: usize = PUB_ED25519 + PUB_MLDSA;
 
+pub(crate) const INDEX: usize = 8;
+pub(crate) const TIME: usize = 8;
+
 /// Size of the ZebraChain payload (40 bytes).
-pub const PAYLOAD: usize = 8 + DIGEST;
+pub const PAYLOAD: usize = TIME + DIGEST;
 
 /// Size of the ZebraChain block (5533 bytes).
-pub const BLOCK: usize = (4 * DIGEST) + SIGNATURE + PUBKEY + PAYLOAD + 8;
+pub const BLOCK: usize = (4 * DIGEST) + SIGNATURE + PUBKEY + PAYLOAD + INDEX;
 
 pub(crate) const HASHABLE_RANGE: Range<usize> = DIGEST..BLOCK;
 pub(crate) const SIGNABLE_RANGE: Range<usize> = DIGEST + SIGNATURE..BLOCK;
@@ -51,7 +54,7 @@ const WIRE: [usize; 8] = [
     PUBKEY,    // ML-DSA + ed25519 public keys
     DIGEST,    // Hash of public key that will be used to sign next block
     PAYLOAD,   // Stuff to be signed
-    8,         // Block index
+    INDEX,     // Block index
     DIGEST,    // Chain hash (hash of first block in chain)
     DIGEST,    // Previous block hash
 ];
@@ -82,7 +85,7 @@ A SecretBlock currently has 6 fields:
                                               From the previous block
 */
 
-pub(crate) const SECRET_BLOCK: usize = 5 * DIGEST + PAYLOAD + 8;
+pub(crate) const SECRET_BLOCK: usize = 5 * DIGEST + PAYLOAD + INDEX;
 pub(crate) const SECRET_BLOCK_AEAD: usize = SECRET_BLOCK + 16;
 
 const SECWIRE: [usize; 6] = [
@@ -90,7 +93,7 @@ const SECWIRE: [usize; 6] = [
     DIGEST,  // Public block hash
     SEED,    // secret + next_secret
     PAYLOAD, // Stuff to be signed
-    8,       // Block index
+    INDEX,   // Block index
     DIGEST,  // Previous block hash
 ];
 

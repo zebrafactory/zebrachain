@@ -4,8 +4,8 @@ use crate::always::*;
 use blake3::Hash;
 use std::ops::Range;
 
-const TIME_RANGE: Range<usize> = 0..8;
-const STATE_HASH_RANGE: Range<usize> = 8..8 + DIGEST;
+const TIME_RANGE: Range<usize> = 0..TIME;
+const STATE_HASH_RANGE: Range<usize> = TIME..TIME + DIGEST;
 
 /// Content to be included in block and signed.
 #[derive(Debug, Clone, Copy, PartialEq)]

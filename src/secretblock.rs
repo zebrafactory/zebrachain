@@ -654,7 +654,7 @@ mod tests {
         let mut buf = vec![0; SECRET_BLOCK];
         let payload = random_payload();
         let mut block = MutSecretBlock::new(&mut buf, &payload);
-        assert_eq!(block.buf[SEC_INDEX_RANGE], [0; 8]);
+        assert_eq!(block.buf[SEC_INDEX_RANGE], [0; INDEX]);
         assert_eq!(block.buf[SEC_PREV_HASH_RANGE], [0; 32]);
         let prev = SecretBlockState {
             block_hash: random_hash(),

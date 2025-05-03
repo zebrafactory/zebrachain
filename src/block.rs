@@ -303,7 +303,7 @@ mod tests {
         buf[HASH_RANGE].copy_from_slice(&[1; DIGEST]);
         buf[NEXT_PUBKEY_HASH_RANGE].copy_from_slice(&[2; DIGEST]);
         buf[PAYLOAD_RANGE].copy_from_slice(&[3; PAYLOAD]);
-        buf[INDEX_RANGE].copy_from_slice(&[4; 8]);
+        buf[INDEX_RANGE].copy_from_slice(&[4; INDEX]);
         buf[CHAIN_HASH_RANGE].copy_from_slice(&[5; DIGEST]);
         buf[PREVIOUS_HASH_RANGE].copy_from_slice(&[6; DIGEST]);
 
@@ -349,10 +349,11 @@ mod tests {
         buf.extend_from_slice(&[3; PUBKEY]);
         buf.extend_from_slice(&[4; DIGEST]); // NEXT_PUBKEY_HASH
 
-        buf.extend_from_slice(&[5; 8]); // TIME
+        // Payload
+        buf.extend_from_slice(&[5; TIME]); // TIME
         buf.extend_from_slice(&[7; DIGEST]); // STATE_HASH
 
-        buf.extend_from_slice(&[8; 8]); // INDEX
+        buf.extend_from_slice(&[8; INDEX]); // INDEX
         buf.extend_from_slice(&[10; DIGEST]); // CHAIN_HASH
         buf.extend_from_slice(&[9; DIGEST]); // PREVIOUS_HASH
         buf
