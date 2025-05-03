@@ -153,6 +153,16 @@ pub(crate) fn set_u64(buf: &mut [u8], range: Range<usize>, value: u64) {
     buf[range].copy_from_slice(&value.to_le_bytes());
 }
 
+#[inline]
+pub(crate) fn get_u128(buf: &[u8], range: Range<usize>) -> u128 {
+    u128::from_le_bytes(buf[range].try_into().unwrap())
+}
+
+#[inline]
+pub(crate) fn set_u128(buf: &mut [u8], range: Range<usize>, value: u128) {
+    buf[range].copy_from_slice(&value.to_le_bytes());
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
