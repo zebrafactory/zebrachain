@@ -35,7 +35,7 @@ pub(crate) const SEED: usize = 2 * DIGEST;
 pub(crate) const SIGNATURE: usize = SIG_ED25519 + SIG_MLDSA;
 pub(crate) const PUBKEY: usize = PUB_ED25519 + PUB_MLDSA;
 
-pub(crate) const INDEX: usize = 8;
+pub(crate) const INDEX: usize = 16;
 pub(crate) const TIME: usize = 8;
 
 /// Size of the ZebraChain payload (40 bytes).

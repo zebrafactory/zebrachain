@@ -16,7 +16,7 @@ fn check_block_buf(buf: &[u8]) {
 #[derive(Clone, Debug, PartialEq)]
 pub struct BlockState {
     /// Block-wise position in chain, starting from zero.
-    pub index: u64,
+    pub index: u128,
 
     /// Hash of this block.
     pub block_hash: Hash,
@@ -37,7 +37,7 @@ pub struct BlockState {
 impl BlockState {
     /// Construct a new [BlockState].
     pub fn new(
-        index: u64,
+        index: u128,
         block_hash: Hash,
         chain_hash: Hash,
         previous_hash: Hash,
@@ -66,7 +66,7 @@ impl BlockState {
     // Warning: this does ZERO validation!
     fn from_buf(buf: &[u8]) -> Self {
         Self {
-            index: get_u64(buf, INDEX_RANGE),
+            index: get_u128(buf, INDEX_RANGE),
             block_hash: get_hash(buf, HASH_RANGE),
             chain_hash: get_hash(buf, CHAIN_HASH_RANGE),
             previous_hash: get_hash(buf, PREVIOUS_HASH_RANGE),
@@ -116,7 +116,7 @@ impl<'a> Block<'a> {
     pub fn from_hash_at_index(
         &self,
         block_hash: &Hash,
-        index: u64,
+        index: u128,
     ) -> Result<BlockState, BlockError> {
         let state = self.open()?;
         if block_hash != &state.block_hash {
@@ -214,7 +214,7 @@ impl<'a> MutBlock<'a> {
 
     /// Set index, chain_hash, and prev_hash based on [BlockState] `prev`.
     pub fn set_previous(&mut self, prev: &BlockState) {
-        set_u64(self.buf, INDEX_RANGE, prev.index + 1);
+        set_u128(self.buf, INDEX_RANGE, prev.index + 1);
         set_hash(self.buf, PREVIOUS_HASH_RANGE, &prev.block_hash);
         let chain_hash = prev.effective_chain_hash(); // Don't use prev.chain_hash !
         set_hash(self.buf, CHAIN_HASH_RANGE, &chain_hash);
@@ -264,7 +264,7 @@ mod tests {
     use crate::pksign::{SecretSigner, sign_block};
     use crate::secretseed::Seed;
     use crate::testhelpers::{
-        BitFlipper, HashBitFlipper, U64BitFlipper, random_hash, random_payload,
+        BitFlipper, HashBitFlipper, U128BitFlipper, random_hash, random_payload,
     };
     use getrandom;
 
@@ -507,7 +507,7 @@ mod tests {
             // Previous `BlockState.chain_hash` only gets checked in 3rd block and beyond:
             assert!(Block::new(&buf).from_previous(&bad_prev).is_ok());
         }
-        for bad_index in U64BitFlipper::new(0) {
+        for bad_index in U128BitFlipper::new(0) {
             let bad_prev = BlockState::new(
                 bad_index,
                 prev.block_hash,

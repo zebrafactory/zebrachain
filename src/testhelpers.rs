@@ -134,6 +134,38 @@ impl Iterator for U64BitFlipper {
     }
 }
 
+/// Iteration through all 1-bit flip permutations in a u128.
+#[derive(Debug)]
+pub struct U128BitFlipper {
+    orig: [u8; 16],
+    counter: usize,
+}
+
+impl U128BitFlipper {
+    /// Create a new [HashBitFlipper].
+    pub fn new(orig: u128) -> Self {
+        Self {
+            orig: orig.to_le_bytes(),
+            counter: 0,
+        }
+    }
+}
+
+impl Iterator for U128BitFlipper {
+    type Item = u128;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.counter < self.orig.len() * 8 {
+            let mut bad = self.orig;
+            flip_bit(&mut bad, self.counter);
+            self.counter += 1;
+            Some(u128::from_le_bytes(bad))
+        } else {
+            None
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

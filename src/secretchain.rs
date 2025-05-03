@@ -91,7 +91,7 @@ impl SecretChain {
     }
 
     /// Number of blocks in this secret chain.
-    pub fn count(&self) -> u64 {
+    pub fn count(&self) -> u128 {
         self.tail.index + 1
     }
 
@@ -140,14 +140,14 @@ impl IntoIterator for &SecretChain {
 pub struct SecretChainIter {
     file: BufReader<File>,
     secret: Hash,
-    count: u64,
+    count: u128,
     first_block_hash: Hash,
     tail: Option<SecretBlockState>,
     buf: Vec<u8>,
 }
 
 impl SecretChainIter {
-    fn new(file: File, secret: Hash, count: u64, first_block_hash: Hash) -> Self {
+    fn new(file: File, secret: Hash, count: u128, first_block_hash: Hash) -> Self {
         let file = BufReader::with_capacity(SECRET_BLOCK_AEAD_READ_BUF, file);
         Self {
             file,
@@ -159,7 +159,7 @@ impl SecretChainIter {
         }
     }
 
-    fn index(&self) -> u64 {
+    fn index(&self) -> u128 {
         if let Some(tail) = self.tail.as_ref() {
             tail.index + 1
         } else {

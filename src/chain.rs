@@ -31,12 +31,12 @@ pub struct CheckPoint {
     pub block_hash: Hash,
 
     /// Block-wise position in chain, starting from zero.
-    pub index: u64,
+    pub index: u128,
 }
 
 impl CheckPoint {
     /// Create a checkpoint.
-    pub fn new(chain_hash: Hash, block_hash: Hash, index: u64) -> Self {
+    pub fn new(chain_hash: Hash, block_hash: Hash, index: u128) -> Self {
         Self {
             chain_hash,
             block_hash,
@@ -47,6 +47,11 @@ impl CheckPoint {
     /// Build a checkpoint corresponding to the supplied [BlockState].
     pub fn from_block_state(state: &BlockState) -> Self {
         Self::new(state.chain_hash, state.block_hash, state.index)
+    }
+
+    /// Returns file seek offset for 64-bit file systems.
+    pub fn index_as_u64(&self) -> u64 {
+        self.index.try_into().unwrap()
     }
 }
 
@@ -90,7 +95,7 @@ fn validate_from_checkpoint(
     };
 
     // Read and validate checkpoint block
-    file.seek(SeekFrom::Start(checkpoint.index * BLOCK as u64))?;
+    file.seek(SeekFrom::Start(checkpoint.index_as_u64() * BLOCK as u64))?;
     let mut file = BufReader::with_capacity(BLOCK_READ_BUF, file);
     file.read_exact(&mut buf)?;
     let mut tail =
@@ -137,7 +142,7 @@ impl Chain {
     }
 
     /// Return the number of blocks in the chain.
-    pub fn count(&self) -> u64 {
+    pub fn count(&self) -> u128 {
         self.tail.index + 1
     }
 
@@ -212,13 +217,13 @@ impl IntoIterator for &Chain {
 pub struct ChainIter {
     file: BufReader<File>,
     chain_hash: Hash,
-    count: u64,
+    count: u128,
     tail: Option<BlockState>,
     buf: [u8; BLOCK],
 }
 
 impl ChainIter {
-    fn new(file: File, chain_hash: Hash, count: u64) -> Self {
+    fn new(file: File, chain_hash: Hash, count: u128) -> Self {
         let file = BufReader::with_capacity(BLOCK_READ_BUF, file);
         Self {
             file,
@@ -229,7 +234,7 @@ impl ChainIter {
         }
     }
 
-    fn index(&self) -> u64 {
+    fn index(&self) -> u128 {
         if let Some(tail) = self.tail.as_ref() {
             tail.index + 1
         } else {
