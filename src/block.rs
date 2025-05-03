@@ -6,16 +6,13 @@ use crate::payload::Payload;
 use crate::pksign::verify_block_signature;
 use blake3::{Hash, hash};
 
-const ZERO_HASH: Hash = Hash::from_bytes([0; DIGEST]);
+//const ZERO_HASH: Hash = Hash::from_bytes([0; DIGEST]);
 
 fn check_block_buf(buf: &[u8]) {
     if buf.len() != BLOCK {
         panic!("Need a {BLOCK} byte slice; got {} bytes", buf.len());
     }
 }
-
-/// Alias for `Result<Block<'a>, BlockError>`.
-pub type BlockResult<'a> = Result<Block<'a>, BlockError>;
 
 /// Contains state from current block needed to validate next block, plus the payload.
 #[derive(Clone, Debug, PartialEq)]
@@ -85,14 +82,13 @@ impl BlockState {
 #[derive(Debug, PartialEq)]
 pub struct Block<'a> {
     buf: &'a [u8],
-    state: BlockState,
 }
 
 impl<'a> Block<'a> {
-    fn new(buf: &'a [u8]) -> Self {
+    /// FIXME
+    pub fn new(buf: &'a [u8]) -> Self {
         check_block_buf(buf);
-        let state = BlockState::from_buf(buf);
-        Self { buf, state }
+        Self { buf }
     }
 
     /// Underlying buffer as read-only bytes.
@@ -102,16 +98,16 @@ impl<'a> Block<'a> {
 
     // Warning: This only performs internal validation on the block!
     // It does not validate relative to the chain!
-    fn open(buf: &'a [u8]) -> BlockResult<'a> {
-        let block = Block::new(buf);
-        if !block.content_is_valid() {
+    fn open(&self) -> Result<BlockState, BlockError> {
+        let state = BlockState::from_buf(self.buf);
+        if self.compute_hash() != state.block_hash {
             Err(BlockError::Content)
-        } else if !block.signature_is_valid() {
+        } else if !self.signature_is_valid() {
             Err(BlockError::Signature)
-        } else if !block.first_block_is_valid() {
-            Err(BlockError::FirstBlock)
+        //} else if !self.first_block_is_valid() {
+        //    Err(BlockError::FirstBlock)
         } else {
-            Ok(block)
+            Ok(state)
         }
     }
 
@@ -119,14 +115,18 @@ impl<'a> Block<'a> {
     ///
     /// This is used when loading the first block (`index=0`), or when resuming from a
     /// [CheckPoint][crate::chain::CheckPoint].
-    pub fn from_hash_at_index(buf: &'a [u8], block_hash: &Hash, index: u64) -> BlockResult<'a> {
-        let block = Block::open(buf)?;
-        if block_hash != &block.state.block_hash {
+    pub fn from_hash_at_index(
+        &self,
+        block_hash: &Hash,
+        index: u64,
+    ) -> Result<BlockState, BlockError> {
+        let state = self.open()?;
+        if block_hash != &state.block_hash {
             Err(BlockError::Hash)
-        } else if index != block.state.index {
+        } else if index != state.index {
             Err(BlockError::Index)
         } else {
-            Ok(block)
+            Ok(state)
         }
     }
 
@@ -134,24 +134,19 @@ impl<'a> Block<'a> {
     ///
     /// This is done when walking the chain for verification (blocks after the first block, or,
     /// when resuming from a checkpoint, blocks after that checkpoint block).
-    pub fn from_previous(buf: &'a [u8], prev: &BlockState) -> BlockResult<'a> {
-        let block = Block::open(buf)?;
-        if block.compute_pubkey_hash() != prev.next_pubkey_hash {
+    pub fn from_previous(&self, prev: &BlockState) -> Result<BlockState, BlockError> {
+        let state = self.open()?;
+        if self.compute_pubkey_hash() != prev.next_pubkey_hash {
             Err(BlockError::PubKeyHash)
-        } else if block.state.index != prev.index + 1 {
+        } else if state.index != prev.index + 1 {
             Err(BlockError::Index)
-        } else if block.state.previous_hash != prev.block_hash {
+        } else if state.previous_hash != prev.block_hash {
             Err(BlockError::PreviousHash)
-        } else if block.state.chain_hash != prev.effective_chain_hash() {
+        } else if state.chain_hash != prev.effective_chain_hash() {
             Err(BlockError::ChainHash)
         } else {
-            Ok(block)
+            Ok(state)
         }
-    }
-
-    /// Return [BlockState] extracted from this block.
-    pub fn state(&self) -> BlockState {
-        self.state.clone()
     }
 
     fn as_hashable(&self) -> &[u8] {
@@ -186,14 +181,10 @@ impl<'a> Block<'a> {
         hash(self.as_pubkey())
     }
 
-    fn content_is_valid(&self) -> bool {
-        self.compute_hash() == self.state.block_hash
-    }
-
     fn signature_is_valid(&self) -> bool {
         verify_block_signature(self)
     }
-
+    /*
     fn first_block_is_valid(&self) -> bool {
         if self.state.index == 0 {
             self.state.chain_hash == ZERO_HASH && self.state.previous_hash == ZERO_HASH
@@ -201,6 +192,7 @@ impl<'a> Block<'a> {
             true
         }
     }
+    */
 }
 
 /// Build a new [Block] in a buffer.
@@ -273,7 +265,9 @@ mod tests {
     use super::*;
     use crate::pksign::{SecretSigner, sign_block};
     use crate::secretseed::Seed;
-    use crate::testhelpers::{BitFlipper, HashBitFlipper, random_hash, random_payload};
+    use crate::testhelpers::{
+        BitFlipper, HashBitFlipper, U64BitFlipper, random_hash, random_payload,
+    };
     use getrandom;
 
     const HEX0: &str = "885b6784a7cc0ab9703bfd885cf3c54d20e9a844357813814dae304ea83822aa";
@@ -368,64 +362,51 @@ mod tests {
 
     #[test]
     fn test_block_new() {
-        let buf: Vec<u8> = vec![0; BLOCK];
-        let _block = Block::new(&buf[..]);
+        let buf: Vec<u8> = vec![69; BLOCK];
+        let block = Block::new(&buf);
+        assert_eq!(block.buf, vec![69; BLOCK]);
     }
 
     #[test]
     #[should_panic(expected = "Need a 5533 byte slice; got 5532 bytes")]
     fn test_block_new_short_panic() {
         let buf: Vec<u8> = vec![0; BLOCK - 1];
-        let _block = Block::new(&buf[..]);
+        let _block = Block::new(&buf);
     }
 
     #[test]
     #[should_panic(expected = "Need a 5533 byte slice; got 5534 bytes")]
     fn test_block_new_long_panic() {
         let buf: Vec<u8> = vec![0; BLOCK + 1];
-        let _block = Block::new(&buf[..]);
-    }
-
-    #[test]
-    #[should_panic(expected = "Need a 5533 byte slice; got 5532 bytes")]
-    fn test_block_open_short_panic() {
-        let buf: Vec<u8> = vec![0; BLOCK - 1];
-        let _block = Block::open(&buf[..]);
-    }
-
-    #[test]
-    #[should_panic(expected = "Need a 5533 byte slice; got 5534 bytes")]
-    fn test_block_open_long_panic() {
-        let buf: Vec<u8> = vec![0; BLOCK + 1];
-        let _block = Block::open(&buf[..]);
+        let _block = Block::new(&buf);
     }
 
     #[test]
     fn test_block_open() {
         let buf = new_valid_block();
-        assert!(Block::open(&buf[..]).is_ok());
-        for bad in BitFlipper::new(&buf[..]) {
-            assert_eq!(Block::open(&bad[..]), Err(BlockError::Content));
+        assert!(Block::new(&buf).open().is_ok());
+        for bad in BitFlipper::new(&buf) {
+            assert_eq!(Block::new(&bad[..]).open(), Err(BlockError::Content));
         }
         let mut bad = vec![0; BLOCK];
         for end in BitFlipper::new(&buf[HASHABLE_RANGE]) {
             let h = hash(&end[..]);
             bad[HASH_RANGE].copy_from_slice(h.as_bytes());
             bad[HASHABLE_RANGE].copy_from_slice(&end[..]);
-            assert_eq!(Block::open(&bad[..]), Err(BlockError::Signature));
+            assert_eq!(Block::new(&bad[..]).open(), Err(BlockError::Signature));
         }
     }
 
     #[test]
     fn test_block_from_hash_at_index() {
         let buf = new_valid_block();
-        let good = Block::open(&buf[..]).unwrap().state.block_hash;
-        assert!(Block::from_hash_at_index(&buf[..], &good, 1).is_ok());
+        let good = Block::new(&buf).open().unwrap().block_hash;
+        assert!(Block::new(&buf).from_hash_at_index(&good, 1).is_ok());
 
         // Make sure Block::open() is getting called
-        for bad in BitFlipper::new(&buf[..]) {
+        for bad in BitFlipper::new(&buf) {
             assert_eq!(
-                Block::from_hash_at_index(&bad[..], &good, 0),
+                Block::new(&bad[..]).from_hash_at_index(&good, 0),
                 Err(BlockError::Content)
             );
         }
@@ -434,7 +415,7 @@ mod tests {
             badbuf[0..DIGEST].copy_from_slice(hash(&badend).as_bytes());
             badbuf[DIGEST..].copy_from_slice(&badend);
             assert_eq!(
-                Block::from_hash_at_index(&badbuf, &good, 0),
+                Block::new(&badbuf).from_hash_at_index(&good, 0),
                 Err(BlockError::Signature)
             );
         }
@@ -442,7 +423,7 @@ mod tests {
         // Block::from_hash_at_index() specific error
         for bad in HashBitFlipper::new(&good) {
             assert_eq!(
-                Block::from_hash_at_index(&buf[..], &bad, 0),
+                Block::new(&buf).from_hash_at_index(&bad, 0),
                 Err(BlockError::Hash)
             );
         }
@@ -451,87 +432,93 @@ mod tests {
     #[test]
     fn test_block_from_previous() {
         let buf = new_valid_block();
-        let block = Block::open(&buf[..]).unwrap();
-        let state = block.state(); // Cannot append from self
-        assert!(Block::from_previous(&buf[..], &state).is_err());
-        let p = BlockState::new(
+        let block = Block::new(&buf);
+        let pubkey_hash = block.compute_pubkey_hash();
+        let state = block.open().unwrap();
+
+        // Cannot append from the current block
+        assert!(Block::new(&buf).from_previous(&state).is_err());
+
+        let prev = BlockState::new(
             // Previous block state
             0,
-            block.state.previous_hash,
+            state.previous_hash,
             ZERO_HASH,
             ZERO_HASH,
-            block.compute_pubkey_hash(),
-            block.state.payload,
+            pubkey_hash,
+            state.payload,
         );
-        assert!(Block::from_previous(&buf[..], &p).is_ok());
+        assert!(Block::new(&buf).from_previous(&prev).is_ok());
 
         // Make sure Block::open() is getting called
-        for bad in BitFlipper::new(&buf[..]) {
-            assert_eq!(Block::from_previous(&bad[..], &p), Err(BlockError::Content));
+        for bad in BitFlipper::new(&buf) {
+            assert_eq!(
+                Block::new(&bad[..]).from_previous(&prev),
+                Err(BlockError::Content)
+            );
         }
         for badend in BitFlipper::new(&buf[DIGEST..]) {
             let mut badbuf = [0; BLOCK];
             badbuf[0..DIGEST].copy_from_slice(hash(&badend).as_bytes());
             badbuf[DIGEST..].copy_from_slice(&badend);
             assert_eq!(
-                Block::from_previous(&badbuf, &p),
+                Block::new(&badbuf).from_previous(&prev),
                 Err(BlockError::Signature)
             );
         }
 
         // Block::from_previous() specific errors
-        for bad in HashBitFlipper::new(&p.next_pubkey_hash) {
-            let prev = BlockState::new(
+        for bad_next_pubkey_hash in HashBitFlipper::new(&prev.next_pubkey_hash) {
+            let bad_prev = BlockState::new(
                 0,
-                p.block_hash,
-                p.chain_hash,
-                p.previous_hash,
-                bad,
-                p.payload,
+                prev.block_hash,
+                prev.chain_hash,
+                prev.previous_hash,
+                bad_next_pubkey_hash,
+                prev.payload,
             );
             assert_eq!(
-                Block::from_previous(&buf[..], &prev),
+                Block::new(&buf).from_previous(&bad_prev),
                 Err(BlockError::PubKeyHash)
             );
         }
-        for bad in HashBitFlipper::new(&p.block_hash) {
-            let prev = BlockState::new(
+        for bad_block_hash in HashBitFlipper::new(&prev.block_hash) {
+            let bad_prev = BlockState::new(
                 0,
-                bad,
-                p.chain_hash,
-                p.previous_hash,
-                p.next_pubkey_hash,
-                p.payload,
+                bad_block_hash,
+                prev.chain_hash,
+                prev.previous_hash,
+                prev.next_pubkey_hash,
+                prev.payload,
             );
             assert_eq!(
-                Block::from_previous(&buf[..], &prev),
+                Block::new(&buf).from_previous(&bad_prev),
                 Err(BlockError::PreviousHash)
             );
         }
-        for bad in HashBitFlipper::new(&p.chain_hash) {
-            let prev = BlockState::new(
+        for bad_chain_hash in HashBitFlipper::new(&prev.chain_hash) {
+            let bad_prev = BlockState::new(
                 0,
-                p.block_hash,
-                bad,
-                p.previous_hash,
-                p.next_pubkey_hash,
-                p.payload,
+                prev.block_hash,
+                bad_chain_hash,
+                prev.previous_hash,
+                prev.next_pubkey_hash,
+                prev.payload,
             );
             // Previous `BlockState.chain_hash` only gets checked in 3rd block and beyond:
-            assert!(Block::from_previous(&buf[..], &prev).is_ok());
+            assert!(Block::new(&buf).from_previous(&bad_prev).is_ok());
         }
-        for bad in BitFlipper::new(&[0; 8]) {
-            let bad_index = u64::from_le_bytes(bad.try_into().unwrap());
-            let last = BlockState::new(
+        for bad_index in U64BitFlipper::new(0) {
+            let bad_prev = BlockState::new(
                 bad_index,
-                p.block_hash,
-                p.chain_hash,
-                p.previous_hash,
-                p.next_pubkey_hash,
-                p.payload,
+                prev.block_hash,
+                prev.chain_hash,
+                prev.previous_hash,
+                prev.next_pubkey_hash,
+                prev.payload,
             );
             assert_eq!(
-                Block::from_previous(&buf[..], &last),
+                Block::new(&buf).from_previous(&bad_prev),
                 Err(BlockError::Index)
             );
         }
@@ -542,41 +529,39 @@ mod tests {
         let mut buf = [0; BLOCK];
         let seed = Seed::auto_create().unwrap();
         let chain_hash = sign_block(&mut buf, &seed, &random_payload(), None);
-        let tail = Block::from_hash_at_index(&buf, &chain_hash, 0)
-            .unwrap()
-            .state();
+        let tail = Block::new(&buf).from_hash_at_index(&chain_hash, 0).unwrap();
 
         let seed = seed.auto_advance().unwrap();
         sign_block(&mut buf, &seed, &random_payload(), Some(&tail));
-        for bad in HashBitFlipper::new(&chain_hash) {
-            let prev = BlockState::new(
+        for bad_chain_hash in HashBitFlipper::new(&chain_hash) {
+            let bad_prev = BlockState::new(
                 0,
                 tail.block_hash,
-                bad,
+                bad_chain_hash,
                 tail.previous_hash,
                 tail.next_pubkey_hash,
                 tail.payload,
             );
             // Previous `BlockState.chain_hash` only gets checked in 3rd block and beyond:
-            assert!(Block::from_previous(&buf[..], &prev).is_ok());
+            assert!(Block::new(&buf).from_previous(&bad_prev).is_ok());
         }
-        let tail = Block::from_previous(&buf, &tail).unwrap().state();
+        let tail = Block::new(&buf).from_previous(&tail).unwrap();
 
         // Sign 3rd block
         let seed = seed.auto_advance().unwrap();
         sign_block(&mut buf, &seed, &random_payload(), Some(&tail));
-        assert!(Block::from_previous(&buf, &tail).is_ok());
-        for bad in HashBitFlipper::new(&chain_hash) {
-            let prev = BlockState::new(
+        assert!(Block::new(&buf).from_previous(&tail).is_ok());
+        for bad_chain_hash in HashBitFlipper::new(&chain_hash) {
+            let bad_prev = BlockState::new(
                 1,
                 tail.block_hash,
-                bad,
+                bad_chain_hash,
                 tail.previous_hash,
                 tail.next_pubkey_hash,
                 tail.payload,
             );
             assert_eq!(
-                Block::from_previous(&buf[..], &prev),
+                Block::new(&buf).from_previous(&bad_prev),
                 Err(BlockError::ChainHash)
             );
         }
@@ -585,94 +570,45 @@ mod tests {
     #[test]
     fn test_block_as_fns() {
         let buf = new_dummy_block();
-        let block = Block::new(&buf[..]);
+        let block = Block::new(&buf);
         assert_eq!(block.as_signature(), [2; SIGNATURE]);
         assert_eq!(block.as_pubkey(), [3; PUBKEY]);
     }
 
     #[test]
-    fn test_block_hash_accessors() {
-        let buf = new_dummy_block();
-        let block = Block::new(&buf[..]);
-        assert_eq!(block.state.block_hash, Hash::from_bytes([1; DIGEST]));
-        assert_eq!(block.state.next_pubkey_hash, Hash::from_bytes([4; DIGEST]));
-
-        assert_eq!(block.state.payload.time, 361700864190383365);
-        assert_eq!(
-            block.state.payload.state_hash,
-            Hash::from_bytes([7; DIGEST])
-        );
-
-        assert_eq!(block.state.index, 578721382704613384);
-        assert_eq!(block.state.previous_hash, Hash::from_bytes([9; DIGEST]));
-        assert_eq!(block.state.chain_hash, Hash::from_bytes([10; DIGEST]));
-    }
-
-    #[test]
     fn test_block_as_hashable() {
         let buf = new_dummy_block();
-        let block = Block::new(&buf[..]);
+        let block = Block::new(&buf);
         assert_eq!(block.as_hashable(), &buf[DIGEST..]);
     }
 
     #[test]
     fn block_as_signable() {
         let buf = new_dummy_block();
-        let block = Block::new(&buf[..]);
+        let block = Block::new(&buf);
         assert_eq!(block.as_signable(), &buf[DIGEST + SIGNATURE..]);
     }
 
     #[test]
     fn test_block_compute_hash() {
         let buf = new_dummy_block();
-        let block = Block::new(&buf[..]);
+        let block = Block::new(&buf);
         let hash = block.compute_hash();
         assert_eq!(hash, new_expected());
     }
 
     #[test]
-    fn test_block_content_is_valid() {
-        let good = new_valid_block();
-        let block = Block::new(&good[..]);
-        assert!(block.content_is_valid());
-        for bad in BitFlipper::new(&good[..]) {
-            let block = Block::new(&bad[..]);
-            assert!(!block.content_is_valid());
-        }
-    }
-
-    #[test]
     fn test_block_signature_is_valid() {
         let good = new_valid_block();
-        let block = Block::new(&good[..]);
+        let block = Block::new(&good);
         assert!(block.signature_is_valid());
-        for bad in BitFlipper::new(&good[..]) {
-            let block = Block::new(&bad[..]);
+        for bad in BitFlipper::new(&good) {
+            let block = Block::new(&bad);
             if bad[HASH_RANGE] == good[HASH_RANGE] {
                 assert!(!block.signature_is_valid());
             } else {
                 assert!(block.signature_is_valid());
-                assert!(!block.content_is_valid());
             }
-        }
-    }
-
-    #[test]
-    fn test_block_first_block_is_valid() {
-        let buf = [0; BLOCK];
-        assert!(Block::new(&buf).first_block_is_valid());
-        for bad_hash in HashBitFlipper::new(&ZERO_HASH) {
-            let mut bad = buf.clone();
-            bad[CHAIN_HASH_RANGE].copy_from_slice(bad_hash.as_bytes());
-            assert!(!Block::new(&bad).first_block_is_valid());
-            bad[INDEX_RANGE].copy_from_slice(&1u64.to_le_bytes());
-            assert!(Block::new(&bad).first_block_is_valid());
-
-            let mut bad = buf.clone();
-            bad[PREVIOUS_HASH_RANGE].copy_from_slice(bad_hash.as_bytes());
-            assert!(!Block::new(&bad).first_block_is_valid());
-            bad[INDEX_RANGE].copy_from_slice(&1u64.to_le_bytes());
-            assert!(Block::new(&bad).first_block_is_valid());
         }
     }
 

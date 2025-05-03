@@ -86,7 +86,7 @@ mod secretseed;
 pub mod testhelpers;
 
 pub use always::{BLOCK, DIGEST, PAYLOAD};
-pub use block::{Block, BlockResult, BlockState, MutBlock};
+pub use block::{Block, BlockState, MutBlock};
 pub use chain::{Chain, ChainIter, ChainStore, CheckPoint};
 pub use errors::{BlockError, SecretBlockError};
 pub use ownedblock::{MutOwnedBlock, OwnedBlockState, sign};

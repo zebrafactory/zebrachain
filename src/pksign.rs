@@ -270,9 +270,7 @@ mod tests {
         assert_eq!(&buf[BLOCK - DIGEST * 2..], &[0; DIGEST * 2]);
 
         // Sign 2nd block
-        let tail = Block::from_hash_at_index(&buf, &chain_hash, 0)
-            .unwrap()
-            .state();
+        let tail = Block::new(&buf).from_hash_at_index(&chain_hash, 0).unwrap();
         buf.fill(69);
         let seed = seed.auto_advance().unwrap();
         let payload = random_payload();
@@ -288,9 +286,7 @@ mod tests {
         );
 
         // Sign 3rd block
-        let tail2 = Block::from_hash_at_index(&buf, &block_hash, 1)
-            .unwrap()
-            .state();
+        let tail2 = Block::new(&buf).from_hash_at_index(&block_hash, 1).unwrap();
         buf.fill(69);
         let seed = seed.auto_advance().unwrap();
         let payload = random_payload();
@@ -315,9 +311,7 @@ mod tests {
         let chain_hash = sign_block(&mut buf, &seed, &payload, None);
 
         // Sign 2nd block, but double advance the seed:
-        let tail = Block::from_hash_at_index(&buf, &chain_hash, 0)
-            .unwrap()
-            .state();
+        let tail = Block::new(&buf).from_hash_at_index(&chain_hash, 0).unwrap();
         let seed = seed.auto_advance().unwrap().auto_advance().unwrap();
         let payload = random_payload();
         let _block_hash = sign_block(&mut buf, &seed, &payload, Some(&tail));

@@ -58,16 +58,16 @@ fn validate_chain(file: File, chain_hash: &Hash) -> io::Result<(File, BlockState
     file.rewind()?;
     file.read_exact(&mut buf)?;
     // FIXME: Add test for when first block has index != 0
-    let head = match Block::from_hash_at_index(&buf, chain_hash, 0) {
-        Ok(block) => block.state(),
+    let head = match Block::new(&buf).from_hash_at_index(chain_hash, 0) {
+        Ok(state) => state,
         Err(err) => return Err(err.to_io_error()),
     };
 
     // Read and validate all remaining blocks till the end of the chain
     let mut tail = head.clone();
     while file.read_exact(&mut buf).is_ok() {
-        tail = match Block::from_previous(&buf, &tail) {
-            Ok(block) => block.state(),
+        tail = match Block::new(&buf).from_previous(&tail) {
+            Ok(state) => state,
             Err(err) => return Err(err.to_io_error()),
         };
     }
@@ -84,8 +84,8 @@ fn validate_from_checkpoint(
     // Read and validate first block
     file.rewind()?;
     file.read_exact(&mut buf)?;
-    let head = match Block::from_hash_at_index(&buf, &checkpoint.chain_hash, 0) {
-        Ok(block) => block.state(),
+    let head = match Block::new(&buf).from_hash_at_index(&checkpoint.chain_hash, 0) {
+        Ok(state) => state,
         Err(err) => return Err(err.to_io_error()),
     };
 
@@ -93,15 +93,16 @@ fn validate_from_checkpoint(
     file.seek(SeekFrom::Start(checkpoint.index * BLOCK as u64))?;
     let mut file = BufReader::with_capacity(BLOCK_READ_BUF, file);
     file.read_exact(&mut buf)?;
-    let mut tail = match Block::from_hash_at_index(&buf, &checkpoint.block_hash, checkpoint.index) {
-        Ok(block) => block.state(),
-        Err(err) => return Err(err.to_io_error()),
-    };
+    let mut tail =
+        match Block::new(&buf).from_hash_at_index(&checkpoint.block_hash, checkpoint.index) {
+            Ok(state) => state,
+            Err(err) => return Err(err.to_io_error()),
+        };
 
     // Read and validate any remaining blocks till the end of the chain
     while file.read_exact(&mut buf).is_ok() {
-        tail = match Block::from_previous(&buf, &tail) {
-            Ok(block) => block.state(),
+        tail = match Block::new(&buf).from_previous(&tail) {
+            Ok(state) => state,
             Err(err) => return Err(err.to_io_error()),
         };
     }
@@ -142,13 +143,13 @@ impl Chain {
 
     /// Create a new Chain file.
     pub fn create(mut file: File, buf: &[u8], chain_hash: &Hash) -> io::Result<Self> {
-        match Block::from_hash_at_index(buf, chain_hash, 0) {
-            Ok(block) => {
+        match Block::new(buf).from_hash_at_index(chain_hash, 0) {
+            Ok(state) => {
                 file.write_all(buf)?;
                 Ok(Self {
                     file,
-                    head: block.state(),
-                    tail: block.state(),
+                    head: state.clone(),
+                    tail: state,
                 })
             }
             Err(err) => Err(err.to_io_error()),
@@ -173,10 +174,10 @@ impl Chain {
 
     /// Validate block in buffer and append to chain if valid.
     pub fn append(&mut self, buf: &[u8]) -> io::Result<&BlockState> {
-        match Block::from_previous(buf, &self.tail) {
-            Ok(block) => {
+        match Block::new(buf).from_previous(&self.tail) {
+            Ok(state) => {
                 self.file.write_all(buf)?;
-                self.tail = block.state();
+                self.tail = state;
                 Ok(&self.tail)
             }
             Err(err) => Err(err.to_io_error()),
@@ -241,15 +242,16 @@ impl ChainIter {
             self.file.rewind()?;
         }
         self.file.read_exact(&mut self.buf)?;
+        let block = Block::new(&self.buf);
         let blockresult = if let Some(tail) = self.tail.as_ref() {
-            Block::from_previous(&self.buf, tail)
+            block.from_previous(tail)
         } else {
-            Block::from_hash_at_index(&self.buf, &self.chain_hash, 0)
+            block.from_hash_at_index(&self.chain_hash, 0)
         };
         match blockresult {
-            Ok(block) => {
-                self.tail = Some(block.state());
-                Ok(block.state())
+            Ok(state) => {
+                self.tail = Some(state.clone());
+                Ok(state)
             }
             Err(err) => Err(err.to_io_error()),
         }
@@ -339,19 +341,23 @@ mod tests {
         let payload1 = random_payload();
         let chain_hash = sign_block(&mut buf1, &seed, &payload1, None);
         let buf1 = buf1; // Doesn't need to be mutable anymore
-        let block1 = Block::from_hash_at_index(&buf1, &chain_hash, 0).unwrap();
+        let state1 = Block::new(&buf1)
+            .from_hash_at_index(&chain_hash, 0)
+            .unwrap();
 
         // Write to file, test with a single block
         file.write_all(&buf1).unwrap();
         let (file, head, tail) = validate_chain(file, &chain_hash).unwrap();
-        assert_eq!(head, block1.state());
+        assert_eq!(head, state1);
         assert_eq!(tail, head);
+        assert_eq!(head.index, 0);
         assert_eq!(tail.index, 0);
 
         // Open a 2nd time, should work the same (file.rewind() should be called):
         let (mut file, head, tail) = validate_chain(file, &chain_hash).unwrap();
-        assert_eq!(head, block1.state());
+        assert_eq!(head, state1);
         assert_eq!(tail, head);
+        assert_eq!(head.index, 0);
         assert_eq!(tail.index, 0);
 
         // Generate a 2nd block
@@ -361,13 +367,14 @@ mod tests {
         let _block_hash = sign_block(&mut buf2, &next, &payload2, Some(&tail));
         seed.commit(next);
         let buf2 = buf2; // Doesn't need to be mutable anymore
-        let block2 = Block::from_previous(&buf2, &tail).unwrap();
+        let state2 = Block::new(&buf2).from_previous(&tail).unwrap();
 
         // Write to file, test with 2 blocks
         file.write_all(&buf2).unwrap();
         let (mut file, head, tail) = validate_chain(file, &chain_hash).unwrap();
-        assert_eq!(head, block1.state());
-        assert_eq!(tail, block2.state());
+        assert_eq!(head, state1);
+        assert_eq!(tail, state2);
+        assert_eq!(head.index, 0);
         assert_eq!(tail.index, 1);
 
         let mut good = Vec::with_capacity(BLOCK * 2);
@@ -377,8 +384,8 @@ mod tests {
         file.set_len(0).unwrap();
         file.write_all(&good).unwrap();
         let (_, head, tail) = validate_chain(file.try_clone().unwrap(), &chain_hash).unwrap();
-        assert_eq!(head, block1.state());
-        assert_eq!(tail, block2.state());
+        assert_eq!(head, state1);
+        assert_eq!(tail, state2);
         assert_eq!(tail.index, 1);
 
         for bad in BitFlipper::new(&good) {
@@ -392,8 +399,8 @@ mod tests {
         file.set_len(0).unwrap();
         file.write_all(&good).unwrap();
         let (_, head, tail) = validate_chain(file.try_clone().unwrap(), &chain_hash).unwrap();
-        assert_eq!(head, block1.state());
-        assert_eq!(tail, block2.state());
+        assert_eq!(head, state1);
+        assert_eq!(tail, state2);
         assert_eq!(tail.index, 1);
         // FIXME: We aren't currently handling truncation
         let length = (BLOCK * 2) as u64;

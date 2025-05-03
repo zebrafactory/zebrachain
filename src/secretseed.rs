@@ -89,8 +89,7 @@ impl Seed {
         assert_eq!(buf.len(), SEED);
         let secret = get_hash(buf, SECRET_RANGE);
         let next_secret = get_hash(buf, NEXT_SECRET_RANGE);
-        let zero_hash = Hash::from_bytes([0; DIGEST]);
-        if secret == zero_hash || next_secret == zero_hash || secret == next_secret {
+        if secret == ZERO_HASH || next_secret == ZERO_HASH || secret == next_secret {
             Err(SecretBlockError::Seed)
         } else {
             Ok(Self {

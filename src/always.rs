@@ -128,6 +128,8 @@ pub static CONTEXT_STORE_KEY: &str =
 pub static CONTEXT_STORE_NONCE: &str =
     "dc49809016fca0a126c5df6d373e90c48683e664ecba0440ae59523d93e13515";
 
+pub(crate) const ZERO_HASH: Hash = Hash::from_bytes([0; DIGEST]);
+
 #[inline]
 pub(crate) fn get_hash(buf: &[u8], range: Range<usize>) -> Hash {
     Hash::from_bytes(buf[range].try_into().unwrap())

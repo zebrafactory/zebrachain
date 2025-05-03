@@ -140,7 +140,7 @@ mod tests {
             &payload,
             None,
         );
-        assert!(Block::from_hash_at_index(&buf, &block_hash, 0).is_ok());
+        assert!(Block::new(&buf).from_hash_at_index(&block_hash, 0).is_ok());
         assert_eq!(
             pksign::sign_block(&mut buf, &seed, &payload, None),
             block_hash
