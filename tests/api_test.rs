@@ -69,7 +69,7 @@ fn sample_payload(index: u64) -> Payload {
     h.update(b"This will be our test payload generator with random access");
     h.update(&index.to_le_bytes());
     let root = h.finalize();
-    let time = u64::from_le_bytes(root.as_bytes()[0..8].try_into().unwrap());
+    let time = u128::from_le_bytes(root.as_bytes()[0..8].try_into().unwrap());
     let state_hash = hash(root.as_bytes());
     Payload::new(time, state_hash)
 }

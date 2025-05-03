@@ -11,6 +11,13 @@ pub fn random_u64() -> u64 {
     u64::from_le_bytes(buf)
 }
 
+/// Returns a random u128 created with [getradom::fill()].
+pub fn random_u128() -> u128 {
+    let mut buf = [0; 16];
+    getrandom::fill(&mut buf).unwrap();
+    u128::from_le_bytes(buf)
+}
+
 /// Returns a random [blake3::Hash] created with [getradom::fill()].
 pub fn random_hash() -> Hash {
     let mut buf = [0; 32];
@@ -20,7 +27,7 @@ pub fn random_hash() -> Hash {
 
 /// Returns a random [Payload].
 pub fn random_payload() -> Payload {
-    Payload::new(random_u64(), random_hash())
+    Payload::new(random_u128(), random_hash())
 }
 
 /// Returns a vec of random payloads.
