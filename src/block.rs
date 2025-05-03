@@ -268,8 +268,8 @@ mod tests {
     };
     use getrandom;
 
-    const HEX0: &str = "885b6784a7cc0ab9703bfd885cf3c54d20e9a844357813814dae304ea83822aa";
-    const HEX1: &str = "50997820b97129d2f50964e3438b2232a9ffe61050c9d32537cc1b863083961b";
+    const HEX0: &str = "c06e7c60026df46663957f872a62d020f01300fd50349f7f793cf15c66c52408";
+    const HEX1: &str = "aea21bb37d3294bce4406d86b7b5211145ca8ea30ae3d5965bd3fad5b4838037";
 
     #[test]
     fn test_blockerror_to_io_error() {
@@ -308,7 +308,7 @@ mod tests {
         buf[PREVIOUS_HASH_RANGE].copy_from_slice(&[6; DIGEST]);
 
         let expected = BlockState {
-            index: 289360691352306692,
+            index: 5337762618367662171974503645988520964,
             block_hash: Hash::from_bytes([1; DIGEST]),
             chain_hash: Hash::from_bytes([5; DIGEST]),
             previous_hash: Hash::from_bytes([6; DIGEST]),
@@ -367,14 +367,14 @@ mod tests {
     }
 
     #[test]
-    #[should_panic(expected = "Need a 5533 byte slice; got 5532 bytes")]
+    #[should_panic(expected = "Need a 5541 byte slice; got 5540 bytes")]
     fn test_block_new_short_panic() {
         let buf: Vec<u8> = vec![0; BLOCK - 1];
         let _block = Block::new(&buf);
     }
 
     #[test]
-    #[should_panic(expected = "Need a 5533 byte slice; got 5534 bytes")]
+    #[should_panic(expected = "Need a 5541 byte slice; got 5542 bytes")]
     fn test_block_new_long_panic() {
         let buf: Vec<u8> = vec![0; BLOCK + 1];
         let _block = Block::new(&buf);

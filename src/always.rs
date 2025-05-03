@@ -41,7 +41,7 @@ pub(crate) const TIME: usize = 8;
 /// Size of the ZebraChain payload (40 bytes).
 pub const PAYLOAD: usize = TIME + DIGEST;
 
-/// Size of the ZebraChain block (5533 bytes).
+/// Size of the ZebraChain block (5541 bytes).
 pub const BLOCK: usize = (4 * DIGEST) + SIGNATURE + PUBKEY + PAYLOAD + INDEX;
 
 pub(crate) const HASHABLE_RANGE: Range<usize> = DIGEST..BLOCK;
@@ -169,9 +169,9 @@ mod tests {
 
     #[test]
     fn test_ranges() {
-        assert_eq!(HASHABLE_RANGE, 32..5533);
-        assert_eq!(SIGNABLE_RANGE, 3405..5533);
-        assert_eq!(SIGNABLE2_RANGE, 3341..5533);
+        assert_eq!(HASHABLE_RANGE, 32..5541);
+        assert_eq!(SIGNABLE_RANGE, 3405..5541);
+        assert_eq!(SIGNABLE2_RANGE, 3341..5541);
 
         assert_eq!(HASH_RANGE, 0..32);
 
@@ -181,9 +181,9 @@ mod tests {
 
         assert_eq!(PAYLOAD_RANGE, 5421..5461);
 
-        assert_eq!(INDEX_RANGE, 5461..5469);
-        assert_eq!(CHAIN_HASH_RANGE, 5469..5501);
-        assert_eq!(PREVIOUS_HASH_RANGE, 5501..5533);
+        assert_eq!(INDEX_RANGE, 5461..5477);
+        assert_eq!(CHAIN_HASH_RANGE, 5477..5509);
+        assert_eq!(PREVIOUS_HASH_RANGE, 5509..5541);
 
         assert_eq!(HASHABLE_RANGE.end, BLOCK);
         assert_eq!(SIGNABLE_RANGE.end, BLOCK);
@@ -196,8 +196,8 @@ mod tests {
         assert_eq!(SEC_PUBLIC_HASH_RANGE, 32..64);
         assert_eq!(SEC_SEED_RANGE, 64..128);
         assert_eq!(SEC_PAYLOAD_RANGE, 128..168);
-        assert_eq!(SEC_INDEX_RANGE, 168..176);
-        assert_eq!(SEC_PREV_HASH_RANGE, 176..208);
+        assert_eq!(SEC_INDEX_RANGE, 168..184);
+        assert_eq!(SEC_PREV_HASH_RANGE, 184..216);
         assert_eq!(SEC_PREV_HASH_RANGE.end, SECRET_BLOCK);
     }
 }

@@ -12,8 +12,8 @@ const SAMPLE_STORAGE_SECRET_419: &str =
 const SAMPLE_PAYLOAD_0: &str = "55f6dada8875897fc828d497d88187162f0530b56c9760810f01783b532c8fdd";
 const SAMPLE_PAYLOAD_419: &str = "23c046161fceadefc410850888f4d8ffc006ce2759ac425919c8e08b75519c20";
 
-const BLOCK_HASH_0: &str = "ce7151342243f72438037b2d2c32e43256523f2a87f8a0d54c9b3302c1c41a76";
-const BLOCK_HASH_419: &str = "aa6ebc33cd4477b0420c698cb1c9e42e810e633f3296133c535e75a351522fe1";
+const BLOCK_HASH_0: &str = "432e4d0178c52ce37919c75a155640bdd57ed8b9dd7aef41224cdfac996ba6ed";
+const BLOCK_HASH_419: &str = "ac74fac9cca57003a3e56682f97cd5ff46dfcc26cd08a3b855b347cfeacf0e95";
 
 fn sample_entropy(index: u64) -> Hash {
     let mut h = Hasher::new();
