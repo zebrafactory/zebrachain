@@ -51,7 +51,7 @@ mod tests {
         let buf = [69; PAYLOAD];
         let payload = Payload::from_buf(&buf);
         assert_eq!(payload.state_hash, Hash::from_bytes([69; DIGEST]));
-        assert_eq!(payload.time, 4991471925827290437);
+        assert_eq!(payload.time, 92076405166842172466560187893301986629);
     }
 
     #[test]
