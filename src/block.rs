@@ -83,7 +83,7 @@ pub struct Block<'a> {
 }
 
 impl<'a> Block<'a> {
-    /// Create new block wrapper around `buf`, but perform no validation.
+    /// Create a new block wrapper around `buf`, but perform no validation.
     pub fn new(buf: &'a [u8]) -> Self {
         check_block_buf(buf);
         Self { buf }
@@ -147,22 +147,22 @@ impl<'a> Block<'a> {
     }
 
     /// Bytes over which the ed25519 signature is computed.
-    pub fn as_signable(&self) -> &[u8] {
+    pub(crate) fn as_signable(&self) -> &[u8] {
         &self.buf[SIGNABLE_RANGE]
     }
 
     /// Bytes over which the ml-dsa signature is computed (includes ed25519 signature).
-    pub fn as_signable2(&self) -> &[u8] {
+    pub(crate) fn as_signable2(&self) -> &[u8] {
         &self.buf[SIGNABLE2_RANGE]
     }
 
     /// The signature bytes (both ed25519 and ml-dsa signatures).
-    pub fn as_signature(&self) -> &[u8] {
+    pub(crate) fn as_signature(&self) -> &[u8] {
         &self.buf[SIGNATURE_RANGE]
     }
 
     /// The public key bytes (both ed25519 and ml-dsa public keys).
-    pub fn as_pubkey(&self) -> &[u8] {
+    pub(crate) fn as_pubkey(&self) -> &[u8] {
         &self.buf[PUBKEY_RANGE]
     }
 
@@ -177,15 +177,6 @@ impl<'a> Block<'a> {
     fn signature_is_valid(&self) -> bool {
         verify_block_signature(self)
     }
-    /*
-    fn first_block_is_valid(&self) -> bool {
-        if self.state.index == 0 {
-            self.state.chain_hash == ZERO_HASH && self.state.previous_hash == ZERO_HASH
-        } else {
-            true
-        }
-    }
-    */
 }
 
 /// Build a new [Block] in a buffer.
