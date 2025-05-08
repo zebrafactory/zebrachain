@@ -16,7 +16,7 @@ fn check_block_buf(buf: &[u8]) {
 #[derive(Clone, Debug, PartialEq)]
 pub struct BlockState {
     /// Block-wise position in chain, starting from zero.
-    pub index: u128,
+    pub index: u64,
 
     /// Hash of this block.
     pub block_hash: Hash,
@@ -37,7 +37,7 @@ pub struct BlockState {
 impl BlockState {
     /// Construct a new [BlockState].
     pub fn new(
-        index: u128,
+        index: u64,
         block_hash: Hash,
         chain_hash: Hash,
         previous_hash: Hash,
@@ -66,7 +66,7 @@ impl BlockState {
     // Warning: this does ZERO validation!
     fn from_buf(buf: &[u8]) -> Self {
         Self {
-            index: get_u128(buf, INDEX_RANGE),
+            index: get_u64(buf, INDEX_RANGE),
             block_hash: get_hash(buf, HASH_RANGE),
             chain_hash: get_hash(buf, CHAIN_HASH_RANGE),
             previous_hash: get_hash(buf, PREVIOUS_HASH_RANGE),
@@ -116,7 +116,7 @@ impl<'a> Block<'a> {
     pub fn from_hash_at_index(
         &self,
         block_hash: &Hash,
-        index: u128,
+        index: u64,
     ) -> Result<BlockState, BlockError> {
         let state = self.open()?;
         if block_hash != &state.block_hash {
@@ -214,7 +214,7 @@ impl<'a> MutBlock<'a> {
 
     /// Set index, chain_hash, and prev_hash based on [BlockState] `prev`.
     pub fn set_previous(&mut self, prev: &BlockState) {
-        set_u128(self.buf, INDEX_RANGE, prev.index + 1);
+        set_u64(self.buf, INDEX_RANGE, prev.index + 1);
         set_hash(self.buf, PREVIOUS_HASH_RANGE, &prev.block_hash);
         let chain_hash = prev.effective_chain_hash(); // Don't use prev.chain_hash !
         set_hash(self.buf, CHAIN_HASH_RANGE, &chain_hash);
@@ -264,12 +264,12 @@ mod tests {
     use crate::pksign::{SecretSigner, sign_block};
     use crate::secretseed::Seed;
     use crate::testhelpers::{
-        BitFlipper, HashBitFlipper, U128BitFlipper, random_hash, random_payload,
+        BitFlipper, HashBitFlipper, U64BitFlipper, random_hash, random_payload,
     };
     use getrandom;
 
-    const HEX0: &str = "0a1196e978161e4aaeeb0c045e6586a2ccdb2056b418e9d4e30e3da5ece7e971";
-    const HEX1: &str = "63b1c9d7222c196941e9255e5830470af0e41dabaaf8be8f6af6475b8c240fab";
+    const HEX0: &str = "fce9a075fcd4a1a5e867c491860dd6fe422f3747f3ccd3f4f927a1b51193f9a2";
+    const HEX1: &str = "73f229cc4e11354b11cb17bb718fe9cc9c07192fa05bf09adcc05270a5843d7b";
 
     #[test]
     fn test_blockerror_to_io_error() {
@@ -308,7 +308,7 @@ mod tests {
         buf[PREVIOUS_HASH_RANGE].copy_from_slice(&[6; DIGEST]);
 
         let expected = BlockState {
-            index: 5337762618367662171974503645988520964,
+            index: 289360691352306692,
             block_hash: Hash::from_bytes([1; DIGEST]),
             chain_hash: Hash::from_bytes([5; DIGEST]),
             previous_hash: Hash::from_bytes([6; DIGEST]),
@@ -370,14 +370,14 @@ mod tests {
     }
 
     #[test]
-    #[should_panic(expected = "Need a 5549 byte slice; got 5548 bytes")]
+    #[should_panic(expected = "Need a 5541 byte slice; got 5540 bytes")]
     fn test_block_new_short_panic() {
         let buf: Vec<u8> = vec![0; BLOCK - 1];
         let _block = Block::new(&buf);
     }
 
     #[test]
-    #[should_panic(expected = "Need a 5549 byte slice; got 5550 bytes")]
+    #[should_panic(expected = "Need a 5541 byte slice; got 5542 bytes")]
     fn test_block_new_long_panic() {
         let buf: Vec<u8> = vec![0; BLOCK + 1];
         let _block = Block::new(&buf);
@@ -510,7 +510,7 @@ mod tests {
             // Previous `BlockState.chain_hash` only gets checked in 3rd block and beyond:
             assert!(Block::new(&buf).from_previous(&bad_prev).is_ok());
         }
-        for bad_index in U128BitFlipper::new(0) {
+        for bad_index in U64BitFlipper::new(0) {
             let bad_prev = BlockState::new(
                 bad_index,
                 prev.block_hash,

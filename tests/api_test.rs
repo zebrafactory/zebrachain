@@ -5,15 +5,17 @@ use zf_zebrachain::{ChainStore, OwnedChainStore, PAYLOAD, Payload, generate_secr
 
 const SAMPLE_ENTROPY_0: &str = "96b3a086291fbcdef17e52e60731e96d8d36ae0944f2aad0c0c12a0c14e161ca";
 const SAMPLE_ENTROPY_419: &str = "27068b40079a37f5ecfb01700135dc9a81d2c811878d2328475dd1724b40891a";
+
 const SAMPLE_STORAGE_SECRET_0: &str =
     "28ad9dc97e10d576d16e3e94fe4ef944d3a3215b2aaec67398c70831515f964c";
 const SAMPLE_STORAGE_SECRET_419: &str =
     "96c7864ce923cec5795c7a5316b961055ef762278e3c0ec9fa3a9a4c9729fd9c";
+
 const SAMPLE_PAYLOAD_0: &str = "c0c76cbfd80b970d138cce4e466327b1f2ba96a7de9ecc2c98b8f4e7e462a8bc";
 const SAMPLE_PAYLOAD_419: &str = "e9961e428776cb08e4c3c7c55d912716a1f9edca74da0adb8a7a7805bb536788";
 
-const BLOCK_HASH_0: &str = "350b25b6e287d3250beb4c31a9cf4b8bc43eb5530092924eb3ab3b2be1e5cdc8";
-const BLOCK_HASH_419: &str = "07e0d37a0ea9cd0fd558c864f239f1ba30ed22390d14ef00b9bc73e774187983";
+const BLOCK_HASH_0: &str = "1e3f1868ce7505deb6682d45874e9dfdbf1ad9a7dfc0ad80070f83489d763262";
+const BLOCK_HASH_419: &str = "9d663c74c5417a19b250a6ee69228f0c2e272522ca59a5f066f752a8f20902c9";
 
 fn sample_entropy(index: u128) -> Hash {
     let mut h = Hasher::new();

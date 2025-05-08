@@ -31,7 +31,7 @@ fn check_secretblock_buf_aead(buf: &[u8]) {
 
 // Split out of derive_block_key_and_nonce() for testability
 #[inline]
-fn derive_block_sub_secrets(chain_secret: &Secret, block_index: u128) -> (Secret, Secret) {
+fn derive_block_sub_secrets(chain_secret: &Secret, block_index: u64) -> (Secret, Secret) {
     let block_secret = keyed_hash(chain_secret.as_bytes(), &block_index.to_le_bytes());
     let block_key_secret = derive_secret(CONTEXT_STORE_KEY, &block_secret);
     let block_nonce_secret = derive_secret(CONTEXT_STORE_NONCE, &block_secret);
@@ -39,7 +39,7 @@ fn derive_block_sub_secrets(chain_secret: &Secret, block_index: u128) -> (Secret
 }
 
 // A unique key and nonce derived from the chain_secret and block_index
-fn get_block_key_and_nonce(chain_secret: &Secret, block_index: u128) -> (Key, Nonce) {
+fn get_block_key_and_nonce(chain_secret: &Secret, block_index: u64) -> (Key, Nonce) {
     let (key, nonce) = derive_block_sub_secrets(chain_secret, block_index);
     assert_ne!(key, nonce);
     let key = Key::from_slice(&key.as_bytes()[..]);
@@ -47,7 +47,7 @@ fn get_block_key_and_nonce(chain_secret: &Secret, block_index: u128) -> (Key, No
     (*key, *nonce)
 }
 
-fn encrypt_in_place(buf: &mut Vec<u8>, chain_secret: &Secret, block_index: u128) {
+fn encrypt_in_place(buf: &mut Vec<u8>, chain_secret: &Secret, block_index: u64) {
     check_secretblock_buf(buf);
     let (key, nonce) = get_block_key_and_nonce(chain_secret, block_index);
     let cipher = ChaCha20Poly1305::new(&key);
@@ -61,7 +61,7 @@ fn encrypt_in_place(buf: &mut Vec<u8>, chain_secret: &Secret, block_index: u128)
 fn decrypt_in_place(
     buf: &mut Vec<u8>,
     chain_secret: &Secret,
-    block_index: u128,
+    block_index: u64,
 ) -> Result<(), SecretBlockError> {
     check_secretblock_buf_aead(buf);
     let (key, nonce) = get_block_key_and_nonce(chain_secret, block_index);
@@ -94,7 +94,7 @@ pub struct SecretBlockState {
     pub payload: Payload,
 
     /// Block index.
-    pub index: u128,
+    pub index: u64,
 
     /// Hash of previous secret block.
     pub previous_hash: Hash,
@@ -113,7 +113,7 @@ impl SecretBlockState {
                 public_block_hash: get_hash(buf, SEC_PUBLIC_HASH_RANGE),
                 seed: Seed::from_buf(&buf[SEC_SEED_RANGE])?,
                 payload: Payload::from_buf(&buf[SEC_PAYLOAD_RANGE]),
-                index: get_u128(buf, SEC_INDEX_RANGE),
+                index: get_u64(buf, SEC_INDEX_RANGE),
                 previous_hash: get_hash(buf, SEC_PREV_HASH_RANGE),
             })
         }
@@ -143,7 +143,7 @@ impl<'a> SecretBlock<'a> {
     pub fn from_index(
         self,
         chain_secret: &Secret,
-        block_index: u128,
+        block_index: u64,
     ) -> Result<SecretBlockState, SecretBlockError> {
         decrypt_in_place(self.buf, chain_secret, block_index)?;
         let state = SecretBlockState::from_buf(&self.buf[0..SECRET_BLOCK])?;
@@ -159,7 +159,7 @@ impl<'a> SecretBlock<'a> {
         self,
         chain_secret: &Secret,
         block_hash: &Hash,
-        block_index: u128,
+        block_index: u64,
     ) -> Result<SecretBlockState, SecretBlockError> {
         let state = self.from_index(chain_secret, block_index)?;
         if &state.block_hash != block_hash {
@@ -212,7 +212,7 @@ impl<'a> MutSecretBlock<'a> {
 
     /// Set needed secret block fields for block after `prev`.
     pub fn set_previous(&mut self, prev: &SecretBlockState) {
-        set_u128(self.buf, SEC_INDEX_RANGE, prev.index + 1);
+        set_u64(self.buf, SEC_INDEX_RANGE, prev.index + 1);
         set_hash(self.buf, SEC_PREV_HASH_RANGE, &prev.block_hash);
     }
 
@@ -228,7 +228,7 @@ impl<'a> MutSecretBlock<'a> {
 
     /// Set and return block hash.
     pub fn finalize(self, chain_secret: &Secret) -> Hash {
-        let block_index = get_u128(self.buf, SEC_INDEX_RANGE);
+        let block_index = get_u64(self.buf, SEC_INDEX_RANGE);
         let block_hash = hash(&self.buf[DIGEST..]);
         set_hash(self.buf, SEC_HASH_RANGE, &block_hash);
         encrypt_in_place(self.buf, chain_secret, block_index);
@@ -242,14 +242,14 @@ mod tests {
     use super::*;
     use crate::secretseed::generate_secret;
     use crate::testhelpers::{
-        BitFlipper, HashBitFlipper, U128BitFlipper, random_hash, random_payload,
+        BitFlipper, HashBitFlipper, U64BitFlipper, random_hash, random_payload,
     };
     use getrandom;
     use std::collections::HashSet;
 
     #[test]
     fn test_derive_block_sub_secrets_inner() {
-        let count = 420u128;
+        let count = 420u64;
         let mut hset = HashSet::new();
         let chain_secret = generate_secret().unwrap();
         assert!(hset.insert(chain_secret));
@@ -307,7 +307,7 @@ mod tests {
                 decrypt_in_place(&mut buf, &chain_secret, block_index),
                 Err(SecretBlockError::Decryption)
             );
-            for bad_block_index in U128BitFlipper::new(block_index) {
+            for bad_block_index in U64BitFlipper::new(block_index) {
                 buf.resize(SECRET_BLOCK, 42);
                 buf.fill(69);
                 let cipher = ChaCha20Poly1305::new(&key);
@@ -331,14 +331,14 @@ mod tests {
     }
 
     #[test]
-    #[should_panic(expected = "Need a 224 byte Vec<u8>; got 223 bytes")]
+    #[should_panic(expected = "Need a 216 byte Vec<u8>; got 215 bytes")]
     fn test_check_secretblock_buf_panic_low() {
         let buf = vec![0; SECRET_BLOCK - 1];
         check_secretblock_buf(&buf);
     }
 
     #[test]
-    #[should_panic(expected = "Need a 224 byte Vec<u8>; got 225 bytes")]
+    #[should_panic(expected = "Need a 216 byte Vec<u8>; got 217 bytes")]
     fn test_check_secretblock_buf_panic_high() {
         let buf = vec![0; SECRET_BLOCK + 1];
         check_secretblock_buf(&buf);
@@ -352,14 +352,14 @@ mod tests {
     }
 
     #[test]
-    #[should_panic(expected = "Need a 240 byte Vec<u8>; got 239 bytes")]
+    #[should_panic(expected = "Need a 232 byte Vec<u8>; got 231 bytes")]
     fn test_check_secretblock_buf_aead_panic_low() {
         let buf = vec![0; SECRET_BLOCK_AEAD - 1];
         check_secretblock_buf_aead(&buf);
     }
 
     #[test]
-    #[should_panic(expected = "Need a 240 byte Vec<u8>; got 241 bytes")]
+    #[should_panic(expected = "Need a 232 byte Vec<u8>; got 233 bytes")]
     fn test_check_secretblock_buf_aead_panic_high() {
         let buf = vec![0; SECRET_BLOCK_AEAD + 1];
         check_secretblock_buf_aead(&buf);
@@ -383,10 +383,10 @@ mod tests {
         assert_eq!(block.buf, &vec![0; SECRET_BLOCK_AEAD]);
     }
 
-    fn build_simirandom_valid_block(block_index: u128) -> (Hash, Vec<u8>) {
+    fn build_simirandom_valid_block(block_index: u64) -> (Hash, Vec<u8>) {
         let mut buf = vec![0; SECRET_BLOCK];
         getrandom::fill(&mut buf).unwrap();
-        set_u128(&mut buf, SEC_INDEX_RANGE, block_index);
+        set_u64(&mut buf, SEC_INDEX_RANGE, block_index);
         let block_hash = hash(&buf[DIGEST..]);
         buf[0..DIGEST].copy_from_slice(block_hash.as_bytes());
         (block_hash, buf)
@@ -395,7 +395,7 @@ mod tests {
     fn build_next_simirandom_valid_block(state: &SecretBlockState) -> (Hash, Vec<u8>) {
         let mut buf = vec![0; SECRET_BLOCK];
         getrandom::fill(&mut buf).unwrap();
-        set_u128(&mut buf, SEC_INDEX_RANGE, state.index + 1);
+        set_u64(&mut buf, SEC_INDEX_RANGE, state.index + 1);
         set_hash(&mut buf[SEC_SEED_RANGE], 0..DIGEST, &state.seed.next_secret);
         set_hash(&mut buf, SEC_PREV_HASH_RANGE, &state.block_hash);
         let block_hash = hash(&buf[DIGEST..]);
@@ -435,7 +435,7 @@ mod tests {
 
             // Bit flipped in provided block_index (derived key and nonce will be wrong, causing
             // decryption error)
-            for bad_block_index in U128BitFlipper::new(block_index) {
+            for bad_block_index in U64BitFlipper::new(block_index) {
                 let mut buf = orig.clone();
                 {
                     encrypt_in_place(&mut buf, &chain_secret, block_index);
@@ -462,9 +462,9 @@ mod tests {
             }
 
             // Bit flipped in internal block_index before hashing
-            for bad_block_index in U128BitFlipper::new(block_index) {
+            for bad_block_index in U64BitFlipper::new(block_index) {
                 let mut buf = orig.clone();
-                set_u128(&mut buf, SEC_INDEX_RANGE, bad_block_index);
+                set_u64(&mut buf, SEC_INDEX_RANGE, bad_block_index);
                 let bad_block_hash = hash(&buf[DIGEST..]);
                 set_hash(&mut buf, SEC_HASH_RANGE, &bad_block_hash);
                 encrypt_in_place(&mut buf, &chain_secret, block_index);
@@ -562,7 +562,7 @@ mod tests {
     #[test]
     fn test_secretblock_from_previous() {
         let chain_secret = generate_secret().unwrap();
-        for block_index in 0u128..420 {
+        for block_index in 0u64..420 {
             let (_prev_block_hash, prev_buf) = build_simirandom_valid_block(block_index);
             let prev_state = SecretBlockState::from_buf(&prev_buf).unwrap();
 
@@ -579,7 +579,7 @@ mod tests {
 
             // Bit flips in prev_state.index (key and nonce are derived from index, so this will
             // result in a Decryption error)
-            for bad_index in U128BitFlipper::new(prev_state.index) {
+            for bad_index in U64BitFlipper::new(prev_state.index) {
                 let mut bad_prev_state = prev_state;
                 bad_prev_state.index = bad_index;
                 let mut buf = orig.clone();
@@ -645,7 +645,7 @@ mod tests {
                 0, 0, 0, 0, 0, 0, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13,
                 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 0, 0, 0, 0, 0, 0,
                 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 0, 0, 0, 0
             ]
         );
     }
@@ -666,10 +666,7 @@ mod tests {
             previous_hash: random_hash(),
         };
         block.set_previous(&prev);
-        assert_eq!(
-            block.buf[SEC_INDEX_RANGE],
-            [70, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,]
-        );
+        assert_eq!(block.buf[SEC_INDEX_RANGE], [70, 0, 0, 0, 0, 0, 0, 0]);
         assert_eq!(&block.buf[SEC_PREV_HASH_RANGE], prev.block_hash.as_bytes());
     }
 

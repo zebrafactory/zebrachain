@@ -35,7 +35,7 @@ pub(crate) const SEED: usize = 2 * DIGEST;
 pub(crate) const SIGNATURE: usize = SIG_ED25519 + SIG_MLDSA;
 pub(crate) const PUBKEY: usize = PUB_ED25519 + PUB_MLDSA;
 
-pub(crate) const INDEX: usize = 16;
+pub(crate) const INDEX: usize = 8;
 pub(crate) const TIME: usize = 16;
 
 /// Size of the ZebraChain payload (40 bytes).
@@ -144,6 +144,16 @@ pub(crate) fn set_hash(buf: &mut [u8], range: Range<usize>, value: &Hash) {
 }
 
 #[inline]
+pub(crate) fn get_u64(buf: &[u8], range: Range<usize>) -> u64 {
+    u64::from_le_bytes(buf[range].try_into().unwrap())
+}
+
+#[inline]
+pub(crate) fn set_u64(buf: &mut [u8], range: Range<usize>, value: u64) {
+    buf[range].copy_from_slice(&value.to_le_bytes());
+}
+
+#[inline]
 pub(crate) fn get_u128(buf: &[u8], range: Range<usize>) -> u128 {
     u128::from_le_bytes(buf[range].try_into().unwrap())
 }
@@ -159,9 +169,9 @@ mod tests {
 
     #[test]
     fn test_ranges() {
-        assert_eq!(HASHABLE_RANGE, 32..5549);
-        assert_eq!(SIGNABLE_RANGE, 3405..5549);
-        assert_eq!(SIGNABLE2_RANGE, 3341..5549);
+        assert_eq!(HASHABLE_RANGE, 32..5541);
+        assert_eq!(SIGNABLE_RANGE, 3405..5541);
+        assert_eq!(SIGNABLE2_RANGE, 3341..5541);
 
         assert_eq!(HASH_RANGE, 0..32);
 
@@ -171,9 +181,9 @@ mod tests {
 
         assert_eq!(PAYLOAD_RANGE, 5421..5469);
 
-        assert_eq!(INDEX_RANGE, 5469..5485);
-        assert_eq!(CHAIN_HASH_RANGE, 5485..5517);
-        assert_eq!(PREVIOUS_HASH_RANGE, 5517..5549);
+        assert_eq!(INDEX_RANGE, 5469..5477);
+        assert_eq!(CHAIN_HASH_RANGE, 5477..5509);
+        assert_eq!(PREVIOUS_HASH_RANGE, 5509..5541);
 
         assert_eq!(HASHABLE_RANGE.end, BLOCK);
         assert_eq!(SIGNABLE_RANGE.end, BLOCK);
@@ -186,8 +196,8 @@ mod tests {
         assert_eq!(SEC_PUBLIC_HASH_RANGE, 32..64);
         assert_eq!(SEC_SEED_RANGE, 64..128);
         assert_eq!(SEC_PAYLOAD_RANGE, 128..176);
-        assert_eq!(SEC_INDEX_RANGE, 176..192);
-        assert_eq!(SEC_PREV_HASH_RANGE, 192..224);
+        assert_eq!(SEC_INDEX_RANGE, 176..184);
+        assert_eq!(SEC_PREV_HASH_RANGE, 184..216);
         assert_eq!(SEC_PREV_HASH_RANGE.end, SECRET_BLOCK);
     }
 }
