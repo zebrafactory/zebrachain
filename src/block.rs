@@ -179,7 +179,7 @@ impl<'a> Block<'a> {
     }
 }
 
-/// Build a new [Block] in a buffer.
+/// Builds of a new block in a buffer.
 pub struct MutBlock<'a> {
     buf: &'a mut [u8],
 }
@@ -193,11 +193,6 @@ impl<'a> MutBlock<'a> {
         Self { buf }
     }
 
-    /// Set hash of the public key that will be used for siging the next block.
-    pub fn set_next_pubkey_hash(&mut self, next_pubkey_hash: &Hash) {
-        set_hash(self.buf, NEXT_PUBKEY_HASH_RANGE, next_pubkey_hash);
-    }
-
     /// Set index, chain_hash, and prev_hash based on [BlockState] `prev`.
     pub fn set_previous(&mut self, prev: &BlockState) {
         set_u64(self.buf, INDEX_RANGE, prev.index + 1);
@@ -206,34 +201,9 @@ impl<'a> MutBlock<'a> {
         set_hash(self.buf, CHAIN_HASH_RANGE, &chain_hash);
     }
 
-    /// Signature as mutable bytes.
-    pub fn as_mut_signature(&mut self) -> &mut [u8] {
-        &mut self.buf[SIGNATURE_RANGE]
-    }
-
-    /// Public Key as mutable bytes.
-    pub fn as_mut_pubkey(&mut self) -> &mut [u8] {
-        &mut self.buf[PUBKEY_RANGE]
-    }
-
-    /// Bytes over which the block hash is computed.
-    pub fn as_hashable(&self) -> &[u8] {
-        &self.buf[HASHABLE_RANGE]
-    }
-
-    /// Bytes over which the ed25519 signature is made.
-    pub fn as_signable(&self) -> &[u8] {
-        &self.buf[SIGNABLE_RANGE]
-    }
-
-    /// Bytes over which the ml-dsa signature is made (includes ed25519 signature).
-    pub fn as_signable2(&self) -> &[u8] {
-        &self.buf[SIGNABLE2_RANGE]
-    }
-
-    /// Return hash of public key bytes.
-    pub fn compute_pubkey_hash(&self) -> Hash {
-        hash(&self.buf[PUBKEY_RANGE])
+    /// Set hash of the public key that will be used for siging the next block.
+    pub fn set_next_pubkey_hash(&mut self, next_pubkey_hash: &Hash) {
+        set_hash(self.buf, NEXT_PUBKEY_HASH_RANGE, next_pubkey_hash);
     }
 
     /// Finalize the block (sets and returns block hash).
@@ -241,6 +211,36 @@ impl<'a> MutBlock<'a> {
         let block_hash = hash(self.as_hashable());
         set_hash(self.buf, HASH_RANGE, &block_hash);
         block_hash
+    }
+
+    /// Bytes over which the block hash is computed.
+    fn as_hashable(&self) -> &[u8] {
+        &self.buf[HASHABLE_RANGE]
+    }
+
+    /// Signature as mutable bytes.
+    pub(crate) fn as_mut_signature(&mut self) -> &mut [u8] {
+        &mut self.buf[SIGNATURE_RANGE]
+    }
+
+    /// Public Key as mutable bytes.
+    pub(crate) fn as_mut_pubkey(&mut self) -> &mut [u8] {
+        &mut self.buf[PUBKEY_RANGE]
+    }
+
+    /// Bytes over which the ed25519 signature is made.
+    pub(crate) fn as_signable(&self) -> &[u8] {
+        &self.buf[SIGNABLE_RANGE]
+    }
+
+    /// Bytes over which the ml-dsa signature is made (includes ed25519 signature).
+    pub(crate) fn as_signable2(&self) -> &[u8] {
+        &self.buf[SIGNABLE2_RANGE]
+    }
+
+    /// Return hash of public key bytes.
+    pub(crate) fn compute_pubkey_hash(&self) -> Hash {
+        hash(&self.buf[PUBKEY_RANGE])
     }
 }
 
