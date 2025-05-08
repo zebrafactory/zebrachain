@@ -83,15 +83,10 @@ pub struct Block<'a> {
 }
 
 impl<'a> Block<'a> {
-    /// FIXME
+    /// Create new block wrapper around `buf`, but perform no validation.
     pub fn new(buf: &'a [u8]) -> Self {
         check_block_buf(buf);
         Self { buf }
-    }
-
-    /// Underlying buffer as read-only bytes.
-    pub fn as_buf(&self) -> &[u8] {
-        self.buf
     }
 
     // Warning: This only performs internal validation on the block!
