@@ -13,7 +13,7 @@ use crate::ownedblock::{MutOwnedBlock, OwnedBlockState};
 use crate::payload::Payload;
 use crate::pksign::sign_block;
 use crate::secretchain::{SecretChain, SecretChainStore};
-use crate::secretseed::{Secret, Seed};
+use crate::secretseed::{Secret, Seed, generate_secret};
 use blake3::Hash;
 use std::io;
 use std::path::Path;
@@ -50,10 +50,16 @@ impl OwnedChainStore {
         &self.secret_store
     }
 
+    /// Create a new owned chain, internally generating the entropy.
+    pub fn auto_create_chain(&self, payload: &Payload) -> io::Result<OwnedChain> {
+        let initial_entropy = generate_secret().unwrap();
+        self.create_chain(&initial_entropy, payload)
+    }
+
     /// Create a new [OwnedChain].
     pub fn create_chain(
         &self,
-        initial_entropy: &Hash,
+        initial_entropy: &Secret,
         payload: &Payload,
     ) -> io::Result<OwnedChain> {
         let mut buf = [0; BLOCK];
@@ -122,8 +128,14 @@ impl OwnedChain {
         }
     }
 
+    /// Sign next block, internally generating new entropy.
+    pub fn auto_sign(&mut self, payload: &Payload) -> io::Result<&BlockState> {
+        let new_entropy = generate_secret().unwrap();
+        self.sign(&new_entropy, payload)
+    }
+
     /// Sign next block.
-    pub fn sign(&mut self, new_entropy: &Hash, payload: &Payload) -> io::Result<&BlockState> {
+    pub fn sign(&mut self, new_entropy: &Secret, payload: &Payload) -> io::Result<&BlockState> {
         let seed = self.secret_chain.advance(new_entropy);
         let obs = self.state();
         let mut buf = [0; BLOCK];

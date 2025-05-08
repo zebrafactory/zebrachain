@@ -37,15 +37,11 @@
 //! // create a new chain, you need the first payload that you want to sign:
 //! let p1 = Payload::new(123, Hash::from_bytes([42; 32]));
 //!
-//! // To create a new chain, you also need some initial entropy, which is used to derive the seeds
-//! // for the 1st and 2nd ML-DSA/ed25519 hybrid keypairs.
-//! let initial_entropy = generate_secret().unwrap();
-//!
 //! // Create a chain, the first block of which will contain the signed payload. The first block
 //! // is signed with the 1st keypair, but the hash of the public key of the 2nd keypair is
 //! // included in the 1st block. This is the forward contract for the keypair that will be used
 //! // to sign the next block.
-//! let mut mychain = mystore.create_chain(&initial_entropy, &p1).unwrap();
+//! let mut mychain = mystore.auto_create_chain(&p1).unwrap();
 //! assert_eq!(mychain.tail().payload, p1);
 //!
 //! // Let us sign another payload. Each signatures requires new entropy, which is mixed into the
@@ -53,8 +49,7 @@
 //! // keypair, and the hash of its public key is included this block. The 2nd block is signed with
 //! // the 2nd keypair created above.
 //! let p2 = Payload::new(456, Hash::from_bytes([69; 32]));
-//! let new_entropy = generate_secret().unwrap();
-//! mychain.sign(&new_entropy, &p2);
+//! mychain.auto_sign(&p2);
 //! assert_eq!(mychain.tail().payload, p2);
 //!
 //! // A chain is identified by its `chain_hash`, which is the hash of the 1st block in the chain:
