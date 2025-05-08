@@ -40,16 +40,6 @@ impl OwnedChainStore {
         Self::new(store, secret_store)
     }
 
-    /// Reference to the underlying [ChainStore].
-    pub fn store(&self) -> &ChainStore {
-        &self.store
-    }
-
-    /// Reference to the underlying [SecretChainStore].
-    pub fn secret_store(&self) -> &SecretChainStore {
-        &self.secret_store
-    }
-
     /// Create a new owned chain, internally generating the entropy.
     pub fn auto_create_chain(&self, payload: &Payload) -> io::Result<OwnedChain> {
         let initial_entropy = generate_secret().unwrap();
@@ -107,6 +97,16 @@ impl OwnedChainStore {
             tail = chain.append(&buf)?.clone();
         }
         Ok(chain)
+    }
+
+    /// Reference to the underlying [ChainStore].
+    pub fn store(&self) -> &ChainStore {
+        &self.store
+    }
+
+    /// Reference to the underlying [SecretChainStore].
+    pub fn secret_store(&self) -> &SecretChainStore {
+        &self.secret_store
     }
 }
 
