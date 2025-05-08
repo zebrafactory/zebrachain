@@ -292,10 +292,10 @@ impl ChainStore {
         create_for_append(&filename)
     }
 
-    /// Remove file for specified chain.
-    pub fn remove_chain_file(&self, chain_hash: &Hash) -> io::Result<()> {
-        let filename = self.chain_filename(chain_hash);
-        remove_file(&filename)
+    /// Create a new chain.
+    pub fn create_chain(&self, buf: &[u8], chain_hash: &Hash) -> io::Result<Chain> {
+        let file = self.create_chain_file(chain_hash)?;
+        Chain::create(file, buf, chain_hash)
     }
 
     /// Open chain and fully validate.
@@ -310,10 +310,10 @@ impl ChainStore {
         Chain::resume(file, checkpoint)
     }
 
-    /// Create a new chain.
-    pub fn create_chain(&self, buf: &[u8], chain_hash: &Hash) -> io::Result<Chain> {
-        let file = self.create_chain_file(chain_hash)?;
-        Chain::create(file, buf, chain_hash)
+    /// Remove file for specified chain.
+    pub fn remove_chain_file(&self, chain_hash: &Hash) -> io::Result<()> {
+        let filename = self.chain_filename(chain_hash);
+        remove_file(&filename)
     }
 }
 
