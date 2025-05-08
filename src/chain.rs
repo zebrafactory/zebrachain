@@ -117,6 +117,21 @@ pub struct Chain {
 }
 
 impl Chain {
+    /// Create a new Chain file.
+    pub fn create(mut file: File, buf: &[u8], chain_hash: &Hash) -> io::Result<Self> {
+        match Block::new(buf).from_hash_at_index(chain_hash, 0) {
+            Ok(state) => {
+                file.write_all(buf)?;
+                Ok(Self {
+                    file,
+                    head: state.clone(),
+                    tail: state,
+                })
+            }
+            Err(err) => Err(err.to_io_error()),
+        }
+    }
+
     /// Open and fully validate a chain.
     pub fn open(file: File, chain_hash: &Hash) -> io::Result<Self> {
         let (file, head, tail) = validate_chain(file, chain_hash)?;
@@ -136,24 +151,21 @@ impl Chain {
         Ok(Self { file, head, tail })
     }
 
-    /// Return the number of blocks in the chain.
-    pub fn count(&self) -> u64 {
-        self.tail.index + 1
-    }
-
-    /// Create a new Chain file.
-    pub fn create(mut file: File, buf: &[u8], chain_hash: &Hash) -> io::Result<Self> {
-        match Block::new(buf).from_hash_at_index(chain_hash, 0) {
+    /// Validate block in buffer and append to chain if valid.
+    pub fn append(&mut self, buf: &[u8]) -> io::Result<&BlockState> {
+        match Block::new(buf).from_previous(&self.tail) {
             Ok(state) => {
-                file.write_all(buf)?;
-                Ok(Self {
-                    file,
-                    head: state.clone(),
-                    tail: state,
-                })
+                self.file.write_all(buf)?;
+                self.tail = state;
+                Ok(&self.tail)
             }
             Err(err) => Err(err.to_io_error()),
         }
+    }
+
+    /// Return the number of blocks in the chain.
+    pub fn count(&self) -> u64 {
+        self.tail.index + 1
     }
 
     /// Reference to [BlockState] of first block in chain.
@@ -170,23 +182,6 @@ impl Chain {
     #[allow(clippy::misnamed_getters)] // Clippy is wrong here
     pub fn chain_hash(&self) -> &Hash {
         &self.head.block_hash
-    }
-
-    /// Validate block in buffer and append to chain if valid.
-    pub fn append(&mut self, buf: &[u8]) -> io::Result<&BlockState> {
-        match Block::new(buf).from_previous(&self.tail) {
-            Ok(state) => {
-                self.file.write_all(buf)?;
-                self.tail = state;
-                Ok(&self.tail)
-            }
-            Err(err) => Err(err.to_io_error()),
-        }
-    }
-
-    /// Consume instance and return underlying file.
-    pub fn into_file(self) -> File {
-        self.file
     }
 
     /// Iterate through block in this chain.
