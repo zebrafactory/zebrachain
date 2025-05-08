@@ -45,7 +45,7 @@ impl SecretChain {
         })
     }
 
-    /// FIXME: Probably remove from public API.
+    /// Open and fully validate a secret chain.
     pub fn open(file: File, chain_secret: Secret) -> io::Result<Self> {
         let mut file = BufReader::with_capacity(SECRET_BLOCK_AEAD_READ_BUF, file);
         file.rewind()?;
@@ -86,7 +86,7 @@ impl SecretChain {
     }
 
     /// Mix new entropy into chain and return next [Seed].
-    pub fn advance(&self, new_entropy: &Hash) -> Seed {
+    pub fn advance(&self, new_entropy: &Secret) -> Seed {
         self.tail.seed.advance(new_entropy)
     }
 
@@ -109,11 +109,6 @@ impl SecretChain {
         };
         assert_eq!(&self.tail.block_hash, block_hash);
         Ok(())
-    }
-
-    /// Consume instance and return underlying file.
-    pub fn into_file(self) -> File {
-        self.file
     }
 
     /// Iterate through secret blocks in this secret chain.
@@ -224,14 +219,6 @@ impl SecretChainStore {
         secret_chain_filename(&self.dir, chain_hash)
     }
 
-    /// Open a secret chain identified by its public chain-hash.
-    pub fn open_chain(&self, chain_hash: &Hash) -> io::Result<SecretChain> {
-        let filename = self.chain_filename(chain_hash);
-        let file = open_for_append(&filename)?;
-        let secret = self.derive_chain_secret(chain_hash);
-        SecretChain::open(file, secret)
-    }
-
     /// Create a new secret chain.
     pub fn create_chain(
         &self,
@@ -243,6 +230,14 @@ impl SecretChainStore {
         let file = create_for_append(&filename)?;
         let secret = self.derive_chain_secret(chain_hash);
         SecretChain::create(file, secret, buf, block_hash)
+    }
+
+    /// Open a secret chain identified by its public chain-hash.
+    pub fn open_chain(&self, chain_hash: &Hash) -> io::Result<SecretChain> {
+        let filename = self.chain_filename(chain_hash);
+        let file = open_for_append(&filename)?;
+        let secret = self.derive_chain_secret(chain_hash);
+        SecretChain::open(file, secret)
     }
 
     /// Remove secret chain file.

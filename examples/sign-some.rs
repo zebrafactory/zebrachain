@@ -19,15 +19,13 @@ fn main() {
     let tmpdir = tempfile::TempDir::new().unwrap();
     let root_secret = generate_secret().unwrap();
     let ocs = OwnedChainStore::build(tmpdir.path(), tmpdir.path(), root_secret);
-    let initial_entropy = generate_secret().unwrap();
-    let mut chain = ocs.create_chain(&initial_entropy, &payloads[0]).unwrap();
+    let mut chain = ocs.auto_create_chain(&payloads[0]).unwrap();
 
     println!("Created new chain in directory {:?}", tmpdir.path());
 
     println!("Signing remaning {} requests... ", COUNT - 1);
     for payload in &payloads[1..] {
-        let new_entropy = generate_secret().unwrap();
-        chain.sign(&new_entropy, &payload).unwrap();
+        chain.auto_sign(&payload).unwrap();
     }
     let chain_hash = chain.tail().chain_hash;
     let head = chain.head().clone();

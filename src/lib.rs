@@ -5,7 +5,8 @@
 //! ZebraChain is a logged, quantum safe signing protocol designed to replace the long lived
 //! asymmetric key pairs used to sign software releases (and to sign other super important stuff).
 //!
-//! This is a pre-release crate. The API is still being finalized.
+//! This is a pre-release crate. The API is still being finalized. The 0.0.x releases make no
+//! API commitments.
 //!
 //! # ⚠️ Security Warning
 //!
@@ -33,29 +34,26 @@
 //!     chain_dir.path(), secret_chain_dir.path(), storage_secret
 //! );
 //!
-//! // A Payload is what you to sign. Currently it's a 64-bit timestamp and a 256-bit hash. To
+//! // A Payload is what you to sign. Currently it's a 128-bit timestamp and a 256-bit hash. To
 //! // create a new chain, you need the first payload that you want to sign:
-//! let p1 = Payload::new(123, Hash::from_bytes([42; 32]));
-//!
-//! // To create a new chain, you also need some initial entropy, which is used to derive the seeds
-//! // for the 1st and 2nd ML-DSA/ed25519 hybrid keypairs.
-//! let initial_entropy = generate_secret().unwrap();
+//! let payload1 = Payload::new(123, Hash::from_bytes([42; 32]));
 //!
 //! // Create a chain, the first block of which will contain the signed payload. The first block
 //! // is signed with the 1st keypair, but the hash of the public key of the 2nd keypair is
 //! // included in the 1st block. This is the forward contract for the keypair that will be used
-//! // to sign the next block.
-//! let mut mychain = mystore.create_chain(&initial_entropy, &p1).unwrap();
-//! assert_eq!(mychain.tail().payload, p1);
+//! // to sign the next block. OwnedChainStore.auto_create_chain() internally generates the
+//! // needed initial entropy.
+//! let mut mychain = mystore.auto_create_chain(&payload1).unwrap();
+//! assert_eq!(mychain.tail().payload, payload1);
 //!
 //! // Let us sign another payload. Each signatures requires new entropy, which is mixed into the
 //! // the secret chain state using a keyed hash. This latest seed will be used to create a 3rd
 //! // keypair, and the hash of its public key is included this block. The 2nd block is signed with
-//! // the 2nd keypair created above.
-//! let p2 = Payload::new(456, Hash::from_bytes([69; 32]));
-//! let new_entropy = generate_secret().unwrap();
-//! mychain.sign(&new_entropy, &p2);
-//! assert_eq!(mychain.tail().payload, p2);
+//! // the 2nd keypair created above. OwnedChain.auto_sign() internally generates the needed new
+//! // entropy.
+//! let payload2 = Payload::new(456, Hash::from_bytes([69; 32]));
+//! mychain.auto_sign(&payload2);
+//! assert_eq!(mychain.tail().payload, payload2);
 //!
 //! // A chain is identified by its `chain_hash`, which is the hash of the 1st block in the chain:
 //! let chain_hash = mychain.chain_hash();
@@ -63,7 +61,8 @@
 //! // We can now open that chain from the public chain store, which will fully validate the chain
 //! // and set the tail at the latest block:
 //! let chain = store.open_chain(&chain_hash).unwrap();
-//! assert_eq!(chain.tail().payload, p2);
+//! assert_eq!(chain.head().payload, payload1);
+//! assert_eq!(chain.tail().payload, payload2);
 //! ```
 //!
 //! [ML-DSA]: https://github.com/RustCrypto/signatures/tree/master/ml-dsa
