@@ -268,8 +268,8 @@ mod tests {
     };
     use getrandom;
 
-    const HEX0: &str = "885b6784a7cc0ab9703bfd885cf3c54d20e9a844357813814dae304ea83822aa";
-    const HEX1: &str = "50997820b97129d2f50964e3438b2232a9ffe61050c9d32537cc1b863083961b";
+    const HEX0: &str = "fce9a075fcd4a1a5e867c491860dd6fe422f3747f3ccd3f4f927a1b51193f9a2";
+    const HEX1: &str = "73f229cc4e11354b11cb17bb718fe9cc9c07192fa05bf09adcc05270a5843d7b";
 
     #[test]
     fn test_blockerror_to_io_error() {
@@ -303,7 +303,7 @@ mod tests {
         buf[HASH_RANGE].copy_from_slice(&[1; DIGEST]);
         buf[NEXT_PUBKEY_HASH_RANGE].copy_from_slice(&[2; DIGEST]);
         buf[PAYLOAD_RANGE].copy_from_slice(&[3; PAYLOAD]);
-        buf[INDEX_RANGE].copy_from_slice(&[4; 8]);
+        buf[INDEX_RANGE].copy_from_slice(&[4; INDEX]);
         buf[CHAIN_HASH_RANGE].copy_from_slice(&[5; DIGEST]);
         buf[PREVIOUS_HASH_RANGE].copy_from_slice(&[6; DIGEST]);
 
@@ -313,7 +313,10 @@ mod tests {
             chain_hash: Hash::from_bytes([5; DIGEST]),
             previous_hash: Hash::from_bytes([6; DIGEST]),
             next_pubkey_hash: Hash::from_bytes([2; DIGEST]),
-            payload: Payload::new(217020518514230019, Hash::from_bytes([3; DIGEST])),
+            payload: Payload::new(
+                4003321963775746628980877734491390723,
+                Hash::from_bytes([3; DIGEST]),
+            ),
         };
         assert_eq!(BlockState::from_buf(&buf), expected);
     }
@@ -349,10 +352,11 @@ mod tests {
         buf.extend_from_slice(&[3; PUBKEY]);
         buf.extend_from_slice(&[4; DIGEST]); // NEXT_PUBKEY_HASH
 
-        buf.extend_from_slice(&[5; 8]); // TIME
+        // Payload
+        buf.extend_from_slice(&[5; TIME]); // TIME
         buf.extend_from_slice(&[7; DIGEST]); // STATE_HASH
 
-        buf.extend_from_slice(&[8; 8]); // INDEX
+        buf.extend_from_slice(&[8; INDEX]); // INDEX
         buf.extend_from_slice(&[10; DIGEST]); // CHAIN_HASH
         buf.extend_from_slice(&[9; DIGEST]); // PREVIOUS_HASH
         buf
@@ -366,14 +370,14 @@ mod tests {
     }
 
     #[test]
-    #[should_panic(expected = "Need a 5533 byte slice; got 5532 bytes")]
+    #[should_panic(expected = "Need a 5541 byte slice; got 5540 bytes")]
     fn test_block_new_short_panic() {
         let buf: Vec<u8> = vec![0; BLOCK - 1];
         let _block = Block::new(&buf);
     }
 
     #[test]
-    #[should_panic(expected = "Need a 5533 byte slice; got 5534 bytes")]
+    #[should_panic(expected = "Need a 5541 byte slice; got 5542 bytes")]
     fn test_block_new_long_panic() {
         let buf: Vec<u8> = vec![0; BLOCK + 1];
         let _block = Block::new(&buf);

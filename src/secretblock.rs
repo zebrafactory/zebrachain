@@ -331,14 +331,14 @@ mod tests {
     }
 
     #[test]
-    #[should_panic(expected = "Need a 208 byte Vec<u8>; got 207 bytes")]
+    #[should_panic(expected = "Need a 216 byte Vec<u8>; got 215 bytes")]
     fn test_check_secretblock_buf_panic_low() {
         let buf = vec![0; SECRET_BLOCK - 1];
         check_secretblock_buf(&buf);
     }
 
     #[test]
-    #[should_panic(expected = "Need a 208 byte Vec<u8>; got 209 bytes")]
+    #[should_panic(expected = "Need a 216 byte Vec<u8>; got 217 bytes")]
     fn test_check_secretblock_buf_panic_high() {
         let buf = vec![0; SECRET_BLOCK + 1];
         check_secretblock_buf(&buf);
@@ -352,14 +352,14 @@ mod tests {
     }
 
     #[test]
-    #[should_panic(expected = "Need a 224 byte Vec<u8>; got 223 bytes")]
+    #[should_panic(expected = "Need a 232 byte Vec<u8>; got 231 bytes")]
     fn test_check_secretblock_buf_aead_panic_low() {
         let buf = vec![0; SECRET_BLOCK_AEAD - 1];
         check_secretblock_buf_aead(&buf);
     }
 
     #[test]
-    #[should_panic(expected = "Need a 224 byte Vec<u8>; got 225 bytes")]
+    #[should_panic(expected = "Need a 232 byte Vec<u8>; got 233 bytes")]
     fn test_check_secretblock_buf_aead_panic_high() {
         let buf = vec![0; SECRET_BLOCK_AEAD + 1];
         check_secretblock_buf_aead(&buf);
@@ -562,7 +562,7 @@ mod tests {
     #[test]
     fn test_secretblock_from_previous() {
         let chain_secret = generate_secret().unwrap();
-        for block_index in 0..420 {
+        for block_index in 0u64..420 {
             let (_prev_block_hash, prev_buf) = build_simirandom_valid_block(block_index);
             let prev_state = SecretBlockState::from_buf(&prev_buf).unwrap();
 
@@ -641,10 +641,11 @@ mod tests {
                 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
                 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
                 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 210, 2, 150, 73, 0, 0, 0, 0, 13,
-                13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13,
-                13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 210, 2, 150, 73, 0, 0, 0, 0, 0, 0,
+                0, 0, 0, 0, 0, 0, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13,
+                13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 0, 0, 0, 0, 0, 0,
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 0, 0, 0, 0
             ]
         );
     }
@@ -654,7 +655,7 @@ mod tests {
         let mut buf = vec![0; SECRET_BLOCK];
         let payload = random_payload();
         let mut block = MutSecretBlock::new(&mut buf, &payload);
-        assert_eq!(block.buf[SEC_INDEX_RANGE], [0; 8]);
+        assert_eq!(block.buf[SEC_INDEX_RANGE], [0; INDEX]);
         assert_eq!(block.buf[SEC_PREV_HASH_RANGE], [0; 32]);
         let prev = SecretBlockState {
             block_hash: random_hash(),

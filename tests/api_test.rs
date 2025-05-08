@@ -3,19 +3,21 @@ use std::collections::HashSet;
 use tempfile;
 use zf_zebrachain::{ChainStore, OwnedChainStore, PAYLOAD, Payload, generate_secret};
 
-const SAMPLE_ENTROPY_0: &str = "eca6aab31954966c1996ef58a259aeeba4e2f8a20da25a22f254497a58cce2b0";
-const SAMPLE_ENTROPY_419: &str = "f894663ee5f83bd79389c3a46ece561b84fc3ad079110f53b249d2df9f869e57";
+const SAMPLE_ENTROPY_0: &str = "96b3a086291fbcdef17e52e60731e96d8d36ae0944f2aad0c0c12a0c14e161ca";
+const SAMPLE_ENTROPY_419: &str = "27068b40079a37f5ecfb01700135dc9a81d2c811878d2328475dd1724b40891a";
+
 const SAMPLE_STORAGE_SECRET_0: &str =
-    "627aaf90e01f8d7901b5315f9b3f9bb8aae991c2ebc11e3a0adfecec3b780c47";
+    "28ad9dc97e10d576d16e3e94fe4ef944d3a3215b2aaec67398c70831515f964c";
 const SAMPLE_STORAGE_SECRET_419: &str =
-    "52e76b9ee07681d252ea823416832deb2c8f3bf294cb6e0f5f770dc30a64faa3";
-const SAMPLE_PAYLOAD_0: &str = "55f6dada8875897fc828d497d88187162f0530b56c9760810f01783b532c8fdd";
-const SAMPLE_PAYLOAD_419: &str = "23c046161fceadefc410850888f4d8ffc006ce2759ac425919c8e08b75519c20";
+    "96c7864ce923cec5795c7a5316b961055ef762278e3c0ec9fa3a9a4c9729fd9c";
 
-const BLOCK_HASH_0: &str = "ce7151342243f72438037b2d2c32e43256523f2a87f8a0d54c9b3302c1c41a76";
-const BLOCK_HASH_419: &str = "aa6ebc33cd4477b0420c698cb1c9e42e810e633f3296133c535e75a351522fe1";
+const SAMPLE_PAYLOAD_0: &str = "c0c76cbfd80b970d138cce4e466327b1f2ba96a7de9ecc2c98b8f4e7e462a8bc";
+const SAMPLE_PAYLOAD_419: &str = "e9961e428776cb08e4c3c7c55d912716a1f9edca74da0adb8a7a7805bb536788";
 
-fn sample_entropy(index: u64) -> Hash {
+const BLOCK_HASH_0: &str = "1e3f1868ce7505deb6682d45874e9dfdbf1ad9a7dfc0ad80070f83489d763262";
+const BLOCK_HASH_419: &str = "9d663c74c5417a19b250a6ee69228f0c2e272522ca59a5f066f752a8f20902c9";
+
+fn sample_entropy(index: u128) -> Hash {
     let mut h = Hasher::new();
     h.update(
         b"This will be our bad entropy with random access. Do not do this in real life, haha.",
@@ -38,10 +40,10 @@ fn test_sample_entropy() {
     assert_eq!(hset.len(), 420);
 }
 
-fn sample_storage_secret(index: u64) -> Hash {
+fn sample_storage_secret(index: u128) -> Hash {
     let mut h = Hasher::new();
     h.update(
-        b"This will bad sample storage secret with random access. Seriously, do NOT do in real life.",
+        b"This will a bad sample storage secret with random access. Seriously, do NOT do in real life.",
     );
     h.update(&index.to_le_bytes());
     h.finalize()
@@ -64,12 +66,12 @@ fn test_sample_storage_secret() {
     assert_eq!(hset.len(), 420);
 }
 
-fn sample_payload(index: u64) -> Payload {
+fn sample_payload(index: u128) -> Payload {
     let mut h = Hasher::new();
     h.update(b"This will be our test payload generator with random access");
     h.update(&index.to_le_bytes());
     let root = h.finalize();
-    let time = u64::from_le_bytes(root.as_bytes()[0..8].try_into().unwrap());
+    let time = u128::from_le_bytes(root.as_bytes()[0..16].try_into().unwrap());
     let state_hash = hash(root.as_bytes());
     Payload::new(time, state_hash)
 }

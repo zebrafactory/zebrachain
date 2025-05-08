@@ -11,6 +11,13 @@ pub fn random_u64() -> u64 {
     u64::from_le_bytes(buf)
 }
 
+/// Returns a random u128 created with [getradom::fill()].
+pub fn random_u128() -> u128 {
+    let mut buf = [0; 16];
+    getrandom::fill(&mut buf).unwrap();
+    u128::from_le_bytes(buf)
+}
+
 /// Returns a random [blake3::Hash] created with [getradom::fill()].
 pub fn random_hash() -> Hash {
     let mut buf = [0; 32];
@@ -20,7 +27,7 @@ pub fn random_hash() -> Hash {
 
 /// Returns a random [Payload].
 pub fn random_payload() -> Payload {
-    Payload::new(random_u64(), random_hash())
+    Payload::new(random_u128(), random_hash())
 }
 
 /// Returns a vec of random payloads.
@@ -128,6 +135,38 @@ impl Iterator for U64BitFlipper {
             flip_bit(&mut bad, self.counter);
             self.counter += 1;
             Some(u64::from_le_bytes(bad))
+        } else {
+            None
+        }
+    }
+}
+
+/// Iteration through all 1-bit flip permutations in a u128.
+#[derive(Debug)]
+pub struct U128BitFlipper {
+    orig: [u8; 16],
+    counter: usize,
+}
+
+impl U128BitFlipper {
+    /// Create a new [HashBitFlipper].
+    pub fn new(orig: u128) -> Self {
+        Self {
+            orig: orig.to_le_bytes(),
+            counter: 0,
+        }
+    }
+}
+
+impl Iterator for U128BitFlipper {
+    type Item = u128;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.counter < self.orig.len() * 8 {
+            let mut bad = self.orig;
+            flip_bit(&mut bad, self.counter);
+            self.counter += 1;
+            Some(u128::from_le_bytes(bad))
         } else {
             None
         }
