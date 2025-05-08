@@ -219,14 +219,6 @@ impl SecretChainStore {
         secret_chain_filename(&self.dir, chain_hash)
     }
 
-    /// Open a secret chain identified by its public chain-hash.
-    pub fn open_chain(&self, chain_hash: &Hash) -> io::Result<SecretChain> {
-        let filename = self.chain_filename(chain_hash);
-        let file = open_for_append(&filename)?;
-        let secret = self.derive_chain_secret(chain_hash);
-        SecretChain::open(file, secret)
-    }
-
     /// Create a new secret chain.
     pub fn create_chain(
         &self,
@@ -238,6 +230,14 @@ impl SecretChainStore {
         let file = create_for_append(&filename)?;
         let secret = self.derive_chain_secret(chain_hash);
         SecretChain::create(file, secret, buf, block_hash)
+    }
+
+    /// Open a secret chain identified by its public chain-hash.
+    pub fn open_chain(&self, chain_hash: &Hash) -> io::Result<SecretChain> {
+        let filename = self.chain_filename(chain_hash);
+        let file = open_for_append(&filename)?;
+        let secret = self.derive_chain_secret(chain_hash);
+        SecretChain::open(file, secret)
     }
 
     /// Remove secret chain file.
