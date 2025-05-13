@@ -258,18 +258,6 @@ mod tests {
     const HEX1: &str = "73f229cc4e11354b11cb17bb718fe9cc9c07192fa05bf09adcc05270a5843d7b";
 
     #[test]
-    fn test_blockerror_to_io_error() {
-        assert_eq!(
-            format!("{:?}", BlockError::Content.to_io_error()),
-            "Custom { kind: Other, error: \"BlockError::Content\" }"
-        );
-        assert_eq!(
-            format!("{:?}", BlockError::Signature.to_io_error()),
-            "Custom { kind: Other, error: \"BlockError::Signature\" }"
-        );
-    }
-
-    #[test]
     fn test_blockstate_effective_chain_hash() {
         let h1 = random_hash();
         let h2 = random_hash();

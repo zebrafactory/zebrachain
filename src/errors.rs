@@ -68,3 +68,32 @@ impl SecretBlockError {
         io::Error::other(format!("SecretBlockError::{self:?}"))
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_blockerror_to_io_error() {
+        assert_eq!(
+            format!("{:?}", BlockError::Content.to_io_error()),
+            "Custom { kind: Other, error: \"BlockError::Content\" }"
+        );
+        assert_eq!(
+            format!("{:?}", BlockError::Signature.to_io_error()),
+            "Custom { kind: Other, error: \"BlockError::Signature\" }"
+        );
+    }
+
+    #[test]
+    fn test_secretblockerror_to_io_error() {
+        assert_eq!(
+            format!("{:?}", SecretBlockError::Decryption.to_io_error()),
+            "Custom { kind: Other, error: \"SecretBlockError::Decryption\" }"
+        );
+        assert_eq!(
+            format!("{:?}", SecretBlockError::SeedSequence.to_io_error()),
+            "Custom { kind: Other, error: \"SecretBlockError::SeedSequence\" }"
+        );
+    }
+}
