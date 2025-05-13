@@ -40,6 +40,9 @@ impl BlockError {
 /// Error conditions hit when validating a [SecretBlock][crate::secretblock::SecretBlock].
 #[derive(Debug, PartialEq)]
 pub enum SecretBlockError {
+    /// Authenticated decryption of the secret block failed.
+    Decryption,
+
     /// Hash of block content does not match hash in block.
     Content,
 
@@ -57,9 +60,6 @@ pub enum SecretBlockError {
 
     /// Previous hash in block does not match expected external value.
     PreviousHash,
-
-    /// Authenticated decryption of the secret block failed.
-    Decryption,
 }
 
 impl SecretBlockError {
