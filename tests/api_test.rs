@@ -3,7 +3,7 @@ use std::collections::HashSet;
 use tempfile;
 use zf_zebrachain::{
     ChainStore, DIGEST, MutSecretBlock, OwnedChainStore, PAYLOAD, Payload, SecretChainStore, Seed,
-    generate_secret,
+    generate_secret, sign,
 };
 
 const SAMPLE_ENTROPY_0: &str = "96b3a086291fbcdef17e52e60731e96d8d36ae0944f2aad0c0c12a0c14e161ca";
@@ -85,6 +85,7 @@ fn test_chain_store() {
     let store = ChainStore::new(tmpdir.path());
     let chain_hash = Hash::from_bytes([42; DIGEST]);
     assert!(store.open_chain(&chain_hash).is_err());
+    assert!(store.remove_chain_file(&chain_hash).is_err());
 }
 
 #[test]
@@ -112,6 +113,7 @@ fn test_secret_chain_store() {
     assert_eq!(chain.tail(), &tail);
     store.remove_chain_file(&chain_hash).unwrap();
     assert!(store.open_chain(&chain_hash).is_err());
+    assert!(store.remove_chain_file(&chain_hash).is_err());
 }
 
 #[test]
@@ -165,4 +167,56 @@ fn test_owned_chain_store() {
         Hash::from_hex(BLOCK_HASH_419).unwrap()
     );
     assert_ne!(chain.head(), chain.tail());
+}
+
+#[test]
+fn test_seed_create() {
+    let mut hset = HashSet::new();
+    for i in 0..420 {
+        let initial_entropy = sample_entropy(i);
+        let seed = Seed::create(&initial_entropy);
+        assert!(hset.insert(seed.secret));
+        assert!(hset.insert(seed.next_secret));
+    }
+    assert_eq!(hset.len(), 840);
+}
+
+#[test]
+fn test_seed_auto_create() {
+    let mut hset = HashSet::new();
+    for _ in 0..420 {
+        let seed = Seed::auto_create().unwrap();
+        assert!(hset.insert(seed.secret));
+        assert!(hset.insert(seed.next_secret));
+    }
+    assert_eq!(hset.len(), 840);
+}
+
+#[test]
+fn test_seed_advance() {
+    let mut hset = HashSet::new();
+    let seed = Seed::auto_create().unwrap();
+    assert!(hset.insert(seed.secret));
+    assert!(hset.insert(seed.next_secret));
+    for i in 0..420 {
+        let new_entropy = sample_entropy(i);
+        let seed2 = seed.advance(&new_entropy);
+        assert!(!hset.insert(seed2.secret));
+        assert!(hset.insert(seed2.next_secret));
+    }
+    assert_eq!(hset.len(), 422);
+}
+
+#[test]
+fn test_seed_auto_advance() {
+    let mut hset = HashSet::new();
+    let seed = Seed::auto_create().unwrap();
+    assert!(hset.insert(seed.secret));
+    assert!(hset.insert(seed.next_secret));
+    for _ in 0..420 {
+        let seed2 = seed.auto_advance().unwrap();
+        assert!(!hset.insert(seed2.secret));
+        assert!(hset.insert(seed2.next_secret));
+    }
+    assert_eq!(hset.len(), 422);
 }
