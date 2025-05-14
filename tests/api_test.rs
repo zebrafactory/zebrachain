@@ -1,7 +1,10 @@
-use blake3::{Hash, Hasher, hash};
+use blake3::{Hash, Hasher, hash, keyed_hash};
 use std::collections::HashSet;
 use tempfile;
-use zf_zebrachain::{ChainStore, OwnedChainStore, PAYLOAD, Payload, generate_secret};
+use zf_zebrachain::{
+    ChainStore, DIGEST, MutSecretBlock, OwnedChainStore, PAYLOAD, Payload, SecretChainStore, Seed,
+    generate_secret,
+};
 
 const SAMPLE_ENTROPY_0: &str = "96b3a086291fbcdef17e52e60731e96d8d36ae0944f2aad0c0c12a0c14e161ca";
 const SAMPLE_ENTROPY_419: &str = "27068b40079a37f5ecfb01700135dc9a81d2c811878d2328475dd1724b40891a";
@@ -80,7 +83,34 @@ fn sample_payload(index: u128) -> Payload {
 fn test_chain_store() {
     let tmpdir = tempfile::TempDir::new().unwrap();
     let store = ChainStore::new(tmpdir.path());
-    let chain_hash = generate_secret().unwrap();
+    let chain_hash = Hash::from_bytes([42; DIGEST]);
+    assert!(store.open_chain(&chain_hash).is_err());
+}
+
+#[test]
+fn test_secret_chain_store() {
+    let tmpdir = tempfile::TempDir::new().unwrap();
+    let storage_secret = generate_secret().unwrap();
+    let store = SecretChainStore::new(tmpdir.path(), storage_secret);
+    let chain_hash = Hash::from_bytes([42; DIGEST]);
+    assert!(store.open_chain(&chain_hash).is_err());
+
+    let mut buf = Vec::new();
+    let payload = sample_payload(0);
+    let mut block = MutSecretBlock::new(&mut buf, &payload);
+    let seed = Seed::create(&sample_entropy(0));
+    block.set_seed(&seed);
+    block.set_public_block_hash(&chain_hash);
+
+    let chain_secret = keyed_hash(storage_secret.as_bytes(), chain_hash.as_bytes());
+    let block_hash = block.finalize(&chain_secret);
+    let chain = store.create_chain(&chain_hash, buf, &block_hash).unwrap();
+    assert_eq!(chain.tail().payload, payload);
+    let tail = chain.tail().clone();
+
+    let chain = store.open_chain(&chain_hash).unwrap();
+    assert_eq!(chain.tail(), &tail);
+    store.remove_chain_file(&chain_hash).unwrap();
     assert!(store.open_chain(&chain_hash).is_err());
 }
 
