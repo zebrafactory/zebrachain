@@ -202,12 +202,14 @@ impl<'a> MutBlock<'a> {
         set_hash(self.buf, CHAIN_HASH_RANGE, &chain_hash);
     }
 
-    /// Set hash of the public key that will be used for siging the next block.
-    pub fn set_next_pubkey_hash(&mut self, next_pubkey_hash: &Hash) {
+    // Set hash of the public key that will be used for siging the next block.
+    pub(crate) fn set_next_pubkey_hash(&mut self, next_pubkey_hash: &Hash) {
         set_hash(self.buf, NEXT_PUBKEY_HASH_RANGE, next_pubkey_hash);
     }
 
     /// Sign block using seed.
+    ///
+    /// This sets the pubkey and next_pubkey fields
     pub fn sign(&mut self, seed: &Seed) {
         let signer = SecretSigner::new(seed);
         signer.sign(self);
