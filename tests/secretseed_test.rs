@@ -1,5 +1,6 @@
+use getrandom;
 use std::collections::HashSet;
-use zf_zebrachain::{Seed, generate_secret};
+use zf_zebrachain::{DIGEST, Seed, generate_secret};
 
 #[test]
 fn test_generate_secret() {
@@ -9,6 +10,24 @@ fn test_generate_secret() {
         assert!(hset.insert(secret));
     }
     assert_eq!(hset.len(), 420);
+}
+
+#[test]
+fn test_seed_from_buf() {
+    let mut buf = [0; DIGEST * 2];
+    getrandom::fill(&mut buf).unwrap();
+    let seed = Seed::from_buf(&buf).unwrap();
+    assert_eq!(&buf[..DIGEST], seed.secret.as_bytes());
+    assert_eq!(&buf[DIGEST..], seed.next_secret.as_bytes());
+}
+
+#[test]
+fn test_seed_write_to_buf() {
+    let seed = Seed::auto_create().unwrap();
+    let mut buf = [0; DIGEST * 2];
+    seed.write_to_buf(&mut buf);
+    assert_eq!(&buf[..DIGEST], seed.secret.as_bytes());
+    assert_eq!(&buf[DIGEST..], seed.next_secret.as_bytes());
 }
 
 #[test]
