@@ -53,15 +53,11 @@ pub(crate) fn derive_secret(context: &str, secret: &Secret) -> Secret {
 /// # Examples
 ///
 /// ```
-/// use zf_zebrachain::{Seed, generate_secret};
-/// let initial_entropy = generate_secret().unwrap();
-/// let mut seed = Seed::create(&initial_entropy);
-/// let new_entropy = generate_secret().unwrap();
-/// let next = seed.advance(&new_entropy);
+/// use zf_zebrachain::Seed;
+/// let seed = Seed::auto_create().unwrap();
+/// let next = seed.auto_advance().unwrap();
 /// assert_eq!(next.secret, seed.next_secret);
 /// assert_ne!(seed, next);
-/// seed.commit(next.clone());
-/// assert_eq!(seed, next);
 /// ```
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Seed {
@@ -138,18 +134,6 @@ impl Seed {
     pub fn auto_advance(&self) -> Result<Self, EntropyError> {
         let new_entropy = generate_secret()?; // Only this part can fail
         Ok(self.advance(&new_entropy))
-    }
-
-    /// Mutate seed state to match `next`.
-    pub fn commit(&mut self, next: Seed) {
-        if next.secret == next.next_secret {
-            panic!("commit(): secret and next_secret cannot be equal");
-        }
-        if next.secret != self.next_secret {
-            panic!("commit(): cannot commit out of sequence seed");
-        }
-        self.secret = next.secret;
-        self.next_secret = next.next_secret;
     }
 }
 
@@ -331,38 +315,5 @@ mod tests {
             assert!(hset.insert(seed.next_secret));
         }
         assert_eq!(hset.len(), count + 2);
-    }
-
-    #[test]
-    fn test_seed_commit() {
-        let entropy = Hash::from_bytes([69; 32]);
-        let mut seed = Seed::create(&entropy);
-        let next = seed.advance(&entropy);
-        assert_ne!(seed, next);
-        seed.commit(next.clone());
-        assert_eq!(seed, next);
-    }
-
-    #[test]
-    #[should_panic(expected = "commit(): cannot commit out of sequence seed")]
-    fn test_seed_commit_panic1() {
-        let entropy = Hash::from_bytes([69; 32]);
-        let mut seed = Seed::create(&entropy);
-        let a1 = seed.advance(&entropy);
-        let a2 = a1.advance(&entropy);
-        seed.commit(a2);
-    }
-
-    #[test]
-    #[should_panic(expected = "commit(): secret and next_secret cannot be equal")]
-    fn test_seed_commit_panic2() {
-        let entropy = Hash::from_bytes([69; 32]);
-        let mut seed = Seed::create(&entropy);
-        let a1 = seed.advance(&entropy);
-        let a2 = Seed {
-            secret: a1.secret,
-            next_secret: a1.secret,
-        };
-        seed.commit(a2);
     }
 }
