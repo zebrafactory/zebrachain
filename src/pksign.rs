@@ -7,6 +7,7 @@ use crate::secretseed::{Secret, Seed, derive_secret};
 use blake3::{Hash, hash};
 use ml_dsa::{B32, KeyGen, MlDsa65};
 use signature::Signer;
+use zeroize::Zeroize;
 
 fn build_ed25519_keypair(secret: &Secret) -> ed25519_dalek::SigningKey {
     ed25519_dalek::SigningKey::from_bytes(derive_secret(CONTEXT_ED25519, secret).as_bytes())
@@ -45,7 +46,9 @@ impl KeyPair {
     fn pubkey_hash(self) -> Hash {
         let mut buf = [0; PUBKEY];
         self.write_pubkey(&mut buf);
-        hash(&buf)
+        let pubkey_hash = hash(&buf);
+        buf.zeroize(); // We treat the next public key as secret till use, so zeroize buf
+        pubkey_hash
     }
 
     /// Sign a block being built up.
