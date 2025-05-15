@@ -43,7 +43,7 @@ fn test_block() {
     let block = Block::new(&buf);
     assert_eq!(
         block.from_previous(&block_state_1),
-        Err(BlockError::PubKeyHash)
+        Err(BlockError::PublicKeyHash)
     );
 }
 
