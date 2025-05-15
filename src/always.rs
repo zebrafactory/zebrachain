@@ -116,20 +116,23 @@ pub(crate) const SEC_PREV_HASH_RANGE: Range<usize> = get_secrange(5);
 pub(crate) const BLOCK_READ_BUF: usize = BLOCK * 64;
 pub(crate) const SECRET_BLOCK_AEAD_READ_BUF: usize = SECRET_BLOCK_AEAD * 64;
 
-pub static CONTEXT_SECRET: &str =
+pub(crate) static CONTEXT_SECRET: &str =
     "ed149ef77826374035fd3a1e2c1bf3b39539333d5a8bc1f7e788736430efc7f2";
-pub static CONTEXT_SECRET_NEXT: &str =
+pub(crate) static CONTEXT_SECRET_NEXT: &str =
     "a0ec84dd51dabc0cfb7f61c936c8577c15982715b77ed5d6582cb01108769831";
-pub static CONTEXT_ED25519: &str =
+pub(crate) static CONTEXT_ED25519: &str =
     "e3481172dcedab349a13152e9d002494f1ae292c868e049d93926c3a58a48408";
-pub static CONTEXT_ML_DSA: &str =
+pub(crate) static CONTEXT_ML_DSA: &str =
     "e665ee96123e46d74e76dc53bdc64df06d72c238d574b7c153305f5e63063350";
-//pub static CONTEXT_SLH_DSA: &str =
+//pub(crate) static CONTEXT_SLH_DSA: &str =
 //    "b5de7bead4cac0fb4fe60cbb2ef31cb2c0590adb10f0764769cd5b0e0d7d11c1";
-pub static CONTEXT_STORE_KEY: &str =
+pub(crate) static CONTEXT_STORE_KEY: &str =
     "0179f9dd9cb5b0af47079d3a102872a32744b7f7aa8a5f22f7c0a16ba8549601";
-pub static CONTEXT_STORE_NONCE: &str =
+pub(crate) static CONTEXT_STORE_NONCE: &str =
     "dc49809016fca0a126c5df6d373e90c48683e664ecba0440ae59523d93e13515";
+
+pub(crate) static SIGNING_CXT_ML_DSA: &str =
+    "270973c068ca5b0188c0e0b89f286d1a8c6a3b3c176aa07b3ae3a519fd65032f";
 
 pub(crate) const ZERO_HASH: Hash = Hash::from_bytes([0; DIGEST]);
 
