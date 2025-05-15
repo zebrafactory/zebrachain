@@ -3,7 +3,8 @@
 use crate::always::*;
 use crate::errors::BlockError;
 use crate::payload::Payload;
-use crate::pksign::verify_block_signature;
+use crate::pksign::{SecretSigner, verify_block_signature};
+use crate::secretseed::Seed;
 use blake3::{Hash, hash};
 
 fn check_block_buf(buf: &[u8]) {
@@ -204,6 +205,12 @@ impl<'a> MutBlock<'a> {
     /// Set hash of the public key that will be used for siging the next block.
     pub fn set_next_pubkey_hash(&mut self, next_pubkey_hash: &Hash) {
         set_hash(self.buf, NEXT_PUBKEY_HASH_RANGE, next_pubkey_hash);
+    }
+
+    /// Sign block using seed.
+    pub fn sign(&mut self, seed: &Seed) {
+        let signer = SecretSigner::new(seed);
+        signer.sign(self);
     }
 
     /// Finalize the block (sets and returns block hash).
