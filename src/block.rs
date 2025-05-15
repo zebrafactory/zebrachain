@@ -257,7 +257,7 @@ impl<'a> MutBlock<'a> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::pksign::{SecretSigner, sign_block};
+    use crate::pksign::SecretSigner;
     use crate::secretseed::Seed;
     use crate::testhelpers::{
         BitFlipper, HashBitFlipper, U64BitFlipper, random_hash, random_payload,
@@ -514,11 +514,16 @@ mod tests {
     fn test_block_from_previous_3rd() {
         let mut buf = [0; BLOCK];
         let seed = Seed::auto_create().unwrap();
-        let chain_hash = sign_block(&mut buf, &seed, &random_payload(), None);
+        let mut block = MutBlock::new(&mut buf, &random_payload());
+        block.sign(&seed);
+        let chain_hash = block.finalize();
         let tail = Block::new(&buf).from_hash_at_index(&chain_hash, 0).unwrap();
 
         let seed = seed.auto_advance().unwrap();
-        sign_block(&mut buf, &seed, &random_payload(), Some(&tail));
+        let mut block = MutBlock::new(&mut buf, &random_payload());
+        block.set_previous(&tail);
+        block.sign(&seed);
+        block.finalize();
         for bad_chain_hash in HashBitFlipper::new(&chain_hash) {
             let bad_prev = BlockState::new(
                 0,
@@ -535,7 +540,10 @@ mod tests {
 
         // Sign 3rd block
         let seed = seed.auto_advance().unwrap();
-        sign_block(&mut buf, &seed, &random_payload(), Some(&tail));
+        let mut block = MutBlock::new(&mut buf, &random_payload());
+        block.set_previous(&tail);
+        block.sign(&seed);
+        block.finalize();
         assert!(Block::new(&buf).from_previous(&tail).is_ok());
         for bad_chain_hash in HashBitFlipper::new(&chain_hash) {
             let bad_prev = BlockState::new(
