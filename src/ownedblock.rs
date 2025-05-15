@@ -91,29 +91,6 @@ impl<'a> MutOwnedBlock<'a> {
     }
 }
 
-/// High-level signing function.
-pub fn sign(
-    buf: &mut [u8],
-    secret_buf: &mut Vec<u8>,
-    chain_secret: &Secret,
-    seed: &Seed,
-    payload: &Payload,
-    prev: Option<OwnedBlockState>,
-) -> (Hash, Hash) {
-    let mut block = MutOwnedBlock::new(buf, secret_buf, payload);
-    if let Some(obs) = prev.as_ref() {
-        block.set_previous(obs);
-    }
-    block.sign(seed);
-    if let Some(obs) = prev.as_ref() {
-        assert_eq!(
-            obs.block_state.next_pubkey_hash,
-            block.block.compute_pubkey_hash()
-        );
-    }
-    block.finalize(chain_secret)
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -124,20 +101,15 @@ mod tests {
     use crate::testhelpers::random_payload;
 
     #[test]
-    fn test_sign() {
+    fn test_mut_owned_block() {
         let chain_secret = generate_secret().unwrap();
         let seed = Seed::auto_create().unwrap();
         let payload = random_payload();
         let mut buf = [0; BLOCK];
         let mut secret_buf = vec![0; SECRET_BLOCK];
-        let (block_hash, _) = sign(
-            &mut buf,
-            &mut secret_buf,
-            &chain_secret,
-            &seed,
-            &payload,
-            None,
-        );
+        let mut block = MutOwnedBlock::new(&mut buf, &mut secret_buf, &payload);
+        block.sign(&seed);
+        let (block_hash, _) = block.finalize(&chain_secret);
         assert!(Block::new(&buf).from_hash_at_index(&block_hash, 0).is_ok());
         assert_eq!(
             pksign::sign_block(&mut buf, &seed, &payload, None),
