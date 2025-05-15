@@ -36,7 +36,7 @@ pub fn generate_secret() -> Result<Secret, EntropyError> {
 ///
 /// And even if signing with a single algorithm, we still should use a derived secret instead of the
 /// root secret directly.
-pub fn derive_secret(context: &str, secret: &Secret) -> Secret {
+pub(crate) fn derive_secret(context: &str, secret: &Secret) -> Secret {
     if context.len() != 64 {
         panic!(
             "derive_secret(): context string length must be 64; got {}",
@@ -73,8 +73,7 @@ pub struct Seed {
 }
 
 impl Seed {
-    /// FIXME: Remove from public API.
-    pub fn new(secret: Secret, next_secret: Secret) -> Self {
+    pub(crate) fn new(secret: Secret, next_secret: Secret) -> Self {
         if secret == next_secret {
             panic!("new(): secret and next_secret cannot be equal");
         }
