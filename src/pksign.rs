@@ -70,13 +70,13 @@ impl KeyPair {
     }
 }
 
-pub struct SecretSigner {
+pub(crate) struct SecretSigner {
     keypair: KeyPair,
     next_pubkey_hash: Hash,
 }
 
 impl SecretSigner {
-    pub fn new(seed: &Seed) -> Self {
+    pub(crate) fn new(seed: &Seed) -> Self {
         assert_ne!(seed.secret, seed.next_secret);
         Self {
             keypair: KeyPair::new(&seed.secret),
@@ -85,7 +85,7 @@ impl SecretSigner {
     }
 
     /// Sign a [MutBlock].
-    pub fn sign(self, block: &mut MutBlock) {
+    pub(crate) fn sign(self, block: &mut MutBlock) {
         // First write next_pubkey_hash because that's part of what we sign:
         block.set_next_pubkey_hash(&self.next_pubkey_hash);
         self.keypair.sign(block);
@@ -97,7 +97,7 @@ impl SecretSigner {
 /// Internally, this builds a [MutBlock].
 ///
 /// Honestly, this fn could be the signing API for the whole module. We will see.
-pub fn sign_block(
+pub(crate) fn sign_block(
     buf: &mut [u8],
     seed: &Seed,
     payload: &Payload,
@@ -167,7 +167,7 @@ impl<'a> Hybrid<'a> {
 }
 
 /// Verify the signature of a [Block].
-pub fn verify_block_signature(block: &Block) -> bool {
+pub(crate) fn verify_block_signature(block: &Block) -> bool {
     let hybrid = Hybrid::new(block);
     hybrid.verify()
 }

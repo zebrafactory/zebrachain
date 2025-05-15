@@ -10,10 +10,10 @@
 //! * Logs each signature in a block chain
 //!
 //! * Rotates the keypairs at every signature by including the public key used to sign the current
-//! block and the hash of the public key that will be used to sign the next block
+//!   block and the hash of the public key that will be used to sign the next block
 //!
 //! * Is quantum secure because it uses ML-DSA + ed25519 in a hybrid signing construction (as
-//! recommended by the ML-DSA authors)
+//!   recommended by the ML-DSA authors)
 //!
 //! This is a pre-release crate. The API is still being finalized. The 0.0.x releases make no
 //! API commitments, nor any commits to the protocol.
