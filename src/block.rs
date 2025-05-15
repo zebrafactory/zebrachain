@@ -209,7 +209,8 @@ impl<'a> MutBlock<'a> {
 
     /// Sign block using seed.
     ///
-    /// This sets the pubkey and next_pubkey fields
+    /// This sets the `pubkey` and `next_pubkey_hash` fields, computes the signature, and then
+    /// sets the `signature` field.
     pub fn sign(&mut self, seed: &Seed) {
         let signer = SecretSigner::new(seed);
         signer.sign(self);
