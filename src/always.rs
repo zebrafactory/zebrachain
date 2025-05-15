@@ -133,6 +133,8 @@ pub(crate) static CONTEXT_STORE_NONCE: &str =
 
 pub(crate) static SIGNING_CXT_ML_DSA: &[u8] =
     b"270973c068ca5b0188c0e0b89f286d1a8c6a3b3c176aa07b3ae3a519fd65032f";
+//pub(crate) static SIGNING_CXT_SLH_DSA: &[u8] =
+//    b"b71cd1500453530f76d0a4e47863c69bb4842a42ba088532d58d11c149489853";
 
 pub(crate) const ZERO_HASH: Hash = Hash::from_bytes([0; DIGEST]);
 
