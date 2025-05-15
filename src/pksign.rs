@@ -64,7 +64,7 @@ impl KeyPair {
         let sig = self
             .mldsa
             .signing_key()
-            .sign_deterministic(block.as_signable2(), b"")
+            .sign_deterministic(block.as_signable2(), SIGNING_CXT_ML_DSA)
             .unwrap();
         block.as_mut_signature()[SIG_MLDSA_RANGE].copy_from_slice(sig.encode().as_slice());
     }
@@ -145,7 +145,7 @@ impl<'a> Hybrid<'a> {
         let pubkey = ml_dsa::VerifyingKey::<MlDsa65>::decode(&pubenc);
         let sigenc = ml_dsa::EncodedSignature::<MlDsa65>::try_from(self.as_sig_mldsa()).unwrap();
         if let Some(sig) = ml_dsa::Signature::<MlDsa65>::decode(&sigenc) {
-            pubkey.verify_with_context(self.block.as_signable2(), b"", &sig)
+            pubkey.verify_with_context(self.block.as_signable2(), SIGNING_CXT_ML_DSA, &sig)
         } else {
             false
         }
