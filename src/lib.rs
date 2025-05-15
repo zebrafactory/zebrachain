@@ -1,6 +1,6 @@
 #![deny(missing_docs)]
 
-//! 🦓 🔗 ZebraChain: A futuristic cryptographic identity system.
+//! # 🦓 🔗 ZebraChain: A futuristic cryptographic identity system.
 //!
 //! ZebraChain is a logged, quantum safe signing protocol designed to replace the long lived
 //! asymmetric key pairs used to sign software releases (and to sign other super important stuff).
@@ -8,14 +8,14 @@
 //! This is a pre-release crate. The API is still being finalized. The 0.0.x releases make no
 //! API commitments.
 //!
-//! # ⚠️ Security Warning
+//! ## ⚠️ Security Warning
 //!
 //! ZebraChain is not yet suitable for production use.
 //!
 //! This is a nascent implementation of a yet to be finalized protocol. It's also built an quite
 //! new Rust implementations of [ML-DSA] and [SLH-DSA].
 //!
-//! # Quickstart
+//! ##  🚀 Quickstart
 //!
 //! ```
 //! use tempfile;

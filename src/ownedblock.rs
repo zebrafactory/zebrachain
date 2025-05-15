@@ -20,7 +20,6 @@ Because the public block can be recreated from the secret block, this gives us a
 
 use crate::block::{BlockState, MutBlock};
 use crate::payload::Payload;
-use crate::pksign::SecretSigner;
 use crate::secretblock::{MutSecretBlock, SecretBlockState};
 use crate::secretchain::derive_chain_secret;
 use crate::secretseed::{Secret, Seed};
@@ -70,8 +69,7 @@ impl<'a> MutOwnedBlock<'a> {
 
     /// Sign public block using `seed` and then save seed in secret block.
     pub fn sign(&mut self, seed: &Seed) {
-        let signer = SecretSigner::new(seed);
-        signer.sign(&mut self.block);
+        self.block.sign(seed);
         self.secret_block.set_seed(seed);
     }
 

@@ -3,7 +3,8 @@
 use crate::always::*;
 use crate::errors::BlockError;
 use crate::payload::Payload;
-use crate::pksign::verify_block_signature;
+use crate::pksign::{SecretSigner, verify_block_signature};
+use crate::secretseed::Seed;
 use blake3::{Hash, hash};
 
 fn check_block_buf(buf: &[u8]) {
@@ -201,9 +202,18 @@ impl<'a> MutBlock<'a> {
         set_hash(self.buf, CHAIN_HASH_RANGE, &chain_hash);
     }
 
-    /// Set hash of the public key that will be used for siging the next block.
-    pub fn set_next_pubkey_hash(&mut self, next_pubkey_hash: &Hash) {
+    // Set hash of the public key that will be used for siging the next block.
+    pub(crate) fn set_next_pubkey_hash(&mut self, next_pubkey_hash: &Hash) {
         set_hash(self.buf, NEXT_PUBKEY_HASH_RANGE, next_pubkey_hash);
+    }
+
+    /// Sign block using seed.
+    ///
+    /// This sets the `pubkey` and `next_pubkey_hash` fields, computes the signature, and then
+    /// sets the `signature` field.
+    pub fn sign(&mut self, seed: &Seed) {
+        let signer = SecretSigner::new(seed);
+        signer.sign(self);
     }
 
     /// Finalize the block (sets and returns block hash).
@@ -256,18 +266,6 @@ mod tests {
 
     const HEX0: &str = "fce9a075fcd4a1a5e867c491860dd6fe422f3747f3ccd3f4f927a1b51193f9a2";
     const HEX1: &str = "73f229cc4e11354b11cb17bb718fe9cc9c07192fa05bf09adcc05270a5843d7b";
-
-    #[test]
-    fn test_blockerror_to_io_error() {
-        assert_eq!(
-            format!("{:?}", BlockError::Content.to_io_error()),
-            "Custom { kind: Other, error: \"BlockError::Content\" }"
-        );
-        assert_eq!(
-            format!("{:?}", BlockError::Signature.to_io_error()),
-            "Custom { kind: Other, error: \"BlockError::Signature\" }"
-        );
-    }
 
     #[test]
     fn test_blockstate_effective_chain_hash() {

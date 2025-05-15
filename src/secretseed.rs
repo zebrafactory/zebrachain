@@ -36,7 +36,7 @@ pub fn generate_secret() -> Result<Secret, EntropyError> {
 ///
 /// And even if signing with a single algorithm, we still should use a derived secret instead of the
 /// root secret directly.
-pub fn derive_secret(context: &str, secret: &Secret) -> Secret {
+pub(crate) fn derive_secret(context: &str, secret: &Secret) -> Secret {
     if context.len() != 64 {
         panic!(
             "derive_secret(): context string length must be 64; got {}",
@@ -53,15 +53,11 @@ pub fn derive_secret(context: &str, secret: &Secret) -> Secret {
 /// # Examples
 ///
 /// ```
-/// use zf_zebrachain::{Seed, generate_secret};
-/// let initial_entropy = generate_secret().unwrap();
-/// let mut seed = Seed::create(&initial_entropy);
-/// let new_entropy = generate_secret().unwrap();
-/// let next = seed.advance(&new_entropy);
+/// use zf_zebrachain::Seed;
+/// let seed = Seed::auto_create().unwrap();
+/// let next = seed.auto_advance().unwrap();
 /// assert_eq!(next.secret, seed.next_secret);
 /// assert_ne!(seed, next);
-/// seed.commit(next.clone());
-/// assert_eq!(seed, next);
 /// ```
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Seed {
@@ -73,8 +69,7 @@ pub struct Seed {
 }
 
 impl Seed {
-    /// FIXME: Remove from public API.
-    pub fn new(secret: Secret, next_secret: Secret) -> Self {
+    pub(crate) fn new(secret: Secret, next_secret: Secret) -> Self {
         if secret == next_secret {
             panic!("new(): secret and next_secret cannot be equal");
         }
@@ -84,28 +79,6 @@ impl Seed {
         }
     }
 
-    /// Load a seed from a buffer.
-    pub fn from_buf(buf: &[u8]) -> Result<Self, SecretBlockError> {
-        assert_eq!(buf.len(), SEED);
-        let secret = get_hash(buf, SECRET_RANGE);
-        let next_secret = get_hash(buf, NEXT_SECRET_RANGE);
-        if secret == ZERO_HASH || next_secret == ZERO_HASH || secret == next_secret {
-            Err(SecretBlockError::Seed)
-        } else {
-            Ok(Self {
-                secret,
-                next_secret,
-            })
-        }
-    }
-
-    /// Write seed to buffer.
-    pub fn write_to_buf(&self, buf: &mut [u8]) {
-        assert_eq!(buf.len(), SEED);
-        set_hash(buf, SECRET_RANGE, &self.secret);
-        set_hash(buf, NEXT_SECRET_RANGE, &self.next_secret);
-    }
-
     /// Create a new seed by deriving [Seed::secret], [Seed::next_secret] from `initial_entropy`.
     pub fn create(initial_entropy: &Secret) -> Self {
         let secret = derive_secret(CONTEXT_SECRET, initial_entropy);
@@ -113,7 +86,7 @@ impl Seed {
         Self::new(secret, next_secret)
     }
 
-    /// Creates a new seed using entropy from [generate_secret()].
+    /// Creates a new seed using the initial entropy from [generate_secret()].
     pub fn auto_create() -> Result<Self, EntropyError> {
         let initial_entropy = generate_secret()?; // Only this part can fail
         Ok(Self::create(&initial_entropy))
@@ -141,16 +114,26 @@ impl Seed {
         Ok(self.advance(&new_entropy))
     }
 
-    /// Mutate seed state to match `next`.
-    pub fn commit(&mut self, next: Seed) {
-        if next.secret == next.next_secret {
-            panic!("commit(): secret and next_secret cannot be equal");
+    /// Load a seed from a buffer.
+    pub fn from_buf(buf: &[u8]) -> Result<Self, SecretBlockError> {
+        assert_eq!(buf.len(), SEED);
+        let secret = get_hash(buf, SECRET_RANGE);
+        let next_secret = get_hash(buf, NEXT_SECRET_RANGE);
+        if secret == ZERO_HASH || next_secret == ZERO_HASH || secret == next_secret {
+            Err(SecretBlockError::Seed)
+        } else {
+            Ok(Self {
+                secret,
+                next_secret,
+            })
         }
-        if next.secret != self.next_secret {
-            panic!("commit(): cannot commit out of sequence seed");
-        }
-        self.secret = next.secret;
-        self.next_secret = next.next_secret;
+    }
+
+    /// Write seed to buffer.
+    pub fn write_to_buf(&self, buf: &mut [u8]) {
+        assert_eq!(buf.len(), SEED);
+        set_hash(buf, SECRET_RANGE, &self.secret);
+        set_hash(buf, NEXT_SECRET_RANGE, &self.next_secret);
     }
 }
 
@@ -332,38 +315,5 @@ mod tests {
             assert!(hset.insert(seed.next_secret));
         }
         assert_eq!(hset.len(), count + 2);
-    }
-
-    #[test]
-    fn test_seed_commit() {
-        let entropy = Hash::from_bytes([69; 32]);
-        let mut seed = Seed::create(&entropy);
-        let next = seed.advance(&entropy);
-        assert_ne!(seed, next);
-        seed.commit(next.clone());
-        assert_eq!(seed, next);
-    }
-
-    #[test]
-    #[should_panic(expected = "commit(): cannot commit out of sequence seed")]
-    fn test_seed_commit_panic1() {
-        let entropy = Hash::from_bytes([69; 32]);
-        let mut seed = Seed::create(&entropy);
-        let a1 = seed.advance(&entropy);
-        let a2 = a1.advance(&entropy);
-        seed.commit(a2);
-    }
-
-    #[test]
-    #[should_panic(expected = "commit(): secret and next_secret cannot be equal")]
-    fn test_seed_commit_panic2() {
-        let entropy = Hash::from_bytes([69; 32]);
-        let mut seed = Seed::create(&entropy);
-        let a1 = seed.advance(&entropy);
-        let a2 = Seed {
-            secret: a1.secret,
-            next_secret: a1.secret,
-        };
-        seed.commit(a2);
     }
 }

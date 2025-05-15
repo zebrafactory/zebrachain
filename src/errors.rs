@@ -40,6 +40,9 @@ impl BlockError {
 /// Error conditions hit when validating a [SecretBlock][crate::secretblock::SecretBlock].
 #[derive(Debug, PartialEq)]
 pub enum SecretBlockError {
+    /// Authenticated decryption of the secret block failed.
+    Decryption,
+
     /// Hash of block content does not match hash in block.
     Content,
 
@@ -57,14 +60,40 @@ pub enum SecretBlockError {
 
     /// Previous hash in block does not match expected external value.
     PreviousHash,
-
-    /// Authenticated decryption of the secret block failed.
-    Decryption,
 }
 
 impl SecretBlockError {
     /// Map into an io Error with appropriate msg text.
     pub fn to_io_error(&self) -> io::Error {
         io::Error::other(format!("SecretBlockError::{self:?}"))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_blockerror_to_io_error() {
+        assert_eq!(
+            format!("{:?}", BlockError::Content.to_io_error()),
+            "Custom { kind: Other, error: \"BlockError::Content\" }"
+        );
+        assert_eq!(
+            format!("{:?}", BlockError::Signature.to_io_error()),
+            "Custom { kind: Other, error: \"BlockError::Signature\" }"
+        );
+    }
+
+    #[test]
+    fn test_secretblockerror_to_io_error() {
+        assert_eq!(
+            format!("{:?}", SecretBlockError::Decryption.to_io_error()),
+            "Custom { kind: Other, error: \"SecretBlockError::Decryption\" }"
+        );
+        assert_eq!(
+            format!("{:?}", SecretBlockError::SeedSequence.to_io_error()),
+            "Custom { kind: Other, error: \"SecretBlockError::SeedSequence\" }"
+        );
     }
 }

@@ -331,7 +331,7 @@ mod tests {
         let mut file = tempfile::tempfile().unwrap();
 
         // Generate 1st block
-        let mut seed = Seed::auto_create().unwrap();
+        let seed = Seed::auto_create().unwrap();
         let mut buf1 = [0; BLOCK];
         let payload1 = random_payload();
         let chain_hash = sign_block(&mut buf1, &seed, &payload1, None);
@@ -360,7 +360,6 @@ mod tests {
         let mut buf2 = [0; BLOCK];
         let payload2 = random_payload();
         let _block_hash = sign_block(&mut buf2, &next, &payload2, Some(&tail));
-        seed.commit(next);
         let buf2 = buf2; // Doesn't need to be mutable anymore
         let state2 = Block::new(&buf2).from_previous(&tail).unwrap();
 
