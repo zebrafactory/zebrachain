@@ -1,4 +1,4 @@
-# ZebraChain 🦓 🔗
+# 🦓 🔗 ZebraChain
 
 [![crate][crate-image]][crate-link]
 [![Docs][docs-image]][docs-link]
@@ -7,12 +7,27 @@
 ZebraChain is a logged, quantum safe signing protocol designed to replace the long lived asymmetric
 key pairs used to sign software releases (and to sign other super important stuff).
 
+In short, ZebraChain:
+
+* Logs each signature in a block chain
+
+* Rotates the keypairs at every signature by including the public key used to sign the current
+block and the hash of the public key that will be used to sign the next block
+
+* Is quantum secure because it uses ML-DSA + ed25519 in a hybrid signing construction (as
+recommended by the ML-DSA authors)
+
+This is a pre-release crate. The API is still being finalized. The 0.0.x releases make no API commitments, nor any
+commits to the protocol.
+
+However, the dust is settling quickly and it's a perfect time to jump in and start building
+experimental applications on top of ZebraChain!
+
 ## ⚠️ Security Warning
 
 ZebraChain is not yet suitable for production use.
 
-This is a nascent implementation of a yet to be finalized protocol. It's also built on early
-(but already awesome) Rust implementations of
+This is a nascent implementation of a yet to be finalized protocol. It's also built on quite new Rust implementations of
 [ML-DSA](https://github.com/RustCrypto/signatures/tree/master/ml-dsa) and
 [SLH-DSA](https://github.com/RustCrypto/signatures/tree/master/slh-dsa).
 
