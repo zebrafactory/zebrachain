@@ -88,7 +88,7 @@ pub use always::{BLOCK, DIGEST, PAYLOAD};
 pub use block::{Block, BlockState, MutBlock};
 pub use chain::{Chain, ChainIter, ChainStore, CheckPoint};
 pub use errors::{BlockError, SecretBlockError};
-pub use ownedblock::{MutOwnedBlock, OwnedBlockState, sign};
+pub use ownedblock::{MutOwnedBlock, OwnedBlockState};
 pub use ownedchain::{OwnedChain, OwnedChainStore};
 pub use payload::Payload;
 pub use secretblock::{MutSecretBlock, SecretBlock, SecretBlockState};
