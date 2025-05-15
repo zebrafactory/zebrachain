@@ -79,28 +79,6 @@ impl Seed {
         }
     }
 
-    /// Load a seed from a buffer.
-    pub fn from_buf(buf: &[u8]) -> Result<Self, SecretBlockError> {
-        assert_eq!(buf.len(), SEED);
-        let secret = get_hash(buf, SECRET_RANGE);
-        let next_secret = get_hash(buf, NEXT_SECRET_RANGE);
-        if secret == ZERO_HASH || next_secret == ZERO_HASH || secret == next_secret {
-            Err(SecretBlockError::Seed)
-        } else {
-            Ok(Self {
-                secret,
-                next_secret,
-            })
-        }
-    }
-
-    /// Write seed to buffer.
-    pub fn write_to_buf(&self, buf: &mut [u8]) {
-        assert_eq!(buf.len(), SEED);
-        set_hash(buf, SECRET_RANGE, &self.secret);
-        set_hash(buf, NEXT_SECRET_RANGE, &self.next_secret);
-    }
-
     /// Create a new seed by deriving [Seed::secret], [Seed::next_secret] from `initial_entropy`.
     pub fn create(initial_entropy: &Secret) -> Self {
         let secret = derive_secret(CONTEXT_SECRET, initial_entropy);
@@ -108,7 +86,7 @@ impl Seed {
         Self::new(secret, next_secret)
     }
 
-    /// Creates a new seed using entropy from [generate_secret()].
+    /// Creates a new seed using the initial entropy from [generate_secret()].
     pub fn auto_create() -> Result<Self, EntropyError> {
         let initial_entropy = generate_secret()?; // Only this part can fail
         Ok(Self::create(&initial_entropy))
@@ -134,6 +112,28 @@ impl Seed {
     pub fn auto_advance(&self) -> Result<Self, EntropyError> {
         let new_entropy = generate_secret()?; // Only this part can fail
         Ok(self.advance(&new_entropy))
+    }
+
+    /// Load a seed from a buffer.
+    pub fn from_buf(buf: &[u8]) -> Result<Self, SecretBlockError> {
+        assert_eq!(buf.len(), SEED);
+        let secret = get_hash(buf, SECRET_RANGE);
+        let next_secret = get_hash(buf, NEXT_SECRET_RANGE);
+        if secret == ZERO_HASH || next_secret == ZERO_HASH || secret == next_secret {
+            Err(SecretBlockError::Seed)
+        } else {
+            Ok(Self {
+                secret,
+                next_secret,
+            })
+        }
+    }
+
+    /// Write seed to buffer.
+    pub fn write_to_buf(&self, buf: &mut [u8]) {
+        assert_eq!(buf.len(), SEED);
+        set_hash(buf, SECRET_RANGE, &self.secret);
+        set_hash(buf, NEXT_SECRET_RANGE, &self.next_secret);
     }
 }
 
