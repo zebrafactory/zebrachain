@@ -15,7 +15,7 @@ pub enum BlockError {
     Hash,
 
     /// Hash of public key bytes does not match expected external value.
-    PublicKeyHash,
+    PubKeyHash,
 
     /// Previous hash does not match expected external value.
     PreviousHash,

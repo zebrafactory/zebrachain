@@ -131,7 +131,7 @@ impl<'a> Block<'a> {
     pub fn from_previous(&self, prev: &BlockState) -> Result<BlockState, BlockError> {
         let state = self.open()?;
         if self.compute_pubkey_hash() != prev.next_pubkey_hash {
-            Err(BlockError::PublicKeyHash)
+            Err(BlockError::PubKeyHash)
         } else if state.index != prev.index + 1 {
             Err(BlockError::Index)
         } else if state.previous_hash != prev.block_hash {
@@ -465,7 +465,7 @@ mod tests {
             );
             assert_eq!(
                 Block::new(&buf).from_previous(&bad_prev),
-                Err(BlockError::PublicKeyHash)
+                Err(BlockError::PubKeyHash)
             );
         }
         for bad_block_hash in HashBitFlipper::new(&prev.block_hash) {
