@@ -1,6 +1,6 @@
 use getrandom;
 use std::collections::HashSet;
-use zf_zebrachain::{DIGEST, Seed, generate_secret};
+use zf_zebrachain::{DIGEST, SecretBlockError, Seed, generate_secret};
 
 #[test]
 fn test_generate_secret() {
@@ -71,8 +71,22 @@ fn test_seed_from_buf() {
     let mut buf = [0; DIGEST * 2];
     getrandom::fill(&mut buf).unwrap();
     let seed = Seed::from_buf(&buf).unwrap();
-    assert_eq!(&buf[..DIGEST], seed.secret.as_bytes());
+    assert_eq!(&buf[0..DIGEST], seed.secret.as_bytes());
     assert_eq!(&buf[DIGEST..], seed.next_secret.as_bytes());
+
+    // secret == next_secret
+    buf[DIGEST..].copy_from_slice(seed.secret.as_bytes());
+    assert_eq!(Seed::from_buf(&buf), Err(SecretBlockError::Seed));
+
+    // secret is zeros
+    buf[0..DIGEST].copy_from_slice(&[0; DIGEST]);
+    buf[DIGEST..].copy_from_slice(seed.next_secret.as_bytes());
+    assert_eq!(Seed::from_buf(&buf), Err(SecretBlockError::Seed));
+
+    // next_secret is zeros
+    buf[0..DIGEST].copy_from_slice(seed.secret.as_bytes());
+    buf[DIGEST..].copy_from_slice(&[0; DIGEST]);
+    assert_eq!(Seed::from_buf(&buf), Err(SecretBlockError::Seed));
 }
 
 #[test]
