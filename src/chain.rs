@@ -320,7 +320,7 @@ impl ChainStore {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::pksign::sign_block;
+    use crate::block::MutBlock;
     use crate::secretseed::Seed;
     use crate::testhelpers::{BitFlipper, random_hash, random_payload};
     use blake3::Hash;
@@ -334,7 +334,9 @@ mod tests {
         let seed = Seed::auto_create().unwrap();
         let mut buf1 = [0; BLOCK];
         let payload1 = random_payload();
-        let chain_hash = sign_block(&mut buf1, &seed, &payload1, None);
+        let mut block = MutBlock::new(&mut buf1, &payload1);
+        block.sign(&seed);
+        let chain_hash = block.finalize();
         let buf1 = buf1; // Doesn't need to be mutable anymore
         let state1 = Block::new(&buf1)
             .from_hash_at_index(&chain_hash, 0)
@@ -359,7 +361,10 @@ mod tests {
         let next = seed.auto_advance().unwrap();
         let mut buf2 = [0; BLOCK];
         let payload2 = random_payload();
-        let _block_hash = sign_block(&mut buf2, &next, &payload2, Some(&tail));
+        let mut block = MutBlock::new(&mut buf2, &payload2);
+        block.set_previous(&tail);
+        block.sign(&next);
+        let _block_hash = block.finalize();
         let buf2 = buf2; // Doesn't need to be mutable anymore
         let state2 = Block::new(&buf2).from_previous(&tail).unwrap();
 
