@@ -38,7 +38,7 @@ pub(crate) const PUBKEY: usize = PUB_ED25519 + PUB_MLDSA;
 pub(crate) const INDEX: usize = 8;
 pub(crate) const TIME: usize = 16;
 
-/// Size of the ZebraChain payload (40 bytes).
+/// Size of the ZebraChain payload (48 bytes).
 pub const PAYLOAD: usize = TIME + DIGEST;
 
 /// Size of the ZebraChain block (5541 bytes).
