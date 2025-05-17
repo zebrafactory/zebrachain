@@ -7,8 +7,8 @@
 //! which can fail, to be inside calls to the top-level signing method.
 
 use crate::always::*;
-use crate::block::{BlockState, sign_block};
-use crate::chain::{Chain, ChainStore, CheckPoint};
+use crate::block::{BlockState, CheckPoint, sign_block};
+use crate::chain::{Chain, ChainStore};
 use crate::ownedblock::{MutOwnedBlock, OwnedBlockState};
 use crate::payload::Payload;
 use crate::secretchain::{SecretChain, SecretChainStore};

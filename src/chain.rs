@@ -1,7 +1,7 @@
 //! Writes/reads blocks to/from non-volitile storage and network.
 
 use crate::always::*;
-use crate::block::{Block, BlockState};
+use crate::block::{Block, BlockState, CheckPoint};
 use crate::fsutil::{chain_filename, create_for_append, open_for_append};
 use blake3::Hash;
 use std::fs::{File, remove_file};
@@ -21,34 +21,6 @@ Or when resuming from a checkpoint, the chain validation process is:
     2. Load checkpoint block with Block::from_hash_at_index()
     3. Walk remaining blocks till end of chain using Block::from_previous()
 */
-
-/// Check point a chain for fast reload.
-pub struct CheckPoint {
-    /// Chain hash
-    pub chain_hash: Hash,
-
-    /// Block hash
-    pub block_hash: Hash,
-
-    /// Block-wise position in chain, starting from zero.
-    pub index: u64,
-}
-
-impl CheckPoint {
-    /// Create a checkpoint.
-    pub fn new(chain_hash: Hash, block_hash: Hash, index: u64) -> Self {
-        Self {
-            chain_hash,
-            block_hash,
-            index,
-        }
-    }
-
-    /// Build a checkpoint corresponding to the supplied [BlockState].
-    pub fn from_block_state(state: &BlockState) -> Self {
-        Self::new(state.chain_hash, state.block_hash, state.index)
-    }
-}
 
 fn validate_chain(file: File, chain_hash: &Hash) -> io::Result<(File, BlockState, BlockState)> {
     let mut file = BufReader::with_capacity(BLOCK * 16, file);

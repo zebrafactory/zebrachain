@@ -7,6 +7,34 @@ use crate::pksign::{SecretSigner, verify_block_signature};
 use crate::secretseed::Seed;
 use blake3::{Hash, hash};
 
+/// Check point a chain for fast reload.
+pub struct CheckPoint {
+    /// Chain hash
+    pub chain_hash: Hash,
+
+    /// Block hash
+    pub block_hash: Hash,
+
+    /// Block-wise position in chain, starting from zero.
+    pub index: u64,
+}
+
+impl CheckPoint {
+    /// Create a checkpoint.
+    pub fn new(chain_hash: Hash, block_hash: Hash, index: u64) -> Self {
+        Self {
+            chain_hash,
+            block_hash,
+            index,
+        }
+    }
+
+    /// Build a checkpoint corresponding to the supplied [BlockState].
+    pub fn from_block_state(state: &BlockState) -> Self {
+        Self::new(state.chain_hash, state.block_hash, state.index)
+    }
+}
+
 fn check_block_buf(buf: &[u8]) {
     if buf.len() != BLOCK {
         panic!("Need a {BLOCK} byte slice; got {} bytes", buf.len());
