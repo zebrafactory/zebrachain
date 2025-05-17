@@ -1,8 +1,7 @@
 //! Hybrid signing and verification with ML-DSA + ed25519.
 
 use crate::always::*;
-use crate::block::{Block, BlockState, MutBlock};
-use crate::payload::Payload;
+use crate::block::{Block, MutBlock};
 use crate::secretseed::{Secret, Seed, derive_secret};
 use blake3::{Hash, hash};
 use ml_dsa::{B32, KeyGen, MlDsa65};
@@ -155,7 +154,6 @@ pub(crate) fn verify_block_signature(block: &Block) -> bool {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::testhelpers::random_payload;
 
     static HEX0: &str = "8e4bb3dfe69f0720a9fc6eb5770c035be4db78a4c127f48691f3c0291711e165";
     static HEX1: &str = "80eb433447f789410ce5261e94880da671cb61140540512c33ba710b43bed605";

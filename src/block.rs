@@ -255,7 +255,17 @@ impl<'a> MutBlock<'a> {
 }
 
 /// Sign a block buffer.
-pub(crate) fn sign_block(
+///
+/// # Examples
+///
+/// ```
+/// use zf_zebrachain::{BLOCK, Hash, Payload, Seed, sign_block};
+/// let mut buf = [0; BLOCK];
+/// let seed = Seed::auto_create().unwrap();
+/// let payload = Payload::new(123, Hash::from_bytes([69; 32]));
+/// let block_hash = sign_block(&mut buf, &seed, &payload, None);
+/// ```
+pub fn sign_block(
     buf: &mut [u8],
     seed: &Seed,
     payload: &Payload,
