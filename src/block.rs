@@ -156,7 +156,7 @@ impl<'a> Block<'a> {
     /// Read and verify block from a checkpoint.
     pub fn from_checkpoint(&self, checkpoint: &CheckPoint) -> Result<BlockState, BlockError> {
         let state = self.from_hash_at_index(&checkpoint.block_hash, checkpoint.index)?;
-        if state.chain_hash != checkpoint.chain_hash {
+        if state.effective_chain_hash() != checkpoint.chain_hash {
             Err(BlockError::ChainHash)
         } else {
             Ok(state)
@@ -593,6 +593,18 @@ mod tests {
                 Err(BlockError::ChainHash)
             );
         }
+
+        // when index == 0
+        let mut buf = [0; BLOCK];
+        let seed = Seed::auto_create().unwrap();
+        let payload = random_payload();
+        let block_hash = sign_block(&mut buf, &seed, &payload, None);
+        let state = Block::new(&buf).from_hash_at_index(&block_hash, 0).unwrap();
+        let checkpoint = state.to_checkpoint();
+        assert_eq!(checkpoint.index, 0);
+        assert_eq!(checkpoint.block_hash, block_hash);
+        assert_eq!(checkpoint.chain_hash, block_hash);
+        assert_eq!(Block::new(&buf).from_checkpoint(&checkpoint), Ok(state));
     }
 
     #[test]
