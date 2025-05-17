@@ -90,7 +90,7 @@ impl BlockState {
     /// Create the checkpoint corresponding to this block.
     pub fn to_checkpoint(&self) -> CheckPoint {
         CheckPoint {
-            chain_hash: self.chain_hash,
+            chain_hash: self.effective_chain_hash(),
             block_hash: self.block_hash,
             index: self.index,
         }
@@ -346,7 +346,7 @@ mod tests {
     use crate::pksign::SecretSigner;
     use crate::secretseed::Seed;
     use crate::testhelpers::{
-        BitFlipper, HashBitFlipper, U64BitFlipper, random_hash, random_payload, random_u64,
+        BitFlipper, HashBitFlipper, U64BitFlipper, random_hash, random_payload,
     };
     use getrandom;
 
@@ -368,8 +368,23 @@ mod tests {
 
     #[test]
     fn test_blockstate_to_checkpoint() {
+        // when index == 0
         let bs = BlockState::new(
-            random_u64(),  // index
+            0,             // index
+            random_hash(), // block_hash
+            random_hash(), // chain_hash
+            random_hash(), // previous_hash
+            random_hash(), // next_pubkey_hash
+            random_payload(),
+        );
+        let checkpoint = bs.to_checkpoint();
+        assert_eq!(checkpoint.index, 0);
+        assert_eq!(checkpoint.block_hash, bs.block_hash);
+        assert_eq!(checkpoint.chain_hash, bs.block_hash); // Only on 1st block
+
+        // when index > 0
+        let bs = BlockState::new(
+            1,             // index
             random_hash(), // block_hash
             random_hash(), // chain_hash
             random_hash(), // previous_hash
