@@ -7,11 +7,10 @@
 //! which can fail, to be inside calls to the top-level signing method.
 
 use crate::always::*;
-use crate::block::BlockState;
+use crate::block::{BlockState, sign_block};
 use crate::chain::{Chain, ChainStore, CheckPoint};
 use crate::ownedblock::{MutOwnedBlock, OwnedBlockState};
 use crate::payload::Payload;
-use crate::pksign::sign_block;
 use crate::secretchain::{SecretChain, SecretChainStore};
 use crate::secretseed::{Secret, Seed, generate_secret};
 use blake3::Hash;

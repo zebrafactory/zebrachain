@@ -95,8 +95,7 @@ impl<'a> MutOwnedBlock<'a> {
 mod tests {
     use super::*;
     use crate::always::*;
-    use crate::block::Block;
-    use crate::pksign;
+    use crate::block::{Block, sign_block};
     use crate::secretseed::generate_secret;
     use crate::testhelpers::random_payload;
 
@@ -111,9 +110,6 @@ mod tests {
         block.sign(&seed);
         let (block_hash, _) = block.finalize(&chain_secret);
         assert!(Block::new(&buf).from_hash_at_index(&block_hash, 0).is_ok());
-        assert_eq!(
-            pksign::sign_block(&mut buf, &seed, &payload, None),
-            block_hash
-        );
+        assert_eq!(sign_block(&mut buf, &seed, &payload, None), block_hash);
     }
 }

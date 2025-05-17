@@ -95,29 +95,6 @@ impl SecretSigner {
     }
 }
 
-/// Sign a block buffer.
-///
-/// Internally, this builds a [MutBlock].
-///
-/// Honestly, this fn could be the signing API for the whole module. We will see.
-pub(crate) fn sign_block(
-    buf: &mut [u8],
-    seed: &Seed,
-    payload: &Payload,
-    last: Option<&BlockState>,
-) -> Hash {
-    let mut block = MutBlock::new(buf, payload);
-    if let Some(last) = last {
-        block.set_previous(last);
-    }
-    let secsign = SecretSigner::new(seed);
-    secsign.sign(&mut block);
-    if let Some(last) = last {
-        assert_eq!(last.next_pubkey_hash, block.compute_pubkey_hash());
-    }
-    block.finalize()
-}
-
 struct Hybrid<'a> {
     block: &'a Block<'a>,
 }
@@ -258,65 +235,5 @@ mod tests {
     fn test_keypair_pubkey_hash() {
         let pair = KeyPair::new(&Hash::from_bytes([69; 32]));
         assert_eq!(pair.pubkey_hash(), Hash::from_hex(HEX0).unwrap());
-    }
-
-    #[test]
-    fn test_sign_block() {
-        // Sign first block
-        let mut buf = [69; BLOCK]; // 69 to make sure block gets zeroed first
-        let seed = Seed::auto_create().unwrap();
-        let payload = random_payload();
-        let chain_hash = sign_block(&mut buf, &seed, &payload, None);
-
-        // chain_hash and previous_hash are always zeros in 1st block:
-        assert_eq!(&buf[0..DIGEST], chain_hash.as_bytes());
-        assert_eq!(&buf[BLOCK - DIGEST * 2..], &[0; DIGEST * 2]);
-
-        // Sign 2nd block
-        let tail = Block::new(&buf).from_hash_at_index(&chain_hash, 0).unwrap();
-        buf.fill(69);
-        let seed = seed.auto_advance().unwrap();
-        let payload = random_payload();
-        let block_hash = sign_block(&mut buf, &seed, &payload, Some(&tail));
-        assert_ne!(chain_hash, block_hash);
-        assert_eq!(&buf[0..DIGEST], block_hash.as_bytes());
-
-        // chain_hash and previous_hash are always == in the 2nd block:
-        assert_eq!(&buf[BLOCK - DIGEST..], chain_hash.as_bytes());
-        assert_eq!(
-            &buf[BLOCK - DIGEST * 2..BLOCK - DIGEST],
-            chain_hash.as_bytes()
-        );
-
-        // Sign 3rd block
-        let tail2 = Block::new(&buf).from_hash_at_index(&block_hash, 1).unwrap();
-        buf.fill(69);
-        let seed = seed.auto_advance().unwrap();
-        let payload = random_payload();
-        let block2_hash = sign_block(&mut buf, &seed, &payload, Some(&tail2));
-        assert_ne!(block_hash, block2_hash);
-        assert_ne!(chain_hash, block2_hash);
-        assert_eq!(&buf[0..DIGEST], block2_hash.as_bytes());
-        assert_eq!(
-            &buf[BLOCK - DIGEST * 2..BLOCK - DIGEST],
-            chain_hash.as_bytes()
-        );
-        assert_eq!(&buf[BLOCK - DIGEST..], block_hash.as_bytes());
-    }
-
-    #[test]
-    #[should_panic]
-    fn test_sign_block_panic() {
-        // Sign first block
-        let mut buf = [0; BLOCK];
-        let seed = Seed::auto_create().unwrap();
-        let payload = random_payload();
-        let chain_hash = sign_block(&mut buf, &seed, &payload, None);
-
-        // Sign 2nd block, but double advance the seed:
-        let tail = Block::new(&buf).from_hash_at_index(&chain_hash, 0).unwrap();
-        let seed = seed.auto_advance().unwrap().auto_advance().unwrap();
-        let payload = random_payload();
-        let _block_hash = sign_block(&mut buf, &seed, &payload, Some(&tail));
     }
 }
