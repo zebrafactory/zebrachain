@@ -488,13 +488,14 @@ mod tests {
     #[test]
     fn test_block_from_hash_at_index() {
         let buf = new_valid_block();
-        let good = Block::new(&buf).open().unwrap().block_hash;
-        assert!(Block::new(&buf).from_hash_at_index(&good, 1).is_ok());
+        let state = Block::new(&buf).open().unwrap();
+        let good = state.block_hash;
+        assert_eq!(Block::new(&buf).from_hash_at_index(&good, 1), Ok(state));
 
         // Make sure Block::open() is getting called
         for bad in BitFlipper::new(&buf) {
             assert_eq!(
-                Block::new(&bad).from_hash_at_index(&good, 0),
+                Block::new(&bad).from_hash_at_index(&good, 1),
                 Err(BlockError::Content)
             );
         }
@@ -503,16 +504,22 @@ mod tests {
             badbuf[0..DIGEST].copy_from_slice(hash(&badend).as_bytes());
             badbuf[DIGEST..].copy_from_slice(&badend);
             assert_eq!(
-                Block::new(&badbuf).from_hash_at_index(&good, 0),
+                Block::new(&badbuf).from_hash_at_index(&good, 1),
                 Err(BlockError::Signature)
             );
         }
 
-        // Block::from_hash_at_index() specific error
+        // Test Block::from_hash_at_index() specific errors
         for bad in HashBitFlipper::new(&good) {
             assert_eq!(
-                Block::new(&buf).from_hash_at_index(&bad, 0),
+                Block::new(&buf).from_hash_at_index(&bad, 1),
                 Err(BlockError::Hash)
+            );
+        }
+        for bad_index in U64BitFlipper::new(1) {
+            assert_eq!(
+                Block::new(&buf).from_hash_at_index(&good, bad_index),
+                Err(BlockError::Index)
             );
         }
     }
