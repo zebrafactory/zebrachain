@@ -65,11 +65,10 @@ fn validate_from_checkpoint(
     file.seek(SeekFrom::Start(checkpoint.index * BLOCK as u64))?;
     let mut file = BufReader::with_capacity(BLOCK_READ_BUF, file);
     file.read_exact(&mut buf)?;
-    let mut tail =
-        match Block::new(&buf).from_hash_at_index(&checkpoint.block_hash, checkpoint.index) {
-            Ok(state) => state,
-            Err(err) => return Err(err.to_io_error()),
-        };
+    let mut tail = match Block::new(&buf).from_checkpoint(&checkpoint) {
+        Ok(state) => state,
+        Err(err) => return Err(err.to_io_error()),
+    };
 
     // Read and validate any remaining blocks till the end of the chain
     while file.read_exact(&mut buf).is_ok() {
