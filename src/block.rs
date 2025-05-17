@@ -138,9 +138,6 @@ impl<'a> Block<'a> {
     }
 
     /// Open and verify a block with `block_hash` at position `index` in the chain.
-    ///
-    /// This is used when loading the first block (`index=0`), or when resuming from a
-    /// [CheckPoint][crate::chain::CheckPoint].
     pub fn from_hash_at_index(
         &self,
         block_hash: &Hash,
@@ -151,6 +148,16 @@ impl<'a> Block<'a> {
             Err(BlockError::Hash)
         } else if index != state.index {
             Err(BlockError::Index)
+        } else {
+            Ok(state)
+        }
+    }
+
+    /// Read and verify block from a checkpoint.
+    pub fn from_checkpoint(&self, checkpoint: &CheckPoint) -> Result<BlockState, BlockError> {
+        let state = self.from_hash_at_index(&checkpoint.block_hash, checkpoint.index)?;
+        if state.chain_hash != checkpoint.chain_hash {
+            Err(BlockError::ChainHash)
         } else {
             Ok(state)
         }
@@ -506,6 +513,62 @@ mod tests {
             assert_eq!(
                 Block::new(&buf).from_hash_at_index(&bad, 0),
                 Err(BlockError::Hash)
+            );
+        }
+    }
+
+    #[test]
+    fn test_block_from_checkpoint() {
+        let buf = new_valid_block();
+        let state = Block::new(&buf).open().unwrap();
+        let checkpoint = state.to_checkpoint();
+        assert_eq!(
+            Block::new(&buf).from_checkpoint(&checkpoint).unwrap(),
+            state
+        );
+
+        // Make sure Block::open() is getting called
+        for bad_buf in BitFlipper::new(&buf) {
+            assert_eq!(
+                Block::new(&bad_buf).from_checkpoint(&checkpoint),
+                Err(BlockError::Content)
+            );
+        }
+        for badend in BitFlipper::new(&buf[DIGEST..]) {
+            let mut bad_buf = [0; BLOCK];
+            bad_buf[0..DIGEST].copy_from_slice(hash(&badend).as_bytes());
+            bad_buf[DIGEST..].copy_from_slice(&badend);
+            assert_eq!(
+                Block::new(&bad_buf).from_checkpoint(&checkpoint),
+                Err(BlockError::Signature)
+            );
+        }
+
+        // Make sure Block::from_hash_at_index() is getting called
+        for bad_block_hash in HashBitFlipper::new(&checkpoint.block_hash) {
+            let bad_checkpoint =
+                CheckPoint::new(checkpoint.chain_hash, bad_block_hash, checkpoint.index);
+            assert_eq!(
+                Block::new(&buf).from_checkpoint(&bad_checkpoint),
+                Err(BlockError::Hash)
+            );
+        }
+        for bad_index in U64BitFlipper::new(checkpoint.index) {
+            let bad_checkpoint =
+                CheckPoint::new(checkpoint.chain_hash, checkpoint.block_hash, bad_index);
+            assert_eq!(
+                Block::new(&buf).from_checkpoint(&bad_checkpoint),
+                Err(BlockError::Index)
+            );
+        }
+
+        // Test Block::from_checkpoint() specific error
+        for bad_chain_hash in HashBitFlipper::new(&checkpoint.chain_hash) {
+            let bad_checkpoint =
+                CheckPoint::new(bad_chain_hash, checkpoint.block_hash, checkpoint.index);
+            assert_eq!(
+                Block::new(&buf).from_checkpoint(&bad_checkpoint),
+                Err(BlockError::ChainHash)
             );
         }
     }
