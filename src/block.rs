@@ -181,6 +181,25 @@ impl<'a> Block<'a> {
 }
 
 /// Builds up a new block in a buffer.
+///
+/// # Examples
+///
+/// ```
+/// use zf_zebrachain::{BLOCK, Block, Hash, MutBlock, Payload, Seed};
+///
+/// // Build, sign, and finalize a new block like this:
+/// let mut buf = [0; BLOCK];
+/// let seed = Seed::auto_create().unwrap();
+/// let payload = Payload::new(123, Hash::from_bytes([69; 32]));
+/// let mut block = MutBlock::new(&mut buf, &payload);
+/// block.sign(&seed);
+/// let block_hash = block.finalize();
+///
+/// // And then read out the block state like this:
+/// let block = Block::new(&buf);
+/// let state = block.from_hash_at_index(&block_hash, 0).unwrap();
+/// assert_eq!(state.payload, payload);
+/// ```
 pub struct MutBlock<'a> {
     buf: &'a mut [u8],
 }
