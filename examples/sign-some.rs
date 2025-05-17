@@ -1,7 +1,7 @@
 //! Create a new chain and some signatures.
 
 use tempfile;
-use zf_zebrachain::{CheckPoint, OwnedChainStore, Payload, generate_secret};
+use zf_zebrachain::{OwnedChainStore, Payload, generate_secret};
 
 const COUNT: usize = 420;
 
@@ -66,7 +66,7 @@ fn main() {
     assert_eq!(&head, chain.head());
     assert_eq!(&tail, chain.tail());
 
-    let checkpoint = CheckPoint::from_block_state(&tail);
+    let checkpoint = tail.to_checkpoint();
     println!("Resuming chain from a checkpoint and partially validating...");
     let chain = ocs.resume_chain(&checkpoint).unwrap();
     println!("Head: {}", chain.head().block_hash);
