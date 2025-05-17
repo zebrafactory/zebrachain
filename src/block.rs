@@ -362,7 +362,7 @@ mod tests {
     #[test]
     fn test_blockstate_to_checkpoint() {
         let bs = BlockState::new(
-            random_u64(), // index
+            random_u64(),  // index
             random_hash(), // block_hash
             random_hash(), // chain_hash
             random_hash(), // previous_hash
