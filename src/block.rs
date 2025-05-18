@@ -156,7 +156,7 @@ impl<'a> Block<'a> {
     /// Read and verify block from a checkpoint.
     pub fn from_checkpoint(&self, checkpoint: &CheckPoint) -> Result<BlockState, BlockError> {
         let state = self.from_hash_at_index(&checkpoint.block_hash, checkpoint.index)?;
-        if state.effective_chain_hash() != checkpoint.chain_hash {
+        if checkpoint.chain_hash != state.effective_chain_hash() {
             Err(BlockError::ChainHash)
         } else {
             Ok(state)
