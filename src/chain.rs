@@ -65,7 +65,7 @@ fn validate_from_checkpoint(
     file.seek(SeekFrom::Start(checkpoint.index * BLOCK as u64))?;
     let mut file = BufReader::with_capacity(BLOCK_READ_BUF, file);
     file.read_exact(&mut buf)?;
-    let mut tail = match Block::new(&buf).from_checkpoint(&checkpoint) {
+    let mut tail = match Block::new(&buf).from_checkpoint(checkpoint) {
         Ok(state) => state,
         Err(err) => return Err(err.to_io_error()),
     };
