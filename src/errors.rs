@@ -11,8 +11,8 @@ pub enum BlockError {
     /// Public key or signature is invalid.
     Signature,
 
-    /// Hash in block does not match expected external value.
-    Hash,
+    /// Block hash does not match expected external value.
+    BlockHash,
 
     /// Hash of public key bytes does not match expected external value.
     PubKeyHash,

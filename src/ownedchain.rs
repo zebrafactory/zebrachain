@@ -2,9 +2,6 @@
 //!
 //! An owned chain is one you have the secret seed state for, a chain you can generate new valid
 //! blocks for.
-//!
-//! FIXME: As signing cannot fail (shouldn't fail anyway), we don' want calls to getrandom::fill(),
-//! which can fail, to be inside calls to the top-level signing method.
 
 use crate::always::*;
 use crate::block::{BlockState, CheckPoint, sign_block};

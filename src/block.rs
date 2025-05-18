@@ -145,7 +145,7 @@ impl<'a> Block<'a> {
     ) -> Result<BlockState, BlockError> {
         let state = self.open()?;
         if block_hash != &state.block_hash {
-            Err(BlockError::Hash)
+            Err(BlockError::BlockHash)
         } else if index != state.index {
             Err(BlockError::Index)
         } else {
@@ -528,7 +528,7 @@ mod tests {
         for bad in HashBitFlipper::new(&good) {
             assert_eq!(
                 Block::new(&buf).from_hash_at_index(&bad, 1),
-                Err(BlockError::Hash)
+                Err(BlockError::BlockHash)
             );
         }
         for bad_index in U64BitFlipper::new(1) {
@@ -572,7 +572,7 @@ mod tests {
                 CheckPoint::new(checkpoint.chain_hash, bad_block_hash, checkpoint.index);
             assert_eq!(
                 Block::new(&buf).from_checkpoint(&bad_checkpoint),
-                Err(BlockError::Hash)
+                Err(BlockError::BlockHash)
             );
         }
         for bad_index in U64BitFlipper::new(checkpoint.index) {
