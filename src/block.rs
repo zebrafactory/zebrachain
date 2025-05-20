@@ -107,6 +107,11 @@ impl BlockState {
             payload: Payload::from_buf(&buf[PAYLOAD_RANGE]),
         }
     }
+
+    fn first_block_is_valid(&self) -> bool {
+        assert_eq!(self.index, 0);
+        self.chain_hash == ZERO_HASH && self.previous_hash == ZERO_HASH
+    }
 }
 
 /// Validate block wire format, extract items from the same.
@@ -130,8 +135,8 @@ impl<'a> Block<'a> {
             Err(BlockError::Content)
         } else if !self.signature_is_valid() {
             Err(BlockError::Signature)
-        //} else if !self.first_block_is_valid() {
-        //    Err(BlockError::FirstBlock)
+        } else if state.index == 0 && !state.first_block_is_valid() {
+            Err(BlockError::FirstBlock)
         } else {
             Ok(state)
         }
@@ -420,6 +425,78 @@ mod tests {
             ),
         };
         assert_eq!(BlockState::from_buf(&buf), expected);
+    }
+
+    #[test]
+    fn test_blockstate_first_block_is_valid() {
+        let bs = BlockState {
+            index: 0,
+            block_hash: Hash::from_bytes([1; DIGEST]),
+            chain_hash: Hash::from_bytes([5; DIGEST]),
+            previous_hash: Hash::from_bytes([6; DIGEST]),
+            next_pubkey_hash: Hash::from_bytes([2; DIGEST]),
+            payload: Payload::new(
+                4003321963775746628980877734491390723,
+                Hash::from_bytes([3; DIGEST]),
+            ),
+        };
+        assert!(!bs.first_block_is_valid());
+
+        let bs = BlockState {
+            index: 0,
+            block_hash: Hash::from_bytes([1; DIGEST]),
+            chain_hash: Hash::from_bytes([5; DIGEST]),
+            previous_hash: Hash::from_bytes([0; DIGEST]), // ZERO_HASH
+            next_pubkey_hash: Hash::from_bytes([2; DIGEST]),
+            payload: Payload::new(
+                4003321963775746628980877734491390723,
+                Hash::from_bytes([3; DIGEST]),
+            ),
+        };
+        assert!(!bs.first_block_is_valid());
+
+        let bs = BlockState {
+            index: 0,
+            block_hash: Hash::from_bytes([1; DIGEST]),
+            chain_hash: Hash::from_bytes([0; DIGEST]), // ZERO_HASH
+            previous_hash: Hash::from_bytes([6; DIGEST]),
+            next_pubkey_hash: Hash::from_bytes([2; DIGEST]),
+            payload: Payload::new(
+                4003321963775746628980877734491390723,
+                Hash::from_bytes([3; DIGEST]),
+            ),
+        };
+        assert!(!bs.first_block_is_valid());
+
+        let bs = BlockState {
+            index: 0,
+            block_hash: Hash::from_bytes([1; DIGEST]),
+            chain_hash: Hash::from_bytes([0; DIGEST]), // ZERO_HASH
+            previous_hash: Hash::from_bytes([0; DIGEST]), // ZERO_HASH
+            next_pubkey_hash: Hash::from_bytes([2; DIGEST]),
+            payload: Payload::new(
+                4003321963775746628980877734491390723,
+                Hash::from_bytes([3; DIGEST]),
+            ),
+        };
+        assert!(bs.first_block_is_valid());
+    }
+
+    #[test]
+    #[should_panic]
+    fn test_blockstate_first_block_is_valid_panic() {
+        let bs = BlockState {
+            index: 1,
+            block_hash: Hash::from_bytes([1; DIGEST]),
+            chain_hash: Hash::from_bytes([5; DIGEST]),
+            previous_hash: Hash::from_bytes([6; DIGEST]),
+            next_pubkey_hash: Hash::from_bytes([2; DIGEST]),
+            payload: Payload::new(
+                4003321963775746628980877734491390723,
+                Hash::from_bytes([3; DIGEST]),
+            ),
+        };
+        bs.first_block_is_valid();
     }
 
     fn new_expected() -> Hash {
