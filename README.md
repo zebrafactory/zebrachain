@@ -31,8 +31,6 @@ This is a nascent implementation of a yet to be finalized protocol. It's also bu
 [ML-DSA](https://github.com/RustCrypto/signatures/tree/master/ml-dsa) and
 [SLH-DSA](https://github.com/RustCrypto/signatures/tree/master/slh-dsa).
 
-There will likely still be breaking changes in the ZebraChain protocol.
-
 ## 🦓 Overview
 
 Consider the GPG key used to sign updates for your favorite Linux distribution.  You could replace
