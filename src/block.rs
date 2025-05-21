@@ -109,8 +109,11 @@ impl BlockState {
     }
 
     fn first_block_is_valid(&self) -> bool {
-        assert_eq!(self.index, 0);
-        self.chain_hash == ZERO_HASH && self.previous_hash == ZERO_HASH
+        if self.index == 0 {
+            self.chain_hash == ZERO_HASH && self.previous_hash == ZERO_HASH
+        } else {
+            true
+        }
     }
 }
 
@@ -135,7 +138,7 @@ impl<'a> Block<'a> {
             Err(BlockError::Content)
         } else if !self.signature_is_valid() {
             Err(BlockError::Signature)
-        } else if state.index == 0 && !state.first_block_is_valid() {
+        } else if !state.first_block_is_valid() {
             Err(BlockError::FirstBlock)
         } else {
             Ok(state)
@@ -480,11 +483,7 @@ mod tests {
             ),
         };
         assert!(bs.first_block_is_valid());
-    }
 
-    #[test]
-    #[should_panic]
-    fn test_blockstate_first_block_is_valid_panic() {
         let bs = BlockState {
             index: 1,
             block_hash: Hash::from_bytes([1; DIGEST]),
@@ -496,7 +495,7 @@ mod tests {
                 Hash::from_bytes([3; DIGEST]),
             ),
         };
-        bs.first_block_is_valid();
+        assert!(bs.first_block_is_valid());
     }
 
     fn new_expected() -> Hash {
