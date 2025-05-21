@@ -574,6 +574,18 @@ mod tests {
             bad[HASHABLE_RANGE].copy_from_slice(&end);
             assert_eq!(Block::new(&bad).open(), Err(BlockError::Signature));
         }
+
+        // Test when a single bit is set in ether the chain_hash or previous_hash fields
+        let seed = Seed::auto_create().unwrap();
+        let payload = random_payload();
+        let mut buf = [0; BLOCK];
+        for bad in BitFlipper::new(&[0; DIGEST * 2]) {
+            let mut block = MutBlock::new(&mut buf, &payload);
+            block.buf[BLOCK - DIGEST * 2..].copy_from_slice(&bad);
+            block.sign(&seed);
+            let block_hash = block.finalize();
+            assert_eq!(Block::new(&buf).open(), Err(BlockError::FirstBlock));
+        }
     }
 
     #[test]
