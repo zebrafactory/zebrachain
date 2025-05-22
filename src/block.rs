@@ -37,6 +37,9 @@ fn check_block_buf(buf: &[u8]) {
 }
 
 /// Contains state from current block needed to validate next block, plus the payload.
+///
+/// This struct includes everything from the block buffer except the signature and public key,
+/// both of which are quite large for ML-DSA (and aren't needed by higher level code).
 #[derive(Clone, Debug, PartialEq)]
 pub struct BlockState {
     /// Block-wise position in chain, starting from zero.
@@ -46,9 +49,13 @@ pub struct BlockState {
     pub block_hash: Hash,
 
     /// Hash of first block in chain.
+    ///
+    /// If index is 0 (first block), this field is zeros.
     pub chain_hash: Hash,
 
     /// Hash of previous block.
+    ///
+    /// If index is 0 (first block), this field is zeros.
     pub previous_hash: Hash,
 
     /// Hash of the public key that will be used when signing the next block.
@@ -78,7 +85,13 @@ impl BlockState {
         }
     }
 
-    /// Returns the [BlockState.block_hash] if index == 0, otherwise [BlockState.chain_hash].
+    /// Returns the block_hash if the index is 0, otherwise the chain hash.
+    ///
+    /// A ZebraChain is identified by its "chain hash", which is the hash of the first block in
+    /// the chain. The chain hash is likewise included in the block as a back reference for blocks
+    /// after the first block.
+    ///
+    /// If this is the first block (index is 0), the chain hash is all zeros.
     pub fn effective_chain_hash(&self) -> Hash {
         if self.index == 0 {
             self.block_hash
