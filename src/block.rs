@@ -583,7 +583,7 @@ mod tests {
             let mut block = MutBlock::new(&mut buf, &payload);
             block.buf[BLOCK - DIGEST * 2..].copy_from_slice(&bad);
             block.sign(&seed);
-            let block_hash = block.finalize();
+            let _block_hash = block.finalize();
             assert_eq!(Block::new(&buf).open(), Err(BlockError::FirstBlock));
         }
     }
