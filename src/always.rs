@@ -34,6 +34,9 @@ pub const DIGEST: usize = 32;
 // Size of secret and next_secret
 pub(crate) const SECRET: usize = 32;
 
+// Size digest used in secret block
+pub(crate) const SEC_DIGEST: usize = 32;
+
 pub(crate) const SEED: usize = 2 * SECRET;
 pub(crate) const SIGNATURE: usize = SIG_ED25519 + SIG_MLDSA;
 pub(crate) const PUBKEY: usize = PUB_ED25519 + PUB_MLDSA;
@@ -88,24 +91,24 @@ A SecretBlock currently has 6 fields:
                                               From the previous block
 */
 
-pub(crate) const SECRET_BLOCK: usize = 5 * DIGEST + PAYLOAD + INDEX;
+pub(crate) const SECRET_BLOCK: usize = 5 * SEC_DIGEST + PAYLOAD + INDEX;
 pub(crate) const SECRET_BLOCK_AEAD: usize = SECRET_BLOCK + 16;
 
-const SECWIRE: [usize; 6] = [
-    DIGEST,  // Block hash
-    DIGEST,  // Public block hash
-    SEED,    // secret + next_secret
-    PAYLOAD, // Stuff to be signed
-    INDEX,   // Block index
-    DIGEST,  // Previous block hash
+const SEC_WIRE: [usize; 6] = [
+    SEC_DIGEST, // Block hash
+    DIGEST,     // Public block hash
+    SEED,       // secret + next_secret
+    PAYLOAD,    // Stuff to be signed
+    INDEX,      // Block index
+    SEC_DIGEST, // Previous block hash
 ];
 
 const fn get_secrange(index: usize) -> Range<usize> {
     if index == 0 {
-        0..SECWIRE[0]
+        0..SEC_WIRE[0]
     } else {
         let start = get_secrange(index - 1).end; // Can't use slice.iter().sum() in const fn
-        start..start + SECWIRE[index]
+        start..start + SEC_WIRE[index]
     }
 }
 
@@ -116,7 +119,7 @@ pub(crate) const SEC_PAYLOAD_RANGE: Range<usize> = get_secrange(3);
 pub(crate) const SEC_INDEX_RANGE: Range<usize> = get_secrange(4);
 pub(crate) const SEC_PREV_HASH_RANGE: Range<usize> = get_secrange(5);
 
-pub(crate) const SEC_HASHABLE_RANGE: Range<usize> = DIGEST..SECRET_BLOCK;
+pub(crate) const SEC_HASHABLE_RANGE: Range<usize> = SEC_DIGEST..SECRET_BLOCK;
 
 pub(crate) const BLOCK_READ_BUF: usize = BLOCK * 64;
 pub(crate) const SECRET_BLOCK_AEAD_READ_BUF: usize = SECRET_BLOCK_AEAD * 64;

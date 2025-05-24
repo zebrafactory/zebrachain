@@ -229,7 +229,7 @@ impl<'a> MutSecretBlock<'a> {
     /// Set and return block hash.
     pub fn finalize(self, chain_secret: &Secret) -> Hash {
         let block_index = get_u64(self.buf, SEC_INDEX_RANGE);
-        let block_hash = hash(&self.buf[DIGEST..]);
+        let block_hash = hash(&self.buf[SEC_HASHABLE_RANGE]);
         set_hash(self.buf, SEC_HASH_RANGE, &block_hash);
         encrypt_in_place(self.buf, chain_secret, block_index);
         block_hash
@@ -388,7 +388,7 @@ mod tests {
         getrandom::fill(&mut buf).unwrap();
         set_u64(&mut buf, SEC_INDEX_RANGE, block_index);
         let block_hash = hash(&buf[SEC_HASHABLE_RANGE]);
-        buf[0..DIGEST].copy_from_slice(block_hash.as_bytes());
+        buf[SEC_HASH_RANGE].copy_from_slice(block_hash.as_bytes());
         (block_hash, buf)
     }
 
@@ -399,7 +399,7 @@ mod tests {
         set_hash(&mut buf[SEC_SEED_RANGE], 0..SECRET, &state.seed.next_secret);
         set_hash(&mut buf, SEC_PREV_HASH_RANGE, &state.block_hash);
         let block_hash = hash(&buf[SEC_HASHABLE_RANGE]);
-        buf[0..DIGEST].copy_from_slice(block_hash.as_bytes());
+        buf[SEC_HASH_RANGE].copy_from_slice(block_hash.as_bytes());
         (block_hash, buf)
     }
 
