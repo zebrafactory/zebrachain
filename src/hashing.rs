@@ -1,5 +1,3 @@
-use blake3;
-
 /// Type used for hashes in public chain
 pub type Hash = blake3::Hash;
 
