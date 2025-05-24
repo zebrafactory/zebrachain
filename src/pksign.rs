@@ -2,8 +2,8 @@
 
 use crate::always::*;
 use crate::block::{Block, MutBlock};
-use crate::secretseed::{Secret, Seed, derive_secret};
-use blake3::{Hash, hash};
+use crate::hashing::{Hash, Secret, derive_secret, hash};
+use crate::secretseed::Seed;
 use ml_dsa::{B32, KeyGen, MlDsa65};
 use signature::Signer;
 use zeroize::Zeroize;

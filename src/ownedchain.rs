@@ -6,11 +6,11 @@
 use crate::always::*;
 use crate::block::{BlockState, CheckPoint, sign_block};
 use crate::chain::{Chain, ChainStore};
+use crate::hashing::{Hash, Secret};
 use crate::ownedblock::{MutOwnedBlock, OwnedBlockState};
 use crate::payload::Payload;
 use crate::secretchain::{SecretChain, SecretChainStore};
-use crate::secretseed::{Secret, Seed, generate_secret};
-use blake3::Hash;
+use crate::secretseed::{Seed, generate_secret};
 use std::io;
 use std::path::Path;
 

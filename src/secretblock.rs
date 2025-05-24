@@ -2,9 +2,10 @@
 
 use crate::always::*;
 use crate::errors::SecretBlockError;
+use crate::hashing::{Hash, hash, keyed_hash};
+use crate::hashing::{Secret, derive_secret};
 use crate::payload::Payload;
-use crate::secretseed::{Secret, Seed, derive_secret};
-use blake3::{Hash, hash, keyed_hash};
+use crate::secretseed::Seed;
 use chacha20poly1305::{
     Key, XChaCha20Poly1305, XNonce,
     aead::{AeadInPlace, KeyInit},

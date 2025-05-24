@@ -3,7 +3,7 @@
 use crate::always::*;
 use crate::fsutil::{create_for_append, open_for_append, secret_chain_filename};
 use crate::secretblock::{SecretBlock, SecretBlockState};
-use crate::secretseed::{Secret, Seed};
+use crate::{Secret, Seed};
 use blake3::{Hash, keyed_hash};
 use std::fs::{File, remove_file};
 use std::io;

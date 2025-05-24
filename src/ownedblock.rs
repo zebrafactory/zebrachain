@@ -22,8 +22,7 @@ use crate::block::{BlockState, MutBlock};
 use crate::payload::Payload;
 use crate::secretblock::{MutSecretBlock, SecretBlockState};
 use crate::secretchain::derive_chain_secret;
-use crate::secretseed::{Secret, Seed};
-use blake3::Hash;
+use crate::{Hash, Secret, Seed};
 
 /// Combines [BlockState] and [SecretBlockState].
 pub struct OwnedBlockState {
@@ -96,8 +95,8 @@ mod tests {
     use super::*;
     use crate::always::*;
     use crate::block::{Block, sign_block};
-    use crate::secretseed::generate_secret;
     use crate::testhelpers::random_payload;
+    use crate::{Seed, generate_secret};
 
     #[test]
     fn test_mut_owned_block() {

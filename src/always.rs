@@ -1,6 +1,6 @@
 //! Wire format ranges are defined here (good place to start).
 
-use blake3::Hash;
+use crate::hashing::Hash;
 use std::ops::Range;
 
 /*
