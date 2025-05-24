@@ -1,6 +1,6 @@
 // File system related utilities.
 
-use blake3::Hash;
+use crate::Hash;
 use std::fs::File;
 use std::io;
 use std::path::{Path, PathBuf};

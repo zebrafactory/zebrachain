@@ -1,7 +1,6 @@
 //! Some test fixtures only built on `cfg(test)`.
 
-use crate::payload::Payload;
-use blake3::Hash;
+use crate::{Hash, Payload};
 use getrandom;
 
 /// Returns a random u64 created with [getradom::fill()].

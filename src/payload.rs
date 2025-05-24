@@ -1,7 +1,7 @@
 //! Abstraction over the content to be signed.
 
 use crate::always::*;
-use blake3::Hash;
+use crate::hashing::Hash;
 use std::ops::Range;
 
 const TIME_RANGE: Range<usize> = 0..TIME;

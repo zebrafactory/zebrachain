@@ -2,10 +2,10 @@
 
 use crate::always::*;
 use crate::errors::BlockError;
+use crate::hashing::{Hash, hash};
 use crate::payload::Payload;
 use crate::pksign::{SecretSigner, verify_block_signature};
 use crate::secretseed::Seed;
-use blake3::{Hash, hash};
 
 /// Check point a chain for fast reload.
 pub struct CheckPoint {

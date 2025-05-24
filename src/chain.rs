@@ -3,7 +3,7 @@
 use crate::always::*;
 use crate::block::{Block, BlockState, CheckPoint};
 use crate::fsutil::{chain_filename, create_for_append, open_for_append};
-use blake3::Hash;
+use crate::hashing::Hash;
 use std::fs::{File, remove_file};
 use std::io;
 use std::io::{BufReader, Read, Seek, SeekFrom, Write};
@@ -291,10 +291,8 @@ impl ChainStore {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::block::MutBlock;
-    use crate::secretseed::Seed;
     use crate::testhelpers::{BitFlipper, random_hash, random_payload};
-    use blake3::Hash;
+    use crate::{Hash, MutBlock, Seed};
     use tempfile;
 
     #[test]

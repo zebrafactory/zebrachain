@@ -2,8 +2,7 @@
 
 use crate::always::*;
 use crate::errors::SecretBlockError;
-use crate::hashing::{Hash, hash, keyed_hash};
-use crate::hashing::{Secret, derive_secret};
+use crate::hashing::{Hash, SecHash, Secret, derive_secret, hash, keyed_hash};
 use crate::payload::Payload;
 use crate::secretseed::Seed;
 use chacha20poly1305::{
@@ -83,7 +82,7 @@ fn decrypt_in_place(
 #[derive(Debug, PartialEq, Clone, Copy)]
 pub struct SecretBlockState {
     /// Hash of this secret block.
-    pub block_hash: Hash,
+    pub block_hash: SecHash,
 
     /// Hash of corresponding public block.
     pub public_block_hash: Hash,
@@ -98,7 +97,7 @@ pub struct SecretBlockState {
     pub index: u64,
 
     /// Hash of previous secret block.
-    pub previous_hash: Hash,
+    pub previous_hash: SecHash,
 }
 
 impl SecretBlockState {
