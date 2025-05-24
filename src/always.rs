@@ -116,6 +116,8 @@ pub(crate) const SEC_PAYLOAD_RANGE: Range<usize> = get_secrange(3);
 pub(crate) const SEC_INDEX_RANGE: Range<usize> = get_secrange(4);
 pub(crate) const SEC_PREV_HASH_RANGE: Range<usize> = get_secrange(5);
 
+pub(crate) const SEC_HASHABLE_RANGE: Range<usize> = DIGEST..SECRET_BLOCK;
+
 pub(crate) const BLOCK_READ_BUF: usize = BLOCK * 64;
 pub(crate) const SECRET_BLOCK_AEAD_READ_BUF: usize = SECRET_BLOCK_AEAD * 64;
 

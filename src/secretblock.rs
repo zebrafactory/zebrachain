@@ -103,7 +103,7 @@ pub struct SecretBlockState {
 impl SecretBlockState {
     fn from_buf(buf: &[u8]) -> Result<Self, SecretBlockError> {
         assert_eq!(buf.len(), SECRET_BLOCK);
-        let computed_hash = hash(&buf[DIGEST..]);
+        let computed_hash = hash(&buf[SEC_HASHABLE_RANGE]);
         let block_hash = get_hash(buf, SEC_HASH_RANGE);
         if computed_hash != block_hash {
             Err(SecretBlockError::Content)
@@ -387,7 +387,7 @@ mod tests {
         let mut buf = vec![0; SECRET_BLOCK];
         getrandom::fill(&mut buf).unwrap();
         set_u64(&mut buf, SEC_INDEX_RANGE, block_index);
-        let block_hash = hash(&buf[DIGEST..]);
+        let block_hash = hash(&buf[SEC_HASHABLE_RANGE]);
         buf[0..DIGEST].copy_from_slice(block_hash.as_bytes());
         (block_hash, buf)
     }
@@ -398,7 +398,7 @@ mod tests {
         set_u64(&mut buf, SEC_INDEX_RANGE, state.index + 1);
         set_hash(&mut buf[SEC_SEED_RANGE], 0..SECRET, &state.seed.next_secret);
         set_hash(&mut buf, SEC_PREV_HASH_RANGE, &state.block_hash);
-        let block_hash = hash(&buf[DIGEST..]);
+        let block_hash = hash(&buf[SEC_HASHABLE_RANGE]);
         buf[0..DIGEST].copy_from_slice(block_hash.as_bytes());
         (block_hash, buf)
     }
@@ -465,7 +465,7 @@ mod tests {
             for bad_block_index in U64BitFlipper::new(block_index) {
                 let mut buf = orig.clone();
                 set_u64(&mut buf, SEC_INDEX_RANGE, bad_block_index);
-                let bad_block_hash = hash(&buf[DIGEST..]);
+                let bad_block_hash = hash(&buf[SEC_HASHABLE_RANGE]);
                 set_hash(&mut buf, SEC_HASH_RANGE, &bad_block_hash);
                 encrypt_in_place(&mut buf, &chain_secret, block_index);
                 {
@@ -481,7 +481,7 @@ mod tests {
             // Seed.secret, Seed.next_secret are the same
             let mut buf = orig.clone();
             buf[SEC_SEED_RANGE][0..SECRET].copy_from_slice(state_in.seed.next_secret.as_bytes());
-            let bad_block_hash = hash(&buf[DIGEST..]);
+            let bad_block_hash = hash(&buf[SEC_HASHABLE_RANGE]);
             set_hash(&mut buf, SEC_HASH_RANGE, &bad_block_hash);
             encrypt_in_place(&mut buf, &chain_secret, block_index);
             {
@@ -496,7 +496,7 @@ mod tests {
             // Seed.secret is zeros:
             let mut buf = orig.clone();
             buf[SEC_SEED_RANGE][0..SECRET].copy_from_slice(&[0; SECRET]);
-            let bad_block_hash = hash(&buf[DIGEST..]);
+            let bad_block_hash = hash(&buf[SEC_HASHABLE_RANGE]);
             set_hash(&mut buf, SEC_HASH_RANGE, &bad_block_hash);
             encrypt_in_place(&mut buf, &chain_secret, block_index);
             {
@@ -511,7 +511,7 @@ mod tests {
             // Seed.next_secret is zeros
             let mut buf = orig.clone();
             buf[SEC_SEED_RANGE][SECRET..SECRET * 2].copy_from_slice(&[0; SECRET]);
-            let bad_block_hash = hash(&buf[DIGEST..]);
+            let bad_block_hash = hash(&buf[SEC_HASHABLE_RANGE]);
             set_hash(&mut buf, SEC_HASH_RANGE, &bad_block_hash);
             encrypt_in_place(&mut buf, &chain_secret, block_index);
             {
