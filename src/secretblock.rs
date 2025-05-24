@@ -6,7 +6,7 @@ use crate::payload::Payload;
 use crate::secretseed::{Secret, Seed, derive_secret};
 use blake3::{Hash, hash, keyed_hash};
 use chacha20poly1305::{
-    ChaCha20Poly1305, Key, Nonce,
+    Key, XChaCha20Poly1305, XNonce,
     aead::{AeadInPlace, KeyInit},
 };
 use zeroize::{Zeroize, ZeroizeOnDrop};
@@ -39,18 +39,18 @@ fn derive_block_sub_secrets(chain_secret: &Secret, block_index: u64) -> (Secret,
 }
 
 // A unique key and nonce derived from the chain_secret and block_index
-fn get_block_key_and_nonce(chain_secret: &Secret, block_index: u64) -> (Key, Nonce) {
+fn get_block_key_and_nonce(chain_secret: &Secret, block_index: u64) -> (Key, XNonce) {
     let (key, nonce) = derive_block_sub_secrets(chain_secret, block_index);
     assert_ne!(key, nonce);
     let key = Key::from_slice(&key.as_bytes()[..]);
-    let nonce = Nonce::from_slice(&nonce.as_bytes()[0..12]);
+    let nonce = XNonce::from_slice(&nonce.as_bytes()[0..24]);
     (*key, *nonce)
 }
 
 fn encrypt_in_place(buf: &mut Vec<u8>, chain_secret: &Secret, block_index: u64) {
     check_secretblock_buf(buf);
     let (key, nonce) = get_block_key_and_nonce(chain_secret, block_index);
-    let cipher = ChaCha20Poly1305::new(&key);
+    let cipher = XChaCha20Poly1305::new(&key);
     let additional_data = block_index.to_le_bytes();
     cipher
         .encrypt_in_place(&nonce, &additional_data, buf)
@@ -65,7 +65,7 @@ fn decrypt_in_place(
 ) -> Result<(), SecretBlockError> {
     check_secretblock_buf_aead(buf);
     let (key, nonce) = get_block_key_and_nonce(chain_secret, block_index);
-    let cipher = ChaCha20Poly1305::new(&key);
+    let cipher = XChaCha20Poly1305::new(&key);
     let additional_data = block_index.to_le_bytes();
     if cipher
         .decrypt_in_place(&nonce, &additional_data, buf)
@@ -264,7 +264,7 @@ mod tests {
     }
 
     #[test]
-    fn test_chacha20poly1305_roundtrip() {
+    fn test_xchacha20poly1305_roundtrip() {
         let mut buf = vec![0; SECRET_BLOCK];
         getrandom::fill(&mut buf).unwrap();
         let h = hash(&buf);
@@ -280,7 +280,7 @@ mod tests {
     }
 
     #[test]
-    fn test_chacha20poly1305_error() {
+    fn test_xchacha20poly1305_error() {
         let mut buf = vec![0; SECRET_BLOCK];
         getrandom::fill(&mut buf).unwrap();
         let h = hash(&buf);
@@ -294,14 +294,14 @@ mod tests {
     }
 
     #[test]
-    fn test_chacha20poly1305_additional_data() {
+    fn test_xchacha20poly1305_additional_data() {
         let mut buf = vec![0; SECRET_BLOCK];
         let chain_secret = generate_secret().unwrap();
         for block_index in 0..420 {
             buf.resize(SECRET_BLOCK, 42);
             buf.fill(69);
             let (key, nonce) = get_block_key_and_nonce(&chain_secret, block_index);
-            let cipher = ChaCha20Poly1305::new(&key);
+            let cipher = XChaCha20Poly1305::new(&key);
             cipher.encrypt_in_place(&nonce, b"", &mut buf).unwrap();
             assert_eq!(
                 decrypt_in_place(&mut buf, &chain_secret, block_index),
@@ -310,7 +310,7 @@ mod tests {
             for bad_block_index in U64BitFlipper::new(block_index) {
                 buf.resize(SECRET_BLOCK, 42);
                 buf.fill(69);
-                let cipher = ChaCha20Poly1305::new(&key);
+                let cipher = XChaCha20Poly1305::new(&key);
                 let additional_data = bad_block_index.to_le_bytes();
                 cipher
                     .encrypt_in_place(&nonce, &additional_data, &mut buf)
