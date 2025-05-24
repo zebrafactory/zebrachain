@@ -31,7 +31,10 @@ pub(crate) const SIG_ED25519_RANGE: Range<usize> = SIG_MLDSA..SIG_MLDSA + SIG_ED
 /// Size of hash output digest (32 bytes).
 pub const DIGEST: usize = 32;
 
-pub(crate) const SEED: usize = 2 * DIGEST;
+// Size of secret and next_secret
+pub(crate) const SECRET: usize = 32;
+
+pub(crate) const SEED: usize = 2 * SECRET;
 pub(crate) const SIGNATURE: usize = SIG_ED25519 + SIG_MLDSA;
 pub(crate) const PUBKEY: usize = PUB_ED25519 + PUB_MLDSA;
 

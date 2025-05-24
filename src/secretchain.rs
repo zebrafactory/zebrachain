@@ -337,7 +337,7 @@ mod tests {
     #[test]
     fn test_store_derive_secret() {
         let dir = PathBuf::from("/nope");
-        let secret = Hash::from_bytes([42; DIGEST]);
+        let secret = Hash::from_bytes([42; SECRET]);
         let store = SecretChainStore::new(&dir, secret);
         let chain_hash = Hash::from_bytes([69; DIGEST]);
         let sec = store.derive_chain_secret(&chain_hash);

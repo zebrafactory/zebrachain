@@ -396,7 +396,7 @@ mod tests {
         let mut buf = vec![0; SECRET_BLOCK];
         getrandom::fill(&mut buf).unwrap();
         set_u64(&mut buf, SEC_INDEX_RANGE, state.index + 1);
-        set_hash(&mut buf[SEC_SEED_RANGE], 0..DIGEST, &state.seed.next_secret);
+        set_hash(&mut buf[SEC_SEED_RANGE], 0..SECRET, &state.seed.next_secret);
         set_hash(&mut buf, SEC_PREV_HASH_RANGE, &state.block_hash);
         let block_hash = hash(&buf[DIGEST..]);
         buf[0..DIGEST].copy_from_slice(block_hash.as_bytes());
@@ -480,7 +480,7 @@ mod tests {
 
             // Seed.secret, Seed.next_secret are the same
             let mut buf = orig.clone();
-            buf[SEC_SEED_RANGE][0..DIGEST].copy_from_slice(state_in.seed.next_secret.as_bytes());
+            buf[SEC_SEED_RANGE][0..SECRET].copy_from_slice(state_in.seed.next_secret.as_bytes());
             let bad_block_hash = hash(&buf[DIGEST..]);
             set_hash(&mut buf, SEC_HASH_RANGE, &bad_block_hash);
             encrypt_in_place(&mut buf, &chain_secret, block_index);
@@ -495,7 +495,7 @@ mod tests {
 
             // Seed.secret is zeros:
             let mut buf = orig.clone();
-            buf[SEC_SEED_RANGE][0..DIGEST].copy_from_slice(&[0; DIGEST]);
+            buf[SEC_SEED_RANGE][0..SECRET].copy_from_slice(&[0; SECRET]);
             let bad_block_hash = hash(&buf[DIGEST..]);
             set_hash(&mut buf, SEC_HASH_RANGE, &bad_block_hash);
             encrypt_in_place(&mut buf, &chain_secret, block_index);
@@ -510,7 +510,7 @@ mod tests {
 
             // Seed.next_secret is zeros
             let mut buf = orig.clone();
-            buf[SEC_SEED_RANGE][DIGEST..DIGEST * 2].copy_from_slice(&[0; DIGEST]);
+            buf[SEC_SEED_RANGE][SECRET..SECRET * 2].copy_from_slice(&[0; SECRET]);
             let bad_block_hash = hash(&buf[DIGEST..]);
             set_hash(&mut buf, SEC_HASH_RANGE, &bad_block_hash);
             encrypt_in_place(&mut buf, &chain_secret, block_index);
@@ -676,15 +676,15 @@ mod tests {
         let payload = random_payload();
         let mut block = MutSecretBlock::new(&mut buf, &payload);
         let seed = Seed::auto_create().unwrap();
-        assert_eq!(&block.buf[SEC_SEED_RANGE], &[0; DIGEST * 2]);
+        assert_eq!(&block.buf[SEC_SEED_RANGE], &[0; SECRET * 2]);
         block.set_seed(&seed);
-        assert_ne!(&block.buf[SEC_SEED_RANGE], &[0; DIGEST * 2]);
+        assert_ne!(&block.buf[SEC_SEED_RANGE], &[0; SECRET * 2]);
         assert_eq!(
-            &block.buf[SEC_SEED_RANGE][0..DIGEST],
+            &block.buf[SEC_SEED_RANGE][0..SECRET],
             seed.secret.as_bytes()
         );
         assert_eq!(
-            &block.buf[SEC_SEED_RANGE][DIGEST..DIGEST * 2],
+            &block.buf[SEC_SEED_RANGE][SECRET..SECRET * 2],
             seed.next_secret.as_bytes()
         );
         let block_secret = generate_secret().unwrap();

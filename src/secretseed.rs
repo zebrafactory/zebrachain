@@ -10,8 +10,8 @@ use blake3::{Hash, Hasher, keyed_hash};
 pub use getrandom::Error as EntropyError;
 use std::ops::Range;
 
-const SECRET_RANGE: Range<usize> = 0..DIGEST;
-const NEXT_SECRET_RANGE: Range<usize> = DIGEST..DIGEST * 2;
+const SECRET_RANGE: Range<usize> = 0..SECRET;
+const NEXT_SECRET_RANGE: Range<usize> = SECRET..SECRET * 2;
 
 /// A secret buffer with constant time comparison and zeroize.
 ///
@@ -231,9 +231,9 @@ mod tests {
 
     #[test]
     fn test_seed_from_buf() {
-        let zero = Hash::from_bytes([0; DIGEST]);
-        let a = Hash::from_bytes([41; DIGEST]);
-        let b = Hash::from_bytes([42; DIGEST]);
+        let zero = Hash::from_bytes([0; SECRET]);
+        let a = Hash::from_bytes([41; SECRET]);
+        let b = Hash::from_bytes([42; SECRET]);
 
         // (zero, zero)
         let mut buf = [0; SEED];
