@@ -19,9 +19,28 @@ impl<const N: usize> GenericHash<N> {
     pub fn from_bytes(value: [u8; N]) -> Self {
         Self { value }
     }
+
+    pub fn to_hex(&self) -> arrayvec::ArrayString<N> { // Need N * 2
+        let mut s = arrayvec::ArrayString::new();
+        let table = b"0123456789abcdef";
+        for &b in self.value.iter() {
+            s.push(table[(b >> 4) as usize] as char);
+            s.push(table[(b & 0xf) as usize] as char);
+        }
+        s
+    }
 }
 
+pub type Hash256 = GenericHash<32>;
 pub type Hash384 = GenericHash<48>;
+
+pub fn hash256(input: &[u8]) -> Hash256 {
+    let mut value = [0; 32];
+    let mut hasher = Blake2b256::new();
+    hasher.update(input);
+    hasher.finalize_into((&mut value).into());
+    Hash256::from_bytes(value)
+}
 
 pub fn hash384(input: &[u8]) -> Hash384 {
     let mut value = [0; 48];
@@ -83,6 +102,13 @@ mod tests {
     use crate::always::*;
     use crate::generate_secret;
     use std::collections::HashSet;
+
+    #[test]
+    fn test_blake2b() {
+        let msg = b"yo dawg, wut up";
+        let _h = hash384(msg);
+        let _h = hash256(msg);
+    }
 
     #[test]
     fn test_generate_secret() {
