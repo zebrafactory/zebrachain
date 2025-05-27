@@ -1,3 +1,36 @@
+use blake2::{
+    Blake2b, Digest,
+    digest::consts::{U32, U48},
+};
+
+type Blake2b256 = Blake2b<U32>;
+type Blake2b384 = Blake2b<U48>;
+
+/// A generic array with better ergonomics.
+pub struct GenericHash<const N: usize> {
+    value: [u8; N],
+}
+
+impl<const N: usize> GenericHash<N> {
+    pub fn as_bytes(&self) -> &[u8; N] {
+        &self.value
+    }
+
+    pub fn from_bytes(value: [u8; N]) -> Self {
+        Self { value }
+    }
+}
+
+pub type Hash384 = GenericHash<48>;
+
+pub fn hash384(input: &[u8]) -> Hash384 {
+    let mut value = [0; 48];
+    let mut hasher = Blake2b384::new();
+    hasher.update(input);
+    hasher.finalize_into((&mut value).into());
+    Hash384::from_bytes(value)
+}
+
 /// Type used for hashes in public chain
 pub type Hash = blake3::Hash;
 
