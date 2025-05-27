@@ -20,8 +20,8 @@ impl<const N: usize> GenericHash<N> {
         Self { value }
     }
 
-    pub fn to_hex(&self) -> arrayvec::ArrayString<N> { // Need N * 2
-        let mut s = arrayvec::ArrayString::new();
+    pub fn to_hex(&self) -> String {
+        let mut s = String::new();
         let table = b"0123456789abcdef";
         for &b in self.value.iter() {
             s.push(table[(b >> 4) as usize] as char);
