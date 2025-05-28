@@ -2,7 +2,7 @@ use std::collections::HashSet;
 use tempfile;
 use zf_zebrachain::{
     ChainStore, DIGEST, Hash, MutSecretBlock, OwnedChainStore, PAYLOAD, Payload, Secret,
-    SecretChainStore, Seed, generate_secret, hash, keyed_hash,
+    SecretChainStore, Seed, hash, keyed_hash,
 };
 
 const SAMPLE_ENTROPY_0: &str = "96b3a086291fbcdef17e52e60731e96d8d36ae0944f2aad0c0c12a0c14e161ca";
@@ -93,7 +93,7 @@ fn test_chain_store() {
 #[test]
 fn test_secret_chain_store() {
     let tmpdir = tempfile::TempDir::new().unwrap();
-    let storage_secret = generate_secret().unwrap();
+    let storage_secret = Secret::generate().unwrap();
     let store = SecretChainStore::new(tmpdir.path(), storage_secret);
     let chain_hash = Hash::from_bytes([42; DIGEST]);
     assert!(store.open_chain(&chain_hash).is_err());

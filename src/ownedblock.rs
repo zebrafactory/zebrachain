@@ -93,14 +93,14 @@ impl<'a> MutOwnedBlock<'a> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::Seed;
     use crate::always::*;
     use crate::block::{Block, sign_block};
     use crate::testhelpers::random_payload;
-    use crate::{Seed, generate_secret};
 
     #[test]
     fn test_mut_owned_block() {
-        let chain_secret = generate_secret().unwrap();
+        let chain_secret = Secret::generate().unwrap();
         let seed = Seed::auto_create().unwrap();
         let payload = random_payload();
         let mut buf = [0; BLOCK];

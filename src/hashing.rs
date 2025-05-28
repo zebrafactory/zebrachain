@@ -1,4 +1,5 @@
 use crate::always::*;
+pub use getrandom::Error as EntropyError;
 /*
 use blake2::{
     Blake2b, Digest,
@@ -153,6 +154,15 @@ impl Secret {
         self.inner == blake3::Hash::from_bytes([0; DIGEST])
     }
 
+    /// Return a [Secret] with entropy from [getrandom::fill()].
+    pub fn generate() -> Result<Self, EntropyError> {
+        let mut buf = [0; SECRET];
+        match getrandom::fill(&mut buf) {
+            Ok(_) => Ok(Self::from_bytes(buf)),
+            Err(err) => Err(err),
+        }
+    }
+
     /// FIXME: Remove from API
     pub fn into_inner(self) -> blake3::Hash {
         self.inner
@@ -199,7 +209,6 @@ pub(crate) fn derive_secret(context: &str, secret: &Secret) -> Secret {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::generate_secret;
     use std::collections::HashSet;
 
     /*
@@ -216,7 +225,7 @@ mod tests {
         let count = 1024;
         let mut hset = HashSet::new();
         for _ in 0..count {
-            assert!(hset.insert(generate_secret().unwrap()));
+            assert!(hset.insert(Secret::generate().unwrap()));
         }
         assert_eq!(hset.len(), count);
     }
@@ -267,14 +276,14 @@ mod tests {
     #[test]
     #[should_panic(expected = "derive_secret(): context string length must be 64; got 63")]
     fn test_derive_secret_panic_low() {
-        let secret = generate_secret().unwrap();
+        let secret = Secret::generate().unwrap();
         derive_secret(&CONTEXT_SECRET[0..63], &secret);
     }
 
     #[test]
     #[should_panic(expected = "derive_secret(): context string length must be 64; got 65")]
     fn test_derive_secret_panic_high() {
-        let secret = generate_secret().unwrap();
+        let secret = Secret::generate().unwrap();
         let mut context = String::from(CONTEXT_SECRET);
         context.push('7');
         derive_secret(&context, &secret);

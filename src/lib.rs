@@ -32,7 +32,7 @@
 //!
 //! ```
 //! use tempfile;
-//! use zf_zebrachain::{ChainStore, OwnedChainStore, Hash, Payload, generate_secret};
+//! use zf_zebrachain::{ChainStore, OwnedChainStore, Hash, Payload, Secret};
 //!
 //! // Chains are just files in a directory (for now). To get started you need a directory for
 //! // your public chain files and a `ChainStore`:
@@ -42,7 +42,7 @@
 //! // To create signatures in a chain that you own, you also need a directory for your secret
 //! // chain files and a secret storage key that will be used to encrypt them:
 //! let secret_chain_dir = tempfile::TempDir::new().unwrap();
-//! let storage_secret = generate_secret().unwrap(); // Uses getrandom::fill()
+//! let storage_secret = Secret::generate().unwrap(); // Uses getrandom::fill()
 //! let mystore = OwnedChainStore::build(
 //!     chain_dir.path(), secret_chain_dir.path(), storage_secret
 //! );
@@ -102,10 +102,10 @@ pub use always::{BLOCK, DIGEST, PAYLOAD};
 pub use block::{Block, BlockState, CheckPoint, MutBlock, sign_block};
 pub use chain::{Chain, ChainIter, ChainStore};
 pub use errors::{BlockError, SecretBlockError};
-pub use hashing::{Hash, SecHash, Secret, hash, hash_sec, keyed_hash};
+pub use hashing::{EntropyError, Hash, SecHash, Secret, hash, hash_sec, keyed_hash};
 pub use ownedblock::{MutOwnedBlock, OwnedBlockState};
 pub use ownedchain::{OwnedChain, OwnedChainStore};
 pub use payload::Payload;
 pub use secretblock::{MutSecretBlock, SecretBlock, SecretBlockState};
 pub use secretchain::{SecretChain, SecretChainIter, SecretChainStore};
-pub use secretseed::{EntropyError, Seed, generate_secret};
+pub use secretseed::Seed;

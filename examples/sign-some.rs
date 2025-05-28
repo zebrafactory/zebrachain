@@ -1,7 +1,7 @@
 //! Create a new chain and some signatures.
 
 use tempfile;
-use zf_zebrachain::{DIGEST, Hash, OwnedChainStore, Payload, generate_secret};
+use zf_zebrachain::{DIGEST, Hash, OwnedChainStore, Payload, Secret};
 
 const COUNT: usize = 420;
 
@@ -19,7 +19,7 @@ fn main() {
     println!("Pre-generating {} random signing requests...", COUNT);
     let payloads = build_payloads();
     let tmpdir = tempfile::TempDir::new().unwrap();
-    let root_secret = generate_secret().unwrap();
+    let root_secret = Secret::generate().unwrap();
     let ocs = OwnedChainStore::build(tmpdir.path(), tmpdir.path(), root_secret);
     let mut chain = ocs.auto_create_chain(&payloads[0]).unwrap();
 

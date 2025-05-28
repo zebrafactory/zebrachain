@@ -240,7 +240,7 @@ impl<'a> MutSecretBlock<'a> {
 mod tests {
 
     use super::*;
-    use crate::secretseed::generate_secret;
+    use crate::Secret;
     use crate::testhelpers::{
         BitFlipper, HashBitFlipper, SecretBitFlipper, U64BitFlipper, random_hash, random_payload,
     };
@@ -251,7 +251,7 @@ mod tests {
     fn test_derive_block_sub_secrets_inner() {
         let count = 420u64;
         let mut hset = HashSet::new();
-        let chain_secret = generate_secret().unwrap();
+        let chain_secret = Secret::generate().unwrap();
         assert!(hset.insert(chain_secret));
         for block_index in 0..count {
             let block_secret = keyed_hash(chain_secret.as_bytes(), &block_index.to_le_bytes());
@@ -268,7 +268,7 @@ mod tests {
         let mut buf = vec![0; SECRET_BLOCK];
         getrandom::fill(&mut buf).unwrap();
         let h = hash(&buf);
-        let secret = generate_secret().unwrap();
+        let secret = Secret::generate().unwrap();
         for index in 0..420 {
             encrypt_in_place(&mut buf, &secret, index);
             assert_eq!(buf.len(), SECRET_BLOCK_AEAD);
@@ -284,7 +284,7 @@ mod tests {
         let mut buf = vec![0; SECRET_BLOCK];
         getrandom::fill(&mut buf).unwrap();
         let h = hash(&buf);
-        let secret = generate_secret().unwrap();
+        let secret = Secret::generate().unwrap();
         encrypt_in_place(&mut buf, &secret, 0);
         for mut bad in BitFlipper::new(&buf) {
             assert!(decrypt_in_place(&mut bad, &secret, 0).is_err());
@@ -296,7 +296,7 @@ mod tests {
     #[test]
     fn test_xchacha20poly1305_additional_data() {
         let mut buf = vec![0; SECRET_BLOCK];
-        let chain_secret = generate_secret().unwrap();
+        let chain_secret = Secret::generate().unwrap();
         for block_index in 0..420 {
             buf.resize(SECRET_BLOCK, 42);
             buf.fill(69);
@@ -405,7 +405,7 @@ mod tests {
 
     #[test]
     fn test_secretblock_from_index() {
-        let chain_secret = generate_secret().unwrap();
+        let chain_secret = Secret::generate().unwrap();
         for block_index in 0..420 {
             let (_block_hash, orig) = build_simirandom_valid_block(block_index);
             let state_in = SecretBlockState::from_buf(&orig).unwrap();
@@ -527,7 +527,7 @@ mod tests {
 
     #[test]
     fn test_secretblock_from_hash_at_index() {
-        let chain_secret = generate_secret().unwrap();
+        let chain_secret = Secret::generate().unwrap();
         for block_index in 0..420 {
             let (block_hash, orig) = build_simirandom_valid_block(block_index);
             let state_in = SecretBlockState::from_buf(&orig).unwrap();
@@ -561,7 +561,7 @@ mod tests {
 
     #[test]
     fn test_secretblock_from_previous() {
-        let chain_secret = generate_secret().unwrap();
+        let chain_secret = Secret::generate().unwrap();
         for block_index in 0u64..420 {
             let (_prev_block_hash, prev_buf) = build_simirandom_valid_block(block_index);
             let prev_state = SecretBlockState::from_buf(&prev_buf).unwrap();
@@ -687,7 +687,7 @@ mod tests {
             &block.buf[SEC_SEED_RANGE][SECRET..SECRET * 2],
             seed.next_secret.as_bytes()
         );
-        let block_secret = generate_secret().unwrap();
+        let block_secret = Secret::generate().unwrap();
         let block_hash = block.finalize(&block_secret);
         let blockstate = SecretBlock::new(&mut buf)
             .from_hash_at_index(&block_secret, &block_hash, 0)
@@ -712,7 +712,7 @@ mod tests {
             &block.buf[SEC_PUBLIC_HASH_RANGE],
             public_block_hash.as_bytes()
         );
-        let block_secret = generate_secret().unwrap();
+        let block_secret = Secret::generate().unwrap();
         let block_hash = block.finalize(&block_secret);
         let blockstate = SecretBlock::new(&mut buf)
             .from_hash_at_index(&block_secret, &block_hash, 0)

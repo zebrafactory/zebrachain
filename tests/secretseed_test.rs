@@ -1,12 +1,12 @@
 use getrandom;
 use std::collections::HashSet;
-use zf_zebrachain::{DIGEST, SecretBlockError, Seed, generate_secret};
+use zf_zebrachain::{DIGEST, Secret, SecretBlockError, Seed};
 
 #[test]
-fn test_generate_secret() {
+fn test_secret_generate() {
     let mut hset = HashSet::new();
     for _ in 0..420 {
-        let secret = generate_secret().unwrap();
+        let secret = Secret::generate().unwrap();
         assert!(hset.insert(secret));
     }
     assert_eq!(hset.len(), 420);
@@ -16,7 +16,7 @@ fn test_generate_secret() {
 fn test_seed_create() {
     let mut hset = HashSet::new();
     for _ in 0..420 {
-        let initial_entropy = generate_secret().unwrap();
+        let initial_entropy = Secret::generate().unwrap();
         assert!(hset.insert(initial_entropy));
         let seed = Seed::create(&initial_entropy);
         assert!(hset.insert(seed.secret));
@@ -43,7 +43,7 @@ fn test_seed_advance() {
     assert!(hset.insert(seed.secret));
     assert!(hset.insert(seed.next_secret));
     for _ in 0..420 {
-        let new_entropy = generate_secret().unwrap();
+        let new_entropy = Secret::generate().unwrap();
         assert!(hset.insert(new_entropy));
         let seed2 = seed.advance(&new_entropy);
         assert!(!hset.insert(seed2.secret));

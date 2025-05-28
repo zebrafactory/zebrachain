@@ -251,7 +251,6 @@ impl SecretChainStore {
 mod tests {
     use super::*;
     use crate::secretblock::MutSecretBlock;
-    use crate::secretseed::generate_secret;
     use crate::testhelpers::{random_hash, random_payload};
     use getrandom;
     use std::io::Seek;
@@ -268,7 +267,7 @@ mod tests {
         let seed = Seed::auto_create().unwrap();
         block.set_seed(&seed);
 
-        let chain_secret = generate_secret().unwrap();
+        let chain_secret = Secret::generate().unwrap();
         let block_hash = block.finalize(&chain_secret);
 
         let mut buf2 = buf.clone();
@@ -289,7 +288,7 @@ mod tests {
     #[test]
     fn test_chain_open() {
         let mut file = tempfile().unwrap();
-        let chain_secret = generate_secret().unwrap();
+        let chain_secret = Secret::generate().unwrap();
 
         // Empty file
         assert!(SecretChain::open(file.try_clone().unwrap(), chain_secret).is_err());
@@ -343,7 +342,7 @@ mod tests {
         let sec = store.derive_chain_secret(&chain_hash);
         assert_eq!(sec, Secret::from_hex(HEX0).unwrap());
         assert_eq!(sec, keyed_hash(secret.as_bytes(), chain_hash.as_bytes()));
-        let secret = generate_secret().unwrap();
+        let secret = Secret::generate().unwrap();
         let chain_hash = random_hash();
         let store = SecretChainStore::new(&dir, secret);
         assert_eq!(
@@ -355,7 +354,7 @@ mod tests {
     #[test]
     fn test_store_chain_filename() {
         let dir = PathBuf::from("/nope");
-        let secret = generate_secret().unwrap();
+        let secret = Secret::generate().unwrap();
         let store = SecretChainStore::new(dir.as_path(), secret);
         let chain_hash = Hash::from_bytes([69; DIGEST]);
         assert_eq!(
@@ -374,7 +373,7 @@ mod tests {
     #[test]
     fn test_store_open_chain() {
         let dir = TempDir::new().unwrap();
-        let store_secret = generate_secret().unwrap();
+        let store_secret = Secret::generate().unwrap();
         let store = SecretChainStore::new(dir.path(), store_secret);
 
         let chain_hash = random_hash();
@@ -391,7 +390,7 @@ mod tests {
 
     #[test]
     fn test_store_create_chain_open() {
-        let store_secret = generate_secret().unwrap();
+        let store_secret = Secret::generate().unwrap();
         let chain_hash = random_hash();
         let chain_secret = derive_chain_secret(&store_secret, &chain_hash);
         let seed = Seed::auto_create().unwrap();
@@ -420,7 +419,7 @@ mod tests {
     #[test]
     fn test_store_remove_file() {
         let dir = TempDir::new().unwrap();
-        let secret = generate_secret().unwrap();
+        let secret = Secret::generate().unwrap();
         let store = SecretChainStore::new(dir.path(), secret);
         let chain_hash = random_hash();
         assert!(store.remove_chain_file(&chain_hash).is_err());

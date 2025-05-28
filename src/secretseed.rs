@@ -6,25 +6,15 @@
 
 use crate::always::*;
 use crate::errors::SecretBlockError;
-use crate::hashing::{Secret, derive_secret, keyed_hash};
+use crate::hashing::{EntropyError, Secret, derive_secret, keyed_hash};
 use core::ops::Range;
-pub use getrandom::Error as EntropyError;
 
 const SECRET_RANGE: Range<usize> = 0..SECRET;
 const NEXT_SECRET_RANGE: Range<usize> = SECRET..SECRET * 2;
 
-/// Return a [Secret] buffer with entropy from [getrandom::fill()].
-pub fn generate_secret() -> Result<Secret, EntropyError> {
-    let mut buf = [0; 32];
-    match getrandom::fill(&mut buf) {
-        Ok(_) => Ok(Secret::from_bytes(buf)),
-        Err(err) => Err(err),
-    }
-}
-
 /// Stores secret and next_secret.
 ///
-/// # Examples
+/// # Examplesg
 ///
 /// ```
 /// use zf_zebrachain::Seed;
@@ -60,9 +50,9 @@ impl Seed {
         Self::new(secret, next_secret)
     }
 
-    /// Creates a new seed using the initial entropy from [generate_secret()].
+    /// Creates a new seed using the initial entropy from [getrandom::fill()].
     pub fn auto_create() -> Result<Self, EntropyError> {
-        let initial_entropy = generate_secret()?; // Only this part can fail
+        let initial_entropy = Secret::generate()?; // Only this part can fail
         Ok(Self::create(&initial_entropy))
     }
 
@@ -82,9 +72,9 @@ impl Seed {
         Self::new(self.next_secret, next_next_secret)
     }
 
-    /// Advance chain by mixing in new entropy from [generate_secret()].
+    /// Advance chain by mixing in new entropy from [getrandom::fill()].
     pub fn auto_advance(&self) -> Result<Self, EntropyError> {
-        let new_entropy = generate_secret()?; // Only this part can fail
+        let new_entropy = Secret::generate()?; // Only this part can fail
         Ok(self.advance(&new_entropy))
     }
 
@@ -114,7 +104,6 @@ impl Seed {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::generate_secret;
     use crate::hashing::hash;
     use std::collections::HashSet;
 
@@ -165,8 +154,8 @@ mod tests {
     #[test]
     fn test_seed_roundtrip() {
         for _ in 0..420 {
-            let secret = generate_secret().unwrap();
-            let next_secret = generate_secret().unwrap();
+            let secret = Secret::generate().unwrap();
+            let next_secret = Secret::generate().unwrap();
             let seed = Seed::new(secret, next_secret);
             let mut buf = [0; SEED];
             seed.write_to_buf(&mut buf);
