@@ -123,7 +123,7 @@ impl BlockState {
 
     fn first_block_is_valid(&self) -> bool {
         if self.index == 0 {
-            self.chain_hash == ZERO_HASH && self.previous_hash == ZERO_HASH
+            self.chain_hash.is_zeros() && self.previous_hash.is_zeros()
         } else {
             true
         }
@@ -524,8 +524,8 @@ mod tests {
         let last = BlockState::new(
             0,
             Hash::from_bytes([3; 32]),
-            ZERO_HASH,
-            ZERO_HASH,
+            Hash::from_bytes([0; DIGEST]), // ZERO_HASH
+            Hash::from_bytes([0; DIGEST]), // ZERO_HASH
             Hash::from_bytes([5; 32]),
             payload,
         );
@@ -722,8 +722,8 @@ mod tests {
             // Previous block state
             0,
             state.previous_hash,
-            ZERO_HASH,
-            ZERO_HASH,
+            Hash::from_bytes([0; DIGEST]), // ZERO_HASH
+            Hash::from_bytes([0; DIGEST]), // ZERO_HASH
             pubkey_hash,
             state.payload,
         );

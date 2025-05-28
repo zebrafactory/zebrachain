@@ -144,8 +144,6 @@ pub(crate) static SIGNING_CXT_ML_DSA: &[u8] =
 //pub(crate) static SIGNING_CXT_SLH_DSA: &[u8] =
 //    b"b71cd1500453530f76d0a4e47863c69bb4842a42ba088532d58d11c149489853";
 
-pub(crate) const ZERO_HASH: Hash = Hash::from_bytes([0; DIGEST]);
-
 #[inline]
 pub(crate) fn get_hash(buf: &[u8], range: Range<usize>) -> Hash {
     Hash::from_bytes(buf[range].try_into().unwrap())
