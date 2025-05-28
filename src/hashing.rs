@@ -1,4 +1,5 @@
 use crate::always::*;
+/*
 use blake2::{
     Blake2b, Digest,
     digest::consts::{U32, U48},
@@ -31,6 +32,26 @@ impl<const N: usize> GenericHash<N> {
         s
     }
 }
+
+pub type Hash256 = GenericHash<32>;
+pub type Hash384 = GenericHash<48>;
+
+pub fn hash256(input: &[u8]) -> Hash256 {
+    let mut value = [0; 32];
+    let mut hasher = Blake2b256::new();
+    hasher.update(input);
+    hasher.finalize_into((&mut value).into());
+    Hash256::from_bytes(value)
+}
+
+pub fn hash384(input: &[u8]) -> Hash384 {
+    let mut value = [0; 48];
+    let mut hasher = Blake2b384::new();
+    hasher.update(input);
+    hasher.finalize_into((&mut value).into());
+    Hash384::from_bytes(value)
+}
+*/
 
 /// Hash
 ///
@@ -138,25 +159,6 @@ impl Secret {
     }
 }
 
-pub type Hash256 = GenericHash<32>;
-pub type Hash384 = GenericHash<48>;
-
-pub fn hash256(input: &[u8]) -> Hash256 {
-    let mut value = [0; 32];
-    let mut hasher = Blake2b256::new();
-    hasher.update(input);
-    hasher.finalize_into((&mut value).into());
-    Hash256::from_bytes(value)
-}
-
-pub fn hash384(input: &[u8]) -> Hash384 {
-    let mut value = [0; 48];
-    let mut hasher = Blake2b384::new();
-    hasher.update(input);
-    hasher.finalize_into((&mut value).into());
-    Hash384::from_bytes(value)
-}
-
 /// Type used for secret block hash in secret chain
 pub type SecHash = Hash;
 
@@ -200,12 +202,14 @@ mod tests {
     use crate::generate_secret;
     use std::collections::HashSet;
 
+    /*
     #[test]
     fn test_blake2b() {
         let msg = b"yo dawg, wut up";
         let _h = hash384(msg);
         let _h = hash256(msg);
     }
+    */
 
     #[test]
     fn test_generate_secret() {
