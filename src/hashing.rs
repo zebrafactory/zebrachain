@@ -32,6 +32,61 @@ impl<const N: usize> GenericHash<N> {
     }
 }
 
+/// Hash
+///
+/// HOLY FUCKING SHIT, FIXME: This needs to do constant time compare. Let's use subtle.
+#[derive(Debug, PartialEq, Eq, Hash, Clone, Copy)]
+pub struct Hash {
+    inner: blake3::Hash,
+}
+
+impl Hash {
+    /// The raw bytes of the `Hash`.
+    pub fn as_bytes(&self) -> &[u8; DIGEST] {
+        self.inner.as_bytes()
+    }
+
+    /// Create from bytes.
+    pub const fn from_bytes(value: [u8; DIGEST]) -> Self {
+        Self {
+            inner: blake3::Hash::from_bytes(value),
+        }
+    }
+
+    /// Load from a slice
+    pub fn from_slice(bytes: &[u8]) -> Result<Self, core::array::TryFromSliceError> {
+        Ok(Self {
+            inner: blake3::Hash::from_slice(bytes)?,
+        })
+    }
+
+    /// Decode from hex
+    pub fn from_hex(hex: impl AsRef<[u8]>) -> Result<Self, blake3::HexError> {
+        Ok(Self {
+            inner: blake3::Hash::from_hex(hex)?,
+        })
+    }
+
+    /// Encode in lowercase hexidecimal
+    pub fn to_hex(&self) -> arrayvec::ArrayString<{ DIGEST * 2 }> {
+        self.inner.to_hex()
+    }
+
+    /// Constant time check of whether every byte is a zero.
+    ///
+    /// FIXME: Once this isn't a wrapper, we need our own constant time way of doing, ideally
+    /// without comparing to another value... just check whether all bytes are zero internally.
+    pub fn is_zeros(&self) -> bool {
+        self.inner == blake3::Hash::from_bytes([0; DIGEST])
+    }
+}
+
+impl core::fmt::Display for Hash {
+    fn fmt(&self, f: &mut core::fmt::Formatter) -> core::fmt::Result {
+        f.write_str(self.to_hex().as_str())
+    }
+}
+
 /// Stores secret
 ///
 /// HOLY FUCKING SHIT, FIXME: This needs to do constant time compare. Let's use subtle.
@@ -102,24 +157,22 @@ pub fn hash384(input: &[u8]) -> Hash384 {
     Hash384::from_bytes(value)
 }
 
-/// Type used for hashes in public chain
-pub type Hash = blake3::Hash;
-
 /// Type used for secret block hash in secret chain
-pub type SecHash = blake3::Hash;
+pub type SecHash = Hash;
 
 /// Hash for blocks in public chain
 pub fn hash(input: &[u8]) -> Hash {
-    blake3::hash(input)
+    Hash::from_bytes(*blake3::hash(input).as_bytes())
 }
 
+/// Keyed hash, yo
 pub fn keyed_hash(key: &[u8; 32], input: &[u8]) -> Secret {
     Secret::from_bytes(*blake3::keyed_hash(key, input).as_bytes())
 }
 
 /// Hash for blocks in secret chain
 pub fn hash_sec(input: &[u8]) -> SecHash {
-    blake3::hash(input)
+    hash(input)
 }
 
 /// Derive a domain specific [Secret] from a context string and a root secret.
@@ -144,7 +197,6 @@ pub(crate) fn derive_secret(context: &str, secret: &Secret) -> Secret {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::always::*;
     use crate::generate_secret;
     use std::collections::HashSet;
 

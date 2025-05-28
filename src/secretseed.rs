@@ -115,7 +115,7 @@ impl Seed {
 mod tests {
     use super::*;
     use crate::generate_secret;
-    use crate::hashing::{Hash, hash};
+    use crate::hashing::hash;
     use std::collections::HashSet;
 
     #[test]

@@ -1,14 +1,16 @@
 //! Create a new chain and some signatures.
 
 use tempfile;
-use zf_zebrachain::{OwnedChainStore, Payload, generate_secret};
+use zf_zebrachain::{DIGEST, Hash, OwnedChainStore, Payload, generate_secret};
 
 const COUNT: usize = 420;
 
 fn build_payloads() -> Vec<Payload> {
     let mut payloads = Vec::with_capacity(COUNT);
     for _ in 0..COUNT {
-        payloads.push(Payload::new(0, generate_secret().unwrap().into_inner()));
+        let mut buf = [0; DIGEST];
+        getrandom::fill(&mut buf).unwrap();
+        payloads.push(Payload::new(0, Hash::from_bytes(buf)));
     }
     payloads
 }

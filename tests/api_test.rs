@@ -1,9 +1,8 @@
-use blake3::{Hash, Hasher, hash, keyed_hash};
 use std::collections::HashSet;
 use tempfile;
 use zf_zebrachain::{
-    ChainStore, DIGEST, MutSecretBlock, OwnedChainStore, PAYLOAD, Payload, Secret,
-    SecretChainStore, Seed, generate_secret,
+    ChainStore, DIGEST, Hash, MutSecretBlock, OwnedChainStore, PAYLOAD, Payload, Secret,
+    SecretChainStore, Seed, generate_secret, hash, keyed_hash,
 };
 
 const SAMPLE_ENTROPY_0: &str = "96b3a086291fbcdef17e52e60731e96d8d36ae0944f2aad0c0c12a0c14e161ca";
@@ -21,7 +20,7 @@ const BLOCK_HASH_0: &str = "21826e128e0d2e790d02471e84f38a8717d3859c09ca32ad300b
 const BLOCK_HASH_419: &str = "2c20f1a0e40886eefcb24622d7cd42469b4678487d703b8ed17dd7be54277525";
 
 fn sample_entropy(index: u128) -> Secret {
-    let mut h = Hasher::new();
+    let mut h = blake3::Hasher::new();
     h.update(
         b"This will be our bad entropy with random access. Do not do this in real life, haha.",
     );
@@ -47,7 +46,7 @@ fn test_sample_entropy() {
 }
 
 fn sample_storage_secret(index: u128) -> Secret {
-    let mut h = Hasher::new();
+    let mut h = blake3::Hasher::new();
     h.update(
         b"This will a bad sample storage secret with random access. Seriously, do NOT do in real life.",
     );
@@ -73,7 +72,7 @@ fn test_sample_storage_secret() {
 }
 
 fn sample_payload(index: u128) -> Payload {
-    let mut h = Hasher::new();
+    let mut h = blake3::Hasher::new();
     h.update(b"This will be our test payload generator with random access");
     h.update(&index.to_le_bytes());
     let root = h.finalize();
