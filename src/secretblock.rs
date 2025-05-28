@@ -242,7 +242,7 @@ mod tests {
     use super::*;
     use crate::secretseed::generate_secret;
     use crate::testhelpers::{
-        BitFlipper, HashBitFlipper, U64BitFlipper, random_hash, random_payload,
+        BitFlipper, HashBitFlipper, SecretBitFlipper, U64BitFlipper, random_hash, random_payload,
     };
     use getrandom;
     use std::collections::HashSet;
@@ -396,7 +396,7 @@ mod tests {
         let mut buf = vec![0; SECRET_BLOCK];
         getrandom::fill(&mut buf).unwrap();
         set_u64(&mut buf, SEC_INDEX_RANGE, state.index + 1);
-        set_hash(&mut buf[SEC_SEED_RANGE], 0..SECRET, &state.seed.next_secret);
+        set_secret(&mut buf[SEC_SEED_RANGE], 0..SECRET, &state.seed.next_secret);
         set_hash(&mut buf, SEC_PREV_HASH_RANGE, &state.block_hash);
         let block_hash = hash(&buf[SEC_HASHABLE_RANGE]);
         buf[SEC_HASH_RANGE].copy_from_slice(block_hash.as_bytes());
@@ -611,7 +611,7 @@ mod tests {
             }
 
             // Bit flips in prev.seed.next_secret
-            for bad_next_secret in HashBitFlipper::new(&prev_state.seed.next_secret) {
+            for bad_next_secret in SecretBitFlipper::new(&prev_state.seed.next_secret) {
                 let mut bad_prev_state = prev_state;
                 bad_prev_state.seed.next_secret = bad_next_secret;
                 let mut buf = orig.clone();

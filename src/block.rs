@@ -365,10 +365,10 @@ pub fn sign_block(
 mod tests {
     use super::*;
     use crate::pksign::SecretSigner;
-    use crate::secretseed::Seed;
     use crate::testhelpers::{
         BitFlipper, HashBitFlipper, U64BitFlipper, random_hash, random_payload,
     };
+    use crate::{Secret, Seed};
     use getrandom;
 
     const HEX0: &str = "fce9a075fcd4a1a5e867c491860dd6fe422f3747f3ccd3f4f927a1b51193f9a2";
@@ -517,7 +517,7 @@ mod tests {
 
     fn new_valid_block() -> Vec<u8> {
         let mut buf = vec![0; BLOCK];
-        let seed = Seed::create(&Hash::from_bytes([69; 32]));
+        let seed = Seed::create(&Secret::from_bytes([69; 32]));
         let secsign = SecretSigner::new(&seed);
         let payload = Payload::new(0, Hash::from_bytes([1; 32]));
         let mut block = MutBlock::new(&mut buf, &payload);

@@ -1,6 +1,6 @@
 //! Wire format ranges are defined here (good place to start).
 
-use crate::hashing::Hash;
+use crate::hashing::{Hash, Secret};
 use std::ops::Range;
 
 /*
@@ -153,6 +153,16 @@ pub(crate) fn get_hash(buf: &[u8], range: Range<usize>) -> Hash {
 
 #[inline]
 pub(crate) fn set_hash(buf: &mut [u8], range: Range<usize>, value: &Hash) {
+    buf[range].copy_from_slice(value.as_bytes());
+}
+
+#[inline]
+pub(crate) fn get_secret(buf: &[u8], range: Range<usize>) -> Secret {
+    Secret::from_slice(&buf[range]).unwrap()
+}
+
+#[inline]
+pub(crate) fn set_secret(buf: &mut [u8], range: Range<usize>, value: &Secret) {
     buf[range].copy_from_slice(value.as_bytes());
 }
 

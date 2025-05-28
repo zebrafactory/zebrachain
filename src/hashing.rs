@@ -1,3 +1,4 @@
+use crate::always::*;
 use blake2::{
     Blake2b, Digest,
     digest::consts::{U32, U48},
@@ -31,6 +32,57 @@ impl<const N: usize> GenericHash<N> {
     }
 }
 
+/// Stores secret
+///
+/// HOLY FUCKING SHIT, FIXME: This needs to do constant time compare. Let's use subtle.
+///
+/// OH MY SCIENCE, FIXME: This needs to zeroize on drop
+#[derive(Debug, PartialEq, Eq, Hash, Clone, Copy)]
+pub struct Secret {
+    inner: blake3::Hash,
+}
+
+impl Secret {
+    /// The raw bytes of the `Secret`.
+    pub fn as_bytes(&self) -> &[u8; SECRET] {
+        self.inner.as_bytes()
+    }
+
+    /// Create from bytes.
+    pub fn from_bytes(value: [u8; SECRET]) -> Self {
+        Self {
+            inner: blake3::Hash::from_bytes(value),
+        }
+    }
+
+    /// Load from a slice
+    pub fn from_slice(bytes: &[u8]) -> Result<Self, core::array::TryFromSliceError> {
+        Ok(Self {
+            inner: blake3::Hash::from_slice(bytes)?,
+        })
+    }
+
+    /// Decode from hex
+    pub fn from_hex(hex: impl AsRef<[u8]>) -> Result<Self, blake3::HexError> {
+        Ok(Self {
+            inner: blake3::Hash::from_hex(hex)?,
+        })
+    }
+
+    /// Constant time check of whether every byte is a zero.
+    ///
+    /// FIXME: Once this isn't a wrapper, we need our own constant time way of doing, ideally
+    /// without comparing to another value... just check whether all bytes are zero internally.
+    pub fn is_zeros(&self) -> bool {
+        self.inner == blake3::Hash::from_bytes([0; DIGEST])
+    }
+
+    /// FIXME: Remove from API
+    pub fn into_inner(self) -> blake3::Hash {
+        self.inner
+    }
+}
+
 pub type Hash256 = GenericHash<32>;
 pub type Hash384 = GenericHash<48>;
 
@@ -56,20 +108,13 @@ pub type Hash = blake3::Hash;
 /// Type used for secret block hash in secret chain
 pub type SecHash = blake3::Hash;
 
-/// A secret buffer with constant time comparison and zeroize.
-///
-/// This currently is just an alias for [blake3::Hash] because it gives us the features we need.
-/// Eventually we should use separate types and abstractions for the notion of a Secret buffer vs
-/// a Hash buffer as they will almost certainly need to differ in some configurations.
-pub type Secret = blake3::Hash;
-
 /// Hash for blocks in public chain
 pub fn hash(input: &[u8]) -> Hash {
     blake3::hash(input)
 }
 
-pub fn keyed_hash(key: &[u8; 32], input: &[u8]) -> Hash {
-    blake3::keyed_hash(key, input)
+pub fn keyed_hash(key: &[u8; 32], input: &[u8]) -> Secret {
+    Secret::from_bytes(*blake3::keyed_hash(key, input).as_bytes())
 }
 
 /// Hash for blocks in secret chain
@@ -93,7 +138,7 @@ pub(crate) fn derive_secret(context: &str, secret: &Secret) -> Secret {
     }
     let mut hasher = blake3::Hasher::new_derive_key(context);
     hasher.update(secret.as_bytes());
-    hasher.finalize()
+    Secret::from_bytes(*hasher.finalize().as_bytes())
 }
 
 #[cfg(test)]
@@ -122,7 +167,7 @@ mod tests {
 
     #[test]
     fn test_derive_secret() {
-        let secret = Hash::from_bytes([7; 32]);
+        let secret = Secret::from_bytes([7; 32]);
 
         let h = derive_secret(CONTEXT_SECRET, &secret);
         assert_eq!(
@@ -142,7 +187,7 @@ mod tests {
             ]
         );
 
-        let secret = Hash::from_bytes([8; 32]);
+        let secret = Secret::from_bytes([8; 32]);
 
         let h = derive_secret(CONTEXT_SECRET, &secret);
         assert_eq!(

@@ -91,9 +91,9 @@ impl Seed {
     /// Load a seed from a buffer.
     pub fn from_buf(buf: &[u8]) -> Result<Self, SecretBlockError> {
         assert_eq!(buf.len(), SEED);
-        let secret = get_hash(buf, SECRET_RANGE);
-        let next_secret = get_hash(buf, NEXT_SECRET_RANGE);
-        if secret == ZERO_HASH || next_secret == ZERO_HASH || secret == next_secret {
+        let secret = get_secret(buf, SECRET_RANGE);
+        let next_secret = get_secret(buf, NEXT_SECRET_RANGE);
+        if secret.is_zeros() || next_secret.is_zeros() || secret == next_secret {
             Err(SecretBlockError::Seed)
         } else {
             Ok(Self {
@@ -106,8 +106,8 @@ impl Seed {
     /// Write seed to buffer.
     pub fn write_to_buf(&self, buf: &mut [u8]) {
         assert_eq!(buf.len(), SEED);
-        set_hash(buf, SECRET_RANGE, &self.secret);
-        set_hash(buf, NEXT_SECRET_RANGE, &self.next_secret);
+        set_secret(buf, SECRET_RANGE, &self.secret);
+        set_secret(buf, NEXT_SECRET_RANGE, &self.next_secret);
     }
 }
 
@@ -120,26 +120,26 @@ mod tests {
 
     #[test]
     fn test_seed_new() {
-        let secret = hash(&[42; 32]);
-        let next_secret = hash(&[69; 32]);
+        let secret = Secret::from_bytes(*hash(&[42; 32]).as_bytes());
+        let next_secret = Secret::from_bytes(*hash(&[69; 32]).as_bytes());
         let seed = Seed::new(secret, next_secret);
-        assert_eq!(seed.secret, hash(&[42; 32]));
-        assert_eq!(seed.next_secret, hash(&[69; 32]));
+        assert_eq!(seed.secret, secret);
+        assert_eq!(seed.next_secret, next_secret);
     }
 
     #[test]
     #[should_panic(expected = "new(): secret and next_secret cannot be equal")]
     fn test_seed_new_panic() {
-        let secret = hash(&[42; 32]);
-        let next_secret = hash(&[42; 32]);
+        let secret = Secret::from_bytes(*hash(&[42; 32]).as_bytes());
+        let next_secret = Secret::from_bytes(*hash(&[42; 32]).as_bytes());
         Seed::new(secret, next_secret);
     }
 
     #[test]
     fn test_seed_from_buf() {
-        let zero = Hash::from_bytes([0; SECRET]);
-        let a = Hash::from_bytes([41; SECRET]);
-        let b = Hash::from_bytes([42; SECRET]);
+        let zero = Secret::from_bytes([0; SECRET]);
+        let a = Secret::from_bytes([41; SECRET]);
+        let b = Secret::from_bytes([42; SECRET]);
 
         // (zero, zero)
         let mut buf = [0; SEED];
@@ -184,10 +184,10 @@ mod tests {
             getrandom::fill(&mut buf).unwrap();
             let buf = buf;
             let seed = Seed::from_buf(&buf).unwrap();
-            assert_eq!(seed.secret, Hash::from_slice(&buf[SECRET_RANGE]).unwrap());
+            assert_eq!(seed.secret, Secret::from_slice(&buf[SECRET_RANGE]).unwrap());
             assert_eq!(
                 seed.next_secret,
-                Hash::from_slice(&buf[NEXT_SECRET_RANGE]).unwrap()
+                Secret::from_slice(&buf[NEXT_SECRET_RANGE]).unwrap()
             );
             let mut buf2 = [0; SEED];
             seed.write_to_buf(&mut buf2);
@@ -197,9 +197,9 @@ mod tests {
 
     #[test]
     fn test_seed_create() {
-        let mut hset: HashSet<Hash> = HashSet::new();
+        let mut hset: HashSet<Secret> = HashSet::new();
         for i in 0..=255 {
-            let entropy = Hash::from_bytes([i; 32]);
+            let entropy = Secret::from_bytes([i; 32]);
             let seed = Seed::create(&entropy);
             assert!(hset.insert(seed.secret));
             assert!(hset.insert(seed.next_secret));
@@ -210,9 +210,9 @@ mod tests {
     #[test]
     fn test_seed_advance() {
         let count = 10000;
-        let entropy = Hash::from_bytes([69; 32]);
+        let entropy = Secret::from_bytes([69; 32]);
         let mut seed = Seed::create(&entropy);
-        let mut hset: HashSet<Hash> = HashSet::new();
+        let mut hset: HashSet<Secret> = HashSet::new();
         assert!(hset.insert(seed.secret));
         assert!(hset.insert(seed.next_secret));
         for _ in 0..count {

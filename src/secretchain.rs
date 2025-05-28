@@ -134,7 +134,7 @@ impl IntoIterator for &SecretChain {
 /// Iterate through secret blocks contained in a secret chain file.
 pub struct SecretChainIter {
     file: BufReader<File>,
-    secret: Hash,
+    secret: Secret,
     count: u64,
     first_block_hash: Hash,
     tail: Option<SecretBlockState>,
@@ -142,7 +142,7 @@ pub struct SecretChainIter {
 }
 
 impl SecretChainIter {
-    fn new(file: File, secret: Hash, count: u64, first_block_hash: Hash) -> Self {
+    fn new(file: File, secret: Secret, count: u64, first_block_hash: Hash) -> Self {
         let file = BufReader::with_capacity(SECRET_BLOCK_AEAD_READ_BUF, file);
         Self {
             file,
@@ -268,7 +268,7 @@ mod tests {
         let seed = Seed::auto_create().unwrap();
         block.set_seed(&seed);
 
-        let chain_secret = random_hash();
+        let chain_secret = generate_secret().unwrap();
         let block_hash = block.finalize(&chain_secret);
 
         let mut buf2 = buf.clone();
@@ -337,13 +337,13 @@ mod tests {
     #[test]
     fn test_store_derive_secret() {
         let dir = PathBuf::from("/nope");
-        let secret = Hash::from_bytes([42; SECRET]);
+        let secret = Secret::from_bytes([42; SECRET]);
         let store = SecretChainStore::new(&dir, secret);
         let chain_hash = Hash::from_bytes([69; DIGEST]);
         let sec = store.derive_chain_secret(&chain_hash);
-        assert_eq!(sec, Hash::from_hex(HEX0).unwrap());
+        assert_eq!(sec, Secret::from_hex(HEX0).unwrap());
         assert_eq!(sec, keyed_hash(secret.as_bytes(), chain_hash.as_bytes()));
-        let secret = random_hash();
+        let secret = generate_secret().unwrap();
         let chain_hash = random_hash();
         let store = SecretChainStore::new(&dir, secret);
         assert_eq!(
@@ -374,7 +374,7 @@ mod tests {
     #[test]
     fn test_store_open_chain() {
         let dir = TempDir::new().unwrap();
-        let store_secret = random_hash();
+        let store_secret = generate_secret().unwrap();
         let store = SecretChainStore::new(dir.path(), store_secret);
 
         let chain_hash = random_hash();
@@ -391,7 +391,7 @@ mod tests {
 
     #[test]
     fn test_store_create_chain_open() {
-        let store_secret = random_hash();
+        let store_secret = generate_secret().unwrap();
         let chain_hash = random_hash();
         let chain_secret = derive_chain_secret(&store_secret, &chain_hash);
         let seed = Seed::auto_create().unwrap();
@@ -420,7 +420,7 @@ mod tests {
     #[test]
     fn test_store_remove_file() {
         let dir = TempDir::new().unwrap();
-        let secret = random_hash();
+        let secret = generate_secret().unwrap();
         let store = SecretChainStore::new(dir.path(), secret);
         let chain_hash = random_hash();
         assert!(store.remove_chain_file(&chain_hash).is_err());

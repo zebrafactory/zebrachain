@@ -1,6 +1,6 @@
 //! Some test fixtures only built on `cfg(test)`.
 
-use crate::{Hash, Payload};
+use crate::{Hash, Payload, Secret};
 use getrandom;
 
 /// Returns a random u64 created with [getradom::fill()].
@@ -102,6 +102,38 @@ impl Iterator for HashBitFlipper {
             flip_bit(&mut bad, self.counter);
             self.counter += 1;
             Some(Hash::from_bytes(bad))
+        } else {
+            None
+        }
+    }
+}
+
+/// Iteration through all 1-bit flip permutations in a [blake3::Hash].
+#[derive(Debug)]
+pub struct SecretBitFlipper {
+    orig: Secret,
+    counter: usize,
+}
+
+impl SecretBitFlipper {
+    /// Create a new [SecretBitFlipper].
+    pub fn new(orig: &Secret) -> Self {
+        Self {
+            orig: *orig,
+            counter: 0,
+        }
+    }
+}
+
+impl Iterator for SecretBitFlipper {
+    type Item = Secret;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.counter < self.orig.as_bytes().len() * 8 {
+            let mut bad = *self.orig.as_bytes();
+            flip_bit(&mut bad, self.counter);
+            self.counter += 1;
+            Some(Secret::from_bytes(bad))
         } else {
             None
         }

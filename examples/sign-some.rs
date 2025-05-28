@@ -8,7 +8,7 @@ const COUNT: usize = 420;
 fn build_payloads() -> Vec<Payload> {
     let mut payloads = Vec::with_capacity(COUNT);
     for _ in 0..COUNT {
-        payloads.push(Payload::new(0, generate_secret().unwrap()));
+        payloads.push(Payload::new(0, generate_secret().unwrap().into_inner()));
     }
     payloads
 }

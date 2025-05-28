@@ -2,8 +2,8 @@ use blake3::{Hash, Hasher, hash, keyed_hash};
 use std::collections::HashSet;
 use tempfile;
 use zf_zebrachain::{
-    ChainStore, DIGEST, MutSecretBlock, OwnedChainStore, PAYLOAD, Payload, SecretChainStore, Seed,
-    generate_secret,
+    ChainStore, DIGEST, MutSecretBlock, OwnedChainStore, PAYLOAD, Payload, Secret,
+    SecretChainStore, Seed, generate_secret,
 };
 
 const SAMPLE_ENTROPY_0: &str = "96b3a086291fbcdef17e52e60731e96d8d36ae0944f2aad0c0c12a0c14e161ca";
@@ -20,49 +20,52 @@ const SAMPLE_PAYLOAD_419: &str = "e9961e428776cb08e4c3c7c55d912716a1f9edca74da0a
 const BLOCK_HASH_0: &str = "21826e128e0d2e790d02471e84f38a8717d3859c09ca32ad300b42686abb14c0";
 const BLOCK_HASH_419: &str = "2c20f1a0e40886eefcb24622d7cd42469b4678487d703b8ed17dd7be54277525";
 
-fn sample_entropy(index: u128) -> Hash {
+fn sample_entropy(index: u128) -> Secret {
     let mut h = Hasher::new();
     h.update(
         b"This will be our bad entropy with random access. Do not do this in real life, haha.",
     );
     h.update(&index.to_le_bytes());
-    h.finalize()
+    Secret::from_bytes(*h.finalize().as_bytes())
 }
 
 #[test]
 fn test_sample_entropy() {
-    assert_eq!(sample_entropy(0), Hash::from_hex(SAMPLE_ENTROPY_0).unwrap());
+    assert_eq!(
+        sample_entropy(0),
+        Secret::from_hex(SAMPLE_ENTROPY_0).unwrap()
+    );
     assert_eq!(
         sample_entropy(419),
-        Hash::from_hex(SAMPLE_ENTROPY_419).unwrap()
+        Secret::from_hex(SAMPLE_ENTROPY_419).unwrap()
     );
-    let mut hset: HashSet<Hash> = HashSet::with_capacity(420);
+    let mut hset: HashSet<Secret> = HashSet::with_capacity(420);
     for index in 0..420 {
         assert!(hset.insert(sample_entropy(index)));
     }
     assert_eq!(hset.len(), 420);
 }
 
-fn sample_storage_secret(index: u128) -> Hash {
+fn sample_storage_secret(index: u128) -> Secret {
     let mut h = Hasher::new();
     h.update(
         b"This will a bad sample storage secret with random access. Seriously, do NOT do in real life.",
     );
     h.update(&index.to_le_bytes());
-    h.finalize()
+    Secret::from_bytes(*h.finalize().as_bytes())
 }
 
 #[test]
 fn test_sample_storage_secret() {
     assert_eq!(
         sample_storage_secret(0),
-        Hash::from_hex(SAMPLE_STORAGE_SECRET_0).unwrap()
+        Secret::from_hex(SAMPLE_STORAGE_SECRET_0).unwrap()
     );
     assert_eq!(
         sample_storage_secret(419),
-        Hash::from_hex(SAMPLE_STORAGE_SECRET_419).unwrap()
+        Secret::from_hex(SAMPLE_STORAGE_SECRET_419).unwrap()
     );
-    let mut hset: HashSet<Hash> = HashSet::with_capacity(420);
+    let mut hset: HashSet<Secret> = HashSet::with_capacity(420);
     for index in 0..420 {
         assert!(hset.insert(sample_storage_secret(index)));
     }
@@ -103,7 +106,9 @@ fn test_secret_chain_store() {
     block.set_seed(&seed);
     block.set_public_block_hash(&chain_hash);
 
-    let chain_secret = keyed_hash(storage_secret.as_bytes(), chain_hash.as_bytes());
+    let chain_secret = Secret::from_bytes(
+        *keyed_hash(storage_secret.as_bytes(), chain_hash.as_bytes()).as_bytes(),
+    );
     let block_hash = block.finalize(&chain_secret);
     let chain = store.create_chain(&chain_hash, buf, &block_hash).unwrap();
     assert_eq!(chain.tail().payload, payload);
