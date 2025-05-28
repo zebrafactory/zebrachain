@@ -7,8 +7,8 @@
 use crate::always::*;
 use crate::errors::SecretBlockError;
 use crate::hashing::{Secret, derive_secret, keyed_hash};
-pub use getrandom::Error as EntropyError;
 use core::ops::Range;
+pub use getrandom::Error as EntropyError;
 
 const SECRET_RANGE: Range<usize> = 0..SECRET;
 const NEXT_SECRET_RANGE: Range<usize> = SECRET..SECRET * 2;
