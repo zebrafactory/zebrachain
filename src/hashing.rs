@@ -113,7 +113,7 @@ impl core::fmt::Display for Hash {
 /// Stores a secret in a buffer with constant time comparison.
 ///
 /// OH MY SCIENCE, FIXME: This needs to zeroize on drop
-#[derive(Debug, Eq, Hash, Clone, Copy)]
+#[derive(Debug, Eq, Clone, Copy)]
 pub struct Secret {
     value: [u8; SECRET],
 }
@@ -165,6 +165,12 @@ impl ConstantTimeEq for Secret {
 impl PartialEq for Secret {
     fn eq(&self, other: &Self) -> bool {
         self.ct_eq(other).into()
+    }
+}
+
+impl core::hash::Hash for Secret {
+    fn hash<H: core::hash::Hasher>(&self, state: &mut H) {
+        self.value.hash(state)
     }
 }
 
