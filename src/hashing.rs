@@ -55,52 +55,70 @@ pub fn hash384(input: &[u8]) -> Hash384 {
 }
 */
 
-/// Hash
-///
-/// HOLY FUCKING SHIT, FIXME: This needs to do constant time compare. Let's use subtle.
-#[derive(Debug, PartialEq, Eq, Hash, Clone, Copy)]
+/// Buffer containing the hash digest, with constant time comparison.
+#[derive(Debug, Eq, Clone, Copy)]
 pub struct Hash {
-    inner: blake3::Hash,
+    value: [u8; DIGEST],
 }
 
 impl Hash {
-    /// The raw bytes of the `Hash`.
+    /// The raw bytes of the `Secret`.
     pub fn as_bytes(&self) -> &[u8; DIGEST] {
-        self.inner.as_bytes()
+        &self.value
     }
 
     /// Create from bytes.
-    pub const fn from_bytes(value: [u8; DIGEST]) -> Self {
-        Self {
-            inner: blake3::Hash::from_bytes(value),
-        }
+    pub fn from_bytes(value: [u8; DIGEST]) -> Self {
+        Self { value }
     }
 
     /// Load from a slice
     pub fn from_slice(bytes: &[u8]) -> Result<Self, core::array::TryFromSliceError> {
-        Ok(Self {
-            inner: blake3::Hash::from_slice(bytes)?,
-        })
+        Ok(Self::from_bytes(bytes.try_into()?))
+    }
+
+    /// Constant time check of whether every byte is a zero.
+    pub fn is_zeros(&self) -> bool {
+        // FIXME: Do this without comparing to another [u8; SECRET]
+        self.value.ct_eq(&[0; DIGEST]).into()
     }
 
     /// Decode from hex
     pub fn from_hex(hex: impl AsRef<[u8]>) -> Result<Self, blake3::HexError> {
+        let inner = blake3::Hash::from_hex(hex)?; // OMS, FIXME
         Ok(Self {
-            inner: blake3::Hash::from_hex(hex)?,
+            value: *inner.as_bytes(),
         })
     }
 
     /// Encode in lowercase hexidecimal
     pub fn to_hex(&self) -> arrayvec::ArrayString<{ DIGEST * 2 }> {
-        self.inner.to_hex()
+        // Totally copied from blake3::Hash.to_hex()
+        let mut hex = arrayvec::ArrayString::new();
+        let table = b"0123456789abcdef";
+        for &b in self.value.iter() {
+            hex.push(table[(b >> 4) as usize] as char);
+            hex.push(table[(b & 0xf) as usize] as char);
+        }
+        hex
     }
+}
 
-    /// Constant time check of whether every byte is a zero.
-    ///
-    /// FIXME: Once this isn't a wrapper, we need our own constant time way of doing, ideally
-    /// without comparing to another value... just check whether all bytes are zero internally.
-    pub fn is_zeros(&self) -> bool {
-        self.inner == blake3::Hash::from_bytes([0; DIGEST])
+impl ConstantTimeEq for Hash {
+    fn ct_eq(&self, other: &Self) -> Choice {
+        self.value.ct_eq(&other.value)
+    }
+}
+
+impl PartialEq for Hash {
+    fn eq(&self, other: &Self) -> bool {
+        self.ct_eq(other).into()
+    }
+}
+
+impl core::hash::Hash for Hash {
+    fn hash<H: core::hash::Hasher>(&self, state: &mut H) {
+        self.value.hash(state)
     }
 }
 
