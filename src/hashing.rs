@@ -116,27 +116,23 @@ impl core::fmt::Display for Hash {
 /// OH MY SCIENCE, FIXME: This needs to zeroize on drop
 #[derive(Debug, PartialEq, Eq, Hash, Clone, Copy)]
 pub struct Secret {
-    inner: blake3::Hash,
+    value: [u8; SECRET],
 }
 
 impl Secret {
     /// The raw bytes of the `Secret`.
     pub fn as_bytes(&self) -> &[u8; SECRET] {
-        self.inner.as_bytes()
+        &self.value
     }
 
     /// Create from bytes.
     pub fn from_bytes(value: [u8; SECRET]) -> Self {
-        Self {
-            inner: blake3::Hash::from_bytes(value),
-        }
+        Self { value }
     }
 
     /// Load from a slice
     pub fn from_slice(bytes: &[u8]) -> Result<Self, core::array::TryFromSliceError> {
-        Ok(Self {
-            inner: blake3::Hash::from_slice(bytes)?,
-        })
+        Ok(Self::from_bytes(bytes.try_into()?))
     }
 
     /// Constant time check of whether every byte is a zero.
@@ -144,7 +140,7 @@ impl Secret {
     /// FIXME: Once this isn't a wrapper, we need our own constant time way of doing, ideally
     /// without comparing to another value... just check whether all bytes are zero internally.
     pub fn is_zeros(&self) -> bool {
-        self.inner == blake3::Hash::from_bytes([0; DIGEST])
+        self.value == [0; SECRET] // FIXME use subtle
     }
 
     /// Return a [Secret] with entropy from [getrandom::fill()].
@@ -160,11 +156,6 @@ impl Secret {
     pub fn next(&self, new_entropy: &Self) -> Self {
         let next = blake3::keyed_hash(self.as_bytes(), new_entropy.as_bytes());
         Secret::from_bytes(*next.as_bytes())
-    }
-
-    /// FIXME: Remove from API
-    pub fn into_inner(self) -> blake3::Hash {
-        self.inner
     }
 }
 
