@@ -253,10 +253,9 @@ mod tests {
     use crate::secretblock::MutSecretBlock;
     use crate::testhelpers::{random_hash, random_payload};
     use getrandom;
+    use hex_literal::hex;
     use std::io::Seek;
     use tempfile::{TempDir, tempfile};
-
-    const HEX0: &str = "1b695d50d6105777ed7b5a0bb0bce5484ddca1d6b16bbb0c7bac90599c59370e";
 
     #[test]
     fn test_chain_create_open() {
@@ -340,7 +339,12 @@ mod tests {
         let store = SecretChainStore::new(&dir, secret);
         let chain_hash = Hash::from_bytes([69; DIGEST]);
         let sec = store.derive_chain_secret(&chain_hash);
-        assert_eq!(sec, Secret::from_hex(HEX0).unwrap());
+        assert_eq!(
+            sec,
+            Secret::from_bytes(hex!(
+                "1b695d50d6105777ed7b5a0bb0bce5484ddca1d6b16bbb0c7bac90599c59370e"
+            ))
+        );
         assert_eq!(sec, keyed_hash(secret.as_bytes(), chain_hash.as_bytes()));
         let secret = Secret::generate().unwrap();
         let chain_hash = random_hash();

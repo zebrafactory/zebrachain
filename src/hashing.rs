@@ -139,13 +139,6 @@ impl Secret {
         })
     }
 
-    /// Decode from hex
-    pub fn from_hex(hex: impl AsRef<[u8]>) -> Result<Self, blake3::HexError> {
-        Ok(Self {
-            inner: blake3::Hash::from_hex(hex)?,
-        })
-    }
-
     /// Constant time check of whether every byte is a zero.
     ///
     /// FIXME: Once this isn't a wrapper, we need our own constant time way of doing, ideally
