@@ -62,7 +62,7 @@ pub struct Hash {
 }
 
 impl Hash {
-    /// The raw bytes of the `Secret`.
+    /// The raw bytes of the `Hash`.
     pub fn as_bytes(&self) -> &[u8; DIGEST] {
         &self.value
     }
@@ -192,9 +192,6 @@ impl core::hash::Hash for Secret {
     }
 }
 
-/// Type used for secret block hash in secret chain
-pub type SecHash = Hash;
-
 /// Hash for blocks in public chain
 pub fn hash(input: &[u8]) -> Hash {
     Hash::from_bytes(*blake3::hash(input).as_bytes())
@@ -203,11 +200,6 @@ pub fn hash(input: &[u8]) -> Hash {
 /// Keyed hash, yo
 pub fn keyed_hash(key: &[u8; 32], input: &[u8]) -> Secret {
     Secret::from_bytes(*blake3::keyed_hash(key, input).as_bytes())
-}
-
-/// Hash for blocks in secret chain
-pub fn hash_sec(input: &[u8]) -> SecHash {
-    hash(input)
 }
 
 /// Derive a domain specific [Secret] from a context string and a root secret.
