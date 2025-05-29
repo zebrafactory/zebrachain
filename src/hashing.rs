@@ -198,11 +198,6 @@ impl core::hash::Hash for Secret {
     }
 }
 
-/// Hash for blocks in public chain
-pub fn hash(input: &[u8]) -> Hash {
-    Hash::from_bytes(*blake3::hash(input).as_bytes())
-}
-
 /// Keyed hash, yo
 pub fn keyed_hash(key: &[u8; 32], input: &[u8]) -> Secret {
     Secret::from_bytes(*blake3::keyed_hash(key, input).as_bytes())

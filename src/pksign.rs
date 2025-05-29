@@ -2,7 +2,7 @@
 
 use crate::always::*;
 use crate::block::{Block, MutBlock};
-use crate::hashing::{Hash, Secret, derive_secret, hash};
+use crate::hashing::{Hash, Secret, derive_secret};
 use crate::secretseed::Seed;
 use ml_dsa::{B32, KeyGen, MlDsa65};
 use signature::Signer;
@@ -45,7 +45,7 @@ impl KeyPair {
     fn pubkey_hash(self) -> Hash {
         let mut buf = [0; PUBKEY];
         self.write_pubkey(&mut buf);
-        let pubkey_hash = hash(&buf);
+        let pubkey_hash = Hash::compute(&buf);
         buf.zeroize(); // We treat the next public key as secret till use, so zeroize buf
         pubkey_hash
     }
@@ -178,7 +178,7 @@ mod tests {
         assert!(keypair.verifying_key().verify(msg, &sig).is_ok());
         assert_eq!(keypair.verifying_key().encode().as_slice().len(), PUB_MLDSA);
         assert_eq!(
-            hash(keypair.verifying_key().encode().as_slice()),
+            Hash::compute(keypair.verifying_key().encode().as_slice()),
             Hash::from_hex(HEX1).unwrap()
         );
     }
@@ -226,7 +226,7 @@ mod tests {
 
         let mut pubkey = [0u8; PUBKEY];
         pair.write_pubkey(&mut pubkey);
-        assert_eq!(hash(&pubkey), Hash::from_hex(HEX2).unwrap());
+        assert_eq!(Hash::compute(&pubkey), Hash::from_hex(HEX2).unwrap());
     }
 
     #[test]

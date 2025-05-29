@@ -104,13 +104,13 @@ impl Seed {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::hashing::hash;
+    use crate::hashing::Hash;
     use std::collections::HashSet;
 
     #[test]
     fn test_seed_new() {
-        let secret = Secret::from_bytes(*hash(&[42; 32]).as_bytes());
-        let next_secret = Secret::from_bytes(*hash(&[69; 32]).as_bytes());
+        let secret = Secret::from_bytes(*Hash::compute(&[42; 32]).as_bytes());
+        let next_secret = Secret::from_bytes(*Hash::compute(&[69; 32]).as_bytes());
         let seed = Seed::new(secret, next_secret);
         assert_eq!(seed.secret, secret);
         assert_eq!(seed.next_secret, next_secret);
@@ -119,8 +119,8 @@ mod tests {
     #[test]
     #[should_panic(expected = "new(): secret and next_secret cannot be equal")]
     fn test_seed_new_panic() {
-        let secret = Secret::from_bytes(*hash(&[42; 32]).as_bytes());
-        let next_secret = Secret::from_bytes(*hash(&[42; 32]).as_bytes());
+        let secret = Secret::from_bytes(*Hash::compute(&[42; 32]).as_bytes());
+        let next_secret = Secret::from_bytes(*Hash::compute(&[42; 32]).as_bytes());
         Seed::new(secret, next_secret);
     }
 

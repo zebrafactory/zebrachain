@@ -2,7 +2,7 @@
 
 use crate::always::*;
 use crate::errors::BlockError;
-use crate::hashing::{Hash, hash};
+use crate::hashing::Hash;
 use crate::payload::Payload;
 use crate::pksign::{SecretSigner, verify_block_signature};
 use crate::secretseed::Seed;
@@ -228,11 +228,11 @@ impl<'a> Block<'a> {
     }
 
     fn compute_hash(&self) -> Hash {
-        hash(self.as_hashable())
+        Hash::compute(self.as_hashable())
     }
 
     fn compute_pubkey_hash(&self) -> Hash {
-        hash(self.as_pubkey())
+        Hash::compute(self.as_pubkey())
     }
 
     fn signature_is_valid(&self) -> bool {
@@ -297,7 +297,7 @@ impl<'a> MutBlock<'a> {
 
     /// Finalize the block (sets and returns block hash).
     pub fn finalize(self) -> Hash {
-        let block_hash = hash(self.as_hashable());
+        let block_hash = Hash::compute(self.as_hashable());
         set_hash(self.buf, HASH_RANGE, &block_hash);
         block_hash
     }
@@ -329,7 +329,7 @@ impl<'a> MutBlock<'a> {
 
     /// Return hash of public key bytes.
     pub(crate) fn compute_pubkey_hash(&self) -> Hash {
-        hash(&self.buf[PUBKEY_RANGE])
+        Hash::compute(&self.buf[PUBKEY_RANGE])
     }
 }
 
@@ -582,7 +582,7 @@ mod tests {
         }
         let mut bad = vec![0; BLOCK];
         for end in BitFlipper::new(&buf[HASHABLE_RANGE]) {
-            let h = hash(&end);
+            let h = Hash::compute(&end);
             bad[HASH_RANGE].copy_from_slice(h.as_bytes());
             bad[HASHABLE_RANGE].copy_from_slice(&end);
             assert_eq!(Block::new(&bad).open(), Err(BlockError::Signature));
@@ -617,7 +617,7 @@ mod tests {
         }
         for badend in BitFlipper::new(&buf[DIGEST..]) {
             let mut badbuf = [0; BLOCK];
-            badbuf[0..DIGEST].copy_from_slice(hash(&badend).as_bytes());
+            badbuf[0..DIGEST].copy_from_slice(Hash::compute(&badend).as_bytes());
             badbuf[DIGEST..].copy_from_slice(&badend);
             assert_eq!(
                 Block::new(&badbuf).from_hash_at_index(&good, 1),
@@ -659,7 +659,7 @@ mod tests {
         }
         for badend in BitFlipper::new(&buf[DIGEST..]) {
             let mut bad_buf = [0; BLOCK];
-            bad_buf[0..DIGEST].copy_from_slice(hash(&badend).as_bytes());
+            bad_buf[0..DIGEST].copy_from_slice(Hash::compute(&badend).as_bytes());
             bad_buf[DIGEST..].copy_from_slice(&badend);
             assert_eq!(
                 Block::new(&bad_buf).from_checkpoint(&checkpoint),
@@ -738,7 +738,7 @@ mod tests {
         }
         for badend in BitFlipper::new(&buf[DIGEST..]) {
             let mut badbuf = [0; BLOCK];
-            badbuf[0..DIGEST].copy_from_slice(hash(&badend).as_bytes());
+            badbuf[0..DIGEST].copy_from_slice(Hash::compute(&badend).as_bytes());
             badbuf[DIGEST..].copy_from_slice(&badend);
             assert_eq!(
                 Block::new(&badbuf).from_previous(&prev),
@@ -904,7 +904,7 @@ mod tests {
         let mut buf = [27; BLOCK];
         let payload = Payload::new(0, Hash::from_bytes([42; DIGEST]));
         MutBlock::new(&mut buf, &payload);
-        assert_eq!(hash(&buf), Hash::from_hex(HEX1).unwrap());
+        assert_eq!(Hash::compute(&buf), Hash::from_hex(HEX1).unwrap());
     }
 
     #[test]

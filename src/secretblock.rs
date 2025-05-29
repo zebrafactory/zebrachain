@@ -2,7 +2,7 @@
 
 use crate::always::*;
 use crate::errors::SecretBlockError;
-use crate::hashing::{Hash, Secret, derive_secret, hash, keyed_hash};
+use crate::hashing::{Hash, Secret, derive_secret, keyed_hash};
 use crate::payload::Payload;
 use crate::secretseed::Seed;
 use chacha20poly1305::{
@@ -103,7 +103,7 @@ pub struct SecretBlockState {
 impl SecretBlockState {
     fn from_buf(buf: &[u8]) -> Result<Self, SecretBlockError> {
         assert_eq!(buf.len(), SECRET_BLOCK);
-        let computed_hash = hash(&buf[SEC_HASHABLE_RANGE]);
+        let computed_hash = Hash::compute(&buf[SEC_HASHABLE_RANGE]);
         let block_hash = get_hash(buf, SEC_HASH_RANGE);
         if computed_hash != block_hash {
             Err(SecretBlockError::Content)
@@ -229,7 +229,7 @@ impl<'a> MutSecretBlock<'a> {
     /// Set and return block hash.
     pub fn finalize(self, chain_secret: &Secret) -> Hash {
         let block_index = get_u64(self.buf, SEC_INDEX_RANGE);
-        let block_hash = hash(&self.buf[SEC_HASHABLE_RANGE]);
+        let block_hash = Hash::compute(&self.buf[SEC_HASHABLE_RANGE]);
         set_hash(self.buf, SEC_HASH_RANGE, &block_hash);
         encrypt_in_place(self.buf, chain_secret, block_index);
         block_hash
@@ -267,15 +267,15 @@ mod tests {
     fn test_xchacha20poly1305_roundtrip() {
         let mut buf = vec![0; SECRET_BLOCK];
         getrandom::fill(&mut buf).unwrap();
-        let h = hash(&buf);
+        let h = Hash::compute(&buf);
         let secret = Secret::generate().unwrap();
         for index in 0..420 {
             encrypt_in_place(&mut buf, &secret, index);
             assert_eq!(buf.len(), SECRET_BLOCK_AEAD);
-            assert_ne!(hash(&buf[0..SECRET_BLOCK]), h);
+            assert_ne!(Hash::compute(&buf[0..SECRET_BLOCK]), h);
             decrypt_in_place(&mut buf, &secret, index).unwrap();
-            assert_eq!(hash(&buf[0..SECRET_BLOCK]), h);
-            assert_eq!(hash(&buf), h);
+            assert_eq!(Hash::compute(&buf[0..SECRET_BLOCK]), h);
+            assert_eq!(Hash::compute(&buf), h);
         }
     }
 
@@ -283,14 +283,14 @@ mod tests {
     fn test_xchacha20poly1305_error() {
         let mut buf = vec![0; SECRET_BLOCK];
         getrandom::fill(&mut buf).unwrap();
-        let h = hash(&buf);
+        let h = Hash::compute(&buf);
         let secret = Secret::generate().unwrap();
         encrypt_in_place(&mut buf, &secret, 0);
         for mut bad in BitFlipper::new(&buf) {
             assert!(decrypt_in_place(&mut bad, &secret, 0).is_err());
         }
         decrypt_in_place(&mut buf, &secret, 0).unwrap();
-        assert_eq!(hash(&buf), h);
+        assert_eq!(Hash::compute(&buf), h);
     }
 
     #[test]
@@ -387,7 +387,7 @@ mod tests {
         let mut buf = vec![0; SECRET_BLOCK];
         getrandom::fill(&mut buf).unwrap();
         set_u64(&mut buf, SEC_INDEX_RANGE, block_index);
-        let block_hash = hash(&buf[SEC_HASHABLE_RANGE]);
+        let block_hash = Hash::compute(&buf[SEC_HASHABLE_RANGE]);
         buf[SEC_HASH_RANGE].copy_from_slice(block_hash.as_bytes());
         (block_hash, buf)
     }
@@ -398,7 +398,7 @@ mod tests {
         set_u64(&mut buf, SEC_INDEX_RANGE, state.index + 1);
         set_secret(&mut buf[SEC_SEED_RANGE], 0..SECRET, &state.seed.next_secret);
         set_hash(&mut buf, SEC_PREV_HASH_RANGE, &state.block_hash);
-        let block_hash = hash(&buf[SEC_HASHABLE_RANGE]);
+        let block_hash = Hash::compute(&buf[SEC_HASHABLE_RANGE]);
         buf[SEC_HASH_RANGE].copy_from_slice(block_hash.as_bytes());
         (block_hash, buf)
     }
@@ -465,7 +465,7 @@ mod tests {
             for bad_block_index in U64BitFlipper::new(block_index) {
                 let mut buf = orig.clone();
                 set_u64(&mut buf, SEC_INDEX_RANGE, bad_block_index);
-                let bad_block_hash = hash(&buf[SEC_HASHABLE_RANGE]);
+                let bad_block_hash = Hash::compute(&buf[SEC_HASHABLE_RANGE]);
                 set_hash(&mut buf, SEC_HASH_RANGE, &bad_block_hash);
                 encrypt_in_place(&mut buf, &chain_secret, block_index);
                 {
@@ -481,7 +481,7 @@ mod tests {
             // Seed.secret, Seed.next_secret are the same
             let mut buf = orig.clone();
             buf[SEC_SEED_RANGE][0..SECRET].copy_from_slice(state_in.seed.next_secret.as_bytes());
-            let bad_block_hash = hash(&buf[SEC_HASHABLE_RANGE]);
+            let bad_block_hash = Hash::compute(&buf[SEC_HASHABLE_RANGE]);
             set_hash(&mut buf, SEC_HASH_RANGE, &bad_block_hash);
             encrypt_in_place(&mut buf, &chain_secret, block_index);
             {
@@ -496,7 +496,7 @@ mod tests {
             // Seed.secret is zeros:
             let mut buf = orig.clone();
             buf[SEC_SEED_RANGE][0..SECRET].copy_from_slice(&[0; SECRET]);
-            let bad_block_hash = hash(&buf[SEC_HASHABLE_RANGE]);
+            let bad_block_hash = Hash::compute(&buf[SEC_HASHABLE_RANGE]);
             set_hash(&mut buf, SEC_HASH_RANGE, &bad_block_hash);
             encrypt_in_place(&mut buf, &chain_secret, block_index);
             {
@@ -511,7 +511,7 @@ mod tests {
             // Seed.next_secret is zeros
             let mut buf = orig.clone();
             buf[SEC_SEED_RANGE][SECRET..SECRET * 2].copy_from_slice(&[0; SECRET]);
-            let bad_block_hash = hash(&buf[SEC_HASHABLE_RANGE]);
+            let bad_block_hash = Hash::compute(&buf[SEC_HASHABLE_RANGE]);
             set_hash(&mut buf, SEC_HASH_RANGE, &bad_block_hash);
             encrypt_in_place(&mut buf, &chain_secret, block_index);
             {
