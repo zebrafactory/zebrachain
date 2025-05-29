@@ -1,5 +1,6 @@
 use crate::always::*;
 pub use getrandom::Error as EntropyError;
+use subtle::{Choice, ConstantTimeEq};
 /*
 use blake2::{
     Blake2b, Digest,
@@ -109,12 +110,10 @@ impl core::fmt::Display for Hash {
     }
 }
 
-/// Stores secret
-///
-/// HOLY FUCKING SHIT, FIXME: This needs to do constant time compare. Let's use subtle.
+/// Stores a secret in a buffer with constant time comparison.
 ///
 /// OH MY SCIENCE, FIXME: This needs to zeroize on drop
-#[derive(Debug, PartialEq, Eq, Hash, Clone, Copy)]
+#[derive(Debug, Eq, Hash, Clone, Copy)]
 pub struct Secret {
     value: [u8; SECRET],
 }
@@ -136,11 +135,9 @@ impl Secret {
     }
 
     /// Constant time check of whether every byte is a zero.
-    ///
-    /// FIXME: Once this isn't a wrapper, we need our own constant time way of doing, ideally
-    /// without comparing to another value... just check whether all bytes are zero internally.
     pub fn is_zeros(&self) -> bool {
-        self.value == [0; SECRET] // FIXME use subtle
+        // FIXME: Do this without comparing to another [u8; SECRET]
+        self.value.ct_eq(&[0; SECRET]).into()
     }
 
     /// Return a [Secret] with entropy from [getrandom::fill()].
@@ -156,6 +153,18 @@ impl Secret {
     pub fn next(&self, new_entropy: &Self) -> Self {
         let next = blake3::keyed_hash(self.as_bytes(), new_entropy.as_bytes());
         Secret::from_bytes(*next.as_bytes())
+    }
+}
+
+impl ConstantTimeEq for Secret {
+    fn ct_eq(&self, other: &Self) -> Choice {
+        self.value.ct_eq(&other.value)
+    }
+}
+
+impl PartialEq for Secret {
+    fn eq(&self, other: &Self) -> bool {
+        self.ct_eq(other).into()
     }
 }
 
