@@ -156,6 +156,18 @@ impl Secret {
         }
     }
 
+    /// Mix new entropy with this secret to create next secret.
+    pub fn mix(&self, new_entropy: &Self) -> Self {
+        let next = blake3::keyed_hash(self.as_bytes(), new_entropy.as_bytes());
+        Secret::from_bytes(*next.as_bytes())
+    }
+
+    /// Create next secret my mixing this secret with a new internally generated new entropy.
+    pub fn advance(&self) -> Result<Self, EntropyError> {
+        let new_entropy = Self::generate()?;
+        Ok(self.mix(&new_entropy))
+    }
+
     /// FIXME: Remove from API
     pub fn into_inner(self) -> blake3::Hash {
         self.inner

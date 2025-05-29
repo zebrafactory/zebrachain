@@ -6,7 +6,7 @@
 
 use crate::always::*;
 use crate::errors::SecretBlockError;
-use crate::hashing::{EntropyError, Secret, derive_secret, keyed_hash};
+use crate::hashing::{EntropyError, Secret, derive_secret};
 use core::ops::Range;
 
 const SECRET_RANGE: Range<usize> = 0..SECRET;
@@ -68,7 +68,7 @@ impl Seed {
     ///
     /// See the source code for sure because it's simple, but important to understand.
     pub fn advance(&self, new_entropy: &Secret) -> Self {
-        let next_next_secret = keyed_hash(self.next_secret.as_bytes(), new_entropy.as_bytes());
+        let next_next_secret = self.next_secret.mix(new_entropy);
         Self::new(self.next_secret, next_next_secret)
     }
 
