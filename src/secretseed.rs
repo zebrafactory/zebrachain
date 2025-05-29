@@ -14,7 +14,7 @@ const NEXT_SECRET_RANGE: Range<usize> = SECRET..SECRET * 2;
 
 /// Stores secret and next_secret.
 ///
-/// # Examplesg
+/// # Examples
 ///
 /// ```
 /// use zf_zebrachain::Seed;
