@@ -26,10 +26,10 @@ fn test_seed_create() {
 }
 
 #[test]
-fn test_seed_auto_create() {
+fn test_seed_generate() {
     let mut hset = HashSet::new();
     for _ in 0..420 {
-        let seed = Seed::auto_create().unwrap();
+        let seed = Seed::generate().unwrap();
         assert!(hset.insert(seed.secret));
         assert!(hset.insert(seed.next_secret));
     }
@@ -37,15 +37,15 @@ fn test_seed_auto_create() {
 }
 
 #[test]
-fn test_seed_advance() {
+fn test_seed_next() {
     let mut hset = HashSet::new();
-    let seed = Seed::auto_create().unwrap();
+    let seed = Seed::generate().unwrap();
     assert!(hset.insert(seed.secret));
     assert!(hset.insert(seed.next_secret));
     for _ in 0..420 {
         let new_entropy = Secret::generate().unwrap();
         assert!(hset.insert(new_entropy));
-        let seed2 = seed.advance(&new_entropy);
+        let seed2 = seed.next(&new_entropy);
         assert!(!hset.insert(seed2.secret));
         assert!(hset.insert(seed2.next_secret));
     }
@@ -53,13 +53,13 @@ fn test_seed_advance() {
 }
 
 #[test]
-fn test_seed_auto_advance() {
+fn test_seed_advance() {
     let mut hset = HashSet::new();
-    let seed = Seed::auto_create().unwrap();
+    let seed = Seed::generate().unwrap();
     assert!(hset.insert(seed.secret));
     assert!(hset.insert(seed.next_secret));
     for _ in 0..420 {
-        let seed2 = seed.auto_advance().unwrap();
+        let seed2 = seed.advance().unwrap();
         assert!(!hset.insert(seed2.secret));
         assert!(hset.insert(seed2.next_secret));
     }
@@ -91,7 +91,7 @@ fn test_seed_from_buf() {
 
 #[test]
 fn test_seed_write_to_buf() {
-    let seed = Seed::auto_create().unwrap();
+    let seed = Seed::generate().unwrap();
     let mut buf = [0; DIGEST * 2];
     seed.write_to_buf(&mut buf);
     assert_eq!(&buf[..DIGEST], seed.secret.as_bytes());

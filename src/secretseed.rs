@@ -18,8 +18,8 @@ const NEXT_SECRET_RANGE: Range<usize> = SECRET..SECRET * 2;
 ///
 /// ```
 /// use zf_zebrachain::Seed;
-/// let seed = Seed::auto_create().unwrap();
-/// let next = seed.auto_advance().unwrap();
+/// let seed = Seed::generate().unwrap();
+/// let next = seed.advance().unwrap();
 /// assert_eq!(next.secret, seed.next_secret);
 /// assert_ne!(seed, next);
 /// ```
@@ -43,7 +43,7 @@ impl Seed {
         }
     }
 
-    /// Create a new seed by deriving [Seed::secret], [Seed::next_secret] from `initial_entropy`.
+    /// Create a new seed by deriving secret and next_secret from `initial_entropy`.
     pub fn create(initial_entropy: &Secret) -> Self {
         let secret = derive_secret(CONTEXT_SECRET, initial_entropy);
         let next_secret = derive_secret(CONTEXT_SECRET_NEXT, initial_entropy);
@@ -51,7 +51,7 @@ impl Seed {
     }
 
     /// Creates a new seed using the initial entropy from [getrandom::fill()].
-    pub fn auto_create() -> Result<Self, EntropyError> {
+    pub fn generate() -> Result<Self, EntropyError> {
         let initial_entropy = Secret::generate()?; // Only this part can fail
         Ok(Self::create(&initial_entropy))
     }
@@ -67,15 +67,15 @@ impl Seed {
     /// robust.
     ///
     /// See the source code for sure because it's simple, but important to understand.
-    pub fn advance(&self, new_entropy: &Secret) -> Self {
-        let next_next_secret = self.next_secret.mix(new_entropy);
+    pub fn next(&self, new_entropy: &Secret) -> Self {
+        let next_next_secret = self.next_secret.next(new_entropy);
         Self::new(self.next_secret, next_next_secret)
     }
 
     /// Advance chain by mixing in new entropy from [getrandom::fill()].
-    pub fn auto_advance(&self) -> Result<Self, EntropyError> {
+    pub fn advance(&self) -> Result<Self, EntropyError> {
         let new_entropy = Secret::generate()?; // Only this part can fail
-        Ok(self.advance(&new_entropy))
+        Ok(self.next(&new_entropy))
     }
 
     /// Load a seed from a buffer.
@@ -197,7 +197,7 @@ mod tests {
     }
 
     #[test]
-    fn test_seed_advance() {
+    fn test_seed_next() {
         let count = 10000;
         let entropy = Secret::from_bytes([69; 32]);
         let mut seed = Seed::create(&entropy);
@@ -205,7 +205,7 @@ mod tests {
         assert!(hset.insert(seed.secret));
         assert!(hset.insert(seed.next_secret));
         for _ in 0..count {
-            seed = seed.advance(&entropy);
+            seed = seed.next(&entropy);
             assert!(!hset.insert(seed.secret)); // Should already be contained
             assert!(hset.insert(seed.next_secret));
         }

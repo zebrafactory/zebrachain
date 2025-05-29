@@ -101,7 +101,7 @@ mod tests {
     #[test]
     fn test_mut_owned_block() {
         let chain_secret = Secret::generate().unwrap();
-        let seed = Seed::auto_create().unwrap();
+        let seed = Seed::generate().unwrap();
         let payload = random_payload();
         let mut buf = [0; BLOCK];
         let mut secret_buf = vec![0; SECRET_BLOCK];

@@ -249,7 +249,7 @@ impl<'a> Block<'a> {
 ///
 /// // Build, sign, and finalize a new block like this:
 /// let mut buf = [0; BLOCK];
-/// let seed = Seed::auto_create().unwrap();
+/// let seed = Seed::generate().unwrap();
 /// let payload = Payload::new(123, Hash::from_bytes([69; 32]));
 /// let mut block = MutBlock::new(&mut buf, &payload);
 /// block.sign(&seed);
@@ -340,7 +340,7 @@ impl<'a> MutBlock<'a> {
 /// ```
 /// use zf_zebrachain::{BLOCK, Hash, Payload, Seed, sign_block};
 /// let mut buf = [0; BLOCK];
-/// let seed = Seed::auto_create().unwrap();
+/// let seed = Seed::generate().unwrap();
 /// let payload = Payload::new(123, Hash::from_bytes([69; 32]));
 /// let block_hash = sign_block(&mut buf, &seed, &payload, None);
 /// ```
@@ -589,7 +589,7 @@ mod tests {
         }
 
         // Test when a single bit is set in ether the chain_hash or previous_hash fields
-        let seed = Seed::auto_create().unwrap();
+        let seed = Seed::generate().unwrap();
         let payload = random_payload();
         let mut buf = [0; BLOCK];
         for bad in BitFlipper::new(&[0; DIGEST * 2]) {
@@ -697,7 +697,7 @@ mod tests {
 
         // when index == 0
         let mut buf = [0; BLOCK];
-        let seed = Seed::auto_create().unwrap();
+        let seed = Seed::generate().unwrap();
         let payload = random_payload();
         let block_hash = sign_block(&mut buf, &seed, &payload, None);
         let state = Block::new(&buf).from_hash_at_index(&block_hash, 0).unwrap();
@@ -806,13 +806,13 @@ mod tests {
     #[test]
     fn test_block_from_previous_3rd() {
         let mut buf = [0; BLOCK];
-        let seed = Seed::auto_create().unwrap();
+        let seed = Seed::generate().unwrap();
         let mut block = MutBlock::new(&mut buf, &random_payload());
         block.sign(&seed);
         let chain_hash = block.finalize();
         let tail = Block::new(&buf).from_hash_at_index(&chain_hash, 0).unwrap();
 
-        let seed = seed.auto_advance().unwrap();
+        let seed = seed.advance().unwrap();
         let mut block = MutBlock::new(&mut buf, &random_payload());
         block.set_previous(&tail);
         block.sign(&seed);
@@ -832,7 +832,7 @@ mod tests {
         let tail = Block::new(&buf).from_previous(&tail).unwrap();
 
         // Sign 3rd block
-        let seed = seed.auto_advance().unwrap();
+        let seed = seed.advance().unwrap();
         let mut block = MutBlock::new(&mut buf, &random_payload());
         block.set_previous(&tail);
         block.sign(&seed);
@@ -911,7 +911,7 @@ mod tests {
     fn test_sign_block() {
         // Sign first block
         let mut buf = [69; BLOCK]; // 69 to make sure block gets zeroed first
-        let seed = Seed::auto_create().unwrap();
+        let seed = Seed::generate().unwrap();
         let payload = random_payload();
         let chain_hash = sign_block(&mut buf, &seed, &payload, None);
 
@@ -922,7 +922,7 @@ mod tests {
         // Sign 2nd block
         let tail = Block::new(&buf).from_hash_at_index(&chain_hash, 0).unwrap();
         buf.fill(69);
-        let seed = seed.auto_advance().unwrap();
+        let seed = seed.advance().unwrap();
         let payload = random_payload();
         let block_hash = sign_block(&mut buf, &seed, &payload, Some(&tail));
         assert_ne!(chain_hash, block_hash);
@@ -938,7 +938,7 @@ mod tests {
         // Sign 3rd block
         let tail2 = Block::new(&buf).from_hash_at_index(&block_hash, 1).unwrap();
         buf.fill(69);
-        let seed = seed.auto_advance().unwrap();
+        let seed = seed.advance().unwrap();
         let payload = random_payload();
         let block2_hash = sign_block(&mut buf, &seed, &payload, Some(&tail2));
         assert_ne!(block_hash, block2_hash);
@@ -956,13 +956,13 @@ mod tests {
     fn test_sign_block_panic() {
         // Sign first block
         let mut buf = [0; BLOCK];
-        let seed = Seed::auto_create().unwrap();
+        let seed = Seed::generate().unwrap();
         let payload = random_payload();
         let chain_hash = sign_block(&mut buf, &seed, &payload, None);
 
         // Sign 2nd block, but double advance the seed:
         let tail = Block::new(&buf).from_hash_at_index(&chain_hash, 0).unwrap();
-        let seed = seed.auto_advance().unwrap().auto_advance().unwrap();
+        let seed = seed.advance().unwrap().advance().unwrap();
         let payload = random_payload();
         let _block_hash = sign_block(&mut buf, &seed, &payload, Some(&tail));
     }

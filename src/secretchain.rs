@@ -87,7 +87,7 @@ impl SecretChain {
 
     /// Mix new entropy into chain and return next [Seed].
     pub fn advance(&self, new_entropy: &Secret) -> Seed {
-        self.tail.seed.advance(new_entropy)
+        self.tail.seed.next(new_entropy)
     }
 
     /// Number of blocks in this secret chain.
@@ -263,7 +263,7 @@ mod tests {
         let payload = random_payload();
         let mut block = MutSecretBlock::new(&mut buf, &payload);
 
-        let seed = Seed::auto_create().unwrap();
+        let seed = Seed::generate().unwrap();
         block.set_seed(&seed);
 
         let chain_secret = Secret::generate().unwrap();
@@ -316,7 +316,7 @@ mod tests {
         let mut chain = SecretChain::create(file, secret, buf, &block_hash).unwrap();
         assert_eq!(chain.count(), 1);
         for i in 2..69 {
-            seed = seed.auto_advance().unwrap();
+            seed = seed.advance().unwrap();
             let payload = random_payload();
             let tail = chain.tail().clone();
             let mut block = MutSecretBlock::new(chain.as_mut_buf(), &payload);
@@ -397,7 +397,7 @@ mod tests {
         let store_secret = Secret::generate().unwrap();
         let chain_hash = random_hash();
         let chain_secret = derive_chain_secret(&store_secret, &chain_hash);
-        let seed = Seed::auto_create().unwrap();
+        let seed = Seed::generate().unwrap();
         let payload = random_payload();
 
         let mut buf = vec![0; SECRET_BLOCK];

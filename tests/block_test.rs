@@ -23,7 +23,7 @@ fn test_block() {
     let mut buf = [0; BLOCK];
 
     let payload_0 = random_payload();
-    let seed = Seed::auto_create().unwrap();
+    let seed = Seed::generate().unwrap();
     let mut mblock = MutBlock::new(&mut buf, &payload_0);
     mblock.sign(&seed);
     let block_hash_0 = mblock.finalize();
@@ -31,7 +31,7 @@ fn test_block() {
     let block_state_0 = block.from_hash_at_index(&block_hash_0, 0).unwrap();
 
     let payload_1 = random_payload();
-    let seed = seed.auto_advance().unwrap();
+    let seed = seed.advance().unwrap();
     let mut mblock = MutBlock::new(&mut buf, &payload_1);
     mblock.set_previous(&block_state_0);
     mblock.sign(&seed);
@@ -50,7 +50,7 @@ fn test_block() {
 #[test]
 fn test_mutblock() {
     let payload = random_payload();
-    let seed = Seed::auto_create().unwrap();
+    let seed = Seed::generate().unwrap();
     let mut buf = [0; BLOCK];
     let mut block = MutBlock::new(&mut buf, &payload);
     block.sign(&seed);

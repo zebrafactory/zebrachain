@@ -660,7 +660,7 @@ mod tests {
         let prev = SecretBlockState {
             block_hash: random_hash(),
             public_block_hash: random_hash(),
-            seed: Seed::auto_create().unwrap(),
+            seed: Seed::generate().unwrap(),
             payload: random_payload(),
             index: 69,
             previous_hash: random_hash(),
@@ -675,7 +675,7 @@ mod tests {
         let mut buf = vec![0; SECRET_BLOCK];
         let payload = random_payload();
         let mut block = MutSecretBlock::new(&mut buf, &payload);
-        let seed = Seed::auto_create().unwrap();
+        let seed = Seed::generate().unwrap();
         assert_eq!(&block.buf[SEC_SEED_RANGE], &[0; SECRET * 2]);
         block.set_seed(&seed);
         assert_ne!(&block.buf[SEC_SEED_RANGE], &[0; SECRET * 2]);
@@ -702,7 +702,7 @@ mod tests {
         let mut buf = vec![0; SECRET_BLOCK];
         let payload = random_payload();
         let mut block = MutSecretBlock::new(&mut buf, &payload);
-        let seed = Seed::auto_create().unwrap();
+        let seed = Seed::generate().unwrap();
         block.set_seed(&seed);
         assert_eq!(&block.buf[SEC_PUBLIC_HASH_RANGE], &[0; DIGEST]);
         let public_block_hash = random_hash();

@@ -300,7 +300,7 @@ mod tests {
         let mut file = tempfile::tempfile().unwrap();
 
         // Generate 1st block
-        let seed = Seed::auto_create().unwrap();
+        let seed = Seed::generate().unwrap();
         let mut buf1 = [0; BLOCK];
         let payload1 = random_payload();
         let mut block = MutBlock::new(&mut buf1, &payload1);
@@ -327,7 +327,7 @@ mod tests {
         assert_eq!(tail.index, 0);
 
         // Generate a 2nd block
-        let next = seed.auto_advance().unwrap();
+        let next = seed.advance().unwrap();
         let mut buf2 = [0; BLOCK];
         let payload2 = random_payload();
         let mut block = MutBlock::new(&mut buf2, &payload2);
