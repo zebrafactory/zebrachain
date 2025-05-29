@@ -3,7 +3,7 @@ use std::collections::HashSet;
 use tempfile;
 use zf_zebrachain::{
     ChainStore, DIGEST, Hash, MutSecretBlock, OwnedChainStore, PAYLOAD, Payload, Secret,
-    SecretChainStore, Seed, hash, keyed_hash,
+    SecretChainStore, Seed, keyed_hash,
 };
 
 const SAMPLE_PAYLOAD_0: &str = "c0c76cbfd80b970d138cce4e466327b1f2ba96a7de9ecc2c98b8f4e7e462a8bc";
@@ -78,7 +78,7 @@ fn sample_payload(index: u128) -> Payload {
     h.update(&index.to_le_bytes());
     let root = h.finalize();
     let time = u128::from_le_bytes(root.as_bytes()[0..16].try_into().unwrap());
-    let state_hash = hash(root.as_bytes());
+    let state_hash = Hash::compute(root.as_bytes());
     Payload::new(time, state_hash)
 }
 
@@ -127,7 +127,10 @@ fn test_payload() {
     let p = sample_payload(0);
     let mut buf = [0; PAYLOAD];
     p.write_to_buf(&mut buf);
-    assert_eq!(hash(&buf), Hash::from_hex(SAMPLE_PAYLOAD_0).unwrap());
+    assert_eq!(
+        Hash::compute(&buf),
+        Hash::from_hex(SAMPLE_PAYLOAD_0).unwrap()
+    );
     let p2 = Payload::from_buf(&buf);
     assert_eq!(p, p2);
     let mut buf2 = [0; PAYLOAD];
@@ -138,7 +141,10 @@ fn test_payload() {
     let p = sample_payload(419);
     let mut buf = [0; PAYLOAD];
     p.write_to_buf(&mut buf);
-    assert_eq!(hash(&buf), Hash::from_hex(SAMPLE_PAYLOAD_419).unwrap());
+    assert_eq!(
+        Hash::compute(&buf),
+        Hash::from_hex(SAMPLE_PAYLOAD_419).unwrap()
+    );
     let p2 = Payload::from_buf(&buf);
     assert_eq!(p, p2);
     let mut buf2 = [0; PAYLOAD];

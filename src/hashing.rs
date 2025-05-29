@@ -102,6 +102,12 @@ impl Hash {
         }
         hex
     }
+
+    /// Compute hash of `input`, returning `Hash`.
+    pub fn compute(input: &[u8]) -> Self {
+        let inner = blake3::hash(input);
+        Self::from_bytes(*inner.as_bytes())
+    }
 }
 
 impl ConstantTimeEq for Hash {

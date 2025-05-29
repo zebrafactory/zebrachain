@@ -102,7 +102,7 @@ pub use always::{BLOCK, DIGEST, PAYLOAD, SECRET};
 pub use block::{Block, BlockState, CheckPoint, MutBlock, sign_block};
 pub use chain::{Chain, ChainIter, ChainStore};
 pub use errors::{BlockError, SecretBlockError};
-pub use hashing::{EntropyError, Hash, Secret, hash, keyed_hash};
+pub use hashing::{EntropyError, Hash, Secret, keyed_hash};
 pub use ownedblock::{MutOwnedBlock, OwnedBlockState};
 pub use ownedchain::{OwnedChain, OwnedChainStore};
 pub use payload::Payload;
