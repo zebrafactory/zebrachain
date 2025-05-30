@@ -34,6 +34,9 @@ pub const DIGEST: usize = 32;
 /// Size of secrets (32 bytes)
 pub const SECRET: usize = 32;
 
+/// Size of context bytes (32 bytes)
+pub const CONTEXT: usize = 32;
+
 // Size digest used in secret block
 pub(crate) const SEC_DIGEST: usize = 32;
 

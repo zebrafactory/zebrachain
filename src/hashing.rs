@@ -134,10 +134,38 @@ impl Secret {
         }
     }
 
+    /// Keyed hash
+    pub fn keyed_hash(&self, input: &[u8]) -> Self {
+        let output = blake3::keyed_hash(self.as_bytes(), input);
+        Self::from_bytes(*output.as_bytes())
+    }
+
+    /// Derive sub secret from this secret and the index as LE bytes.
+    pub fn derive_with_index(&self, index: u64) -> Self {
+        self.keyed_hash(&index.to_le_bytes())
+    }
+
+    /// Derive sub secret from this secret and context bytes.
+    pub fn derive_with_context(&self, context: &[u8; CONTEXT]) -> Self {
+        self.keyed_hash(context)
+    }
+
+    /// FIXME: Switch to [u8; CONTEXT], use keyed hashing as universal derivation method.
+    pub fn derive_secret(&self, context: &str) -> Secret {
+        if context.len() != 64 {
+            panic!(
+                "derive_secret(): context string length must be 64; got {}",
+                context.len()
+            );
+        }
+        let mut hasher = blake3::Hasher::new_derive_key(context);
+        hasher.update(self.as_bytes());
+        Secret::from_bytes(*hasher.finalize().as_bytes())
+    }
+
     /// Mix new entropy with this secret to create next secret.
     pub fn next(&self, new_entropy: &Self) -> Self {
-        let next = blake3::keyed_hash(self.as_bytes(), new_entropy.as_bytes());
-        Secret::from_bytes(*next.as_bytes())
+        self.keyed_hash(new_entropy.as_bytes())
     }
 }
 

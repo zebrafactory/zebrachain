@@ -2,7 +2,7 @@
 
 use crate::always::*;
 use crate::errors::SecretBlockError;
-use crate::hashing::{Hash, Secret, derive_secret, keyed_hash};
+use crate::hashing::{Hash, Secret};
 use crate::payload::Payload;
 use crate::secretseed::Seed;
 use chacha20poly1305::{
@@ -32,9 +32,9 @@ fn check_secretblock_buf_aead(buf: &[u8]) {
 // Split out of derive_block_key_and_nonce() for testability
 #[inline]
 fn derive_block_sub_secrets(chain_secret: &Secret, block_index: u64) -> (Secret, Secret) {
-    let block_secret = keyed_hash(chain_secret.as_bytes(), &block_index.to_le_bytes());
-    let block_key_secret = derive_secret(CONTEXT_STORE_KEY, &block_secret);
-    let block_nonce_secret = derive_secret(CONTEXT_STORE_NONCE, &block_secret);
+    let block_secret = chain_secret.derive_with_index(block_index);
+    let block_key_secret = block_secret.derive_secret(CONTEXT_STORE_KEY);
+    let block_nonce_secret = block_secret.derive_secret(CONTEXT_STORE_NONCE);
     (block_key_secret, block_nonce_secret)
 }
 
@@ -241,6 +241,7 @@ mod tests {
 
     use super::*;
     use crate::Secret;
+    use crate::hashing::keyed_hash;
     use crate::testhelpers::{
         BitFlipper, HashBitFlipper, SecretBitFlipper, U64BitFlipper, random_hash, random_payload,
     };
