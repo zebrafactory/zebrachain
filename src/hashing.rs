@@ -1,7 +1,8 @@
 use crate::always::*;
+use generic_array::GenericArray;
 pub use getrandom::Error as EntropyError;
 use subtle::{Choice, ConstantTimeEq};
-/*
+
 use blake2::{
     Blake2b, Digest,
     digest::consts::{U32, U48},
@@ -10,6 +11,7 @@ use blake2::{
 type Blake2b256 = Blake2b<U32>;
 type Blake2b384 = Blake2b<U48>;
 
+/*
 /// A generic array with better ergonomics.
 pub struct GenericHash<const N: usize> {
     value: [u8; N],
@@ -105,8 +107,10 @@ impl Hash {
 
     /// Compute hash of `input`, returning `Hash`.
     pub fn compute(input: &[u8]) -> Self {
-        let inner = blake3::hash(input);
-        Self::from_bytes(*inner.as_bytes())
+        let mut hasher = Blake2b256::new();
+        hasher.update(input);
+        let output = hasher.finalize();
+        Self::from_bytes(output.into())
     }
 }
 
