@@ -1,5 +1,6 @@
 //! Some test fixtures only built on `cfg(test)`.
 
+use crate::always::*;
 use crate::{Hash, Payload, Secret};
 use getrandom;
 
@@ -19,7 +20,7 @@ pub fn random_u128() -> u128 {
 
 /// Returns a random [blake3::Hash] created with [getradom::fill()].
 pub fn random_hash() -> Hash {
-    let mut buf = [0; 32];
+    let mut buf = [0; DIGEST];
     getrandom::fill(&mut buf).unwrap();
     Hash::from_bytes(buf)
 }
@@ -256,13 +257,13 @@ mod tests {
 
     #[test]
     fn test_hash_bit_flipper() {
-        let orig = Hash::from_bytes([69; 32]);
+        let orig = Hash::from_bytes([69; DIGEST]);
         let mut hset: HashSet<Hash> = HashSet::new();
         assert!(hset.insert(orig));
         for bad in HashBitFlipper::new(&orig) {
             assert!(hset.insert(bad));
         }
-        assert_eq!(hset.len(), 32 * 8 + 1);
+        assert_eq!(hset.len(), DIGEST * 8 + 1);
     }
 
     #[test]

@@ -517,16 +517,16 @@ mod tests {
 
     fn new_valid_block() -> Vec<u8> {
         let mut buf = vec![0; BLOCK];
-        let seed = Seed::create(&Secret::from_bytes([69; 32]));
+        let seed = Seed::create(&Secret::from_bytes([69; SECRET]));
         let secsign = SecretSigner::new(&seed);
-        let payload = Payload::new(0, Hash::from_bytes([1; 32]));
+        let payload = Payload::new(0, Hash::from_bytes([1; DIGEST]));
         let mut block = MutBlock::new(&mut buf, &payload);
         let last = BlockState::new(
             0,
-            Hash::from_bytes([3; 32]),
+            Hash::from_bytes([3; DIGEST]),
             Hash::from_bytes([0; DIGEST]), // ZERO_HASH
             Hash::from_bytes([0; DIGEST]), // ZERO_HASH
-            Hash::from_bytes([5; 32]),
+            Hash::from_bytes([5; DIGEST]),
             payload,
         );
         block.set_previous(&last);

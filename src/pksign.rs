@@ -186,7 +186,7 @@ mod tests {
     #[test]
     fn test_build_ed25519_keypair() {
         // Make sure a derived secret is used and not the parent secret directly
-        let secret = Secret::from_bytes([69; DIGEST]);
+        let secret = Secret::from_bytes([69; SECRET]);
         let derived_secret = derive_secret(CONTEXT_ED25519, &secret);
         let bad = ed25519_dalek::SigningKey::from_bytes(secret.as_bytes());
         let good = ed25519_dalek::SigningKey::from_bytes(derived_secret.as_bytes());
@@ -204,7 +204,7 @@ mod tests {
     #[test]
     fn test_build_mldsa_keypair() {
         // Make sure a derived secret is used and not the parent secret directly
-        let secret = Secret::from_bytes([69; DIGEST]);
+        let secret = Secret::from_bytes([69; SECRET]);
         let derived_secret = derive_secret(CONTEXT_ML_DSA, &secret);
         let bad = build_mldsa_test(&secret);
         let good = build_mldsa_test(&derived_secret);
@@ -221,7 +221,7 @@ mod tests {
 
     #[test]
     fn keypair_new() {
-        let secret = Secret::from_bytes([7; 32]);
+        let secret = Secret::from_bytes([7; SECRET]);
         let pair = KeyPair::new(&secret);
 
         let mut pubkey = [0u8; PUBKEY];
@@ -231,7 +231,7 @@ mod tests {
 
     #[test]
     fn test_keypair_pubkey_hash() {
-        let pair = KeyPair::new(&Secret::from_bytes([69; 32]));
+        let pair = KeyPair::new(&Secret::from_bytes([69; SECRET]));
         assert_eq!(pair.pubkey_hash(), Hash::from_hex(HEX0).unwrap());
     }
 }

@@ -387,7 +387,7 @@ mod tests {
     fn test_chainstore_chain_filename() {
         let dir = PathBuf::from("/tmp/stuff/junk");
         let chainstore = ChainStore::new(&dir);
-        let chain_hash = Hash::from_bytes([42; 32]);
+        let chain_hash = Hash::from_bytes([42; DIGEST]);
         assert_eq!(
             chainstore.chain_filename(&chain_hash),
             PathBuf::from(
