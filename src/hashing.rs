@@ -58,7 +58,7 @@ pub fn hash384(input: &[u8]) -> Hash384 {
 */
 
 /// Buffer containing the hash digest, with constant time comparison.
-#[derive(Debug, Eq, Clone, Copy)]
+#[derive(Eq, Clone, Copy)]
 pub struct Hash {
     value: [u8; DIGEST],
 }
@@ -129,6 +129,14 @@ impl PartialEq for Hash {
 impl core::hash::Hash for Hash {
     fn hash<H: core::hash::Hasher>(&self, state: &mut H) {
         self.value.hash(state)
+    }
+}
+
+impl core::fmt::Debug for Hash {
+    fn fmt(&self, f: &mut core::fmt::Formatter) -> core::fmt::Result {
+        let hex = self.to_hex();
+        let hex: &str = hex.as_str();
+        f.debug_tuple("Hash").field(&hex).finish()
     }
 }
 
