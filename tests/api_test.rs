@@ -6,11 +6,11 @@ use zf_zebrachain::{
     SecretChainStore, Seed, keyed_hash,
 };
 
-const SAMPLE_PAYLOAD_0: &str = "c0c76cbfd80b970d138cce4e466327b1f2ba96a7de9ecc2c98b8f4e7e462a8bc";
-const SAMPLE_PAYLOAD_419: &str = "e9961e428776cb08e4c3c7c55d912716a1f9edca74da0adb8a7a7805bb536788";
+const SAMPLE_PAYLOAD_0: &str = "d5b8c07e502ecfe37ae644d9bb91ba3f409fff5dbf3856e87a4ec09143f7789d";
+const SAMPLE_PAYLOAD_419: &str = "dc54d0feef9a7986e306947a5e3c31540dea6c473705f79eaf39a6e9dac2c93b";
 
-const BLOCK_HASH_0: &str = "21826e128e0d2e790d02471e84f38a8717d3859c09ca32ad300b42686abb14c0";
-const BLOCK_HASH_419: &str = "2c20f1a0e40886eefcb24622d7cd42469b4678487d703b8ed17dd7be54277525";
+const BLOCK_HASH_0: &str = "73da8871df19ff402e80b393bbd171884d6f2f6a1218ca7595ef9d80f0ca3056";
+const BLOCK_HASH_419: &str = "2271593decbc1d9ae02af1f478d33a84ebcd98ea37b6fc70ad75350f12a64946";
 
 fn sample_entropy(index: u128) -> Secret {
     let mut h = blake3::Hasher::new();

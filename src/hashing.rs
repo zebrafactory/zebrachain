@@ -1,15 +1,10 @@
 use crate::always::*;
-use generic_array::GenericArray;
+use blake2::{Blake2b, Digest, digest::consts::U32};
 pub use getrandom::Error as EntropyError;
 use subtle::{Choice, ConstantTimeEq};
 
-use blake2::{
-    Blake2b, Digest,
-    digest::consts::{U32, U48},
-};
-
 type Blake2b256 = Blake2b<U32>;
-type Blake2b384 = Blake2b<U48>;
+//type Blake2b384 = Blake2b<U48>;
 
 /*
 /// A generic array with better ergonomics.

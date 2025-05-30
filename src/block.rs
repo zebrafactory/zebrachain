@@ -371,8 +371,8 @@ mod tests {
     use crate::{Secret, Seed};
     use getrandom;
 
-    const HEX0: &str = "fce9a075fcd4a1a5e867c491860dd6fe422f3747f3ccd3f4f927a1b51193f9a2";
-    const HEX1: &str = "73f229cc4e11354b11cb17bb718fe9cc9c07192fa05bf09adcc05270a5843d7b";
+    const HEX0: &str = "1b8b1266ee3e791f1daa15bafeac2a3b0ec3ff00158b2eba9fa5873071bfd92e";
+    const HEX1: &str = "dbc64ad9e9748187eb2fee98e010a96f269f442b7e35e8f03cdd8e32475c78c2";
 
     #[test]
     fn test_blockstate_effective_chain_hash() {
