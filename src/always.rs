@@ -143,8 +143,8 @@ pub(crate) static CONTEXT_STORE_KEY: &[u8; CONTEXT] =
 pub(crate) static CONTEXT_STORE_NONCE: &[u8; CONTEXT] =
     &hex!("dc49809016fca0a126c5df6d373e90c48683e664ecba0440ae59523d93e13515");
 
-pub(crate) static SIGNING_CXT_ML_DSA: &[u8] =
-    b"270973c068ca5b0188c0e0b89f286d1a8c6a3b3c176aa07b3ae3a519fd65032f";
+pub(crate) static SIGNING_CXT_ML_DSA: &[u8; CONTEXT] =
+    &hex!("270973c068ca5b0188c0e0b89f286d1a8c6a3b3c176aa07b3ae3a519fd65032f");
 //pub(crate) static SIGNING_CXT_SLH_DSA: &[u8] =
 //    b"b71cd1500453530f76d0a4e47863c69bb4842a42ba088532d58d11c149489853";
 
