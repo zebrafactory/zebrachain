@@ -6,7 +6,7 @@
 
 use crate::always::*;
 use crate::errors::SecretBlockError;
-use crate::hashing::{EntropyError, Secret, derive_secret};
+use crate::hashing::{EntropyError, Secret};
 use core::ops::Range;
 
 const SECRET_RANGE: Range<usize> = 0..SECRET;
@@ -45,8 +45,8 @@ impl Seed {
 
     /// Create a new seed by deriving secret and next_secret from `initial_entropy`.
     pub fn create(initial_entropy: &Secret) -> Self {
-        let secret = derive_secret(CONTEXT_SECRET, initial_entropy);
-        let next_secret = derive_secret(CONTEXT_SECRET_NEXT, initial_entropy);
+        let secret = initial_entropy.derive_secret(CONTEXT_SECRET);
+        let next_secret = initial_entropy.derive_secret(CONTEXT_SECRET_NEXT);
         Self::new(secret, next_secret)
     }
 

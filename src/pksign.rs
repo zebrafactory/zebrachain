@@ -2,20 +2,20 @@
 
 use crate::always::*;
 use crate::block::{Block, MutBlock};
-use crate::hashing::{Hash, Secret, derive_secret};
+use crate::hashing::{Hash, Secret};
 use crate::secretseed::Seed;
 use ml_dsa::{B32, KeyGen, MlDsa65};
 use signature::Signer;
 use zeroize::Zeroize;
 
 fn build_ed25519_keypair(secret: &Secret) -> ed25519_dalek::SigningKey {
-    ed25519_dalek::SigningKey::from_bytes(derive_secret(CONTEXT_ED25519, secret).as_bytes())
+    ed25519_dalek::SigningKey::from_bytes(secret.derive_secret(CONTEXT_ED25519).as_bytes())
 }
 
 fn build_mldsa_keypair(secret: &Secret) -> ml_dsa::KeyPair<MlDsa65> {
     let mut hack = B32::default();
     hack.0
-        .copy_from_slice(derive_secret(CONTEXT_ML_DSA, secret).as_bytes()); // FIXME: Do more better
+        .copy_from_slice(secret.derive_secret(CONTEXT_ML_DSA).as_bytes()); // FIXME: Do more better
     MlDsa65::key_gen_internal(&hack)
 }
 
@@ -187,7 +187,7 @@ mod tests {
     fn test_build_ed25519_keypair() {
         // Make sure a derived secret is used and not the parent secret directly
         let secret = Secret::from_bytes([69; SECRET]);
-        let derived_secret = derive_secret(CONTEXT_ED25519, &secret);
+        let derived_secret = secret.derive_secret(CONTEXT_ED25519);
         let bad = ed25519_dalek::SigningKey::from_bytes(secret.as_bytes());
         let good = ed25519_dalek::SigningKey::from_bytes(derived_secret.as_bytes());
         let ret = build_ed25519_keypair(&secret);
@@ -205,7 +205,7 @@ mod tests {
     fn test_build_mldsa_keypair() {
         // Make sure a derived secret is used and not the parent secret directly
         let secret = Secret::from_bytes([69; SECRET]);
-        let derived_secret = derive_secret(CONTEXT_ML_DSA, &secret);
+        let derived_secret = secret.derive_secret(CONTEXT_ML_DSA);
         let bad = build_mldsa_test(&secret);
         let good = build_mldsa_test(&derived_secret);
         let ret = build_mldsa_keypair(&secret);

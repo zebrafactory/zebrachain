@@ -140,6 +140,12 @@ impl Secret {
 
     /// Experimental keyed hashing with blake2b
     pub fn keyed_hash2(&self, input: &[u8]) -> Self {
+        if input.len() < 8 {
+            panic!(
+                "Secret.keyed_hash(): input must be at least 8 bytes, got {}",
+                input.len()
+            );
+        }
         let mut hasher =
             Blake2bMac256::new_with_salt_and_personal(self.as_bytes(), &[], &[]).unwrap();
         hasher.update(input);
@@ -205,25 +211,6 @@ pub fn keyed_hash(key: &[u8; 32], input: &[u8]) -> Secret {
     Secret::from_bytes(*blake3::keyed_hash(key, input).as_bytes())
 }
 
-/// Derive a domain specific [Secret] from a context string and a root secret.
-///
-/// When doing hybrid signing, it is critical to derive a unique secret for each algorithm (say,
-/// one for ed25519 and another for ML-DSA).
-///
-/// And even if signing with a single algorithm, we still should use a derived secret instead of the
-/// root secret directly.
-pub(crate) fn derive_secret(context: &str, secret: &Secret) -> Secret {
-    if context.len() != 64 {
-        panic!(
-            "derive_secret(): context string length must be 64; got {}",
-            context.len()
-        );
-    }
-    let mut hasher = blake3::Hasher::new_derive_key(context);
-    hasher.update(secret.as_bytes());
-    Secret::from_bytes(*hasher.finalize().as_bytes())
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -252,7 +239,7 @@ mod tests {
     fn test_derive_secret() {
         let secret = Secret::from_bytes([7; 32]);
 
-        let h = derive_secret(CONTEXT_SECRET, &secret);
+        let h = secret.derive_secret(CONTEXT_SECRET);
         assert_eq!(
             h.as_bytes(),
             &[
@@ -261,7 +248,7 @@ mod tests {
             ]
         );
 
-        let h = derive_secret(CONTEXT_SECRET_NEXT, &secret);
+        let h = secret.derive_secret(CONTEXT_SECRET_NEXT);
         assert_eq!(
             h.as_bytes(),
             &[
@@ -272,7 +259,7 @@ mod tests {
 
         let secret = Secret::from_bytes([8; 32]);
 
-        let h = derive_secret(CONTEXT_SECRET, &secret);
+        let h = secret.derive_secret(CONTEXT_SECRET);
         assert_eq!(
             h.as_bytes(),
             &[
@@ -281,7 +268,7 @@ mod tests {
             ]
         );
 
-        let h = derive_secret(CONTEXT_SECRET_NEXT, &secret);
+        let h = secret.derive_secret(CONTEXT_SECRET_NEXT);
         assert_eq!(
             h.as_bytes(),
             &[
@@ -295,7 +282,7 @@ mod tests {
     #[should_panic(expected = "derive_secret(): context string length must be 64; got 63")]
     fn test_derive_secret_panic_low() {
         let secret = Secret::generate().unwrap();
-        derive_secret(&CONTEXT_SECRET[0..63], &secret);
+        secret.derive_secret(&CONTEXT_SECRET[0..63]);
     }
 
     #[test]
@@ -304,6 +291,6 @@ mod tests {
         let secret = Secret::generate().unwrap();
         let mut context = String::from(CONTEXT_SECRET);
         context.push('7');
-        derive_secret(&context, &secret);
+        secret.derive_secret(&context);
     }
 }
