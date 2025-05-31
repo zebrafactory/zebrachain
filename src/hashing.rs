@@ -16,6 +16,12 @@ pub struct Hash {
     value: [u8; DIGEST],
 }
 
+#[derive(Debug)]
+pub enum HexError {
+    Len(usize),
+    Byte(u8),
+}
+
 impl Hash {
     /// The raw bytes of the `Hash`.
     pub fn as_bytes(&self) -> &[u8; DIGEST] {
@@ -38,12 +44,25 @@ impl Hash {
         self.value.ct_eq(&[0; DIGEST]).into()
     }
 
-    /// Decode from hex
-    pub fn from_hex(hex: impl AsRef<[u8]>) -> Result<Self, blake3::HexError> {
-        let inner = blake3::Hash::from_hex(hex)?; // OMS, FIXME
-        Ok(Self {
-            value: *inner.as_bytes(),
-        })
+    /// Decode a `Hash` from lowercase hexadecimal.
+    pub fn from_hex(hex: impl AsRef<[u8]>) -> Result<Self, HexError> {
+        // Totally copied from blake3::Hash::from_hex()
+        fn hex_val(byte: u8) -> Result<u8, HexError> {
+            match byte {
+                b'a'..=b'f' => Ok(byte - b'a' + 10),
+                b'0'..=b'9' => Ok(byte - b'0'),
+                _ => Err(HexError::Byte(byte)),
+            }
+        }
+        let hex_bytes: &[u8] = hex.as_ref();
+        if hex_bytes.len() != DIGEST * 2 {
+            return Err(HexError::Len(hex_bytes.len()));
+        }
+        let mut hash_bytes: [u8; DIGEST] = [0; DIGEST];
+        for i in 0..DIGEST {
+            hash_bytes[i] = 16 * hex_val(hex_bytes[2 * i])? + hex_val(hex_bytes[2 * i + 1])?;
+        }
+        Ok(Self::from_bytes(hash_bytes))
     }
 
     /// Encode in lowercase hexidecimal
