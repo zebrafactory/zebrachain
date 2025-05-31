@@ -1,9 +1,13 @@
 use crate::always::*;
-use blake2::{Blake2b, Digest, digest::consts::U32};
+use blake2::{
+    Blake2b, Blake2bMac, Digest,
+    digest::{Mac, consts::U32},
+};
 pub use getrandom::Error as EntropyError;
 use subtle::{Choice, ConstantTimeEq};
 
 type Blake2b256 = Blake2b<U32>;
+type Blake2bMac256 = Blake2bMac<U32>;
 //type Blake2b384 = Blake2b<U48>;
 
 /// Buffer containing the hash digest, with constant time comparison.
@@ -132,6 +136,15 @@ impl Secret {
             Ok(_) => Ok(Self::from_bytes(buf)),
             Err(err) => Err(err),
         }
+    }
+
+    /// Experimental keyed hashing with blake2b
+    pub fn keyed_hash2(&self, input: &[u8]) -> Self {
+        let mut hasher =
+            Blake2bMac256::new_with_salt_and_personal(self.as_bytes(), &[], &[]).unwrap();
+        hasher.update(input);
+        let output = hasher.finalize();
+        Self::from_bytes(output.into_bytes().into())
     }
 
     /// Keyed hash
