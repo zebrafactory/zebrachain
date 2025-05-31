@@ -155,9 +155,9 @@ pub(crate) fn verify_block_signature(block: &Block) -> bool {
 mod tests {
     use super::*;
 
-    static HEX0: &str = "880a7f54217163f245e9885db7dc55b0e096c6ca9ab49add4e31e2f24ae6735c";
+    static HEX0: &str = "f338058d8173889ad79584bc2528d59ac7bcdc7d7bfb17a1eb22057c7136f64c";
     static HEX1: &str = "69741bc2083361bc90ebc072ef490e270d1e1706217d542340b32241c969c1b9";
-    static HEX2: &str = "3410d905a4b9c0bb3b87b421b2bdb7819ea41d4d51c7b30a72b96287cb82baf6";
+    static HEX2: &str = "281875d79d64114d6e941fcf242998d0824871eb9f9f7935249b6f9788b5b94a";
 
     fn build_mldsa_test(secret: &Secret) -> ml_dsa::KeyPair<MlDsa65> {
         // Does not use a derived secret, don't use for realsies!
