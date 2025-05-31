@@ -80,9 +80,9 @@ These key crates are used:
 
 * [ed25519-dalek](https://crates.io/crates/ed25519-dalek) and [ml-dsa](https://crates.io/crates/ml-dsa) for hybrid signing.
 
-* [blake3](https://crates.io/crates/blake3) for hashing
+* [blake](https://crates.io/crates/blake2) for hashing and KDF.
 
-* [chacha20poly1305](https://crates.io/crates/chacha20poly1305) for encrypting the secrect blocks
+* [chacha20poly1305](https://crates.io/crates/chacha20poly1305) for encrypting the secrect blocks.
 
 ## 🔗 Wire Format
 
