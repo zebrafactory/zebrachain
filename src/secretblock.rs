@@ -241,7 +241,6 @@ mod tests {
 
     use super::*;
     use crate::Secret;
-    use crate::hashing::keyed_hash;
     use crate::testhelpers::{
         BitFlipper, HashBitFlipper, SecretBitFlipper, U64BitFlipper, random_hash, random_payload,
     };
@@ -255,7 +254,7 @@ mod tests {
         let chain_secret = Secret::generate().unwrap();
         assert!(hset.insert(chain_secret));
         for block_index in 0..count {
-            let block_secret = keyed_hash(chain_secret.as_bytes(), &block_index.to_le_bytes());
+            let block_secret = chain_secret.derive_with_index(block_index);
             assert!(hset.insert(block_secret));
             let (key, nonce) = derive_block_sub_secrets(&chain_secret, block_index);
             assert!(hset.insert(key));

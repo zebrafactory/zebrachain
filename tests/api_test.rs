@@ -3,7 +3,7 @@ use std::collections::HashSet;
 use tempfile;
 use zf_zebrachain::{
     ChainStore, DIGEST, Hash, MutSecretBlock, OwnedChainStore, PAYLOAD, Payload, Secret,
-    SecretChainStore, Seed, keyed_hash,
+    SecretChainStore, Seed,
 };
 
 const SAMPLE_PAYLOAD_0: &str = "d5b8c07e502ecfe37ae644d9bb91ba3f409fff5dbf3856e87a4ec09143f7789d";
@@ -106,9 +106,7 @@ fn test_secret_chain_store() {
     block.set_seed(&seed);
     block.set_public_block_hash(&chain_hash);
 
-    let chain_secret = Secret::from_bytes(
-        *keyed_hash(storage_secret.as_bytes(), chain_hash.as_bytes()).as_bytes(),
-    );
+    let chain_secret = storage_secret.derive_with_hash(&chain_hash);
     let block_hash = block.finalize(&chain_secret);
     let chain = store.create_chain(&chain_hash, buf, &block_hash).unwrap();
     assert_eq!(chain.tail().payload, payload);

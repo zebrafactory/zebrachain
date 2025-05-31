@@ -2,7 +2,7 @@
 
 use crate::always::*;
 use crate::fsutil::{create_for_append, open_for_append, secret_chain_filename};
-use crate::hashing::{Hash, keyed_hash};
+use crate::hashing::Hash;
 use crate::secretblock::{SecretBlock, SecretBlockState};
 use crate::{Secret, Seed};
 use std::fs::{File, remove_file};
@@ -11,7 +11,7 @@ use std::io::{BufReader, Read, Seek, Write};
 use std::path::{Path, PathBuf};
 
 pub(crate) fn derive_chain_secret(store_secret: &Secret, chain_hash: &Hash) -> Secret {
-    keyed_hash(store_secret.as_bytes(), chain_hash.as_bytes())
+    store_secret.derive_with_hash(chain_hash)
 }
 
 /// Save secret chain to non-volitile storage (encrypted and authenticated).
@@ -253,7 +253,6 @@ mod tests {
     use crate::secretblock::MutSecretBlock;
     use crate::testhelpers::{random_hash, random_payload};
     use getrandom;
-    use hex_literal::hex;
     use std::io::Seek;
     use tempfile::{TempDir, tempfile};
 
@@ -340,18 +339,19 @@ mod tests {
         let chain_hash = Hash::from_bytes([69; DIGEST]);
         let sec = store.derive_chain_secret(&chain_hash);
         assert_eq!(
-            sec,
-            Secret::from_bytes(hex!(
-                "1b695d50d6105777ed7b5a0bb0bce5484ddca1d6b16bbb0c7bac90599c59370e"
-            ))
+            sec.as_bytes(),
+            &[
+                86, 145, 205, 17, 29, 82, 154, 62, 94, 157, 251, 196, 137, 61, 199, 238, 78, 31,
+                46, 75, 202, 222, 12, 37, 186, 210, 172, 63, 26, 36, 56, 205
+            ],
         );
-        assert_eq!(sec, keyed_hash(secret.as_bytes(), chain_hash.as_bytes()));
+        assert_eq!(sec, secret.derive_with_hash(&chain_hash));
         let secret = Secret::generate().unwrap();
         let chain_hash = random_hash();
         let store = SecretChainStore::new(&dir, secret);
         assert_eq!(
             store.derive_chain_secret(&chain_hash),
-            keyed_hash(secret.as_bytes(), chain_hash.as_bytes())
+            secret.derive_with_hash(&chain_hash)
         );
     }
 

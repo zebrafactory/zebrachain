@@ -182,6 +182,11 @@ impl Secret {
         self.keyed_hash(context)
     }
 
+    /// Derive sub secret from this secret and the bytes in [Hash].
+    pub fn derive_with_hash(&self, hash: &Hash) -> Self {
+        self.keyed_hash(hash.as_bytes())
+    }
+
     /// Mix new entropy with this secret to create next secret.
     pub fn next(&self, new_entropy: &Self) -> Self {
         self.keyed_hash(new_entropy.as_bytes())
@@ -204,11 +209,6 @@ impl core::hash::Hash for Secret {
     fn hash<H: core::hash::Hasher>(&self, state: &mut H) {
         self.value.hash(state)
     }
-}
-
-/// Keyed hash, yo
-pub fn keyed_hash(key: &[u8; 32], input: &[u8]) -> Secret {
-    Secret::from_bytes(*blake3::keyed_hash(key, input).as_bytes())
 }
 
 #[cfg(test)]
