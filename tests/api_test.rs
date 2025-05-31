@@ -9,8 +9,8 @@ use zf_zebrachain::{
 const SAMPLE_PAYLOAD_0: &str = "d5b8c07e502ecfe37ae644d9bb91ba3f409fff5dbf3856e87a4ec09143f7789d";
 const SAMPLE_PAYLOAD_419: &str = "dc54d0feef9a7986e306947a5e3c31540dea6c473705f79eaf39a6e9dac2c93b";
 
-const BLOCK_HASH_0: &str = "73da8871df19ff402e80b393bbd171884d6f2f6a1218ca7595ef9d80f0ca3056";
-const BLOCK_HASH_419: &str = "2271593decbc1d9ae02af1f478d33a84ebcd98ea37b6fc70ad75350f12a64946";
+const BLOCK_HASH_0: &str = "097041ea3d9e06143a9dbde20406721dbe39314b87ee138208669f7f5be4710f";
+const BLOCK_HASH_419: &str = "5e05321293c71fa73f38f43ddea64ddff8050f77dfd89f4eae3882b1e83aaf00";
 
 fn sample_entropy(index: u128) -> Secret {
     let mut h = blake3::Hasher::new();

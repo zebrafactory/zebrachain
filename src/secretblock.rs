@@ -33,8 +33,8 @@ fn check_secretblock_buf_aead(buf: &[u8]) {
 #[inline]
 fn derive_block_sub_secrets(chain_secret: &Secret, block_index: u64) -> (Secret, Secret) {
     let block_secret = chain_secret.derive_with_index(block_index);
-    let block_key_secret = block_secret.derive_secret(CONTEXT_STORE_KEY);
-    let block_nonce_secret = block_secret.derive_secret(CONTEXT_STORE_NONCE);
+    let block_key_secret = block_secret.derive_with_context(CONTEXT_STORE_KEY);
+    let block_nonce_secret = block_secret.derive_with_context(CONTEXT_STORE_NONCE);
     (block_key_secret, block_nonce_secret)
 }
 

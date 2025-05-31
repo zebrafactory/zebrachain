@@ -9,13 +9,13 @@ use signature::Signer;
 use zeroize::Zeroize;
 
 fn build_ed25519_keypair(secret: &Secret) -> ed25519_dalek::SigningKey {
-    ed25519_dalek::SigningKey::from_bytes(secret.derive_secret(CONTEXT_ED25519).as_bytes())
+    ed25519_dalek::SigningKey::from_bytes(secret.derive_with_context(CONTEXT_ED25519).as_bytes())
 }
 
 fn build_mldsa_keypair(secret: &Secret) -> ml_dsa::KeyPair<MlDsa65> {
     let mut hack = B32::default();
     hack.0
-        .copy_from_slice(secret.derive_secret(CONTEXT_ML_DSA).as_bytes()); // FIXME: Do more better
+        .copy_from_slice(secret.derive_with_context(CONTEXT_ML_DSA).as_bytes()); // FIXME: Do more better
     MlDsa65::key_gen_internal(&hack)
 }
 
@@ -155,9 +155,9 @@ pub(crate) fn verify_block_signature(block: &Block) -> bool {
 mod tests {
     use super::*;
 
-    static HEX0: &str = "0f5156aeacd7bf07a67a7de6fde367ed666d5042ad6186785334f5b20d2cfeeb";
+    static HEX0: &str = "880a7f54217163f245e9885db7dc55b0e096c6ca9ab49add4e31e2f24ae6735c";
     static HEX1: &str = "69741bc2083361bc90ebc072ef490e270d1e1706217d542340b32241c969c1b9";
-    static HEX2: &str = "83844afab29a5891997f275f27e0776e8c9d377f09e13b0ee5c7e99da1498d95";
+    static HEX2: &str = "3410d905a4b9c0bb3b87b421b2bdb7819ea41d4d51c7b30a72b96287cb82baf6";
 
     fn build_mldsa_test(secret: &Secret) -> ml_dsa::KeyPair<MlDsa65> {
         // Does not use a derived secret, don't use for realsies!
@@ -187,7 +187,7 @@ mod tests {
     fn test_build_ed25519_keypair() {
         // Make sure a derived secret is used and not the parent secret directly
         let secret = Secret::from_bytes([69; SECRET]);
-        let derived_secret = secret.derive_secret(CONTEXT_ED25519);
+        let derived_secret = secret.derive_with_context(CONTEXT_ED25519);
         let bad = ed25519_dalek::SigningKey::from_bytes(secret.as_bytes());
         let good = ed25519_dalek::SigningKey::from_bytes(derived_secret.as_bytes());
         let ret = build_ed25519_keypair(&secret);
@@ -205,7 +205,7 @@ mod tests {
     fn test_build_mldsa_keypair() {
         // Make sure a derived secret is used and not the parent secret directly
         let secret = Secret::from_bytes([69; SECRET]);
-        let derived_secret = secret.derive_secret(CONTEXT_ML_DSA);
+        let derived_secret = secret.derive_with_context(CONTEXT_ML_DSA);
         let bad = build_mldsa_test(&secret);
         let good = build_mldsa_test(&derived_secret);
         let ret = build_mldsa_keypair(&secret);

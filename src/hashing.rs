@@ -169,19 +169,6 @@ impl Secret {
         self.keyed_hash(context)
     }
 
-    /// FIXME: Switch to [u8; CONTEXT], use keyed hashing as universal derivation method.
-    pub fn derive_secret(&self, context: &str) -> Secret {
-        if context.len() != 64 {
-            panic!(
-                "derive_secret(): context string length must be 64; got {}",
-                context.len()
-            );
-        }
-        let mut hasher = blake3::Hasher::new_derive_key(context);
-        hasher.update(self.as_bytes());
-        Secret::from_bytes(*hasher.finalize().as_bytes())
-    }
-
     /// Mix new entropy with this secret to create next secret.
     pub fn next(&self, new_entropy: &Self) -> Self {
         self.keyed_hash(new_entropy.as_bytes())
@@ -236,61 +223,45 @@ mod tests {
     }
 
     #[test]
-    fn test_derive_secret() {
+    fn test_secret_derive_with_context() {
         let secret = Secret::from_bytes([7; 32]);
 
-        let h = secret.derive_secret(CONTEXT_SECRET);
+        let h = secret.derive_with_context(CONTEXT_SECRET);
         assert_eq!(
             h.as_bytes(),
             &[
-                120, 255, 86, 223, 30, 100, 162, 199, 106, 136, 172, 87, 236, 29, 37, 87, 54, 34,
-                187, 11, 86, 136, 243, 38, 218, 235, 136, 210, 10, 49, 145, 205
+                237, 41, 26, 111, 128, 91, 108, 191, 144, 205, 125, 20, 166, 179, 4, 173, 195, 127,
+                157, 202, 199, 208, 108, 187, 106, 113, 15, 193, 130, 12, 164, 143
             ]
         );
 
-        let h = secret.derive_secret(CONTEXT_SECRET_NEXT);
+        let h = secret.derive_with_context(CONTEXT_SECRET_NEXT);
         assert_eq!(
             h.as_bytes(),
             &[
-                56, 77, 119, 202, 143, 168, 34, 136, 205, 197, 90, 11, 162, 112, 64, 45, 180, 80,
-                53, 21, 110, 79, 164, 134, 252, 40, 223, 195, 105, 145, 116, 30
+                179, 29, 95, 3, 85, 14, 2, 129, 144, 5, 84, 13, 186, 229, 168, 243, 59, 56, 253,
+                82, 167, 125, 188, 37, 255, 183, 2, 25, 110, 47, 201, 79
             ]
         );
 
         let secret = Secret::from_bytes([8; 32]);
 
-        let h = secret.derive_secret(CONTEXT_SECRET);
+        let h = secret.derive_with_context(CONTEXT_SECRET);
         assert_eq!(
             h.as_bytes(),
             &[
-                204, 111, 146, 79, 175, 44, 54, 156, 189, 251, 132, 13, 239, 136, 191, 186, 33,
-                207, 252, 183, 28, 52, 122, 92, 77, 16, 181, 179, 130, 180, 83, 141
+                112, 184, 146, 57, 65, 142, 223, 113, 195, 133, 163, 255, 27, 13, 69, 123, 180,
+                190, 137, 233, 197, 255, 126, 10, 23, 59, 100, 16, 92, 255, 10, 233
             ]
         );
 
-        let h = secret.derive_secret(CONTEXT_SECRET_NEXT);
+        let h = secret.derive_with_context(CONTEXT_SECRET_NEXT);
         assert_eq!(
             h.as_bytes(),
             &[
-                21, 128, 0, 241, 82, 225, 6, 165, 5, 12, 101, 182, 221, 147, 193, 220, 120, 250,
-                138, 223, 152, 199, 78, 68, 69, 51, 238, 203, 135, 83, 186, 246
+                78, 133, 40, 203, 84, 81, 182, 43, 183, 236, 154, 199, 160, 138, 139, 63, 192, 122,
+                100, 39, 84, 20, 43, 115, 157, 51, 105, 131, 119, 113, 46, 119
             ]
         );
-    }
-
-    #[test]
-    #[should_panic(expected = "derive_secret(): context string length must be 64; got 63")]
-    fn test_derive_secret_panic_low() {
-        let secret = Secret::generate().unwrap();
-        secret.derive_secret(&CONTEXT_SECRET[0..63]);
-    }
-
-    #[test]
-    #[should_panic(expected = "derive_secret(): context string length must be 64; got 65")]
-    fn test_derive_secret_panic_high() {
-        let secret = Secret::generate().unwrap();
-        let mut context = String::from(CONTEXT_SECRET);
-        context.push('7');
-        secret.derive_secret(&context);
     }
 }

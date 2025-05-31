@@ -45,8 +45,8 @@ impl Seed {
 
     /// Create a new seed by deriving secret and next_secret from `initial_entropy`.
     pub fn create(initial_entropy: &Secret) -> Self {
-        let secret = initial_entropy.derive_secret(CONTEXT_SECRET);
-        let next_secret = initial_entropy.derive_secret(CONTEXT_SECRET_NEXT);
+        let secret = initial_entropy.derive_with_context(CONTEXT_SECRET);
+        let next_secret = initial_entropy.derive_with_context(CONTEXT_SECRET_NEXT);
         Self::new(secret, next_secret)
     }
 
