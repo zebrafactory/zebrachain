@@ -176,7 +176,7 @@ impl Secret {
     }
 
     /// Derive sub secret from this secret and the index as LE bytes.
-    pub fn derive_with_index(&self, index: u64) -> Self {
+    pub fn derive_with_index(&self, index: u128) -> Self {
         self.keyed_hash(&index.to_le_bytes())
     }
 

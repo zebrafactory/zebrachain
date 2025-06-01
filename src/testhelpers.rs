@@ -4,21 +4,21 @@ use crate::always::*;
 use crate::{Hash, Payload, Secret};
 use getrandom;
 
-/// Returns a random u64 created with [getradom::fill()].
+/// Returns a random u64 created with [getrandom::fill()].
 pub fn random_u64() -> u64 {
     let mut buf = [0; 8];
     getrandom::fill(&mut buf).unwrap();
     u64::from_le_bytes(buf)
 }
 
-/// Returns a random u128 created with [getradom::fill()].
+/// Returns a random u128 created with [getrandom::fill()].
 pub fn random_u128() -> u128 {
     let mut buf = [0; 16];
     getrandom::fill(&mut buf).unwrap();
     u128::from_le_bytes(buf)
 }
 
-/// Returns a random [blake3::Hash] created with [getradom::fill()].
+/// Returns a random [blake3::Hash] created with [getrandom::fill()].
 pub fn random_hash() -> Hash {
     let mut buf = [0; DIGEST];
     getrandom::fill(&mut buf).unwrap();

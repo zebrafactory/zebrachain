@@ -7,14 +7,14 @@ use zf_zebrachain::{
 };
 
 const SAMPLE_PAYLOAD_0: &str =
-    "eb5067a7054a1a98d2bb45ad374c41f8ce19a9d024215ad2c81d17a6381b5b884c5345f48472a5f2";
+    "42cf453c90237ad093a8d7a8b202f681ee8d08d719e884922c5769a1c9b3f9eaba4313fcaa81c2c1";
 const SAMPLE_PAYLOAD_419: &str =
-    "a10c124d75644122d7ac86c2af22b2b4de6592985a149a7a9cb88f0c976d61e802f1c7347a791677";
+    "31881c77273fdff74c274a172816a6c327bede16ab52c360fb0e6bbd3f16ede8dabc2ee7b776df6f";
 
 const BLOCK_HASH_0: &str =
-    "4e72993e49db3ee522a387108af97c68e6dab90ff3a5d33a16b96ae19799c7074d327b4b63e3483f";
+    "12335497a781ef465f846177d59fdf3e8cff4a5faf54b51a0bdf359521b5d126c41a6fc10f00debe";
 const BLOCK_HASH_419: &str =
-    "331fe7b3e43ef36698d62b2dcea8068322629f624158c81b9ac995d68ebb02dce734b4826791f5a8";
+    "ecdaab59c79db94b82b953884d9fce0aa4cb9a451d4f5d6f96ee279f5cb0871bfc4104eae4fb4017";
 
 static JUNK_ENTROPY: [u8; SECRET] =
     hex!("4e08e740cad03d0ac8ed4d2d1577b6f48bf6865c0e5c12eeb2082ea95cbda17b");
@@ -25,7 +25,7 @@ static JUNK_PAYLOAD_HASH: [u8; SECRET] =
 static JUNK_PAYLOAD_TIME: [u8; SECRET] =
     hex!("c34790c3c9e52ab1b166280a5b4493177379c65eaf48f43da0e1d31b79775c82");
 
-fn sample_entropy(index: u64) -> Secret {
+fn sample_entropy(index: u128) -> Secret {
     let root = Secret::from_bytes(JUNK_ENTROPY);
     root.derive_with_index(index)
 }
@@ -33,18 +33,18 @@ fn sample_entropy(index: u64) -> Secret {
 #[test]
 fn test_sample_entropy() {
     assert_eq!(
-        sample_entropy(0),
-        Secret::from_bytes([
-            93, 99, 16, 92, 27, 103, 79, 94, 191, 105, 131, 9, 22, 202, 43, 105, 70, 139, 26, 203,
-            223, 222, 82, 176, 124, 157, 172, 42, 113, 213, 0, 194
-        ])
+        sample_entropy(0).as_bytes(),
+        &[
+            2, 29, 36, 57, 58, 211, 249, 151, 248, 187, 183, 155, 253, 216, 35, 19, 176, 243, 124,
+            54, 211, 94, 46, 161, 66, 252, 205, 199, 209, 12, 178, 158
+        ]
     );
     assert_eq!(
-        sample_entropy(419),
-        Secret::from_bytes([
-            251, 254, 81, 169, 131, 113, 14, 45, 220, 27, 201, 193, 179, 94, 16, 233, 153, 65, 58,
-            247, 71, 86, 33, 244, 249, 49, 247, 3, 51, 44, 46, 10
-        ])
+        sample_entropy(419).as_bytes(),
+        &[
+            76, 13, 125, 88, 182, 80, 198, 81, 150, 37, 89, 228, 80, 199, 254, 210, 214, 45, 232,
+            67, 75, 6, 29, 177, 2, 139, 225, 146, 137, 138, 3, 57
+        ]
     );
     let mut hset: HashSet<Secret> = HashSet::with_capacity(420);
     for index in 0..420 {
@@ -53,7 +53,7 @@ fn test_sample_entropy() {
     assert_eq!(hset.len(), 420);
 }
 
-fn sample_storage_secret(index: u64) -> Secret {
+fn sample_storage_secret(index: u128) -> Secret {
     let root = Secret::from_bytes(JUNK_STORAGE_SECRET);
     root.derive_with_index(index)
 }
@@ -61,18 +61,18 @@ fn sample_storage_secret(index: u64) -> Secret {
 #[test]
 fn test_sample_storage_secret() {
     assert_eq!(
-        sample_storage_secret(0),
-        Secret::from_bytes([
-            143, 62, 12, 13, 4, 93, 97, 188, 186, 30, 18, 30, 225, 39, 181, 176, 249, 7, 61, 147,
-            106, 81, 117, 51, 176, 132, 21, 53, 63, 25, 37, 229
-        ])
+        sample_storage_secret(0).as_bytes(),
+        &[
+            104, 5, 141, 133, 209, 125, 24, 252, 124, 178, 41, 70, 11, 100, 202, 185, 110, 147,
+            248, 151, 175, 21, 248, 214, 87, 195, 2, 109, 240, 97, 185, 226
+        ]
     );
     assert_eq!(
-        sample_storage_secret(419),
-        Secret::from_bytes([
-            44, 207, 192, 131, 200, 167, 204, 128, 55, 125, 129, 149, 2, 195, 150, 27, 77, 65, 53,
-            202, 33, 160, 94, 186, 68, 39, 96, 93, 53, 48, 39, 117
-        ])
+        sample_storage_secret(419).as_bytes(),
+        &[
+            117, 99, 61, 219, 216, 54, 178, 20, 228, 47, 225, 8, 99, 71, 234, 59, 73, 52, 240, 213,
+            251, 212, 249, 110, 77, 32, 85, 33, 115, 173, 149, 250
+        ]
     );
     let mut hset: HashSet<Secret> = HashSet::with_capacity(420);
     for index in 0..420 {
@@ -81,7 +81,7 @@ fn test_sample_storage_secret() {
     assert_eq!(hset.len(), 420);
 }
 
-fn sample_payload(index: u64) -> Payload {
+fn sample_payload(index: u128) -> Payload {
     let root1 = Secret::from_bytes(JUNK_PAYLOAD_HASH).derive_with_index(index);
     let state_hash = Hash::compute(root1.as_bytes());
     let root2 = Secret::from_bytes(JUNK_PAYLOAD_TIME).derive_with_index(index);

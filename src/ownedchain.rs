@@ -148,7 +148,7 @@ impl OwnedChain {
     }
 
     /// Number of blocks in this owned chain.
-    pub fn count(&self) -> u64 {
+    pub fn count(&self) -> u128 {
         self.chain.count()
     }
 
