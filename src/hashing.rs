@@ -121,7 +121,7 @@ impl core::fmt::Display for Hash {
 /// Stores a secret in a buffer with constant time comparison.
 ///
 /// OH MY SCIENCE, FIXME: This needs to zeroize on drop
-#[derive(Debug, Eq, Clone, Copy)]
+#[derive(Eq, Clone, Copy)]
 pub struct Secret {
     value: [u8; SECRET],
 }
@@ -211,6 +211,12 @@ impl core::hash::Hash for Secret {
     }
 }
 
+impl core::fmt::Debug for Secret {
+    fn fmt(&self, f: &mut core::fmt::Formatter) -> core::fmt::Result {
+        f.write_str("Secret(<hidden>)")
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -233,6 +239,12 @@ mod tests {
             assert!(hset.insert(Secret::generate().unwrap()));
         }
         assert_eq!(hset.len(), count);
+    }
+
+    #[test]
+    fn test_secret_debug_fmt() {
+        let secret = Secret::generate().unwrap();
+        assert_eq!(format!("{secret:?}"), "Secret(<hidden>)");
     }
 
     #[test]
