@@ -41,7 +41,7 @@ impl KeyPair {
 
     /// Returns hash of public key byte representation.
     ///
-    /// Consumes instance becase we should either make a signature or hash the pubkey, not both.
+    /// Consumes instance because we should either make a signature or hash the pubkey, not both.
     fn pubkey_hash(self) -> Hash {
         let mut buf = [0; PUBKEY];
         self.write_pubkey(&mut buf);
