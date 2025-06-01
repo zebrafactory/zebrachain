@@ -242,6 +242,24 @@ mod tests {
     }
 
     #[test]
+    fn test_hash_display_fmt() {
+        let hash = Hash::from_bytes([42; DIGEST]);
+        assert_eq!(
+            format!("{hash}"),
+            "2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a"
+        );
+    }
+
+    #[test]
+    fn test_hash_debug_fmt() {
+        let hash = Hash::from_bytes([42; DIGEST]);
+        assert_eq!(
+            format!("{hash:?}"),
+            "Hash(\"2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a\")"
+        );
+    }
+
+    #[test]
     fn test_secret_debug_fmt() {
         let secret = Secret::generate().unwrap();
         assert_eq!(format!("{secret:?}"), "Secret(<hidden>)");
