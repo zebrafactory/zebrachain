@@ -3,13 +3,15 @@ use blake2::{
     Blake2b, Blake2bMac, Digest,
     digest::{
         Mac,
-        consts::{U32, U40},
+        consts::{U24, U32, U40},
     },
 };
 pub use getrandom::Error as EntropyError;
 use subtle::{Choice, ConstantTimeEq};
+use zeroize::{Zeroize, ZeroizeOnDrop};
 
 type Blake2b320 = Blake2b<U40>;
+type Blake2bMac192 = Blake2bMac<U24>;
 type Blake2bMac256 = Blake2bMac<U32>;
 //type Blake2b384 = Blake2b<U48>;
 
@@ -194,6 +196,24 @@ impl Secret {
     pub fn next(&self, new_entropy: &Self) -> Self {
         self.keyed_hash(new_entropy.as_bytes())
     }
+
+    /// Derive a sub-secret from this secret and context bytes.
+    pub fn derive_sub_secret_256(&self, context: &[u8; CONTEXT]) -> SubSecret256 {
+        let mut hasher =
+            Blake2bMac256::new_with_salt_and_personal(self.as_bytes(), &[], &[]).unwrap();
+        hasher.update(context);
+        let output = hasher.finalize();
+        SubSecret::from_bytes(output.into_bytes().into())
+    }
+
+    /// Derive a sub-secret from this secret and context bytes.
+    pub fn derive_sub_secret_192(&self, context: &[u8; CONTEXT]) -> SubSecret192 {
+        let mut hasher =
+            Blake2bMac192::new_with_salt_and_personal(self.as_bytes(), &[], &[]).unwrap();
+        hasher.update(context);
+        let output = hasher.finalize();
+        SubSecret::from_bytes(output.into_bytes().into())
+    }
 }
 
 impl ConstantTimeEq for Secret {
@@ -219,6 +239,34 @@ impl core::fmt::Debug for Secret {
         f.write_str("Secret(<hidden>)")
     }
 }
+
+/// Simple buffer with ZeroizeOnDrop.
+#[derive(Zeroize, ZeroizeOnDrop)]
+pub struct SubSecret<const N: usize> {
+    value: [u8; N],
+}
+
+impl<const N: usize> SubSecret<N> {
+    /// Raw bytes of the sub-secret.
+    pub fn as_bytes(&self) -> &[u8; N] {
+        &self.value
+    }
+
+    /// Create a sub-secret from bytes.
+    pub fn from_bytes(value: [u8; N]) -> Self {
+        Self { value }
+    }
+}
+
+/// A 192-bit derived secret.
+///
+/// This is used for the ChaCha20Poly1305 nonce.
+pub type SubSecret192 = SubSecret<24>;
+
+/// A 256-bit derived secret.
+///
+/// This is used for the ChaCha20Poly1305 key, the ed25519 seed, and the ML-DSA seed.
+pub type SubSecret256 = SubSecret<32>;
 
 #[cfg(test)]
 mod tests {

@@ -2,7 +2,7 @@
 
 use crate::always::*;
 use crate::errors::SecretBlockError;
-use crate::hashing::{Hash, Secret};
+use crate::hashing::{Hash, Secret, SubSecret192, SubSecret256};
 use crate::payload::Payload;
 use crate::secretseed::Seed;
 use chacha20poly1305::{
@@ -31,19 +31,21 @@ fn check_secretblock_buf_aead(buf: &[u8]) {
 
 // Split out of derive_block_key_and_nonce() for testability
 #[inline]
-fn derive_block_sub_secrets(chain_secret: &Secret, block_index: u128) -> (Secret, Secret) {
+fn derive_block_sub_secrets(
+    chain_secret: &Secret,
+    block_index: u128,
+) -> (SubSecret256, SubSecret192) {
     let block_secret = chain_secret.derive_with_index(block_index);
-    let block_key_secret = block_secret.derive_with_context(CONTEXT_STORE_KEY);
-    let block_nonce_secret = block_secret.derive_with_context(CONTEXT_STORE_NONCE);
+    let block_key_secret = block_secret.derive_sub_secret_256(CONTEXT_STORE_KEY);
+    let block_nonce_secret = block_secret.derive_sub_secret_192(CONTEXT_STORE_NONCE);
     (block_key_secret, block_nonce_secret)
 }
 
 // A unique key and nonce derived from the chain_secret and block_index
 fn get_block_key_and_nonce(chain_secret: &Secret, block_index: u128) -> (Key, XNonce) {
     let (key, nonce) = derive_block_sub_secrets(chain_secret, block_index);
-    assert_ne!(key, nonce);
-    let key = Key::from_slice(&key.as_bytes()[..]);
-    let nonce = XNonce::from_slice(&nonce.as_bytes()[0..24]);
+    let key = Key::from_slice(key.as_bytes());
+    let nonce = XNonce::from_slice(nonce.as_bytes());
     (*key, *nonce)
 }
 
@@ -250,17 +252,16 @@ mod tests {
     #[test]
     fn test_derive_block_sub_secrets_inner() {
         let count = 420u128;
-        let mut hset = HashSet::new();
+        let mut hset256 = HashSet::new();
+        let mut hset192 = HashSet::new();
         let chain_secret = Secret::generate().unwrap();
-        assert!(hset.insert(chain_secret));
         for block_index in 0..count {
-            let block_secret = chain_secret.derive_with_index(block_index);
-            assert!(hset.insert(block_secret));
             let (key, nonce) = derive_block_sub_secrets(&chain_secret, block_index);
-            assert!(hset.insert(key));
-            assert!(hset.insert(nonce));
+            assert!(hset256.insert(*key.as_bytes()));
+            assert!(hset192.insert(*nonce.as_bytes()));
         }
-        assert_eq!(hset.len(), (3 * count + 1) as usize);
+        assert_eq!(hset256.len(), count as usize);
+        assert_eq!(hset192.len(), count as usize);
     }
 
     #[test]

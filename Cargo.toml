@@ -25,7 +25,7 @@ hex-literal = "1.0.0"
 ml-dsa = { version = "=0.0.4", default-features = false, features = ["zeroize"] }
 signature = "2.2.0"
 subtle = "2.6.1" 
-zeroize = "1.8.1"
+zeroize = { version = "1.8.1", features = ["derive", "zeroize_derive"] }
 
 [dev-dependencies]
 tempfile = "3.14.0"
