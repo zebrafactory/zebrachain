@@ -182,7 +182,7 @@ impl Secret {
         self.keyed_hash(context)
     }
 
-    /// Derive sub secret from this secret and the bytes in [Hash].
+    /// Derive sub secret from this secret and the bytes in [Hash][crate::Hash].
     pub fn derive_with_hash(&self, hash: &Hash) -> Self {
         self.keyed_hash(hash.as_bytes())
     }
