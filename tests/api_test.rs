@@ -6,11 +6,15 @@ use zf_zebrachain::{
     SecretChainStore, Seed,
 };
 
-const SAMPLE_PAYLOAD_0: &str = "e0e10fc3576f67531060aecd6d8b61a45a1a11e19349c3b6419847c7d5a09ba2";
-const SAMPLE_PAYLOAD_419: &str = "e3db9aa3016c660f7aea654481dc161c1c6be67710ae9223d94eaacb5f730e61";
+const SAMPLE_PAYLOAD_0: &str =
+    "eb5067a7054a1a98d2bb45ad374c41f8ce19a9d024215ad2c81d17a6381b5b884c5345f48472a5f2";
+const SAMPLE_PAYLOAD_419: &str =
+    "a10c124d75644122d7ac86c2af22b2b4de6592985a149a7a9cb88f0c976d61e802f1c7347a791677";
 
-const BLOCK_HASH_0: &str = "3f7f332f2b72b57201b1c5d240c5e05af97bdf919a899e9c4213e02d55c4f70a";
-const BLOCK_HASH_419: &str = "5bf6beac09c722708fdbbe44abf891bc132f33090f596430fc54651f2265ce85";
+const BLOCK_HASH_0: &str =
+    "4e72993e49db3ee522a387108af97c68e6dab90ff3a5d33a16b96ae19799c7074d327b4b63e3483f";
+const BLOCK_HASH_419: &str =
+    "331fe7b3e43ef36698d62b2dcea8068322629f624158c81b9ac995d68ebb02dce734b4826791f5a8";
 
 static JUNK_ENTROPY: [u8; SECRET] =
     hex!("4e08e740cad03d0ac8ed4d2d1577b6f48bf6865c0e5c12eeb2082ea95cbda17b");
@@ -79,7 +83,7 @@ fn test_sample_storage_secret() {
 
 fn sample_payload(index: u64) -> Payload {
     let root1 = Secret::from_bytes(JUNK_PAYLOAD_HASH).derive_with_index(index);
-    let state_hash = Hash::from_bytes(*root1.as_bytes());
+    let state_hash = Hash::compute(root1.as_bytes());
     let root2 = Secret::from_bytes(JUNK_PAYLOAD_TIME).derive_with_index(index);
     let time = u128::from_le_bytes(root2.as_bytes()[0..16].try_into().unwrap());
     Payload::new(time, state_hash)

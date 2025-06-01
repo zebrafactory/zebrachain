@@ -1,12 +1,15 @@
 use crate::always::*;
 use blake2::{
     Blake2b, Blake2bMac, Digest,
-    digest::{Mac, consts::U32},
+    digest::{
+        Mac,
+        consts::{U32, U40},
+    },
 };
 pub use getrandom::Error as EntropyError;
 use subtle::{Choice, ConstantTimeEq};
 
-type Blake2b256 = Blake2b<U32>;
+type Blake2b320 = Blake2b<U40>;
 type Blake2bMac256 = Blake2bMac<U32>;
 //type Blake2b384 = Blake2b<U48>;
 
@@ -79,7 +82,7 @@ impl Hash {
 
     /// Compute hash of `input`, returning `Hash`.
     pub fn compute(input: &[u8]) -> Self {
-        let mut hasher = Blake2b256::new();
+        let mut hasher = Blake2b320::new();
         hasher.update(input);
         let output = hasher.finalize();
         Self::from_bytes(output.into())
@@ -246,7 +249,7 @@ mod tests {
         let hash = Hash::from_bytes([42; DIGEST]);
         assert_eq!(
             format!("{hash}"),
-            "2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a"
+            "2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a"
         );
     }
 
@@ -255,7 +258,7 @@ mod tests {
         let hash = Hash::from_bytes([42; DIGEST]);
         assert_eq!(
             format!("{hash:?}"),
-            "Hash(\"2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a\")"
+            "Hash(\"2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a\")"
         );
     }
 
@@ -267,7 +270,7 @@ mod tests {
 
     #[test]
     fn test_secret_derive_with_context() {
-        let secret = Secret::from_bytes([7; 32]);
+        let secret = Secret::from_bytes([7; SECRET]);
 
         let h = secret.derive_with_context(CONTEXT_SECRET);
         assert_eq!(
@@ -287,7 +290,7 @@ mod tests {
             ]
         );
 
-        let secret = Secret::from_bytes([8; 32]);
+        let secret = Secret::from_bytes([8; SECRET]);
 
         let h = secret.derive_with_context(CONTEXT_SECRET);
         assert_eq!(

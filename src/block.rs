@@ -245,12 +245,12 @@ impl<'a> Block<'a> {
 /// # Examples
 ///
 /// ```
-/// use zf_zebrachain::{BLOCK, Block, Hash, MutBlock, Payload, Seed};
+/// use zf_zebrachain::{BLOCK, DIGEST, Block, Hash, MutBlock, Payload, Seed};
 ///
 /// // Build, sign, and finalize a new block like this:
 /// let mut buf = [0; BLOCK];
 /// let seed = Seed::generate().unwrap();
-/// let payload = Payload::new(123, Hash::from_bytes([69; 32]));
+/// let payload = Payload::new(123, Hash::from_bytes([69; DIGEST]));
 /// let mut block = MutBlock::new(&mut buf, &payload);
 /// block.sign(&seed);
 /// let block_hash = block.finalize();
@@ -338,10 +338,10 @@ impl<'a> MutBlock<'a> {
 /// # Examples
 ///
 /// ```
-/// use zf_zebrachain::{BLOCK, Hash, Payload, Seed, sign_block};
+/// use zf_zebrachain::{BLOCK, DIGEST, Hash, Payload, Seed, sign_block};
 /// let mut buf = [0; BLOCK];
 /// let seed = Seed::generate().unwrap();
-/// let payload = Payload::new(123, Hash::from_bytes([69; 32]));
+/// let payload = Payload::new(123, Hash::from_bytes([69; DIGEST]));
 /// let block_hash = sign_block(&mut buf, &seed, &payload, None);
 /// ```
 pub fn sign_block(
@@ -370,9 +370,6 @@ mod tests {
     };
     use crate::{Secret, Seed};
     use getrandom;
-
-    const HEX0: &str = "1b8b1266ee3e791f1daa15bafeac2a3b0ec3ff00158b2eba9fa5873071bfd92e";
-    const HEX1: &str = "dbc64ad9e9748187eb2fee98e010a96f269f442b7e35e8f03cdd8e32475c78c2";
 
     #[test]
     fn test_blockstate_effective_chain_hash() {
@@ -512,7 +509,10 @@ mod tests {
     }
 
     fn new_expected() -> Hash {
-        Hash::from_hex(HEX0).unwrap()
+        Hash::from_hex(
+            "7f5fd316f4b35da8e84bd19677de6a4bdae27a9ae982186423120fef41ef89ffb5002f43f77545df",
+        )
+        .unwrap()
     }
 
     fn new_valid_block() -> Vec<u8> {
@@ -560,14 +560,14 @@ mod tests {
     }
 
     #[test]
-    #[should_panic(expected = "Need a 5541 byte slice; got 5540 bytes")]
+    #[should_panic(expected = "Need a 5581 byte slice; got 5580 bytes")]
     fn test_block_new_short_panic() {
         let buf: Vec<u8> = vec![0; BLOCK - 1];
         let _block = Block::new(&buf);
     }
 
     #[test]
-    #[should_panic(expected = "Need a 5541 byte slice; got 5542 bytes")]
+    #[should_panic(expected = "Need a 5581 byte slice; got 5582 bytes")]
     fn test_block_new_long_panic() {
         let buf: Vec<u8> = vec![0; BLOCK + 1];
         let _block = Block::new(&buf);
@@ -904,7 +904,13 @@ mod tests {
         let mut buf = [27; BLOCK];
         let payload = Payload::new(0, Hash::from_bytes([42; DIGEST]));
         MutBlock::new(&mut buf, &payload);
-        assert_eq!(Hash::compute(&buf), Hash::from_hex(HEX1).unwrap());
+        assert_eq!(
+            Hash::compute(&buf),
+            Hash::from_hex(
+                "63e95cc8e57df5d93b1fe8ac944eb1967eecfbd499d2799a550e56ff580f93058160891c875e1158"
+            )
+            .unwrap()
+        );
     }
 
     #[test]

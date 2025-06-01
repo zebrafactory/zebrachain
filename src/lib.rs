@@ -32,7 +32,7 @@
 //!
 //! ```
 //! use tempfile;
-//! use zf_zebrachain::{ChainStore, OwnedChainStore, Hash, Payload, Secret};
+//! use zf_zebrachain::{ChainStore, DIGEST, OwnedChainStore, Hash, Payload, Secret};
 //!
 //! // Chains are just files in a directory (for now). To get started you need a directory for
 //! // your public chain files and a `ChainStore`:
@@ -47,9 +47,9 @@
 //!     chain_dir.path(), secret_chain_dir.path(), storage_secret
 //! );
 //!
-//! // A Payload is what you to sign. Currently it's a 128-bit timestamp and a 256-bit hash. To
+//! // A Payload is what you to sign. Currently it's a 128-bit timestamp and a 320-bit hash. To
 //! // create a new chain, you need the first payload that you want to sign:
-//! let payload1 = Payload::new(123, Hash::from_bytes([42; 32]));
+//! let payload1 = Payload::new(123, Hash::from_bytes([42; DIGEST]));
 //!
 //! // Create a chain, the first block of which will contain the signed payload. The first block
 //! // is signed with the 1st keypair, but the hash of the public key of the 2nd keypair is
@@ -64,7 +64,7 @@
 //! // keypair, and the hash of its public key is included this block. The 2nd block is signed with
 //! // the 2nd keypair created above. OwnedChain.auto_sign() internally generates the needed new
 //! // entropy.
-//! let payload2 = Payload::new(456, Hash::from_bytes([69; 32]));
+//! let payload2 = Payload::new(456, Hash::from_bytes([69; DIGEST]));
 //! mychain.auto_sign(&payload2);
 //! assert_eq!(mychain.tail().payload, payload2);
 //!
