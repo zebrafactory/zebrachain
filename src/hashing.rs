@@ -268,6 +268,12 @@ impl<const N: usize> PartialEq for SubSecret<N> {
     }
 }
 
+impl<const N: usize> core::hash::Hash for SubSecret<N> {
+    fn hash<H: core::hash::Hasher>(&self, state: &mut H) {
+        self.value.hash(state)
+    }
+}
+
 /// A 192-bit derived secret.
 ///
 /// This is used for the XChaCha20Poly1305 nonce.
