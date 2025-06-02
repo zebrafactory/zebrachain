@@ -32,8 +32,8 @@ pub(crate) const SIG_ED25519_RANGE: Range<usize> = SIG_MLDSA..SIG_MLDSA + SIG_ED
 /// Size of hash output digest (40 bytes).
 pub const DIGEST: usize = 40;
 
-/// Size of secrets (32 bytes)
-pub const SECRET: usize = 32;
+/// Size of secrets (48 bytes)
+pub const SECRET: usize = 48;
 
 /// Size of context bytes (32 bytes)
 pub const CONTEXT: usize = 32;
@@ -204,14 +204,14 @@ mod tests {
 
     #[test]
     fn test_sec_ranges() {
-        assert_eq!(SEC_HASHABLE_RANGE, 40..256);
+        assert_eq!(SEC_HASHABLE_RANGE, 40..288);
 
         assert_eq!(SEC_HASH_RANGE, 0..40);
         assert_eq!(SEC_PUBLIC_HASH_RANGE, 40..80);
-        assert_eq!(SEC_SEED_RANGE, 80..144);
-        assert_eq!(SEC_PAYLOAD_RANGE, 144..200);
-        assert_eq!(SEC_INDEX_RANGE, 200..216);
-        assert_eq!(SEC_PREV_HASH_RANGE, 216..256);
+        assert_eq!(SEC_SEED_RANGE, 80..176);
+        assert_eq!(SEC_PAYLOAD_RANGE, 176..232);
+        assert_eq!(SEC_INDEX_RANGE, 232..248);
+        assert_eq!(SEC_PREV_HASH_RANGE, 248..288);
         assert_eq!(SEC_PREV_HASH_RANGE.end, SECRET_BLOCK);
     }
 }

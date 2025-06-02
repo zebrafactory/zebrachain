@@ -187,7 +187,7 @@ mod tests {
     fn test_seed_create() {
         let mut hset: HashSet<Secret> = HashSet::new();
         for i in 0..=255 {
-            let entropy = Secret::from_bytes([i; 32]);
+            let entropy = Secret::from_bytes([i; SECRET]);
             let seed = Seed::create(&entropy);
             assert!(hset.insert(seed.secret));
             assert!(hset.insert(seed.next_secret));
@@ -198,7 +198,7 @@ mod tests {
     #[test]
     fn test_seed_next() {
         let count = 10000;
-        let entropy = Secret::from_bytes([69; 32]);
+        let entropy = Secret::from_bytes([69; SECRET]);
         let mut seed = Seed::create(&entropy);
         let mut hset: HashSet<Secret> = HashSet::new();
         assert!(hset.insert(seed.secret));

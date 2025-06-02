@@ -7,23 +7,27 @@ use zf_zebrachain::{
 };
 
 const SAMPLE_PAYLOAD_0: &str =
-    "42cf453c90237ad093a8d7a8b202f681ee8d08d719e884922c5769a1c9b3f9eaba4313fcaa81c2c1";
+    "8e11460d9b318fa727025dd624f25ec398147cfd2b05a40f1298687a4047b9c29bfea7a32bbb58c2";
 const SAMPLE_PAYLOAD_419: &str =
-    "31881c77273fdff74c274a172816a6c327bede16ab52c360fb0e6bbd3f16ede8dabc2ee7b776df6f";
+    "a0be8279752f518432298ee05b7938dcdd4e50dd4fb31ae99ec89ce24e188a4a7257c2842a963e7d";
 
 const BLOCK_HASH_0: &str =
-    "12335497a781ef465f846177d59fdf3e8cff4a5faf54b51a0bdf359521b5d126c41a6fc10f00debe";
+    "d6ff50ec6364eeabb99866d7397dba471a532f0d663fb8fc9e614185677241fe1592758ea7895850";
 const BLOCK_HASH_419: &str =
-    "ecdaab59c79db94b82b953884d9fce0aa4cb9a451d4f5d6f96ee279f5cb0871bfc4104eae4fb4017";
+    "03095ced1b4eee852ecbd07ac7fa5d1ffb8f1b2ccb6a75ff0ccd7f117e5738f06ec92b3bab0b46ae";
 
-static JUNK_ENTROPY: [u8; SECRET] =
-    hex!("4e08e740cad03d0ac8ed4d2d1577b6f48bf6865c0e5c12eeb2082ea95cbda17b");
-static JUNK_STORAGE_SECRET: [u8; SECRET] =
-    hex!("8c793ba2e78be472b42e921dd0d318a5115c1e45c7f9bd2f71b61270cf39b4a4");
-static JUNK_PAYLOAD_HASH: [u8; SECRET] =
-    hex!("7f24701c4590693a7bb12a6353b87aa9c108721753c92cf24b49a65664c521bf");
-static JUNK_PAYLOAD_TIME: [u8; SECRET] =
-    hex!("c34790c3c9e52ab1b166280a5b4493177379c65eaf48f43da0e1d31b79775c82");
+static JUNK_ENTROPY: [u8; SECRET] = hex!(
+    "517931cc2f0085cd414b57a07680df2c3097c9030be69f51990cee94b26dbe07a0ee06c69f4b1e0de776c3afc497f948"
+);
+static JUNK_STORAGE_SECRET: [u8; SECRET] = hex!(
+    "fcf6001000386480f934d9f7bcf0bf661a11ffa58cd3346f33845bea2db3745e42213bb6f293d900de755dc6dace62a2"
+);
+static JUNK_PAYLOAD_HASH: [u8; SECRET] = hex!(
+    "c3957f061243c2241e08f2f37df954770153d724fa37a644a1682a06bdcb546087ab57b5e7a35b077f2101bea8326ebe"
+);
+static JUNK_PAYLOAD_TIME: [u8; SECRET] = hex!(
+    "245eec220526eff45ad9f14cc01c7d2d7002910d5c6b98e10faf926c12e2711eea908b0a9d50523fbd602fb456584d74"
+);
 
 fn sample_entropy(index: u128) -> Secret {
     let root = Secret::from_bytes(JUNK_ENTROPY);
@@ -35,15 +39,17 @@ fn test_sample_entropy() {
     assert_eq!(
         sample_entropy(0).as_bytes(),
         &[
-            2, 29, 36, 57, 58, 211, 249, 151, 248, 187, 183, 155, 253, 216, 35, 19, 176, 243, 124,
-            54, 211, 94, 46, 161, 66, 252, 205, 199, 209, 12, 178, 158
+            188, 75, 162, 140, 243, 202, 214, 235, 249, 24, 62, 189, 239, 213, 48, 126, 30, 15, 20,
+            5, 89, 188, 124, 180, 244, 186, 122, 114, 207, 215, 161, 190, 87, 44, 169, 192, 78,
+            159, 177, 225, 192, 51, 50, 212, 57, 100, 67, 146
         ]
     );
     assert_eq!(
         sample_entropy(419).as_bytes(),
         &[
-            76, 13, 125, 88, 182, 80, 198, 81, 150, 37, 89, 228, 80, 199, 254, 210, 214, 45, 232,
-            67, 75, 6, 29, 177, 2, 139, 225, 146, 137, 138, 3, 57
+            102, 138, 91, 147, 7, 148, 195, 246, 107, 174, 47, 196, 35, 9, 1, 253, 15, 159, 153,
+            55, 74, 47, 18, 49, 184, 132, 97, 253, 36, 112, 152, 38, 140, 97, 71, 244, 45, 222, 44,
+            158, 220, 132, 170, 207, 148, 143, 115, 95
         ]
     );
     let mut hset: HashSet<Secret> = HashSet::with_capacity(420);
@@ -63,15 +69,17 @@ fn test_sample_storage_secret() {
     assert_eq!(
         sample_storage_secret(0).as_bytes(),
         &[
-            104, 5, 141, 133, 209, 125, 24, 252, 124, 178, 41, 70, 11, 100, 202, 185, 110, 147,
-            248, 151, 175, 21, 248, 214, 87, 195, 2, 109, 240, 97, 185, 226
+            152, 170, 109, 216, 231, 164, 137, 210, 215, 218, 38, 245, 199, 75, 128, 173, 138, 20,
+            92, 209, 17, 64, 169, 250, 212, 49, 154, 187, 20, 114, 62, 207, 113, 152, 210, 93, 51,
+            115, 187, 174, 22, 14, 94, 77, 166, 92, 141, 190
         ]
     );
     assert_eq!(
         sample_storage_secret(419).as_bytes(),
         &[
-            117, 99, 61, 219, 216, 54, 178, 20, 228, 47, 225, 8, 99, 71, 234, 59, 73, 52, 240, 213,
-            251, 212, 249, 110, 77, 32, 85, 33, 115, 173, 149, 250
+            56, 130, 230, 202, 59, 239, 46, 177, 70, 112, 229, 226, 199, 119, 79, 169, 180, 76, 84,
+            237, 99, 232, 227, 241, 216, 74, 214, 230, 191, 69, 172, 90, 12, 254, 63, 230, 154,
+            189, 130, 204, 128, 204, 104, 76, 60, 189, 220, 42
         ]
     );
     let mut hset: HashSet<Secret> = HashSet::with_capacity(420);
