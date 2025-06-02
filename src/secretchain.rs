@@ -115,7 +115,7 @@ impl SecretChain {
     pub fn iter(&self) -> SecretChainIter {
         SecretChainIter::new(
             self.file.try_clone().unwrap(),
-            self.secret,
+            self.secret.clone(),
             self.count(),
             self.first_block_hash,
         )
@@ -175,7 +175,7 @@ impl SecretChainIter {
         };
         match result {
             Ok(state) => {
-                self.tail = Some(state);
+                self.tail = Some(state.clone());
                 Ok(state)
             }
             Err(err) => Err(err.to_io_error()),
@@ -274,8 +274,13 @@ mod tests {
             .unwrap();
 
         let file = tempfile().unwrap();
-        let chain =
-            SecretChain::create(file.try_clone().unwrap(), chain_secret, buf, &block_hash).unwrap();
+        let chain = SecretChain::create(
+            file.try_clone().unwrap(),
+            chain_secret.clone(),
+            buf,
+            &block_hash,
+        )
+        .unwrap();
         assert_eq!(chain.tail(), &state);
 
         // Reopen chain, test SecretChain::open()
@@ -289,7 +294,7 @@ mod tests {
         let chain_secret = Secret::generate().unwrap();
 
         // Empty file
-        assert!(SecretChain::open(file.try_clone().unwrap(), chain_secret).is_err());
+        assert!(SecretChain::open(file.try_clone().unwrap(), chain_secret.clone()).is_err());
 
         // A secret aead block full of random data
         let mut buf = vec![0; SECRET_BLOCK_AEAD];
@@ -335,7 +340,7 @@ mod tests {
     fn test_store_derive_secret() {
         let dir = PathBuf::from("/nope");
         let secret = Secret::from_bytes([42; SECRET]);
-        let store = SecretChainStore::new(&dir, secret);
+        let store = SecretChainStore::new(&dir, secret.clone());
         let chain_hash = Hash::from_bytes([69; DIGEST]);
         let sec = store.derive_chain_secret(&chain_hash);
         assert_eq!(
@@ -349,7 +354,7 @@ mod tests {
         assert_eq!(sec, secret.derive_with_hash(&chain_hash));
         let secret = Secret::generate().unwrap();
         let chain_hash = random_hash();
-        let store = SecretChainStore::new(&dir, secret);
+        let store = SecretChainStore::new(&dir, secret.clone());
         assert_eq!(
             store.derive_chain_secret(&chain_hash),
             secret.derive_with_hash(&chain_hash)
@@ -407,7 +412,7 @@ mod tests {
         let block_hash = block.finalize(&chain_secret);
 
         let dir = TempDir::new().unwrap();
-        let store = SecretChainStore::new(dir.path(), store_secret);
+        let store = SecretChainStore::new(dir.path(), store_secret.clone());
         let chain = store.create_chain(&chain_hash, buf, &block_hash).unwrap();
 
         assert_ne!(chain.secret, store_secret);

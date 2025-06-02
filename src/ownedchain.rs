@@ -135,7 +135,7 @@ impl OwnedChain {
         let seed = self.secret_chain.advance(new_entropy);
         let obs = self.state();
         let mut buf = [0; BLOCK];
-        let chain_secret = self.secret_chain.secret;
+        let chain_secret = self.secret_chain.secret.clone();
         let mut block = MutOwnedBlock::new(&mut buf, self.secret_chain.as_mut_buf(), payload);
         block.set_previous(&obs);
         block.sign(&seed);
@@ -174,7 +174,7 @@ impl OwnedChain {
 
     /// Returns current [OwnedBlockState].
     pub fn state(&self) -> OwnedBlockState {
-        OwnedBlockState::new(self.chain.tail().clone(), *self.secret_chain.tail())
+        OwnedBlockState::new(self.chain.tail().clone(), self.secret_chain.tail().clone())
     }
 }
 

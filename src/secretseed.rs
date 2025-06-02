@@ -23,7 +23,7 @@ const NEXT_SECRET_RANGE: Range<usize> = SECRET..SECRET * 2;
 /// assert_eq!(next.secret, seed.next_secret);
 /// assert_ne!(seed, next);
 /// ```
-#[derive(Clone, Copy, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct Seed {
     /// Root secret used to sign current block.
     pub secret: Secret,
@@ -69,7 +69,7 @@ impl Seed {
     /// See the source code for sure because it's simple, but important to understand.
     pub fn next(&self, new_entropy: &Secret) -> Self {
         let next_next_secret = self.next_secret.next(new_entropy);
-        Self::new(self.next_secret, next_next_secret)
+        Self::new(self.next_secret.clone(), next_next_secret)
     }
 
     /// Advance chain by mixing in new entropy from [getrandom::fill()].
@@ -110,9 +110,9 @@ mod tests {
     fn test_seed_new() {
         let secret = Secret::from_bytes([42; SECRET]);
         let next_secret = Secret::from_bytes([69; SECRET]);
-        let seed = Seed::new(secret, next_secret);
-        assert_eq!(seed.secret, secret);
-        assert_eq!(seed.next_secret, next_secret);
+        let seed = Seed::new(secret.clone(), next_secret.clone());
+        assert_eq!(&seed.secret, &secret);
+        assert_eq!(&seed.next_secret, &next_secret);
     }
 
     #[test]
@@ -155,12 +155,12 @@ mod tests {
         for _ in 0..420 {
             let secret = Secret::generate().unwrap();
             let next_secret = Secret::generate().unwrap();
-            let seed = Seed::new(secret, next_secret);
+            let seed = Seed::new(secret.clone(), next_secret.clone());
             let mut buf = [0; SEED];
             seed.write_to_buf(&mut buf);
             let seed2 = Seed::from_buf(&buf).unwrap();
-            assert_eq!(seed2.secret, secret);
-            assert_eq!(seed2.next_secret, next_secret);
+            assert_eq!(&seed2.secret, &secret);
+            assert_eq!(&seed2.next_secret, &next_secret);
             assert_eq!(seed2, seed);
         }
     }
@@ -201,12 +201,12 @@ mod tests {
         let entropy = Secret::from_bytes([69; SECRET]);
         let mut seed = Seed::create(&entropy);
         let mut hset: HashSet<Secret> = HashSet::new();
-        assert!(hset.insert(seed.secret));
-        assert!(hset.insert(seed.next_secret));
+        assert!(hset.insert(seed.secret.clone()));
+        assert!(hset.insert(seed.next_secret.clone()));
         for _ in 0..count {
             seed = seed.next(&entropy);
-            assert!(!hset.insert(seed.secret)); // Should already be contained
-            assert!(hset.insert(seed.next_secret));
+            assert!(!hset.insert(seed.secret.clone())); // Should already be contained
+            assert!(hset.insert(seed.next_secret.clone()));
         }
         assert_eq!(hset.len(), count + 2);
     }

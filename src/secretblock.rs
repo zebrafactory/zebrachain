@@ -81,7 +81,7 @@ fn decrypt_in_place(
 }
 
 /// State needed to validate next secret block.
-#[derive(Debug, PartialEq, Clone, Copy)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct SecretBlockState {
     /// Hash of this secret block.
     pub block_hash: Hash,
@@ -581,7 +581,7 @@ mod tests {
             // Bit flips in prev_state.index (key and nonce are derived from index, so this will
             // result in a Decryption error)
             for bad_index in U128BitFlipper::new(prev_state.index) {
-                let mut bad_prev_state = prev_state;
+                let mut bad_prev_state = prev_state.clone();
                 bad_prev_state.index = bad_index;
                 let mut buf = orig.clone();
                 encrypt_in_place(&mut buf, &chain_secret, block_index + 1);
@@ -597,7 +597,7 @@ mod tests {
 
             // Bit flips in prev.block_hash
             for bad_block_hash in HashBitFlipper::new(&prev_state.block_hash) {
-                let mut bad_prev_state = prev_state;
+                let mut bad_prev_state = prev_state.clone();
                 bad_prev_state.block_hash = bad_block_hash;
                 let mut buf = orig.clone();
                 encrypt_in_place(&mut buf, &chain_secret, block_index + 1);
@@ -613,7 +613,7 @@ mod tests {
 
             // Bit flips in prev.seed.next_secret
             for bad_next_secret in SecretBitFlipper::new(&prev_state.seed.next_secret) {
-                let mut bad_prev_state = prev_state;
+                let mut bad_prev_state = prev_state.clone();
                 bad_prev_state.seed.next_secret = bad_next_secret;
                 let mut buf = orig.clone();
                 encrypt_in_place(&mut buf, &chain_secret, block_index + 1);

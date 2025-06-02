@@ -123,10 +123,8 @@ impl core::fmt::Display for Hash {
     }
 }
 
-/// Stores a secret in a buffer with constant time comparison.
-///
-/// OH MY SCIENCE, FIXME: This needs to zeroize on drop
-#[derive(Eq, Clone, Copy)]
+/// Stores a secret in a buffer with ZeroizeOnDrop and ConstantTimeEq.
+#[derive(Zeroize, ZeroizeOnDrop, Eq, Clone)]
 pub struct Secret {
     value: [u8; SECRET],
 }

@@ -17,7 +17,7 @@ fn test_seed_create() {
     let mut hset = HashSet::new();
     for _ in 0..420 {
         let initial_entropy = Secret::generate().unwrap();
-        assert!(hset.insert(initial_entropy));
+        assert!(hset.insert(initial_entropy.clone()));
         let seed = Seed::create(&initial_entropy);
         assert!(hset.insert(seed.secret));
         assert!(hset.insert(seed.next_secret));
@@ -40,14 +40,14 @@ fn test_seed_generate() {
 fn test_seed_next() {
     let mut hset = HashSet::new();
     let seed = Seed::generate().unwrap();
-    assert!(hset.insert(seed.secret));
-    assert!(hset.insert(seed.next_secret));
+    assert!(hset.insert(seed.secret.clone()));
+    assert!(hset.insert(seed.next_secret.clone()));
     for _ in 0..420 {
         let new_entropy = Secret::generate().unwrap();
-        assert!(hset.insert(new_entropy));
+        assert!(hset.insert(new_entropy.clone()));
         let seed2 = seed.next(&new_entropy);
-        assert!(!hset.insert(seed2.secret));
-        assert!(hset.insert(seed2.next_secret));
+        assert!(!hset.insert(seed2.secret.clone()));
+        assert!(hset.insert(seed2.next_secret.clone()));
     }
     assert_eq!(hset.len(), 842);
 }
@@ -56,12 +56,14 @@ fn test_seed_next() {
 fn test_seed_advance() {
     let mut hset = HashSet::new();
     let seed = Seed::generate().unwrap();
-    assert!(hset.insert(seed.secret));
-    assert!(hset.insert(seed.next_secret));
+    let secret = seed.secret.clone();
+    let next_secret = seed.next_secret.clone();
+    assert!(hset.insert(secret));
+    assert!(hset.insert(next_secret));
     for _ in 0..420 {
         let seed2 = seed.advance().unwrap();
-        assert!(!hset.insert(seed2.secret));
-        assert!(hset.insert(seed2.next_secret));
+        let next_secret = seed2.next_secret.clone();
+        assert!(hset.insert(next_secret));
     }
     assert_eq!(hset.len(), 422);
 }

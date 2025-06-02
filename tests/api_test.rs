@@ -115,7 +115,7 @@ fn test_chain_store() {
 fn test_secret_chain_store() {
     let tmpdir = tempfile::TempDir::new().unwrap();
     let storage_secret = Secret::generate().unwrap();
-    let store = SecretChainStore::new(tmpdir.path(), storage_secret);
+    let store = SecretChainStore::new(tmpdir.path(), storage_secret.clone());
     let chain_hash = Hash::from_bytes([42; DIGEST]);
     assert!(store.open_chain(&chain_hash).is_err());
 

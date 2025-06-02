@@ -120,7 +120,7 @@ impl SecretBitFlipper {
     /// Create a new [SecretBitFlipper].
     pub fn new(orig: &Secret) -> Self {
         Self {
-            orig: *orig,
+            orig: orig.clone(),
             counter: 0,
         }
     }
