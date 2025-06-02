@@ -36,7 +36,7 @@ static JUNK_PAYLOAD_TIME: [u8; SECRET] = hex!(
 
 fn sample_entropy(index: u128) -> Secret {
     let root = Secret::from_bytes(JUNK_ENTROPY);
-    root.derive_with_index(index)
+    root.keyed_hash(&index.to_le_bytes())
 }
 
 #[test]
@@ -66,7 +66,7 @@ fn test_sample_entropy() {
 
 fn sample_storage_secret(index: u128) -> Secret {
     let root = Secret::from_bytes(JUNK_STORAGE_SECRET);
-    root.derive_with_index(index)
+    root.keyed_hash(&index.to_le_bytes())
 }
 
 #[test]
@@ -95,9 +95,9 @@ fn test_sample_storage_secret() {
 }
 
 fn sample_payload(index: u128) -> Payload {
-    let root1 = Secret::from_bytes(JUNK_PAYLOAD_HASH).derive_with_index(index);
+    let root1 = Secret::from_bytes(JUNK_PAYLOAD_HASH).keyed_hash(&index.to_le_bytes());
     let state_hash = Hash::compute(root1.as_bytes());
-    let root2 = Secret::from_bytes(JUNK_PAYLOAD_TIME).derive_with_index(index);
+    let root2 = Secret::from_bytes(JUNK_PAYLOAD_TIME).keyed_hash(&index.to_le_bytes());
     let time = u128::from_le_bytes(root2.as_bytes()[0..16].try_into().unwrap());
     Payload::new(time, state_hash)
 }

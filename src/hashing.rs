@@ -175,11 +175,6 @@ impl Secret {
         Self::from_bytes(output.into_bytes().into())
     }
 
-    /// Derive sub secret from this secret and the index as LE bytes.
-    pub fn derive_with_index(&self, index: u128) -> Self {
-        self.keyed_hash(&index.to_le_bytes())
-    }
-
     /// Derive sub secret from this secret and context bytes.
     pub fn derive_with_context(&self, context: &[u8; CONTEXT]) -> Self {
         self.keyed_hash(context)
