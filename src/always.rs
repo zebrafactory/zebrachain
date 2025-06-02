@@ -36,7 +36,7 @@ pub const DIGEST: usize = 40;
 pub const SECRET: usize = 48;
 
 /// Size of context bytes (32 bytes)
-pub const CONTEXT: usize = 32;
+pub const CONTEXT: usize = 48;
 
 pub(crate) const SEED: usize = 2 * SECRET;
 pub(crate) const SIGNATURE: usize = SIG_ED25519 + SIG_MLDSA;
@@ -125,22 +125,28 @@ pub(crate) const SEC_HASHABLE_RANGE: Range<usize> = DIGEST..SECRET_BLOCK;
 pub(crate) const BLOCK_READ_BUF: usize = BLOCK * 64;
 pub(crate) const SECRET_BLOCK_AEAD_READ_BUF: usize = SECRET_BLOCK_AEAD * 64;
 
-pub(crate) static CONTEXT_SECRET: &[u8; CONTEXT] =
-    &hex!("ed149ef77826374035fd3a1e2c1bf3b39539333d5a8bc1f7e788736430efc7f2");
-pub(crate) static CONTEXT_SECRET_NEXT: &[u8; CONTEXT] =
-    &hex!("a0ec84dd51dabc0cfb7f61c936c8577c15982715b77ed5d6582cb01108769831");
-pub(crate) static CONTEXT_ED25519: &[u8; CONTEXT] =
-    &hex!("e3481172dcedab349a13152e9d002494f1ae292c868e049d93926c3a58a48408");
-pub(crate) static CONTEXT_ML_DSA: &[u8; CONTEXT] =
-    &hex!("e665ee96123e46d74e76dc53bdc64df06d72c238d574b7c153305f5e63063350");
-//pub(crate) static CONTEXT_SLH_DSA: &str =
-//    "b5de7bead4cac0fb4fe60cbb2ef31cb2c0590adb10f0764769cd5b0e0d7d11c1";
-pub(crate) static CONTEXT_STORE_KEY: &[u8; CONTEXT] =
-    &hex!("0179f9dd9cb5b0af47079d3a102872a32744b7f7aa8a5f22f7c0a16ba8549601");
-pub(crate) static CONTEXT_STORE_NONCE: &[u8; CONTEXT] =
-    &hex!("dc49809016fca0a126c5df6d373e90c48683e664ecba0440ae59523d93e13515");
+pub(crate) static CONTEXT_SECRET: &[u8; CONTEXT] = &hex!(
+    "e4bc91ef0f7db22dfce22bc884f08f95ba16e61a0877071463db33282e98a2c3a2874901005be7cbed8f1313ceee28aa"
+);
+pub(crate) static CONTEXT_SECRET_NEXT: &[u8; CONTEXT] = &hex!(
+    "5d4daadccb9519789aaaceab0586cc225016569aa0fa81028728f6bd24822cd45844d1d0c902ea0b2830202037f0d475"
+);
+pub(crate) static CONTEXT_ED25519: &[u8; CONTEXT] = &hex!(
+    "34b6e6e4457630b111cba14c35d6586cbebd70a1b41aa87b89bb9bc2443d7b8d480d2e60e8427b662d72f72b8f603325"
+);
+pub(crate) static CONTEXT_ML_DSA: &[u8; CONTEXT] = &hex!(
+    "8e0586f64a7d87360bd1898745f9e8e367b9d8b292c717d915f61f9eac1599b117d957dc5458bfb2f4bdfc69fafd1bfe"
+);
+//pub(crate) static CONTEXT_SLH_DSA: &[u8; CONTEXT] =
+//    &hex!("1ce7f9e27feffbb8d02bb00906d27ccb90614c35c7b9b3c2cff8e7ce8ef8f19e7df3b3f3140cf009fbee85e2b19ec77c");
+pub(crate) static CONTEXT_STORE_KEY: &[u8; CONTEXT] = &hex!(
+    "f5c4428f694529e8139c825044e130dfd54182b8324142a3ea03b13085d83c63a01533f3ba4ddcd3835beaf086dc0d8b"
+);
+pub(crate) static CONTEXT_STORE_NONCE: &[u8; CONTEXT] = &hex!(
+    "bb242d2282ebdd5db4c9abf70eb40830029d2c665013e946f58614912b97e199c62e5e02b57745a530d41796d6199d14"
+);
 
-pub(crate) static SIGNING_CXT_ML_DSA: &[u8; CONTEXT] =
+pub(crate) static SIGNING_CXT_ML_DSA: &[u8; 32] =
     &hex!("270973c068ca5b0188c0e0b89f286d1a8c6a3b3c176aa07b3ae3a519fd65032f");
 //pub(crate) static SIGNING_CXT_SLH_DSA: &[u8] =
 //    b"b71cd1500453530f76d0a4e47863c69bb4842a42ba088532d58d11c149489853";

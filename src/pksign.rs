@@ -156,11 +156,11 @@ mod tests {
     use super::*;
 
     static HEX0: &str =
-        "bbd23681637f17f8f294ea982e6da9770c52e9ef97e4c6ed48dc82359c5c2de360e5a262f865d989";
+        "32a896abcb0d4c0906c72ca86e2ed3187ac7ae982b0beed861f463e6ddfc684a4bb447a93e856308";
     //static HEX1: &str =
     //    "d7c58110f5c997d2a4439c47d0212eca4f8f26236605841b44417a74fcacdbca034d3d2d1e64d019";
     static HEX2: &str =
-        "97c0060987328c69b720457193202f0729bd6ad865233ad4aa2654d89c810b95f55e08bee3c46da5";
+        "50cb2e4aaf587ee195883b4a8dca4e0bc0e2ff7777a3a9ad2e7ad5137b82b2fe5a9d635df435a34b";
 
     // FIXME: Add new tests for ml-dsa and ed25519 keypair generation, but API needs rework first
 
