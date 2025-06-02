@@ -196,18 +196,20 @@ impl Secret {
     }
 
     /// Derive a sub-secret from this secret and context bytes.
-    pub fn derive_sub_secret_256(&self, context: &[u8; CONTEXT]) -> SubSecret256 {
+    pub fn derive_sub_secret_256(&self, context: &[u8; CONTEXT], index: u128) -> SubSecret256 {
         let mut hasher =
-            Blake2bMac256::new_with_salt_and_personal(self.as_bytes(), &[], &[]).unwrap();
+            Blake2bMac256::new_with_salt_and_personal(self.as_bytes(), &index.to_le_bytes(), &[])
+                .unwrap();
         hasher.update(context);
         let output = hasher.finalize();
         SubSecret::from_bytes(output.into_bytes().into())
     }
 
     /// Derive a sub-secret from this secret and context bytes.
-    pub fn derive_sub_secret_192(&self, context: &[u8; CONTEXT]) -> SubSecret192 {
+    pub fn derive_sub_secret_192(&self, context: &[u8; CONTEXT], index: u128) -> SubSecret192 {
         let mut hasher =
-            Blake2bMac192::new_with_salt_and_personal(self.as_bytes(), &[], &[]).unwrap();
+            Blake2bMac192::new_with_salt_and_personal(self.as_bytes(), &index.to_le_bytes(), &[])
+                .unwrap();
         hasher.update(context);
         let output = hasher.finalize();
         SubSecret::from_bytes(output.into_bytes().into())

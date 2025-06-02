@@ -9,13 +9,15 @@ use signature::Signer;
 use zeroize::Zeroize;
 
 fn build_ed25519_keypair(secret: &Secret) -> ed25519_dalek::SigningKey {
-    ed25519_dalek::SigningKey::from_bytes(secret.derive_sub_secret_256(CONTEXT_ED25519).as_bytes())
+    ed25519_dalek::SigningKey::from_bytes(
+        secret.derive_sub_secret_256(CONTEXT_ED25519, 0).as_bytes(),
+    )
 }
 
 fn build_mldsa_keypair(secret: &Secret) -> ml_dsa::KeyPair<MlDsa65> {
     let mut hack = B32::default();
     hack.0
-        .copy_from_slice(secret.derive_sub_secret_256(CONTEXT_ML_DSA).as_bytes()); // FIXME: Do more better
+        .copy_from_slice(secret.derive_sub_secret_256(CONTEXT_ML_DSA, 0).as_bytes()); // FIXME: Do more better
     MlDsa65::key_gen_internal(&hack)
 }
 

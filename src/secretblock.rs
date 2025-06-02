@@ -35,9 +35,8 @@ fn derive_block_sub_secrets(
     chain_secret: &Secret,
     block_index: u128,
 ) -> (SubSecret256, SubSecret192) {
-    let block_secret = chain_secret.derive_with_index(block_index);
-    let block_key_secret = block_secret.derive_sub_secret_256(CONTEXT_STORE_KEY);
-    let block_nonce_secret = block_secret.derive_sub_secret_192(CONTEXT_STORE_NONCE);
+    let block_key_secret = chain_secret.derive_sub_secret_256(CONTEXT_STORE_KEY, block_index);
+    let block_nonce_secret = chain_secret.derive_sub_secret_192(CONTEXT_STORE_NONCE, block_index);
     (block_key_secret, block_nonce_secret)
 }
 
