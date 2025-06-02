@@ -24,9 +24,9 @@ struct KeyPair {
 }
 
 impl KeyPair {
-    fn new(secret: &Secret) -> Self {
-        let key1 = secret.derive_sub_secret_256(CONTEXT_ED25519, 0);
-        let key2 = secret.derive_sub_secret_256(CONTEXT_ML_DSA, 0);
+    fn new(secret: &Secret, index: u128) -> Self {
+        let key1 = secret.derive_sub_secret_256(CONTEXT_ED25519, index);
+        let key2 = secret.derive_sub_secret_256(CONTEXT_ML_DSA, index);
         assert_ne!(key1, key2); // Does constant time compare
         Self {
             ed25519: build_ed25519_keypair(key1),
@@ -80,11 +80,11 @@ pub(crate) struct SecretSigner {
 }
 
 impl SecretSigner {
-    pub(crate) fn new(seed: &Seed) -> Self {
+    pub(crate) fn new(seed: &Seed, index: u128) -> Self {
         assert_ne!(seed.secret, seed.next_secret);
         Self {
-            keypair: KeyPair::new(&seed.secret),
-            next_pubkey_hash: KeyPair::new(&seed.next_secret).pubkey_hash(),
+            keypair: KeyPair::new(&seed.secret, index),
+            next_pubkey_hash: KeyPair::new(&seed.next_secret, index + 1).pubkey_hash(),
         }
     }
 
@@ -169,7 +169,7 @@ mod tests {
     #[test]
     fn keypair_new() {
         let secret = Secret::from_bytes([7; SECRET]);
-        let pair = KeyPair::new(&secret);
+        let pair = KeyPair::new(&secret, 0);
 
         let mut pubkey = [0u8; PUBKEY];
         pair.write_pubkey(&mut pubkey);
@@ -178,7 +178,7 @@ mod tests {
 
     #[test]
     fn test_keypair_pubkey_hash() {
-        let pair = KeyPair::new(&Secret::from_bytes([69; SECRET]));
+        let pair = KeyPair::new(&Secret::from_bytes([69; SECRET]), 0);
         assert_eq!(pair.pubkey_hash(), Hash::from_hex(HEX0).unwrap());
     }
 }

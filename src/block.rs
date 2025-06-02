@@ -301,7 +301,7 @@ impl<'a> MutBlock<'a> {
     /// This sets the `pubkey` and `next_pubkey_hash` fields, computes the signature, and then
     /// sets the `signature` field.
     pub fn sign(&mut self, seed: &Seed) {
-        let signer = SecretSigner::new(seed);
+        let signer = SecretSigner::new(seed, self.index());
         signer.sign(self);
     }
 
@@ -340,6 +340,10 @@ impl<'a> MutBlock<'a> {
     /// Return hash of public key bytes.
     pub(crate) fn compute_pubkey_hash(&self) -> Hash {
         Hash::compute(&self.buf[PUBKEY_RANGE])
+    }
+
+    fn index(&self) -> u128 {
+        get_u128(self.buf, INDEX_RANGE)
     }
 }
 
@@ -528,7 +532,7 @@ mod tests {
     fn new_valid_block() -> Vec<u8> {
         let mut buf = vec![0; BLOCK];
         let seed = Seed::create(&Secret::from_bytes([69; SECRET]));
-        let secsign = SecretSigner::new(&seed);
+        let secsign = SecretSigner::new(&seed, 1);
         let payload = Payload::new(0, Hash::from_bytes([1; DIGEST]));
         let mut block = MutBlock::new(&mut buf, &payload);
         let last = BlockState::new(
