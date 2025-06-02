@@ -195,7 +195,7 @@ impl Secret {
         self.keyed_hash(new_entropy.as_bytes())
     }
 
-    /// Derive a sub-secret from this secret and context bytes.
+    /// Derive a 256-bit sub-secret from this secret and context bytes.
     pub fn derive_sub_secret_256(&self, context: &[u8; CONTEXT], index: u128) -> SubSecret256 {
         let mut hasher =
             Blake2bMac256::new_with_salt_and_personal(self.as_bytes(), &index.to_le_bytes(), &[])
@@ -205,7 +205,7 @@ impl Secret {
         SubSecret::from_bytes(output.into_bytes().into())
     }
 
-    /// Derive a sub-secret from this secret and context bytes.
+    /// Derive a 192-bit sub-secret from this secret and context bytes.
     pub fn derive_sub_secret_192(&self, context: &[u8; CONTEXT], index: u128) -> SubSecret192 {
         let mut hasher =
             Blake2bMac192::new_with_salt_and_personal(self.as_bytes(), &index.to_le_bytes(), &[])
@@ -273,6 +273,12 @@ impl<const N: usize> PartialEq for SubSecret<N> {
 impl<const N: usize> core::hash::Hash for SubSecret<N> {
     fn hash<H: core::hash::Hasher>(&self, state: &mut H) {
         self.value.hash(state)
+    }
+}
+
+impl<const N: usize> core::fmt::Debug for SubSecret<N> {
+    fn fmt(&self, f: &mut core::fmt::Formatter) -> core::fmt::Result {
+        f.write_str("SubSecret(<hidden>)")
     }
 }
 

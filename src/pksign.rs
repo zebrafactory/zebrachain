@@ -2,22 +2,19 @@
 
 use crate::always::*;
 use crate::block::{Block, MutBlock};
-use crate::hashing::{Hash, Secret};
+use crate::hashing::{Hash, Secret, SubSecret256};
 use crate::secretseed::Seed;
 use ml_dsa::{B32, KeyGen, MlDsa65};
 use signature::Signer;
 use zeroize::Zeroize;
 
-fn build_ed25519_keypair(secret: &Secret) -> ed25519_dalek::SigningKey {
-    ed25519_dalek::SigningKey::from_bytes(
-        secret.derive_sub_secret_256(CONTEXT_ED25519, 0).as_bytes(),
-    )
+fn build_ed25519_keypair(secret: SubSecret256) -> ed25519_dalek::SigningKey {
+    ed25519_dalek::SigningKey::from_bytes(secret.as_bytes())
 }
 
-fn build_mldsa_keypair(secret: &Secret) -> ml_dsa::KeyPair<MlDsa65> {
+fn build_mldsa_keypair(secret: SubSecret256) -> ml_dsa::KeyPair<MlDsa65> {
     let mut hack = B32::default();
-    hack.0
-        .copy_from_slice(secret.derive_sub_secret_256(CONTEXT_ML_DSA, 0).as_bytes()); // FIXME: Do more better
+    hack.0.copy_from_slice(secret.as_bytes()); // FIXME: Do more better
     MlDsa65::key_gen_internal(&hack)
 }
 
@@ -28,9 +25,12 @@ struct KeyPair {
 
 impl KeyPair {
     fn new(secret: &Secret) -> Self {
+        let key1 = secret.derive_sub_secret_256(CONTEXT_ED25519, 0);
+        let key2 = secret.derive_sub_secret_256(CONTEXT_ML_DSA, 0);
+        assert_ne!(key1, key2); // Does constant time compare
         Self {
-            ed25519: build_ed25519_keypair(secret),
-            mldsa: build_mldsa_keypair(secret),
+            ed25519: build_ed25519_keypair(key1),
+            mldsa: build_mldsa_keypair(key2),
         }
     }
 
