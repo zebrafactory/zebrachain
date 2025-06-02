@@ -16,6 +16,11 @@ const BLOCK_HASH_0: &str =
 const BLOCK_HASH_419: &str =
     "9269fe5848b03bd2c4ab7e7530f3a9917a920a077eb31abc9dea46cdad6eeff3a299d966e47a0305";
 
+const SECRET_BLOCK_HASH_0: &str =
+    "fd19dd2c4748d8398cf4ecb2409081fbedb0f8d4e706e4b553698f56e5b6d5a76ec6b041069f9659";
+const SECRET_BLOCK_HASH_419: &str =
+    "bb5ec505f8734a6da11074f05ba934ab6f2e3e0d203ba0e7b66eeb1cf33f46be8cad89420b77d392";
+
 static JUNK_ENTROPY: [u8; SECRET] = hex!(
     "517931cc2f0085cd414b57a07680df2c3097c9030be69f51990cee94b26dbe07a0ee06c69f4b1e0de776c3afc497f948"
 );
@@ -177,6 +182,10 @@ fn test_owned_chain_store() {
         Hash::from_hex(BLOCK_HASH_0).unwrap()
     );
     assert_eq!(chain.head(), chain.tail());
+    assert_eq!(
+        chain.secret_tail().block_hash,
+        Hash::from_hex(SECRET_BLOCK_HASH_0).unwrap()
+    );
     for index in 0..420 {
         chain
             .sign(&sample_entropy(index), &sample_payload(index))
@@ -189,6 +198,10 @@ fn test_owned_chain_store() {
     assert_eq!(
         chain.tail().block_hash,
         Hash::from_hex(BLOCK_HASH_419).unwrap()
+    );
+    assert_eq!(
+        chain.secret_tail().block_hash,
+        Hash::from_hex(SECRET_BLOCK_HASH_419).unwrap()
     );
     assert_ne!(chain.head(), chain.tail());
 }

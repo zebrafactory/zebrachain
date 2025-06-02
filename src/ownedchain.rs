@@ -10,7 +10,7 @@ use crate::hashing::{Hash, Secret};
 use crate::ownedblock::{MutOwnedBlock, OwnedBlockState};
 use crate::payload::Payload;
 use crate::secretchain::{SecretChain, SecretChainStore};
-use crate::secretseed::Seed;
+use crate::{SecretBlockState, Seed};
 use std::io;
 use std::path::Path;
 
@@ -160,6 +160,11 @@ impl OwnedChain {
     /// [Chain.tail()].
     pub fn tail(&self) -> &BlockState {
         self.chain.tail()
+    }
+
+    /// [SecretChain.tail()].
+    pub fn secret_tail(&self) -> &SecretBlockState {
+        self.secret_chain.tail()
     }
 
     /// Chain hash.
