@@ -240,8 +240,8 @@ impl core::fmt::Debug for Secret {
     }
 }
 
-/// Simple buffer with ZeroizeOnDrop.
-#[derive(Zeroize, ZeroizeOnDrop)]
+/// Simple buffer with ZeroizeOnDrop and ConstantTimeEq.
+#[derive(Zeroize, ZeroizeOnDrop, Eq)]
 pub struct SubSecret<const N: usize> {
     value: [u8; N],
 }
@@ -255,6 +255,18 @@ impl<const N: usize> SubSecret<N> {
     /// Create a sub-secret from bytes.
     pub fn from_bytes(value: [u8; N]) -> Self {
         Self { value }
+    }
+}
+
+impl<const N: usize> ConstantTimeEq for SubSecret<N> {
+    fn ct_eq(&self, other: &Self) -> Choice {
+        self.value.ct_eq(&other.value)
+    }
+}
+
+impl<const N: usize> PartialEq for SubSecret<N> {
+    fn eq(&self, other: &Self) -> bool {
+        self.ct_eq(other).into()
     }
 }
 
