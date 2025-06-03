@@ -24,7 +24,7 @@ struct KeyPair {
 }
 
 impl KeyPair {
-    fn new(secret: &Secret, index: u128) -> Self {
+    fn new(secret: &Secret, block_index: u128) -> Self {
         // Why use the block index as salt when deriving the keys? Say something went horribly
         // wrong and somehow every single block in the chain was signed with the same Secret.
         // Well, using the index as salt means that each block-wise position in the chain would
@@ -34,8 +34,8 @@ impl KeyPair {
         //
         // Defense in depth, yo. Also, a central design them in ZebraChain is, "Don't reuse shit,
         // ever".
-        let key1 = secret.derive_sub_secret_256(CONTEXT_ED25519, index);
-        let key2 = secret.derive_sub_secret_256(CONTEXT_ML_DSA, index);
+        let key1 = secret.derive_sub_secret_256(CONTEXT_ED25519, block_index);
+        let key2 = secret.derive_sub_secret_256(CONTEXT_ML_DSA, block_index);
         assert_ne!(key1, key2); // Does constant time compare
         Self {
             ed25519: build_ed25519_keypair(key1),

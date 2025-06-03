@@ -35,7 +35,7 @@ pub const DIGEST: usize = 40;
 /// Size of secrets (48 bytes)
 pub const SECRET: usize = 48;
 
-/// Size of context bytes (32 bytes)
+/// Size of context bytes (48 bytes)
 pub const CONTEXT: usize = 48;
 
 pub(crate) const SEED: usize = 2 * SECRET;

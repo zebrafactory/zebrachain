@@ -82,7 +82,7 @@ impl Hash {
         hex
     }
 
-    /// Compute hash of `input`, returning `Hash`.
+    /// Compute the 320-bit BLAKE2b hash of `input`, returning `Hash`.
     pub fn compute(input: &[u8]) -> Self {
         let mut hasher = Blake2b320::new();
         hasher.update(input);
@@ -123,7 +123,7 @@ impl core::fmt::Display for Hash {
     }
 }
 
-/// Stores a secret in a buffer with ZeroizeOnDrop and ConstantTimeEq.
+/// A 384-bit root secret with ZeroizeOnDrop and ConstantTimeEq.
 #[derive(Zeroize, ZeroizeOnDrop, Eq, Clone)]
 pub struct Secret {
     value: [u8; SECRET],
@@ -160,6 +160,11 @@ impl Secret {
         }
     }
 
+    /// Mix new entropy with this secret to create the next secret.
+    pub fn next(&self, new_entropy: &Self) -> Self {
+        self.keyed_hash(new_entropy.as_bytes())
+    }
+
     /// Experimental keyed hashing with blake2b
     pub fn keyed_hash(&self, input: &[u8]) -> Self {
         if input.len() < 8 {
@@ -185,26 +190,35 @@ impl Secret {
         self.keyed_hash(hash.as_bytes())
     }
 
-    /// Mix new entropy with this secret to create next secret.
-    pub fn next(&self, new_entropy: &Self) -> Self {
-        self.keyed_hash(new_entropy.as_bytes())
-    }
-
-    /// Derive a 256-bit sub-secret from this secret and context bytes.
-    pub fn derive_sub_secret_256(&self, context: &[u8; CONTEXT], index: u128) -> SubSecret256 {
-        let mut hasher =
-            Blake2bMac256::new_with_salt_and_personal(self.as_bytes(), &index.to_le_bytes(), &[])
-                .unwrap();
+    /// Derive a 256-bit sub-secret from this secret, context bytes, and the block index.
+    pub fn derive_sub_secret_256(
+        &self,
+        context: &[u8; CONTEXT],
+        block_index: u128,
+    ) -> SubSecret256 {
+        let mut hasher = Blake2bMac256::new_with_salt_and_personal(
+            self.as_bytes(),
+            &block_index.to_le_bytes(),
+            &[],
+        )
+        .unwrap();
         hasher.update(context);
         let output = hasher.finalize();
         SubSecret::from_bytes(output.into_bytes().into())
     }
 
-    /// Derive a 192-bit sub-secret from this secret and context bytes.
-    pub fn derive_sub_secret_192(&self, context: &[u8; CONTEXT], index: u128) -> SubSecret192 {
-        let mut hasher =
-            Blake2bMac192::new_with_salt_and_personal(self.as_bytes(), &index.to_le_bytes(), &[])
-                .unwrap();
+    /// Derive a 192-bit sub-secret from this secret, context bytes, and the block index.
+    pub fn derive_sub_secret_192(
+        &self,
+        context: &[u8; CONTEXT],
+        block_index: u128,
+    ) -> SubSecret192 {
+        let mut hasher = Blake2bMac192::new_with_salt_and_personal(
+            self.as_bytes(),
+            &block_index.to_le_bytes(),
+            &[],
+        )
+        .unwrap();
         hasher.update(context);
         let output = hasher.finalize();
         SubSecret::from_bytes(output.into_bytes().into())
