@@ -5,7 +5,7 @@ use std::io::Read;
 use tempfile;
 use zf_zebrachain::{
     BLOCK, ChainStore, DIGEST, Hash, MutSecretBlock, OwnedChainStore, PAYLOAD, Payload, SECRET,
-    Secret, SecretChainStore, Seed,
+    SECRET_BLOCK_AEAD, Secret, SecretChainStore, Seed,
 };
 
 const SAMPLE_PAYLOAD_0: &str =
@@ -25,6 +25,8 @@ const SECRET_BLOCK_HASH_419: &str =
 
 const FULL_CHAIN_HASH: &str =
     "eed62f2c674b247aed59f196fa92e9f7b7a0828e4f8c0dce31be192d74203d1a5b14349f61671e15";
+const FULL_SECRET_CHAIN_HASH: &str =
+    "25d92f8037c51c742c5300bc5326b1d4c8a793981cd3ecf00275e794e72c208c0659566cc994f9ac";
 
 static JUNK_ENTROPY: [u8; SECRET] = hex!(
     "517931cc2f0085cd414b57a07680df2c3097c9030be69f51990cee94b26dbe07a0ee06c69f4b1e0de776c3afc497f948"
@@ -210,7 +212,7 @@ fn test_owned_chain_store() {
     );
     assert_ne!(chain.head(), chain.tail());
 
-    // Hash entire chain file to make extra sure we are consistent
+    // Hash the entire chain file to make extra sure we are consistent
     let chain_filename = tmpdir.path().join(format!("{}", chain.chain_hash()));
     let mut chain_file = File::open(&chain_filename).unwrap();
     let mut buf = Vec::new();
@@ -219,5 +221,17 @@ fn test_owned_chain_store() {
     assert_eq!(
         Hash::compute(&buf),
         Hash::from_hex(FULL_CHAIN_HASH).unwrap()
+    );
+
+    // And hash the entire secret chain file too. This is extra important because this is how we
+    // check that the secret block encryption is being done the same.
+    let chain_filename = tmpdir.path().join(format!("{}.secret", chain.chain_hash()));
+    let mut chain_file = File::open(&chain_filename).unwrap();
+    let mut buf = Vec::new();
+    chain_file.read_to_end(&mut buf).unwrap();
+    assert_eq!(buf.len(), SECRET_BLOCK_AEAD * 420);
+    assert_eq!(
+        Hash::compute(&buf),
+        Hash::from_hex(FULL_SECRET_CHAIN_HASH).unwrap()
     );
 }

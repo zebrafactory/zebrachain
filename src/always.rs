@@ -92,8 +92,11 @@ A SecretBlock currently has 6 fields:
                                               From the previous block
 */
 
-pub(crate) const SECRET_BLOCK: usize = 3 * DIGEST + SEED + PAYLOAD + INDEX;
-pub(crate) const SECRET_BLOCK_AEAD: usize = SECRET_BLOCK + 16;
+/// Size of the decrypted secret block
+pub const SECRET_BLOCK: usize = 3 * DIGEST + SEED + PAYLOAD + INDEX;
+
+/// Size of the encrypted secret block (this is the size on disk)
+pub const SECRET_BLOCK_AEAD: usize = SECRET_BLOCK + 16;
 
 const SEC_WIRE: [usize; 6] = [
     DIGEST,  // Block hash
