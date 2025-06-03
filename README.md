@@ -27,9 +27,9 @@ experimental applications on top of ZebraChain!
 
 ZebraChain is not yet suitable for production use.
 
-This is a nascent implementation of a yet to be finalized protocol. It's also built on quite new Rust implementations of
-[ML-DSA](https://github.com/RustCrypto/signatures/tree/master/ml-dsa) and
-[SLH-DSA](https://github.com/RustCrypto/signatures/tree/master/slh-dsa).
+This is a nascent implementation of a yet to be finalized protocol. It's also built on a quite new
+Rust implementation of [ML-DSA](https://github.com/RustCrypto/signatures/tree/master/ml-dsa) that
+has its own security warning.
 
 ## 🦓 Overview
 
@@ -82,7 +82,7 @@ These key crates are used:
 
 * [blake2](https://crates.io/crates/blake2) for hashing and KDF.
 
-* [chacha20poly1305](https://crates.io/crates/chacha20poly1305) for encrypting the secrect blocks.
+* [chacha20poly1305](https://crates.io/crates/chacha20poly1305) for encrypting the secret blocks.
 
 ## 🔗 Wire Format
 
@@ -119,13 +119,13 @@ SIG = SIG_ML_DSA || SIG_ED25519
 Where:
 
 ```
-SIG_ED25519 = sign_ed25519(PUB || NEXT_PUB_HASH || PAYLOAD || INDEX || CHAIN_HASH || PREV_HASH)
+SIG_ED25519 = sign_ed25519(SIGNABLE)
 ```
 
 And where:
 
 ```
-SIG_ML_DSA = sign_ml_dsa(SIG_ED25519 || PUB || NEXT_PUB_HASH || PAYLOAD || INDEX || CHAIN_HASH || PREV_HASH)
+SIG_ML_DSA = sign_ml_dsa(SIG_ED25519 || SIGNABLE)
 ```
 
 The `PAYLOAD` field is the content being signed. Currently it contains a timestamp and a hash,
