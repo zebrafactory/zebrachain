@@ -139,10 +139,10 @@ pub(crate) static CONTEXT_ML_DSA: &[u8; CONTEXT] = &hex!(
 );
 //pub(crate) static CONTEXT_SLH_DSA: &[u8; CONTEXT] =
 //    &hex!("1ce7f9e27feffbb8d02bb00906d27ccb90614c35c7b9b3c2cff8e7ce8ef8f19e7df3b3f3140cf009fbee85e2b19ec77c");
-pub(crate) static CONTEXT_STORE_KEY: &[u8; CONTEXT] = &hex!(
+pub(crate) static CONTEXT_BLOCK_KEY: &[u8; CONTEXT] = &hex!(
     "f5c4428f694529e8139c825044e130dfd54182b8324142a3ea03b13085d83c63a01533f3ba4ddcd3835beaf086dc0d8b"
 );
-pub(crate) static CONTEXT_STORE_NONCE: &[u8; CONTEXT] = &hex!(
+pub(crate) static CONTEXT_BLOCK_NONCE: &[u8; CONTEXT] = &hex!(
     "bb242d2282ebdd5db4c9abf70eb40830029d2c665013e946f58614912b97e199c62e5e02b57745a530d41796d6199d14"
 );
 
