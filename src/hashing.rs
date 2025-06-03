@@ -407,4 +407,44 @@ mod tests {
             ]
         );
     }
+
+    #[test]
+    fn test_secret_derive_sub_secret_192() {
+        let mut hset: HashSet<SubSecret192> = HashSet::new();
+        for _ in 0..420 {
+            let secret = Secret::generate().unwrap();
+            for context in [
+                CONTEXT_ED25519,
+                CONTEXT_ML_DSA,
+                CONTEXT_BLOCK_KEY,
+                CONTEXT_BLOCK_NONCE,
+            ] {
+                for block_index in 0..420 {
+                    let subsecret = secret.derive_sub_secret_192(context, block_index);
+                    assert!(hset.insert(subsecret));
+                }
+            }
+        }
+        assert_eq!(hset.len(), 420 * 420 * 4);
+    }
+
+    #[test]
+    fn test_secret_derive_sub_secret_256() {
+        let mut hset: HashSet<SubSecret256> = HashSet::new();
+        for _ in 0..420 {
+            let secret = Secret::generate().unwrap();
+            for context in [
+                CONTEXT_ED25519,
+                CONTEXT_ML_DSA,
+                CONTEXT_BLOCK_KEY,
+                CONTEXT_BLOCK_NONCE,
+            ] {
+                for block_index in 0..420 {
+                    let subsecret = secret.derive_sub_secret_256(context, block_index);
+                    assert!(hset.insert(subsecret));
+                }
+            }
+        }
+        assert_eq!(hset.len(), 420 * 420 * 4);
+    }
 }
