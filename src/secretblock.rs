@@ -250,17 +250,18 @@ mod tests {
 
     #[test]
     fn test_derive_block_sub_secrets_inner() {
-        let count = 420u128;
         let mut hset256 = HashSet::new();
         let mut hset192 = HashSet::new();
-        let chain_secret = Secret::generate().unwrap();
-        for block_index in 0..count {
-            let (key, nonce) = derive_block_sub_secrets(&chain_secret, block_index);
-            assert!(hset256.insert(*key.as_bytes()));
-            assert!(hset192.insert(*nonce.as_bytes()));
+        for _ in 0..69 {
+            let chain_secret = Secret::generate().unwrap();
+            for block_index in 0..420 {
+                let (key, nonce) = derive_block_sub_secrets(&chain_secret, block_index);
+                assert!(hset256.insert(key));
+                assert!(hset192.insert(nonce));
+            }
         }
-        assert_eq!(hset256.len(), count as usize);
-        assert_eq!(hset192.len(), count as usize);
+        assert_eq!(hset256.len(), 69 * 420);
+        assert_eq!(hset192.len(), 69 * 420);
     }
 
     #[test]
