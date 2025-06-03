@@ -345,8 +345,20 @@ mod tests {
 
     #[test]
     fn test_secret_debug_fmt() {
-        let secret = Secret::generate().unwrap();
+        let secret = Secret::from_bytes([42; SECRET]);
         assert_eq!(format!("{secret:?}"), "Secret(<hidden>)");
+    }
+
+    #[test]
+    fn test_sub_secret_192_debug_fmt() {
+        let secret = SubSecret192::from_bytes([42; 24]);
+        assert_eq!(format!("{secret:?}"), "SubSecret(<hidden>)");
+    }
+
+    #[test]
+    fn test_sub_secret_256_debug_fmt() {
+        let secret = SubSecret256::from_bytes([42; 32]);
+        assert_eq!(format!("{secret:?}"), "SubSecret(<hidden>)");
     }
 
     #[test]
