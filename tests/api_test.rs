@@ -1,9 +1,11 @@
 use hex_literal::hex;
 use std::collections::HashSet;
+use std::fs::File;
+use std::io::Read;
 use tempfile;
 use zf_zebrachain::{
-    ChainStore, DIGEST, Hash, MutSecretBlock, OwnedChainStore, PAYLOAD, Payload, SECRET, Secret,
-    SecretChainStore, Seed,
+    BLOCK, ChainStore, DIGEST, Hash, MutSecretBlock, OwnedChainStore, PAYLOAD, Payload, SECRET,
+    Secret, SecretChainStore, Seed,
 };
 
 const SAMPLE_PAYLOAD_0: &str =
@@ -14,12 +16,15 @@ const SAMPLE_PAYLOAD_419: &str =
 const BLOCK_HASH_0: &str =
     "55475ddbcd1ce753723ee29acf66613be45deed35b1bfdcc761734f7b9c15529631bc8b283b8bc31";
 const BLOCK_HASH_419: &str =
-    "494df50c8c6ff99acb633d6464205d80fc9ae3be333c6813a2813d5f822cdd83a82c3085a5f9ebdf";
+    "15bcb456a70da15bdb9ffee8d01f58b04048d1c274ceecd86641df30a405b536a097d8bf82c65f99";
 
 const SECRET_BLOCK_HASH_0: &str =
     "bf1b0d15119ad14828188a83df106f51311b5af25b5507f4b7ca9c7d390cf749ebe73f107d5d3fa6";
 const SECRET_BLOCK_HASH_419: &str =
-    "c23c8d2b811ecf8161c6851edff295aeadba61422bf57fc1dda2dc8cbc6698c5d881537cb35c4e27";
+    "618d36885c04a07fe1cbecba765b2b5bed9c8712ddb5831e7f9e55db78f7083b5090218012799538";
+
+const FULL_CHAIN_HASH: &str =
+    "eed62f2c674b247aed59f196fa92e9f7b7a0828e4f8c0dce31be192d74203d1a5b14349f61671e15";
 
 static JUNK_ENTROPY: [u8; SECRET] = hex!(
     "517931cc2f0085cd414b57a07680df2c3097c9030be69f51990cee94b26dbe07a0ee06c69f4b1e0de776c3afc497f948"
@@ -186,7 +191,7 @@ fn test_owned_chain_store() {
         chain.secret_tail().block_hash,
         Hash::from_hex(SECRET_BLOCK_HASH_0).unwrap()
     );
-    for index in 0..420 {
+    for index in 1..420 {
         chain
             .sign(&sample_entropy(index), &sample_payload(index))
             .unwrap();
@@ -204,4 +209,15 @@ fn test_owned_chain_store() {
         Hash::from_hex(SECRET_BLOCK_HASH_419).unwrap()
     );
     assert_ne!(chain.head(), chain.tail());
+
+    // Hash entire chain file to make extra sure we are consistent
+    let chain_filename = tmpdir.path().join(format!("{}", chain.chain_hash()));
+    let mut chain_file = File::open(&chain_filename).unwrap();
+    let mut buf = Vec::new();
+    chain_file.read_to_end(&mut buf).unwrap();
+    assert_eq!(buf.len(), BLOCK * 420);
+    assert_eq!(
+        Hash::compute(&buf),
+        Hash::from_hex(FULL_CHAIN_HASH).unwrap()
+    );
 }
