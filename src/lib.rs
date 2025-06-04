@@ -32,7 +32,7 @@
 //!
 //! ```
 //! use tempfile;
-//! use zf_zebrachain::{ChainStore, DIGEST, OwnedChainStore, Hash, Payload, Secret};
+//! use zf_zebrachain::{ChainStore, OwnedChainStore, Hash, Payload, Secret};
 //!
 //! // Chains are just files in a directory (for now). To get started you need a directory for
 //! // your public chain files and a `ChainStore`:
