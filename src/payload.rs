@@ -2,15 +2,24 @@
 
 use crate::always::*;
 use crate::hashing::Hash;
-use std::ops::Range;
+use core::ops::Range;
+use std::time::SystemTime;
 
 const TIME_RANGE: Range<usize> = 0..TIME;
 const STATE_HASH_RANGE: Range<usize> = TIME..TIME + DIGEST;
 
+fn system_time() -> u128 {
+    let now = SystemTime::now();
+    match now.duration_since(SystemTime::UNIX_EPOCH) {
+        Ok(duration) => duration.as_nanos(),
+        Err(_) => 0,
+    }
+}
+
 /// Content to be included in block and signed.
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct Payload {
-    /// Timestamp.
+    /// Timestamp (nano seconds since the UNIX Epoch)
     pub time: u128,
 
     /// Hash of top-level state object in a hypothetical object store.
@@ -23,20 +32,26 @@ impl Payload {
         Self { time, state_hash }
     }
 
+    /// Create a payload from the provided hash, but generate the timestamp automatically.
+    pub fn new_timestamped(state_hash: Hash) -> Self {
+        let time = system_time();
+        Self::new(time, state_hash)
+    }
+
     /// Extract payload from buffer.
     pub fn from_buf(buf: &[u8]) -> Self {
         assert_eq!(buf.len(), PAYLOAD);
         Self {
-            time: get_u128(buf, TIME_RANGE),
-            state_hash: get_hash(buf, STATE_HASH_RANGE),
+            time: u128::from_le_bytes(buf[TIME_RANGE].try_into().unwrap()),
+            state_hash: Hash::from_slice(&buf[STATE_HASH_RANGE]).unwrap(),
         }
     }
 
     /// Write payload into buffer.
     pub fn write_to_buf(&self, buf: &mut [u8]) {
         assert_eq!(buf.len(), PAYLOAD);
-        set_u128(buf, TIME_RANGE, self.time);
-        set_hash(buf, STATE_HASH_RANGE, &self.state_hash);
+        buf[TIME_RANGE].copy_from_slice(&self.time.to_le_bytes());
+        buf[STATE_HASH_RANGE].copy_from_slice(self.state_hash.as_bytes());
     }
 }
 
@@ -45,6 +60,14 @@ mod tests {
     use super::*;
     use crate::testhelpers::{random_hash, random_u128};
     use getrandom;
+
+    #[test]
+    fn test_payload_new_timestamped() {
+        let state_hash = Hash::compute(b"yo dawg");
+        let payload = Payload::new_timestamped(state_hash);
+        assert_eq!(payload.state_hash, state_hash);
+        assert!(payload.time > 0);
+    }
 
     #[test]
     fn test_payload_from_buf() {
