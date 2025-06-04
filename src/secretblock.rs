@@ -29,7 +29,10 @@ fn check_secretblock_buf_aead(buf: &[u8]) {
     }
 }
 
-// Split out of derive_block_key_and_nonce() for testability
+// Split out of derive_block_key_and_nonce() for testability.
+// Here we take a 384 bit chain_secret and derive a unique XChaCha20Poly1305 256-bit key and a
+// unique 192-bit nonce for every block-wise position in the secret chain. Never reuse a key, never
+// reuse a nonce. Take that, entropy.
 #[inline]
 fn derive_block_sub_secrets(
     chain_secret: &Secret,
