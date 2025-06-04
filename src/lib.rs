@@ -49,7 +49,7 @@
 //!
 //! // A Payload is what you to sign. Currently it's a 128-bit timestamp and a 320-bit hash. To
 //! // create a new chain, you need the first payload that you want to sign:
-//! let payload1 = Payload::new_timestamped(Hash::compute(b"Message number 1"));
+//! let payload1 = Payload::new_time_stamped(Hash::compute(b"Message number 1"));
 //!
 //! // Create a chain, the first block of which will contain the signed payload. The first block
 //! // is signed with the 1st keypair, but the hash of the public key of the 2nd keypair is
@@ -64,7 +64,7 @@
 //! // keypair, and the hash of its public key is included this block. The 2nd block is signed with
 //! // the 2nd keypair created above. OwnedChain.auto_sign() internally generates the needed new
 //! // entropy.
-//! let payload2 = Payload::new_timestamped(Hash::compute(b"Message number 2"));
+//! let payload2 = Payload::new_time_stamped(Hash::compute(b"Message number 2"));
 //! mychain.auto_sign(&payload2);
 //! assert_eq!(mychain.tail().payload, payload2);
 //!

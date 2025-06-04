@@ -31,8 +31,8 @@ fn system_time() -> u128 {
 /// let payload = Payload::new(123456789, state_hash);
 ///
 /// // Or you can have the timestamp automatically created for you using
-/// // Payload::new_timestamped() like this:
-/// let payload = Payload::new_timestamped(state_hash);
+/// // Payload::new_time_stamped() like this:
+/// let payload = Payload::new_time_stamped(state_hash);
 /// ```
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct Payload {
@@ -50,7 +50,7 @@ impl Payload {
     }
 
     /// Create a payload from the provided hash, but generate the timestamp automatically.
-    pub fn new_timestamped(state_hash: Hash) -> Self {
+    pub fn new_time_stamped(state_hash: Hash) -> Self {
         let time = system_time();
         Self::new(time, state_hash)
     }
@@ -79,9 +79,9 @@ mod tests {
     use getrandom;
 
     #[test]
-    fn test_payload_new_timestamped() {
+    fn test_payload_new_time_stamped() {
         let state_hash = Hash::compute(b"yo dawg");
-        let payload = Payload::new_timestamped(state_hash);
+        let payload = Payload::new_time_stamped(state_hash);
         assert_eq!(payload.state_hash, state_hash);
         assert!(payload.time > 0);
     }
