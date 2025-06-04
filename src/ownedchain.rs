@@ -37,7 +37,7 @@ impl OwnedChainStore {
     }
 
     /// Create a new owned chain, internally generating the entropy.
-    pub fn auto_create_chain(&self, payload: &Payload) -> io::Result<OwnedChain> {
+    pub fn generate_chain(&self, payload: &Payload) -> io::Result<OwnedChain> {
         let initial_entropy = Secret::generate().unwrap();
         self.create_chain(&initial_entropy, payload)
     }

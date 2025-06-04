@@ -21,7 +21,7 @@ fn main() {
     let tmpdir = tempfile::TempDir::new().unwrap();
     let root_secret = Secret::generate().unwrap();
     let ocs = OwnedChainStore::build(tmpdir.path(), tmpdir.path(), root_secret);
-    let mut chain = ocs.auto_create_chain(&payloads[0]).unwrap();
+    let mut chain = ocs.generate_chain(&payloads[0]).unwrap();
 
     println!("Created new chain in directory {:?}", tmpdir.path());
 

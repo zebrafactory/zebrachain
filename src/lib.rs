@@ -54,9 +54,9 @@
 //! // Create a chain, the first block of which will contain the signed payload. The first block
 //! // is signed with the 1st keypair, but the hash of the public key of the 2nd keypair is
 //! // included in the 1st block. This is the forward contract for the keypair that will be used
-//! // to sign the next block. OwnedChainStore.auto_create_chain() internally generates the
+//! // to sign the next block. OwnedChainStore.generate_chain() internally generates the
 //! // needed initial entropy.
-//! let mut mychain = mystore.auto_create_chain(&payload1).unwrap();
+//! let mut mychain = mystore.generate_chain(&payload1).unwrap();
 //! assert_eq!(mychain.tail().payload, payload1);
 //!
 //! // Let us sign another payload. Each signatures requires new entropy, which is mixed into the
