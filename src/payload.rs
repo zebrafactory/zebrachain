@@ -17,9 +17,26 @@ fn system_time() -> u128 {
 }
 
 /// Content to be included in block and signed.
+///
+/// # Examples
+///
+/// ```
+/// use zf_zebrachain::{Hash, Payload, PAYLOAD};
+///
+/// // A payload includes a state hash, which you can create like this:
+/// let state_hash = Hash::compute(b"My first ZebraChain signature");
+///
+/// // A payload also includes a u128 timestamp (nanoseconds since the Unix Epoch). You can
+/// // provide the timestamp as the first argument to Payload::new() like this:
+/// let payload = Payload::new(123456789, state_hash);
+///
+/// // Or you can have the timestamp automatically created for you using
+/// // Payload::new_timestamped() like this:
+/// let payload = Payload::new_timestamped(state_hash);
+/// ```
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct Payload {
-    /// Timestamp (nano seconds since the UNIX Epoch)
+    /// Timestamp (nanoseconds since the UNIX Epoch).
     pub time: u128,
 
     /// Hash of top-level state object in a hypothetical object store.
