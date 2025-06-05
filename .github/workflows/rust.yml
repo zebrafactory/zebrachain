@@ -31,8 +31,8 @@ jobs:
       - name: Clippy
         run: cargo clippy
       - name: Build
-        run: cargo build --verbose
+        run: cargo build --verbose --release
       - name: Test
-        run: cargo test --verbose
+        run: cargo test --verbose --release
       - name: Run example
         run: cargo run --example sign-some --release
