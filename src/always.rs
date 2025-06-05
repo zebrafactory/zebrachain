@@ -54,7 +54,7 @@ pub(crate) const TIME: usize = 16;
 /// Size of the ZebraChain payload (56 bytes).
 pub const PAYLOAD: usize = TIME + DIGEST;
 
-/// Size of the ZebraChain block (5581 bytes).
+/// Size of the ZebraChain block (4060 bytes).
 pub const BLOCK: usize = (4 * DIGEST) + SIGNATURE + PUBKEY + PAYLOAD + INDEX;
 
 pub(crate) const HASHABLE_RANGE: Range<usize> = DIGEST..BLOCK;
