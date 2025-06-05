@@ -21,8 +21,14 @@ And where:
 
 pub(crate) const PUB_ED25519: usize = 32;
 pub(crate) const SIG_ED25519: usize = 64;
-pub(crate) const PUB_MLDSA: usize = 1952;
-pub(crate) const SIG_MLDSA: usize = 3309;
+
+// ML-DSA-44
+pub(crate) const PUB_MLDSA: usize = 1312;
+pub(crate) const SIG_MLDSA: usize = 2420;
+
+// ML-DSA-65
+//pub(crate) const PUB_MLDSA: usize = 1952;
+//pub(crate) const SIG_MLDSA: usize = 3309;
 
 pub(crate) const PUB_MLDSA_RANGE: Range<usize> = 0..PUB_MLDSA;
 pub(crate) const PUB_ED25519_RANGE: Range<usize> = PUB_MLDSA..PUB_MLDSA + PUB_ED25519;
@@ -190,21 +196,21 @@ mod tests {
 
     #[test]
     fn test_ranges() {
-        assert_eq!(HASHABLE_RANGE, 40..5589);
-        assert_eq!(SIGNABLE_RANGE, 3413..5589);
-        assert_eq!(SIGNABLE2_RANGE, 3349..5589);
+        assert_eq!(HASHABLE_RANGE, 40..4060);
+        assert_eq!(SIGNABLE_RANGE, 2524..4060);
+        assert_eq!(SIGNABLE2_RANGE, 2460..4060);
 
         assert_eq!(HASH_RANGE, 0..40);
 
-        assert_eq!(SIGNATURE_RANGE, 40..3413);
-        assert_eq!(PUBKEY_RANGE, 3413..5397);
-        assert_eq!(NEXT_PUBKEY_HASH_RANGE, 5397..5437);
+        assert_eq!(SIGNATURE_RANGE, 40..2524);
+        assert_eq!(PUBKEY_RANGE, 2524..3868);
+        assert_eq!(NEXT_PUBKEY_HASH_RANGE, 3868..3908);
 
-        assert_eq!(PAYLOAD_RANGE, 5437..5493);
+        assert_eq!(PAYLOAD_RANGE, 3908..3964);
 
-        assert_eq!(INDEX_RANGE, 5493..5509);
-        assert_eq!(CHAIN_HASH_RANGE, 5509..5549);
-        assert_eq!(PREVIOUS_HASH_RANGE, 5549..5589);
+        assert_eq!(INDEX_RANGE, 3964..3980);
+        assert_eq!(CHAIN_HASH_RANGE, 3980..4020);
+        assert_eq!(PREVIOUS_HASH_RANGE, 4020..4060);
 
         assert_eq!(HASHABLE_RANGE.end, BLOCK);
         assert_eq!(SIGNABLE_RANGE.end, BLOCK);

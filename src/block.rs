@@ -524,7 +524,7 @@ mod tests {
 
     fn new_expected() -> Hash {
         Hash::from_hex(
-            "20f07132de6ae98a6ea6de1805a20a37a865c0aa4368c4b426b11cb8d6d59b0fd13036cf22f707e7",
+            "6ceb2e83040898f92123422c87e27100649f2bf982b4eec23cdb467958790302abd18796b3abc150",
         )
         .unwrap()
     }
@@ -574,14 +574,14 @@ mod tests {
     }
 
     #[test]
-    #[should_panic(expected = "Need a 5589 byte slice; got 5588 bytes")]
+    #[should_panic(expected = "Need a 4060 byte slice; got 4059 bytes")]
     fn test_block_new_short_panic() {
         let buf: Vec<u8> = vec![0; BLOCK - 1];
         let _block = Block::new(&buf);
     }
 
     #[test]
-    #[should_panic(expected = "Need a 5589 byte slice; got 5590 bytes")]
+    #[should_panic(expected = "Need a 4060 byte slice; got 4061 bytes")]
     fn test_block_new_long_panic() {
         let buf: Vec<u8> = vec![0; BLOCK + 1];
         let _block = Block::new(&buf);
@@ -921,7 +921,7 @@ mod tests {
         assert_eq!(
             Hash::compute(&buf),
             Hash::from_hex(
-                "d7004736c4c7e3816d9e91594aa61195ecb1beba1e6568b7542d7fc0abf35e29252ffda762713013"
+                "8fd910701a748a13e71c71ce72d7ee5768c2bdeb82ee42c788f223fad6b5086eefdd85ab998e8b5e"
             )
             .unwrap()
         );

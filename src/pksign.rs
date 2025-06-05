@@ -4,7 +4,7 @@ use crate::always::*;
 use crate::block::{Block, MutBlock};
 use crate::hashing::{Hash, Secret, SubSecret256};
 use crate::secretseed::Seed;
-use ml_dsa::{B32, KeyGen, MlDsa65};
+use ml_dsa::{B32, KeyGen, MlDsa44};
 use signature::Signer;
 use zeroize::Zeroize;
 
@@ -12,15 +12,15 @@ fn build_ed25519_keypair(secret: SubSecret256) -> ed25519_dalek::SigningKey {
     ed25519_dalek::SigningKey::from_bytes(secret.as_bytes())
 }
 
-fn build_mldsa_keypair(secret: SubSecret256) -> ml_dsa::KeyPair<MlDsa65> {
+fn build_mldsa_keypair(secret: SubSecret256) -> ml_dsa::KeyPair<MlDsa44> {
     let mut hack = B32::default();
     hack.0.copy_from_slice(secret.as_bytes()); // FIXME: Do more better
-    MlDsa65::key_gen_internal(&hack)
+    MlDsa44::key_gen_internal(&hack)
 }
 
 struct KeyPair {
     ed25519: ed25519_dalek::SigningKey,
-    mldsa: ml_dsa::KeyPair<MlDsa65>,
+    mldsa: ml_dsa::KeyPair<MlDsa44>,
 }
 
 impl KeyPair {
@@ -131,10 +131,10 @@ impl<'a> Hybrid<'a> {
     }
 
     fn verify_mldsa(&self) -> bool {
-        let pubenc = ml_dsa::EncodedVerifyingKey::<MlDsa65>::try_from(self.as_pub_mldsa()).unwrap();
-        let pubkey = ml_dsa::VerifyingKey::<MlDsa65>::decode(&pubenc);
-        let sigenc = ml_dsa::EncodedSignature::<MlDsa65>::try_from(self.as_sig_mldsa()).unwrap();
-        if let Some(sig) = ml_dsa::Signature::<MlDsa65>::decode(&sigenc) {
+        let pubenc = ml_dsa::EncodedVerifyingKey::<MlDsa44>::try_from(self.as_pub_mldsa()).unwrap();
+        let pubkey = ml_dsa::VerifyingKey::<MlDsa44>::decode(&pubenc);
+        let sigenc = ml_dsa::EncodedSignature::<MlDsa44>::try_from(self.as_sig_mldsa()).unwrap();
+        if let Some(sig) = ml_dsa::Signature::<MlDsa44>::decode(&sigenc) {
             pubkey.verify_with_context(self.block.as_signable2(), SIGNING_CXT_ML_DSA, &sig)
         } else {
             false
@@ -167,11 +167,11 @@ mod tests {
     use super::*;
 
     static HEX0: &str =
-        "32a896abcb0d4c0906c72ca86e2ed3187ac7ae982b0beed861f463e6ddfc684a4bb447a93e856308";
+        "91fe0289ef25b99560858c4405f984d0c776d4bc9f761327c381ab709316dff3e66d9dd2af882d47";
     //static HEX1: &str =
     //    "d7c58110f5c997d2a4439c47d0212eca4f8f26236605841b44417a74fcacdbca034d3d2d1e64d019";
     static HEX2: &str =
-        "50cb2e4aaf587ee195883b4a8dca4e0bc0e2ff7777a3a9ad2e7ad5137b82b2fe5a9d635df435a34b";
+        "10e651d0df11d8980e51d7c2462751627148faf391e0c74be40bb364e8ba970a074602f552ba2477";
 
     // FIXME: Add new tests for ml-dsa and ed25519 keypair generation, but API needs rework first
 
