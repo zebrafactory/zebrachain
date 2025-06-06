@@ -86,7 +86,7 @@ These key crates are used:
 
 ## 🔗 Wire Format
 
-The generic ZebraChain block structure has 8 fields:
+A ZebraChain block has 8 fields:
 
 ```
 HASH || SIG || PUB || NEXT_PUB_HASH || PAYLOAD || INDEX || CHAIN_HASH || PREV_HASH
@@ -127,6 +127,8 @@ And where:
 ```
 SIG_ML_DSA = sign_ml_dsa(SIG_ED25519 || SIGNABLE)
 ```
+
+(Note that ML-DSA signs both the ed22519 signature and the signable portion of the block.)
 
 The `PAYLOAD` field is the content being signed. Currently it contains a timestamp and a hash,
 but it will soon be reworked into a trait, allowing higher level code to define the the size of
