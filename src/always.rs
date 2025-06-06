@@ -98,10 +98,12 @@ A SecretBlock currently has 6 fields:
                                               From the previous block
 */
 
-/// Size of the decrypted secret block
+/// Size of the decrypted secret block (288 bytes).
 pub const SECRET_BLOCK: usize = 3 * DIGEST + SEED + PAYLOAD + INDEX;
 
-/// Size of the encrypted secret block (this is the size on disk)
+/// Size of the encrypted secret block (304 bytes) [this is the size on disk].
+///
+/// This is larger than [SECRET_BLOCK] because it includes the 16-byte Poly1305 authentication tag.
 pub const SECRET_BLOCK_AEAD: usize = SECRET_BLOCK + 16;
 
 const SEC_WIRE: [usize; 6] = [
@@ -228,5 +230,7 @@ mod tests {
         assert_eq!(SEC_INDEX_RANGE, 232..248);
         assert_eq!(SEC_PREV_HASH_RANGE, 248..288);
         assert_eq!(SEC_PREV_HASH_RANGE.end, SECRET_BLOCK);
+
+        assert_eq!(SECRET_BLOCK_AEAD, 304);
     }
 }
