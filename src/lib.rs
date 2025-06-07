@@ -9,7 +9,7 @@
 //!
 //! * Logs each signature in a block chain
 //!
-//! * Rotates the keypairs at every signature by including the public key used to sign the current
+//! * Changes the keypairs at every signature by including the public key used to sign the current
 //!   block and the hash of the public key that will be used to sign the next block
 //!
 //! * Is quantum secure because it uses ML-DSA + ed25519 in a hybrid signing construction (as
