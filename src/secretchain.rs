@@ -304,20 +304,21 @@ mod tests {
         assert!(SecretChain::open(file, chain_secret).is_err());
     }
 
-    /*
     #[test]
     fn test_chain_append() {
         let mut buf = vec![0; SECRET_BLOCK];
         let payload = random_payload();
-        let mut block = MutSecretBlock::new(&mut buf[..], &payload);
+        let mut block = MutSecretBlock::new(&mut buf, &payload);
 
-        let mut seed = Seed::auto_create().unwrap();
+        let mut seed = Seed::generate().unwrap();
         block.set_seed(&seed);
-        let block_hash = block.finalize();
+        let secret = Secret::generate().unwrap();
+        let block_hash = block.finalize(&secret);
 
-        let file = tempfile().unwrap();
-        let secret = random_hash();
-        let mut chain = SecretChain::create(file, secret, buf, &block_hash).unwrap();
+        let mut file = tempfile().unwrap();
+        let mut chain =
+            SecretChain::create(file.try_clone().unwrap(), secret.clone(), buf, &block_hash)
+                .unwrap();
         assert_eq!(chain.count(), 1);
         for i in 2..69 {
             seed = seed.advance().unwrap();
@@ -326,15 +327,13 @@ mod tests {
             let mut block = MutSecretBlock::new(chain.as_mut_buf(), &payload);
             block.set_previous(&tail);
             block.set_seed(&seed);
-            let block_hash = block.finalize();
+            let block_hash = block.finalize(&secret);
             chain.append(&block_hash).unwrap();
             assert_eq!(chain.count(), i);
         }
-        let mut file = chain.into_file();
         file.rewind().unwrap();
         SecretChain::open(file, secret).unwrap();
     }
-    */
 
     #[test]
     fn test_store_derive_secret() {

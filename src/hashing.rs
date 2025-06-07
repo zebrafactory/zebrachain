@@ -306,15 +306,6 @@ mod tests {
     use super::*;
     use std::collections::HashSet;
 
-    /*
-    #[test]
-    fn test_blake2b() {
-        let msg = b"yo dawg, wut up";
-        let _h = hash384(msg);
-        let _h = hash256(msg);
-    }
-    */
-
     #[test]
     fn test_generate_secret() {
         let count = 1024;
