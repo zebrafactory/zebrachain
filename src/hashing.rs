@@ -29,12 +29,12 @@ pub enum HexError {
 
 impl Hash {
     /// The raw bytes of the `Hash`.
-    pub fn as_bytes(&self) -> &[u8; DIGEST] {
+    pub const fn as_bytes(&self) -> &[u8; DIGEST] {
         &self.value
     }
 
     /// Create from bytes.
-    pub fn from_bytes(value: [u8; DIGEST]) -> Self {
+    pub const fn from_bytes(value: [u8; DIGEST]) -> Self {
         Self { value }
     }
 
