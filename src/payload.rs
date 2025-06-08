@@ -1,7 +1,7 @@
 //! Abstraction over the content to be signed.
 
+use crate::Hash;
 use crate::always::*;
-use crate::hashing::Hash;
 use core::ops::Range;
 use std::time::SystemTime;
 

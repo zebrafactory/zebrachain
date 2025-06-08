@@ -1,12 +1,5 @@
-//! Entropy accumulating chain of secrets (in-memory).
-//!
-//! Note there is a lot of secret comparison in this module that relies on the constant time
-//! comparison of [blake3::Hash] to be secure. Once the hash is configurable, we need to make sure
-//! the [Secret] abstraction we use likewise ensures constant time comparison.
-
 use crate::always::*;
-use crate::errors::SecretBlockError;
-use crate::hashing::{EntropyError, Secret};
+use crate::{EntropyError, Secret, SecretBlockError};
 use core::ops::Range;
 
 const SECRET_RANGE: Range<usize> = 0..SECRET;

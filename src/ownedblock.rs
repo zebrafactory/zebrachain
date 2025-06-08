@@ -18,11 +18,8 @@ We want signing to have robust transactionality using the following sequence:
 Because the public block can be recreated from the secret block, this gives us a nice double commit.
 */
 
-use crate::block::{BlockState, MutBlock};
-use crate::payload::Payload;
-use crate::secretblock::{MutSecretBlock, SecretBlockState};
 use crate::secretchain::derive_chain_secret;
-use crate::{Hash, Secret, Seed};
+use crate::{BlockState, Hash, MutBlock, MutSecretBlock, Payload, Secret, SecretBlockState, Seed};
 
 /// Combines [BlockState] and [SecretBlockState].
 pub struct OwnedBlockState {

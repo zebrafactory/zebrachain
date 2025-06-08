@@ -1,9 +1,7 @@
 //! Hybrid signing and verification with ML-DSA + ed25519.
 
 use crate::always::*;
-use crate::block::{Block, MutBlock};
-use crate::hashing::{Hash, Secret, SubSecret256};
-use crate::secretseed::Seed;
+use crate::{Block, Hash, MutBlock, Secret, Seed, SubSecret256};
 use ml_dsa::{B32, KeyGen, MlDsa44};
 use signature::Signer;
 use zeroize::Zeroize;
@@ -32,7 +30,7 @@ impl KeyPair {
         // reused Secret is unknown to attackers, ZebraChain still has the security properties we
         // want.
         //
-        // Defense in depth, yo. Also, a central design them in ZebraChain is, "Don't reuse shit,
+        // Defense in depth, yo. Also, a central design theme in ZebraChain is, "Don't reuse shit,
         // ever".
         let key1 = secret.derive_sub_secret_256(CONTEXT_ED25519, block_index);
         let key2 = secret.derive_sub_secret_256(CONTEXT_ML_DSA, block_index);

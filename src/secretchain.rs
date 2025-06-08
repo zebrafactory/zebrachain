@@ -2,9 +2,7 @@
 
 use crate::always::*;
 use crate::fsutil::{create_for_append, open_for_append, secret_chain_filename};
-use crate::hashing::Hash;
-use crate::secretblock::{SecretBlock, SecretBlockState};
-use crate::{Secret, Seed};
+use crate::{Hash, Secret, SecretBlock, SecretBlockState, Seed};
 use std::fs::{File, remove_file};
 use std::io;
 use std::io::{BufReader, Read, Seek, Write};

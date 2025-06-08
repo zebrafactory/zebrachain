@@ -1,11 +1,8 @@
 //! Block construction, validation, and wire format.
 
 use crate::always::*;
-use crate::errors::BlockError;
-use crate::hashing::Hash;
-use crate::payload::Payload;
 use crate::pksign::{SecretSigner, verify_block_signature};
-use crate::secretseed::Seed;
+use crate::{BlockError, Hash, Payload, Seed};
 
 /// Check point a chain for fast reload.
 pub struct CheckPoint {

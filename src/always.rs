@@ -1,6 +1,6 @@
 //! Wire format ranges are defined here (good place to start).
 
-use crate::hashing::{Hash, Secret};
+use crate::{Hash, Secret};
 use core::ops::Range;
 use hex_literal::hex;
 

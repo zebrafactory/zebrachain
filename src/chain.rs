@@ -1,9 +1,8 @@
 //! Writes/reads blocks to/from non-volitile storage and network.
 
 use crate::always::*;
-use crate::block::{Block, BlockState, CheckPoint};
 use crate::fsutil::{chain_filename, create_for_append, open_for_append};
-use crate::hashing::Hash;
+use crate::{Block, BlockState, CheckPoint, Hash};
 use std::fs::{File, remove_file};
 use std::io;
 use std::io::{BufReader, Read, Seek, SeekFrom, Write};

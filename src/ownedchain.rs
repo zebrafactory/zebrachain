@@ -4,13 +4,10 @@
 //! blocks for.
 
 use crate::always::*;
-use crate::block::{BlockState, CheckPoint, sign_block};
-use crate::chain::{Chain, ChainStore};
-use crate::hashing::{Hash, Secret};
-use crate::ownedblock::{MutOwnedBlock, OwnedBlockState};
-use crate::payload::Payload;
-use crate::secretchain::{SecretChain, SecretChainStore};
-use crate::{SecretBlockState, Seed};
+use crate::{
+    BlockState, Chain, ChainStore, CheckPoint, Hash, MutOwnedBlock, OwnedBlockState, Payload,
+    Secret, SecretBlockState, SecretChain, SecretChainStore, Seed, sign_block,
+};
 use std::io;
 use std::path::Path;
 

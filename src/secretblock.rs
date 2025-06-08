@@ -1,10 +1,7 @@
 //! Wire format for secret seeds when written to nonvolatile storage.
 
 use crate::always::*;
-use crate::errors::SecretBlockError;
-use crate::hashing::{Hash, Secret, SubSecret192, SubSecret256};
-use crate::payload::Payload;
-use crate::secretseed::Seed;
+use crate::{Hash, Payload, Secret, SecretBlockError, Seed, SubSecret192, SubSecret256};
 use chacha20poly1305::{
     Key, XChaCha20Poly1305, XNonce,
     aead::{AeadInPlace, KeyInit},
