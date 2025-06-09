@@ -125,8 +125,9 @@ impl core::fmt::Display for Hash {
 
 /// A 384-bit root secret with ZeroizeOnDrop and ConstantTimeEq.
 ///
-/// This value should not be feed directly into any cryptographic primitives. Instead, a derived
-/// [SubSecret] should be used.
+/// This value should not be fed directly into any cryptographic primitives. Instead, a derived
+/// [SubSecret] should be used.  See [Secret::derive_sub_secret_256()],
+/// [Secret::derive_sub_secret_192()].
 #[derive(Zeroize, ZeroizeOnDrop, Eq, Clone)]
 pub struct Secret {
     value: [u8; SECRET],
@@ -164,7 +165,7 @@ impl Secret {
     }
 
     /// Mix new entropy with this secret to create the next secret.
-    pub fn next(&self, new_entropy: &Self) -> Self {
+    pub fn mix(&self, new_entropy: &Self) -> Self {
         self.keyed_hash(new_entropy.as_bytes())
     }
 

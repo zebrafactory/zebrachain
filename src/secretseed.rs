@@ -61,7 +61,7 @@ impl Seed {
     ///
     /// See the source code for sure because it's simple, but important to understand.
     pub fn next(&self, new_entropy: &Secret) -> Self {
-        let next_next_secret = self.next_secret.next(new_entropy);
+        let next_next_secret = self.next_secret.mix(new_entropy);
         Self::new(self.next_secret.clone(), next_next_secret)
     }
 
