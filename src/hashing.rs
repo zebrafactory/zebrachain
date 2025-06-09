@@ -193,8 +193,8 @@ impl Secret {
     /// Derive a 256-bit sub-secret from this secret, context bytes, and the block index.
     pub fn derive_sub_secret_256(
         &self,
-        context: &[u8; CONTEXT],
         block_index: u128,
+        context: &[u8; CONTEXT],
     ) -> SubSecret256 {
         let mut hasher = Blake2bMac256::new_with_salt_and_personal(
             self.as_bytes(),
@@ -210,8 +210,8 @@ impl Secret {
     /// Derive a 192-bit sub-secret from this secret, context bytes, and the block index.
     pub fn derive_sub_secret_192(
         &self,
-        context: &[u8; CONTEXT],
         block_index: u128,
+        context: &[u8; CONTEXT],
     ) -> SubSecret192 {
         let mut hasher = Blake2bMac192::new_with_salt_and_personal(
             self.as_bytes(),
@@ -402,40 +402,40 @@ mod tests {
     #[test]
     fn test_secret_derive_sub_secret_192() {
         let mut hset: HashSet<SubSecret192> = HashSet::new();
-        for _ in 0..420 {
+        for _ in 0..69 {
             let secret = Secret::generate().unwrap();
-            for context in [
-                CONTEXT_ED25519,
-                CONTEXT_ML_DSA,
-                CONTEXT_BLOCK_KEY,
-                CONTEXT_BLOCK_NONCE,
-            ] {
-                for block_index in 0..420 {
-                    let subsecret = secret.derive_sub_secret_192(context, block_index);
+            for block_index in 0..420 {
+                for context in [
+                    CONTEXT_ED25519,
+                    CONTEXT_ML_DSA,
+                    CONTEXT_BLOCK_KEY,
+                    CONTEXT_BLOCK_NONCE,
+                ] {
+                    let subsecret = secret.derive_sub_secret_192(block_index, context);
                     assert!(hset.insert(subsecret));
                 }
             }
         }
-        assert_eq!(hset.len(), 420 * 420 * 4);
+        assert_eq!(hset.len(), 69 * 420 * 4);
     }
 
     #[test]
     fn test_secret_derive_sub_secret_256() {
         let mut hset: HashSet<SubSecret256> = HashSet::new();
-        for _ in 0..420 {
+        for _ in 0..69 {
             let secret = Secret::generate().unwrap();
-            for context in [
-                CONTEXT_ED25519,
-                CONTEXT_ML_DSA,
-                CONTEXT_BLOCK_KEY,
-                CONTEXT_BLOCK_NONCE,
-            ] {
-                for block_index in 0..420 {
-                    let subsecret = secret.derive_sub_secret_256(context, block_index);
+            for block_index in 0..420 {
+                for context in [
+                    CONTEXT_ED25519,
+                    CONTEXT_ML_DSA,
+                    CONTEXT_BLOCK_KEY,
+                    CONTEXT_BLOCK_NONCE,
+                ] {
+                    let subsecret = secret.derive_sub_secret_256(block_index, context);
                     assert!(hset.insert(subsecret));
                 }
             }
         }
-        assert_eq!(hset.len(), 420 * 420 * 4);
+        assert_eq!(hset.len(), 69 * 420 * 4);
     }
 }

@@ -32,8 +32,8 @@ impl KeyPair {
         //
         // Defense in depth, yo. Also, a central design theme in ZebraChain is, "Don't reuse shit,
         // ever".
-        let key1 = secret.derive_sub_secret_256(CONTEXT_ED25519, block_index);
-        let key2 = secret.derive_sub_secret_256(CONTEXT_ML_DSA, block_index);
+        let key1 = secret.derive_sub_secret_256(block_index, CONTEXT_ED25519);
+        let key2 = secret.derive_sub_secret_256(block_index, CONTEXT_ML_DSA);
         assert_ne!(key1, key2); // Does constant time compare
         Self {
             ed25519: build_ed25519_keypair(key1),
