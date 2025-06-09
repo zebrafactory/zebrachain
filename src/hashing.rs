@@ -124,6 +124,9 @@ impl core::fmt::Display for Hash {
 }
 
 /// A 384-bit root secret with ZeroizeOnDrop and ConstantTimeEq.
+///
+/// This value should not be feed directly into any cryptographic primitives. Instead, a derived
+/// [SubSecret] should be used.
 #[derive(Zeroize, ZeroizeOnDrop, Eq, Clone)]
 pub struct Secret {
     value: [u8; SECRET],
@@ -190,7 +193,9 @@ impl Secret {
         self.keyed_hash(hash.as_bytes())
     }
 
-    /// Derive a 256-bit sub-secret from this secret, context bytes, and the block index.
+    /// Derive a 256-bit sub-secret from this secret, the block index, and context bytes.
+    ///
+    /// This is used for the XChaCha20Poly1305 key, the ed25519 seed, and the ML-DSA seed.
     pub fn derive_sub_secret_256(
         &self,
         block_index: u128,
@@ -207,7 +212,9 @@ impl Secret {
         SubSecret::from_bytes(output.into_bytes().into())
     }
 
-    /// Derive a 192-bit sub-secret from this secret, context bytes, and the block index.
+    /// Derive a 192-bit sub-secret from this secret, the block index, and context bytes.
+    ///
+    /// This is used for the XChaCha20XPoly1305 nonce.
     pub fn derive_sub_secret_192(
         &self,
         block_index: u128,
