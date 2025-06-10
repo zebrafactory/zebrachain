@@ -35,7 +35,10 @@ impl OwnedChainStore {
 
     /// Create a new owned chain, internally generating the entropy.
     pub fn generate_chain(&self, payload: &Payload) -> io::Result<OwnedChain> {
-        let initial_entropy = Secret::generate().unwrap();
+        let initial_entropy = match Secret::generate() {
+            Ok(secret) => secret,
+            Err(err) => return Err(err.to_io_error()),
+        };
         self.create_chain(&initial_entropy, payload)
     }
 
@@ -123,7 +126,10 @@ impl OwnedChain {
 
     /// Sign next block, internally generating new entropy.
     pub fn auto_sign(&mut self, payload: &Payload) -> io::Result<&BlockState> {
-        let new_entropy = Secret::generate().unwrap();
+        let new_entropy = match Secret::generate() {
+            Ok(secret) => secret,
+            Err(err) => return Err(err.to_io_error()),
+        };
         self.sign(&new_entropy, payload)
     }
 
