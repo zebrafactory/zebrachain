@@ -69,6 +69,22 @@ impl SecretBlockError {
     }
 }
 
+/// Error equivalent to gettrandom::Error.
+#[derive(Debug)]
+pub struct EntropyError {}
+
+impl EntropyError {
+    /// Create a new `EntropyError`.
+    pub fn new() -> Self {
+        Self {}
+    }
+
+    /// Map into an io Error with appropriate msg text.
+    pub fn to_io_error(&self) -> io::Error {
+        io::Error::other("EntropyError")
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

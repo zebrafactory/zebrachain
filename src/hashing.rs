@@ -1,3 +1,4 @@
+use crate::EntropyError;
 use crate::always::*;
 use blake2::{
     Blake2b, Blake2bMac, Digest,
@@ -6,7 +7,6 @@ use blake2::{
         consts::{U24, U32, U40, U48},
     },
 };
-pub use getrandom::Error as EntropyError;
 use subtle::{Choice, ConstantTimeEq};
 use zeroize::{Zeroize, ZeroizeOnDrop};
 
@@ -158,9 +158,10 @@ impl Secret {
     /// Return a [Secret] with entropy from [getrandom::fill()].
     pub fn generate() -> Result<Self, EntropyError> {
         let mut buf = [0; SECRET];
-        match getrandom::fill(&mut buf) {
-            Ok(_) => Ok(Self::from_bytes(buf)),
-            Err(err) => Err(err),
+        if getrandom::fill(&mut buf).is_err() {
+            Err(EntropyError::new())
+        } else {
+            Ok(Self::from_bytes(buf))
         }
     }
 
