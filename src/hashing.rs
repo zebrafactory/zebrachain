@@ -182,6 +182,7 @@ impl Secret {
     }
 
     /// Experimental keyed hashing with blake2b
+    #[doc(hidden)]
     pub fn keyed_hash(&self, input: &[u8]) -> Self {
         if input.len() < 8 {
             panic!(
@@ -196,12 +197,12 @@ impl Secret {
         Self::from_bytes(output.into_bytes().into())
     }
 
-    /// Derive sub secret from this secret and context bytes.
+    /// Derive a new secret from this secret and context bytes.
     pub fn derive_with_context(&self, context: &[u8; CONTEXT]) -> Self {
         self.keyed_hash(context)
     }
 
-    /// Derive sub secret from this secret and the bytes in [Hash][crate::Hash].
+    /// Derive a new secret from this secret and the bytes in [Hash][crate::Hash].
     pub fn derive_with_hash(&self, hash: &Hash) -> Self {
         self.keyed_hash(hash.as_bytes())
     }
