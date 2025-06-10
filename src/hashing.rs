@@ -158,10 +158,9 @@ impl Secret {
     /// Return a [Secret] with entropy from [getrandom::fill()].
     pub fn generate() -> Result<Self, EntropyError> {
         let mut buf = [0; SECRET];
-        if getrandom::fill(&mut buf).is_err() {
-            Err(EntropyError::new())
-        } else {
-            Ok(Self::from_bytes(buf))
+        match getrandom::fill(&mut buf) {
+            Ok(_) => Ok(Self::from_bytes(buf)),
+            Err(err) => Err(EntropyError::new(err)),
         }
     }
 

@@ -71,17 +71,19 @@ impl SecretBlockError {
 
 /// Error equivalent to gettrandom::Error.
 #[derive(Debug)]
-pub struct EntropyError {}
+pub struct EntropyError {
+    inner: getrandom::Error,
+}
 
 impl EntropyError {
     /// Create a new `EntropyError`.
-    pub fn new() -> Self {
-        Self {}
+    pub fn new(inner: getrandom::Error) -> Self {
+        Self { inner }
     }
 
     /// Map into an io Error with appropriate msg text.
     pub fn to_io_error(&self) -> io::Error {
-        io::Error::other("EntropyError")
+        io::Error::other(format!("EntropyError({:?})", self.inner))
     }
 }
 
