@@ -21,10 +21,14 @@ pub struct Hash {
     value: [u8; DIGEST],
 }
 
+/// Error when trying to decode a hex encoded [Hash](crate::Hash).
 #[derive(Debug)]
 pub enum HexError {
-    Len(usize),
-    Byte(u8),
+    /// The length in wrong
+    BadLen(usize),
+
+    /// Contains an invalid byte
+    BadByte(u8),
 }
 
 impl Hash {
@@ -56,12 +60,12 @@ impl Hash {
             match byte {
                 b'a'..=b'f' => Ok(byte - b'a' + 10),
                 b'0'..=b'9' => Ok(byte - b'0'),
-                _ => Err(HexError::Byte(byte)),
+                _ => Err(HexError::BadByte(byte)),
             }
         }
         let hex_bytes: &[u8] = hex.as_ref();
         if hex_bytes.len() != DIGEST * 2 {
-            return Err(HexError::Len(hex_bytes.len()));
+            return Err(HexError::BadLen(hex_bytes.len()));
         }
         let mut hash_bytes: [u8; DIGEST] = [0; DIGEST];
         for i in 0..DIGEST {
@@ -83,7 +87,15 @@ impl Hash {
     }
 
     /// Compute the 320-bit BLAKE2b hash of `input`, returning `Hash`.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use zf_zebrachain::Hash;
+    /// let hash = Hash::compute(b"hello, world");
+    /// ```
     pub fn compute(input: &[u8]) -> Self {
+        assert!(input.len() > 0);
         let mut hasher = Blake2b320::new();
         hasher.update(input);
         let output = hasher.finalize();
