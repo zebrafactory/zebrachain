@@ -1,5 +1,18 @@
 use std::collections::HashSet;
-use zf_zebrachain::{DIGEST, Hash, SECRET, Secret};
+use zf_zebrachain::{DIGEST, Hash, SECRET, Secret, SubSecret192, SubSecret256};
+
+#[test]
+fn test_hash_compute() {
+    let hash = Hash::compute(b"Just Rusting away");
+    assert_eq!(
+        hash.as_bytes(),
+        &[
+            231, 218, 170, 217, 143, 97, 208, 49, 238, 133, 89, 228, 237, 21, 55, 36, 216, 62, 107,
+            78, 216, 194, 94, 24, 137, 227, 28, 31, 82, 69, 5, 134, 130, 196, 88, 140, 167, 118,
+            110, 37
+        ]
+    );
+}
 
 #[test]
 fn test_hash_from_slice() {
@@ -98,4 +111,34 @@ fn test_secret_mix_with_hash() {
         }
     }
     assert_eq!(hset.len(), 69 + 69 * 256);
+}
+
+#[test]
+fn test_secret_derive_sub_secret_256() {
+    let mut hset: HashSet<SubSecret256> = HashSet::new();
+    for _ in 0..42 {
+        let secret = Secret::generate().unwrap();
+        for block_index in 0..69 {
+            for i in 0..=255 {
+                let subsecret = secret.derive_sub_secret_256(block_index, &[i; SECRET]);
+                assert!(hset.insert(subsecret));
+            }
+        }
+    }
+    assert_eq!(hset.len(), 42 * 69 * 256)
+}
+
+#[test]
+fn test_secret_derive_sub_secret_192() {
+    let mut hset: HashSet<SubSecret192> = HashSet::new();
+    for _ in 0..42 {
+        let secret = Secret::generate().unwrap();
+        for block_index in 0..69 {
+            for i in 0..=255 {
+                let subsecret = secret.derive_sub_secret_192(block_index, &[i; SECRET]);
+                assert!(hset.insert(subsecret));
+            }
+        }
+    }
+    assert_eq!(hset.len(), 42 * 69 * 256)
 }
