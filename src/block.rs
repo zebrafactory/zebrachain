@@ -119,11 +119,11 @@ impl BlockState {
     // Warning: this does ZERO validation!
     fn from_buf(buf: &[u8]) -> Self {
         Self {
-            index: get_u128(buf, INDEX_RANGE),
-            block_hash: get_hash(buf, HASH_RANGE),
-            chain_hash: get_hash(buf, CHAIN_HASH_RANGE),
-            previous_hash: get_hash(buf, PREVIOUS_HASH_RANGE),
-            next_pubkey_hash: get_hash(buf, NEXT_PUBKEY_HASH_RANGE),
+            index: u128::from_le_bytes(buf[INDEX_RANGE].try_into().unwrap()),
+            block_hash: Hash::from_slice(&buf[HASH_RANGE]).unwrap(),
+            chain_hash: Hash::from_slice(&buf[CHAIN_HASH_RANGE]).unwrap(),
+            previous_hash: Hash::from_slice(&buf[PREVIOUS_HASH_RANGE]).unwrap(),
+            next_pubkey_hash: Hash::from_slice(&buf[NEXT_PUBKEY_HASH_RANGE]).unwrap(),
             payload: Payload::from_buf(&buf[PAYLOAD_RANGE]),
         }
     }
