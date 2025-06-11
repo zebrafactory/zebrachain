@@ -95,7 +95,7 @@ impl Hash {
     /// let hash = Hash::compute(b"hello, world");
     /// ```
     pub fn compute(input: &[u8]) -> Self {
-        assert!(input.len() > 0);
+        assert!(!input.is_empty());
         let mut hasher = Blake2b320::new();
         hasher.update(input);
         let output = hasher.finalize();
@@ -176,11 +176,6 @@ impl Secret {
         }
     }
 
-    /// Mix new entropy with this secret to create the next secret.
-    pub fn mix(&self, new_entropy: &Self) -> Self {
-        self.keyed_hash(new_entropy.as_bytes())
-    }
-
     /// Experimental keyed hashing with blake2b
     #[doc(hidden)]
     pub fn keyed_hash(&self, input: &[u8]) -> Self {
@@ -197,13 +192,18 @@ impl Secret {
         Self::from_bytes(output.into_bytes().into())
     }
 
+    /// Mix new entropy with this secret to create the next secret.
+    pub fn mix(&self, new_entropy: &Self) -> Self {
+        self.keyed_hash(new_entropy.as_bytes())
+    }
+
     /// Derive a new secret from this secret and context bytes.
-    pub fn derive_with_context(&self, context: &[u8; CONTEXT]) -> Self {
+    pub fn mix_with_context(&self, context: &[u8; CONTEXT]) -> Self {
         self.keyed_hash(context)
     }
 
     /// Derive a new secret from this secret and the bytes in [Hash][crate::Hash].
-    pub fn derive_with_hash(&self, hash: &Hash) -> Self {
+    pub fn mix_with_hash(&self, hash: &Hash) -> Self {
         self.keyed_hash(hash.as_bytes())
     }
 
@@ -374,10 +374,10 @@ mod tests {
     }
 
     #[test]
-    fn test_secret_derive_with_context() {
+    fn test_secret_mix_with_context() {
         let secret = Secret::from_bytes([7; SECRET]);
 
-        let h = secret.derive_with_context(CONTEXT_SECRET);
+        let h = secret.mix_with_context(CONTEXT_SECRET);
         assert_eq!(
             h.as_bytes(),
             &[
@@ -387,7 +387,7 @@ mod tests {
             ]
         );
 
-        let h = secret.derive_with_context(CONTEXT_SECRET_NEXT);
+        let h = secret.mix_with_context(CONTEXT_SECRET_NEXT);
         assert_eq!(
             h.as_bytes(),
             &[
@@ -399,7 +399,7 @@ mod tests {
 
         let secret = Secret::from_bytes([8; SECRET]);
 
-        let h = secret.derive_with_context(CONTEXT_SECRET);
+        let h = secret.mix_with_context(CONTEXT_SECRET);
         assert_eq!(
             h.as_bytes(),
             &[
@@ -409,7 +409,7 @@ mod tests {
             ]
         );
 
-        let h = secret.derive_with_context(CONTEXT_SECRET_NEXT);
+        let h = secret.mix_with_context(CONTEXT_SECRET_NEXT);
         assert_eq!(
             h.as_bytes(),
             &[

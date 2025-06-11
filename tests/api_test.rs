@@ -133,7 +133,7 @@ fn test_secret_chain_store() {
     block.set_seed(&seed);
     block.set_public_block_hash(&chain_hash);
 
-    let chain_secret = storage_secret.derive_with_hash(&chain_hash);
+    let chain_secret = storage_secret.mix_with_hash(&chain_hash);
     let block_hash = block.finalize(&chain_secret);
     let chain = store.create_chain(&chain_hash, buf, &block_hash).unwrap();
     assert_eq!(chain.tail().payload, payload);

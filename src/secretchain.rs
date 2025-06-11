@@ -9,7 +9,7 @@ use std::io::{BufReader, Read, Seek, Write};
 use std::path::{Path, PathBuf};
 
 pub(crate) fn derive_chain_secret(store_secret: &Secret, chain_hash: &Hash) -> Secret {
-    store_secret.derive_with_hash(chain_hash)
+    store_secret.mix_with_hash(chain_hash)
 }
 
 /// Save secret chain to non-volitile storage (encrypted and authenticated).
@@ -348,13 +348,13 @@ mod tests {
                 204, 45, 250, 23, 199, 180, 15, 59, 45, 30, 211, 29
             ]
         );
-        assert_eq!(sec, secret.derive_with_hash(&chain_hash));
+        assert_eq!(sec, secret.mix_with_hash(&chain_hash));
         let secret = Secret::generate().unwrap();
         let chain_hash = random_hash();
         let store = SecretChainStore::new(&dir, secret.clone());
         assert_eq!(
             store.derive_chain_secret(&chain_hash),
-            secret.derive_with_hash(&chain_hash)
+            secret.mix_with_hash(&chain_hash)
         );
     }
 
