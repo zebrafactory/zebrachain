@@ -135,7 +135,7 @@ impl core::fmt::Display for Hash {
     }
 }
 
-/// A 384-bit root secret with ZeroizeOnDrop and ConstantTimeEq.
+/// A 384-bit (48-byte) root secret with ZeroizeOnDrop and ConstantTimeEq.
 ///
 /// This value should not be fed directly into any cryptographic primitives. Instead, a derived
 /// [SubSecret] should be used.  See [Secret::derive_sub_secret_256()],
@@ -169,7 +169,7 @@ impl Secret {
         Ok(Self::from_bytes(bytes.try_into()?))
     }
 
-    /// Create a `Secret` from from bytes.
+    /// Create a `Secret` from provided bytes.
     pub fn from_bytes(value: [u8; SECRET]) -> Self {
         Self { value }
     }
@@ -211,12 +211,12 @@ impl Secret {
         self.keyed_hash(context)
     }
 
-    /// Derive a new secret from this secret and the bytes in [Hash][crate::Hash].
+    /// Derive a new secret from this secret and the bytes in `hash`.
     pub fn mix_with_hash(&self, hash: &Hash) -> Self {
         self.keyed_hash(hash.as_bytes())
     }
 
-    /// Derive a 256-bit sub-secret from this secret, the block index, and context bytes.
+    /// Derive a 256-bit (32-byte) sub-secret from this secret, the block index, and context bytes.
     ///
     /// This is used for the XChaCha20Poly1305 key, the ed25519 seed, and the ML-DSA seed.
     pub fn derive_sub_secret_256(
@@ -235,7 +235,7 @@ impl Secret {
         SubSecret::from_bytes(output.into_bytes().into())
     }
 
-    /// Derive a 192-bit sub-secret from this secret, the block index, and context bytes.
+    /// Derive a 192-bit (42-byte) sub-secret from this secret, the block index, and context bytes.
     ///
     /// This is used for the XChaCha20Poly1305 nonce.
     pub fn derive_sub_secret_192(
@@ -321,12 +321,12 @@ impl<const N: usize> core::fmt::Debug for SubSecret<N> {
     }
 }
 
-/// A 192-bit derived secret.
+/// A 192-bit (24-byte) derived secret.
 ///
 /// This is used for the XChaCha20Poly1305 nonce.
 pub type SubSecret192 = SubSecret<24>;
 
-/// A 256-bit derived secret.
+/// A 256-bit (32-byte) derived secret.
 ///
 /// This is used for the XChaCha20Poly1305 key, the ed25519 seed, and the ML-DSA seed.
 pub type SubSecret256 = SubSecret<32>;
