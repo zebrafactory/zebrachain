@@ -89,8 +89,8 @@ impl OwnedChainStore {
         for result in iter {
             let sec = result?;
             sign_block(&mut buf, &sec.seed, &sec.payload, Some(&tail));
-            // FIXME: check public block hash
             tail = chain.append(&buf)?.clone();
+            assert_eq!(tail.block_hash, sec.public_block_hash);
         }
         Ok(chain)
     }
