@@ -16,6 +16,13 @@ type Blake2bMac256 = Blake2bMac<U32>;
 type Blake2bMac384 = Blake2bMac<U48>;
 
 /// Buffer containing the hash digest, with constant time comparison.
+///
+/// # Examples
+///
+/// ```
+/// use zf_zebrachain::Hash;
+/// let hash = Hash::compute(b"hello, world");
+/// ```
 #[derive(Eq, Clone, Copy)]
 pub struct Hash {
     value: [u8; DIGEST],
@@ -32,9 +39,18 @@ pub enum HexError {
 }
 
 impl Hash {
-    /// The raw bytes of the `Hash`.
-    pub const fn as_bytes(&self) -> &[u8; DIGEST] {
-        &self.value
+    /// Compute the 320-bit BLAKE2b hash of `input`, returning `Hash`.
+    pub fn compute(input: &[u8]) -> Self {
+        assert!(!input.is_empty());
+        let mut hasher = Blake2b320::new();
+        hasher.update(input);
+        let output = hasher.finalize();
+        Self::from_bytes(output.into())
+    }
+
+    /// Load from a slice
+    pub fn from_slice(bytes: &[u8]) -> Result<Self, core::array::TryFromSliceError> {
+        Ok(Self::from_bytes(bytes.try_into()?))
     }
 
     /// Create from bytes.
@@ -42,9 +58,9 @@ impl Hash {
         Self { value }
     }
 
-    /// Load from a slice
-    pub fn from_slice(bytes: &[u8]) -> Result<Self, core::array::TryFromSliceError> {
-        Ok(Self::from_bytes(bytes.try_into()?))
+    /// The raw bytes of the `Hash`.
+    pub const fn as_bytes(&self) -> &[u8; DIGEST] {
+        &self.value
     }
 
     /// Constant time check of whether every byte is a zero.
@@ -84,22 +100,6 @@ impl Hash {
             hex.push(table[(b & 0xf) as usize] as char);
         }
         hex
-    }
-
-    /// Compute the 320-bit BLAKE2b hash of `input`, returning `Hash`.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use zf_zebrachain::Hash;
-    /// let hash = Hash::compute(b"hello, world");
-    /// ```
-    pub fn compute(input: &[u8]) -> Self {
-        assert!(!input.is_empty());
-        let mut hasher = Blake2b320::new();
-        hasher.update(input);
-        let output = hasher.finalize();
-        Self::from_bytes(output.into())
     }
 }
 

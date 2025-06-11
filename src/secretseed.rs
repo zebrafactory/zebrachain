@@ -40,7 +40,11 @@ impl Seed {
     pub fn create(initial_entropy: &Secret) -> Self {
         let secret = initial_entropy.mix_with_context(CONTEXT_SECRET);
         let next_secret = initial_entropy.mix_with_context(CONTEXT_SECRET_NEXT);
-        Self::new(secret, next_secret)
+        assert_ne!(secret, next_secret); // Does constant time comparison
+        Self {
+            secret,
+            next_secret,
+        }
     }
 
     /// Creates a new seed using the initial entropy from [getrandom::fill()].
