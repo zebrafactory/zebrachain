@@ -1,5 +1,5 @@
 use std::collections::HashSet;
-use zf_zebrachain::{DIGEST, Hash, SECRET, Secret, SubSecret192, SubSecret256};
+use zf_zebrachain::{CONTEXT, DIGEST, Hash, SECRET, Secret, SubSecret192, SubSecret256};
 
 #[test]
 fn test_hash_compute() {
@@ -91,7 +91,7 @@ fn test_secret_mix_with_context() {
         let secret = Secret::generate().unwrap();
         assert!(hset.insert(secret.clone()));
         for i in 0..=255 {
-            let new_secret = secret.mix_with_context(&[i; SECRET]);
+            let new_secret = secret.mix_with_context(&[i; CONTEXT]);
             assert!(hset.insert(new_secret));
         }
     }
@@ -120,7 +120,7 @@ fn test_secret_derive_sub_secret_256() {
         let secret = Secret::generate().unwrap();
         for block_index in 0..69 {
             for i in 0..=255 {
-                let subsecret = secret.derive_sub_secret_256(block_index, &[i; SECRET]);
+                let subsecret = secret.derive_sub_secret_256(block_index, &[i; CONTEXT]);
                 assert!(hset.insert(subsecret));
             }
         }
@@ -135,7 +135,7 @@ fn test_secret_derive_sub_secret_192() {
         let secret = Secret::generate().unwrap();
         for block_index in 0..69 {
             for i in 0..=255 {
-                let subsecret = secret.derive_sub_secret_192(block_index, &[i; SECRET]);
+                let subsecret = secret.derive_sub_secret_192(block_index, &[i; CONTEXT]);
                 assert!(hset.insert(subsecret));
             }
         }

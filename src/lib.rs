@@ -97,7 +97,7 @@ mod secretseed;
 #[cfg(test)]
 pub mod testhelpers;
 
-pub use always::{BLOCK, DIGEST, PAYLOAD, SECRET, SECRET_BLOCK, SECRET_BLOCK_AEAD};
+pub use always::{BLOCK, CONTEXT, DIGEST, PAYLOAD, SECRET, SECRET_BLOCK, SECRET_BLOCK_AEAD};
 pub use block::{Block, BlockState, CheckPoint, MutBlock, sign_block};
 pub use chain::{Chain, ChainIter, ChainStore};
 pub use errors::{BlockError, EntropyError, SecretBlockError};
