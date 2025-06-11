@@ -140,40 +140,49 @@ impl core::fmt::Display for Hash {
 /// This value should not be fed directly into any cryptographic primitives. Instead, a derived
 /// [SubSecret] should be used.  See [Secret::derive_sub_secret_256()],
 /// [Secret::derive_sub_secret_192()].
+///
+/// # Examples
+///
+/// ```
+/// use zf_zebrachain::Secret;
+/// let secret = Secret::generate().unwrap();
+/// let new_entropy = Secret::generate().unwrap();
+/// let next_secret = secret.mix(&new_entropy);
+/// ```
 #[derive(Zeroize, ZeroizeOnDrop, Eq, Clone)]
 pub struct Secret {
     value: [u8; SECRET],
 }
 
 impl Secret {
-    /// The raw bytes of the `Secret`.
-    pub fn as_bytes(&self) -> &[u8; SECRET] {
-        &self.value
-    }
-
-    /// Create from bytes.
-    pub fn from_bytes(value: [u8; SECRET]) -> Self {
-        Self { value }
-    }
-
-    /// Load from a slice
-    pub fn from_slice(bytes: &[u8]) -> Result<Self, core::array::TryFromSliceError> {
-        Ok(Self::from_bytes(bytes.try_into()?))
-    }
-
-    /// Constant time check of whether every byte is a zero.
-    pub fn is_zeros(&self) -> bool {
-        // FIXME: Do this without comparing to another [u8; SECRET]
-        self.value.ct_eq(&[0; SECRET]).into()
-    }
-
-    /// Return a [Secret] with entropy from [getrandom::fill()].
+    /// Return a `Secret` with entropy from [getrandom::fill()].
     pub fn generate() -> Result<Self, EntropyError> {
         let mut buf = [0; SECRET];
         match getrandom::fill(&mut buf) {
             Ok(_) => Ok(Self::from_bytes(buf)),
             Err(err) => Err(EntropyError::new(err)),
         }
+    }
+
+    /// Load from a slice.
+    pub fn from_slice(bytes: &[u8]) -> Result<Self, core::array::TryFromSliceError> {
+        Ok(Self::from_bytes(bytes.try_into()?))
+    }
+
+    /// Create a `Secret` from from bytes.
+    pub fn from_bytes(value: [u8; SECRET]) -> Self {
+        Self { value }
+    }
+
+    /// The raw bytes of the `Secret`.
+    pub fn as_bytes(&self) -> &[u8; SECRET] {
+        &self.value
+    }
+
+    /// Constant time check of whether every byte is a zero.
+    pub fn is_zeros(&self) -> bool {
+        // FIXME: Do this without comparing to another [u8; SECRET]
+        self.value.ct_eq(&[0; SECRET]).into()
     }
 
     /// Experimental keyed hashing with blake2b
