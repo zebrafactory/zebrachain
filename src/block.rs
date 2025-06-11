@@ -282,15 +282,15 @@ impl<'a> MutBlock<'a> {
 
     /// Set index, chain_hash, and prev_hash based on [BlockState] `prev`.
     pub fn set_previous(&mut self, prev: &BlockState) {
-        set_u128(self.buf, INDEX_RANGE, prev.index + 1);
-        set_hash(self.buf, PREVIOUS_HASH_RANGE, &prev.block_hash);
+        self.buf[INDEX_RANGE].copy_from_slice(&(prev.index + 1).to_le_bytes());
+        self.buf[PREVIOUS_HASH_RANGE].copy_from_slice(prev.block_hash.as_bytes());
         let chain_hash = prev.effective_chain_hash(); // Don't use prev.chain_hash !
-        set_hash(self.buf, CHAIN_HASH_RANGE, &chain_hash);
+        self.buf[CHAIN_HASH_RANGE].copy_from_slice(chain_hash.as_bytes());
     }
 
     // Set hash of the public key that will be used for siging the next block.
     pub(crate) fn set_next_pubkey_hash(&mut self, next_pubkey_hash: &Hash) {
-        set_hash(self.buf, NEXT_PUBKEY_HASH_RANGE, next_pubkey_hash);
+        self.buf[NEXT_PUBKEY_HASH_RANGE].copy_from_slice(next_pubkey_hash.as_bytes());
     }
 
     /// Sign block using seed.
@@ -304,14 +304,9 @@ impl<'a> MutBlock<'a> {
 
     /// Finalize the block (sets and returns block hash).
     pub fn finalize(self) -> Hash {
-        let block_hash = Hash::compute(self.as_hashable());
-        set_hash(self.buf, HASH_RANGE, &block_hash);
+        let block_hash = Hash::compute(&self.buf[HASHABLE_RANGE]);
+        self.buf[HASH_RANGE].copy_from_slice(block_hash.as_bytes());
         block_hash
-    }
-
-    /// Bytes over which the block hash is computed.
-    fn as_hashable(&self) -> &[u8] {
-        &self.buf[HASHABLE_RANGE]
     }
 
     /// Signature as mutable bytes.
@@ -340,7 +335,7 @@ impl<'a> MutBlock<'a> {
     }
 
     fn index(&self) -> u128 {
-        get_u128(self.buf, INDEX_RANGE)
+        u128::from_le_bytes(self.buf[INDEX_RANGE].try_into().unwrap())
     }
 }
 
