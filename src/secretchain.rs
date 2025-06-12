@@ -90,7 +90,7 @@ impl SecretChain {
 
     /// Number of blocks in this secret chain.
     pub fn count(&self) -> u128 {
-        self.tail.index + 1
+        self.tail.block_index + 1
     }
 
     /// The [SecretBlock] of the latest block in this secret chain.
@@ -154,7 +154,7 @@ impl SecretChainIter {
 
     fn index(&self) -> u128 {
         if let Some(tail) = self.tail.as_ref() {
-            tail.index + 1
+            tail.block_index + 1
         } else {
             0
         }

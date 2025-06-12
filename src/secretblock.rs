@@ -95,7 +95,7 @@ pub struct SecretBlockState {
     pub payload: Payload,
 
     /// Block index.
-    pub index: u128,
+    pub block_index: u128,
 
     /// Hash of previous secret block.
     pub previous_hash: Hash,
@@ -114,7 +114,7 @@ impl SecretBlockState {
                 public_block_hash: get_hash(buf, SEC_PUBLIC_HASH_RANGE),
                 seed: Seed::from_buf(&buf[SEC_SEED_RANGE])?,
                 payload: Payload::from_buf(&buf[SEC_PAYLOAD_RANGE]),
-                index: get_u128(buf, SEC_INDEX_RANGE),
+                block_index: get_u128(buf, SEC_INDEX_RANGE),
                 previous_hash: get_hash(buf, SEC_PREV_HASH_RANGE),
             })
         }
@@ -148,7 +148,7 @@ impl<'a> SecretBlock<'a> {
     ) -> Result<SecretBlockState, SecretBlockError> {
         decrypt_in_place(self.buf, chain_secret, block_index)?;
         let state = SecretBlockState::from_buf(&self.buf[0..SECRET_BLOCK])?;
-        if block_index != state.index {
+        if block_index != state.block_index {
             Err(SecretBlockError::Index)
         } else {
             Ok(state)
@@ -176,7 +176,7 @@ impl<'a> SecretBlock<'a> {
         chain_secret: &Secret,
         prev: &SecretBlockState,
     ) -> Result<SecretBlockState, SecretBlockError> {
-        let state = self.from_index(chain_secret, prev.index + 1)?;
+        let state = self.from_index(chain_secret, prev.block_index + 1)?;
         if state.previous_hash != prev.block_hash {
             Err(SecretBlockError::PreviousHash)
         } else if state.seed.secret != prev.seed.next_secret {
@@ -213,7 +213,7 @@ impl<'a> MutSecretBlock<'a> {
 
     /// Set needed secret block fields for block after `prev`.
     pub fn set_previous(&mut self, prev: &SecretBlockState) {
-        set_u128(self.buf, SEC_INDEX_RANGE, prev.index + 1);
+        set_u128(self.buf, SEC_INDEX_RANGE, prev.block_index + 1);
         set_hash(self.buf, SEC_PREV_HASH_RANGE, &prev.block_hash);
     }
 
@@ -396,7 +396,7 @@ mod tests {
     fn build_next_simirandom_valid_block(state: &SecretBlockState) -> (Hash, Vec<u8>) {
         let mut buf = vec![0; SECRET_BLOCK];
         getrandom::fill(&mut buf).unwrap();
-        set_u128(&mut buf, SEC_INDEX_RANGE, state.index + 1);
+        set_u128(&mut buf, SEC_INDEX_RANGE, state.block_index + 1);
         set_secret(&mut buf[SEC_SEED_RANGE], 0..SECRET, &state.seed.next_secret);
         set_hash(&mut buf, SEC_PREV_HASH_RANGE, &state.block_hash);
         let block_hash = Hash::compute(&buf[SEC_HASHABLE_RANGE]);
@@ -580,9 +580,9 @@ mod tests {
 
             // Bit flips in prev_state.index (key and nonce are derived from index, so this will
             // result in a Decryption error)
-            for bad_index in U128BitFlipper::new(prev_state.index) {
+            for bad_index in U128BitFlipper::new(prev_state.block_index) {
                 let mut bad_prev_state = prev_state.clone();
-                bad_prev_state.index = bad_index;
+                bad_prev_state.block_index = bad_index;
                 let mut buf = orig.clone();
                 encrypt_in_place(&mut buf, &chain_secret, block_index + 1);
                 {
@@ -665,7 +665,7 @@ mod tests {
             public_block_hash: random_hash(),
             seed: Seed::generate().unwrap(),
             payload: random_payload(),
-            index: 69,
+            block_index: 69,
             previous_hash: random_hash(),
         };
         block.set_previous(&prev);
