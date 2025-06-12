@@ -1,5 +1,5 @@
 use std::collections::HashSet;
-use zf_zebrachain::{CONTEXT, DIGEST, Hash, SECRET, Secret, SubSecret192, SubSecret256};
+use zf_zebrachain::{CONTEXT, DIGEST, Hash, HexError, SECRET, Secret, SubSecret192, SubSecret256};
 
 #[test]
 fn test_hash_compute() {
@@ -34,6 +34,58 @@ fn test_hash_is_zeros() {
     assert!(hash.is_zeros());
     let hash = Hash::from_bytes([69; DIGEST]);
     assert!(!hash.is_zeros());
+}
+
+#[test]
+fn test_hash_from_hex() {
+    let hash = Hash::from_hex(
+        "26cd158316889c1435f38bf280fad89fb56284af132f62f817c71c10edb00aae3a853652ac33250e",
+    )
+    .unwrap();
+    assert_eq!(
+        hash,
+        Hash::from_bytes([
+            38, 205, 21, 131, 22, 136, 156, 20, 53, 243, 139, 242, 128, 250, 216, 159, 181, 98,
+            132, 175, 19, 47, 98, 248, 23, 199, 28, 16, 237, 176, 10, 174, 58, 133, 54, 82, 172,
+            51, 37, 14
+        ])
+    );
+    assert_eq!(
+        Hash::from_hex(
+            "26cd158316889c1435f38bf280fad89fb56284af132f62f817c71c10edb00aae3a853652ac33250ee",
+        ),
+        Err(HexError::BadLen(81))
+    );
+    assert_eq!(
+        Hash::from_hex(
+            "26cd158316889c1435f38bf280fad89fb56284af132f62f817c71c10edb00aae3a853652ac33250",
+        ),
+        Err(HexError::BadLen(79))
+    );
+    assert_eq!(
+        Hash::from_hex(
+            "26cd158316889c1435f38bf280fad89fb56284af132f62f817c71c10edb00aae3a853652ac33250g",
+        ),
+        Err(HexError::BadByte(b"g"[0]))
+    );
+    assert_eq!(
+        Hash::from_hex(
+            "26cd158316889c1435f38bf280fad89fb56284af132f62f817c71c10edb00aae3a853652ac33250E",
+        ),
+        Err(HexError::BadByte(b"E"[0]))
+    );
+}
+
+#[test]
+fn test_hash_to_hex() {
+    let hash = Hash::from_bytes([
+        38, 205, 21, 131, 22, 136, 156, 20, 53, 243, 139, 242, 128, 250, 216, 159, 181, 98, 132,
+        175, 19, 47, 98, 248, 23, 199, 28, 16, 237, 176, 10, 174, 58, 133, 54, 82, 172, 51, 37, 14,
+    ]);
+    assert_eq!(
+        hash.to_hex().as_str(),
+        "26cd158316889c1435f38bf280fad89fb56284af132f62f817c71c10edb00aae3a853652ac33250e"
+    );
 }
 
 #[test]

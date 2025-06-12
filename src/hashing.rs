@@ -29,7 +29,7 @@ pub struct Hash {
 }
 
 /// Error when trying to decode a hex encoded [Hash](crate::Hash).
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq)]
 pub enum HexError {
     /// The length in wrong
     BadLen(usize),
