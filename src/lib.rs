@@ -65,7 +65,7 @@
 //! // the 2nd keypair created above. OwnedChain.sign() internally generates the needed new
 //! // entropy.
 //! let payload2 = Payload::new_time_stamped(Hash::compute(b"Message number 2"));
-//! owned_chain.sign(&payload2);
+//! owned_chain.sign(&payload2).unwrap();
 //! assert_eq!(owned_chain.tail().payload, payload2);
 //!
 //! // A chain is identified by its `chain_hash`, which is the hash of the 1st block in the chain:
