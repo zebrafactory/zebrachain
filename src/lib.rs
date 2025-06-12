@@ -43,7 +43,7 @@
 //! // chain files and a secret storage key that will be used to encrypt them:
 //! let secret_chain_dir = tempfile::TempDir::new().unwrap();
 //! let storage_secret = Secret::generate().unwrap(); // Uses getrandom::fill()
-//! let mystore = OwnedChainStore::build(
+//! let owned_store = OwnedChainStore::build(
 //!     chain_dir.path(), secret_chain_dir.path(), storage_secret
 //! );
 //!
@@ -56,8 +56,8 @@
 //! // included in the 1st block. This is the forward contract for the keypair that will be used
 //! // to sign the next block. OwnedChainStore.generate_chain() internally generates the
 //! // needed initial entropy.
-//! let mut mychain = mystore.generate_chain(&payload1).unwrap();
-//! assert_eq!(mychain.tail().payload, payload1);
+//! let mut owned_chain = owned_store.generate_chain(&payload1).unwrap();
+//! assert_eq!(owned_chain.tail().payload, payload1);
 //!
 //! // Let us sign another payload. Each signatures requires new entropy, which is mixed into the
 //! // the secret chain state using a keyed hash. This latest seed will be used to create a 3rd
@@ -65,11 +65,11 @@
 //! // the 2nd keypair created above. OwnedChain.sign() internally generates the needed new
 //! // entropy.
 //! let payload2 = Payload::new_time_stamped(Hash::compute(b"Message number 2"));
-//! mychain.sign(&payload2);
-//! assert_eq!(mychain.tail().payload, payload2);
+//! owned_chain.sign(&payload2);
+//! assert_eq!(owned_chain.tail().payload, payload2);
 //!
 //! // A chain is identified by its `chain_hash`, which is the hash of the 1st block in the chain:
-//! let chain_hash = mychain.chain_hash();
+//! let chain_hash = owned_chain.chain_hash();
 //!
 //! // We can now open that chain from the public chain store, which will fully validate the chain
 //! // and set the tail at the latest block:
