@@ -47,7 +47,7 @@
 //!     chain_dir.path(), secret_chain_dir.path(), storage_secret
 //! );
 //!
-//! // A Payload is what you to sign. Currently it's a 128-bit timestamp and a 320-bit hash. To
+//! // A Payload is what you to sign. Currently it's a 64-bit timestamp and a 320-bit hash. To
 //! // create a new chain, you need the first payload that you want to sign:
 //! let payload1 = Payload::new_time_stamped(Hash::compute(b"Message number 1"));
 //!
