@@ -13,27 +13,17 @@ pub struct CheckPoint {
     pub block_hash: Hash,
 
     /// Block-wise position in chain, starting from zero.
-    pub block_index: u128,
+    pub block_index: u64,
 }
 
 impl CheckPoint {
     /// Create a checkpoint.
-    pub fn new(chain_hash: Hash, block_hash: Hash, block_index: u128) -> Self {
+    pub fn new(chain_hash: Hash, block_hash: Hash, block_index: u64) -> Self {
         Self {
             chain_hash,
             block_hash,
             block_index,
         }
-    }
-
-    /// Downcast index to u64, panic if we can't..
-    ///
-    /// FIXME SOON: Quick, before someone has a ZebraChain that passes 2^64 blocks, we need a
-    /// distributed storage backend that can actually handle a chain that long.
-    ///
-    /// Aside: We actually have a considerable amount of time to fix this 😎
-    pub fn index_as_u64(&self) -> u64 {
-        self.block_index.try_into().unwrap()
     }
 }
 
@@ -50,7 +40,7 @@ fn check_block_buf(buf: &[u8]) {
 #[derive(Clone, Debug, PartialEq)]
 pub struct BlockState {
     /// Block-wise position in chain, starting from zero.
-    pub block_index: u128,
+    pub block_index: u64,
 
     /// Hash of this block.
     pub block_hash: Hash,
@@ -75,7 +65,7 @@ pub struct BlockState {
 impl BlockState {
     /// Construct a new [BlockState].
     pub fn new(
-        block_index: u128,
+        block_index: u64,
         block_hash: Hash,
         chain_hash: Hash,
         previous_hash: Hash,
@@ -119,7 +109,7 @@ impl BlockState {
     // Warning: this does ZERO validation!
     fn from_buf(buf: &[u8]) -> Self {
         Self {
-            block_index: u128::from_le_bytes(buf[INDEX_RANGE].try_into().unwrap()),
+            block_index: u64::from_le_bytes(buf[INDEX_RANGE].try_into().unwrap()),
             block_hash: Hash::from_slice(&buf[HASH_RANGE]).unwrap(),
             chain_hash: Hash::from_slice(&buf[CHAIN_HASH_RANGE]).unwrap(),
             previous_hash: Hash::from_slice(&buf[PREVIOUS_HASH_RANGE]).unwrap(),
@@ -169,7 +159,7 @@ impl<'a> Block<'a> {
     pub fn from_hash_at_index(
         &self,
         block_hash: &Hash,
-        block_index: u128,
+        block_index: u64,
     ) -> Result<BlockState, BlockError> {
         let state = self.open()?;
         if block_hash != &state.block_hash {
@@ -334,8 +324,8 @@ impl<'a> MutBlock<'a> {
         Hash::compute(&self.buf[PUBKEY_RANGE])
     }
 
-    fn block_index(&self) -> u128 {
-        u128::from_le_bytes(self.buf[INDEX_RANGE].try_into().unwrap())
+    fn block_index(&self) -> u64 {
+        u64::from_le_bytes(self.buf[INDEX_RANGE].try_into().unwrap())
     }
 }
 
@@ -372,7 +362,7 @@ mod tests {
     use super::*;
     use crate::pksign::SecretSigner;
     use crate::testhelpers::{
-        BitFlipper, HashBitFlipper, U128BitFlipper, random_hash, random_payload,
+        BitFlipper, HashBitFlipper, U64BitFlipper, random_hash, random_payload,
     };
     use crate::{Secret, Seed};
     use getrandom;
@@ -433,15 +423,12 @@ mod tests {
         buf[PREVIOUS_HASH_RANGE].copy_from_slice(&[6; DIGEST]);
 
         let expected = BlockState {
-            block_index: 5337762618367662171974503645988520964,
+            block_index: 289360691352306692,
             block_hash: Hash::from_bytes([1; DIGEST]),
             chain_hash: Hash::from_bytes([5; DIGEST]),
             previous_hash: Hash::from_bytes([6; DIGEST]),
             next_pubkey_hash: Hash::from_bytes([2; DIGEST]),
-            payload: Payload::new(
-                4003321963775746628980877734491390723,
-                Hash::from_bytes([3; DIGEST]),
-            ),
+            payload: Payload::new(217020518514230019, Hash::from_bytes([3; DIGEST])),
         };
         assert_eq!(BlockState::from_buf(&buf), expected);
     }
@@ -454,10 +441,7 @@ mod tests {
             chain_hash: Hash::from_bytes([5; DIGEST]),
             previous_hash: Hash::from_bytes([6; DIGEST]),
             next_pubkey_hash: Hash::from_bytes([2; DIGEST]),
-            payload: Payload::new(
-                4003321963775746628980877734491390723,
-                Hash::from_bytes([3; DIGEST]),
-            ),
+            payload: Payload::new(217020518514230019, Hash::from_bytes([3; DIGEST])),
         };
         assert!(!bs.first_block_is_valid());
 
@@ -467,10 +451,7 @@ mod tests {
             chain_hash: Hash::from_bytes([5; DIGEST]),
             previous_hash: Hash::from_bytes([0; DIGEST]), // ZERO_HASH
             next_pubkey_hash: Hash::from_bytes([2; DIGEST]),
-            payload: Payload::new(
-                4003321963775746628980877734491390723,
-                Hash::from_bytes([3; DIGEST]),
-            ),
+            payload: Payload::new(217020518514230019, Hash::from_bytes([3; DIGEST])),
         };
         assert!(!bs.first_block_is_valid());
 
@@ -480,10 +461,7 @@ mod tests {
             chain_hash: Hash::from_bytes([0; DIGEST]), // ZERO_HASH
             previous_hash: Hash::from_bytes([6; DIGEST]),
             next_pubkey_hash: Hash::from_bytes([2; DIGEST]),
-            payload: Payload::new(
-                4003321963775746628980877734491390723,
-                Hash::from_bytes([3; DIGEST]),
-            ),
+            payload: Payload::new(217020518514230019, Hash::from_bytes([3; DIGEST])),
         };
         assert!(!bs.first_block_is_valid());
 
@@ -493,10 +471,7 @@ mod tests {
             chain_hash: Hash::from_bytes([0; DIGEST]), // ZERO_HASH
             previous_hash: Hash::from_bytes([0; DIGEST]), // ZERO_HASH
             next_pubkey_hash: Hash::from_bytes([2; DIGEST]),
-            payload: Payload::new(
-                4003321963775746628980877734491390723,
-                Hash::from_bytes([3; DIGEST]),
-            ),
+            payload: Payload::new(217020518514230019, Hash::from_bytes([3; DIGEST])),
         };
         assert!(bs.first_block_is_valid());
 
@@ -506,17 +481,14 @@ mod tests {
             chain_hash: Hash::from_bytes([5; DIGEST]),
             previous_hash: Hash::from_bytes([6; DIGEST]),
             next_pubkey_hash: Hash::from_bytes([2; DIGEST]),
-            payload: Payload::new(
-                4003321963775746628980877734491390723,
-                Hash::from_bytes([3; DIGEST]),
-            ),
+            payload: Payload::new(217020518514230019, Hash::from_bytes([3; DIGEST])),
         };
         assert!(bs.first_block_is_valid());
     }
 
     fn new_expected() -> Hash {
         Hash::from_hex(
-            "6ceb2e83040898f92123422c87e27100649f2bf982b4eec23cdb467958790302abd18796b3abc150",
+            "05ff1460353d2fd0305bdd1b4c8305428ab40958701538eb979a6d1e083d6c8a064317d16950129a",
         )
         .unwrap()
     }
@@ -566,14 +538,14 @@ mod tests {
     }
 
     #[test]
-    #[should_panic(expected = "Need a 4060 byte slice; got 4059 bytes")]
+    #[should_panic(expected = "Need a 4044 byte slice; got 4043 bytes")]
     fn test_block_new_short_panic() {
         let buf: Vec<u8> = vec![0; BLOCK - 1];
         let _block = Block::new(&buf);
     }
 
     #[test]
-    #[should_panic(expected = "Need a 4060 byte slice; got 4061 bytes")]
+    #[should_panic(expected = "Need a 4044 byte slice; got 4045 bytes")]
     fn test_block_new_long_panic() {
         let buf: Vec<u8> = vec![0; BLOCK + 1];
         let _block = Block::new(&buf);
@@ -638,7 +610,7 @@ mod tests {
                 Err(BlockError::BlockHash)
             );
         }
-        for bad_index in U128BitFlipper::new(1) {
+        for bad_index in U64BitFlipper::new(1) {
             assert_eq!(
                 Block::new(&buf).from_hash_at_index(&good, bad_index),
                 Err(BlockError::BlockIndex)
@@ -685,7 +657,7 @@ mod tests {
                 Err(BlockError::BlockHash)
             );
         }
-        for bad_index in U128BitFlipper::new(checkpoint.block_index) {
+        for bad_index in U64BitFlipper::new(checkpoint.block_index) {
             let bad_checkpoint =
                 CheckPoint::new(checkpoint.chain_hash, checkpoint.block_hash, bad_index);
             assert_eq!(
@@ -799,7 +771,7 @@ mod tests {
             // Previous `BlockState.chain_hash` only gets checked in 3rd block and beyond:
             assert!(Block::new(&buf).from_previous(&bad_prev).is_ok());
         }
-        for bad_index in U128BitFlipper::new(0) {
+        for bad_index in U64BitFlipper::new(0) {
             let bad_prev = BlockState::new(
                 bad_index,
                 prev.block_hash,
@@ -919,7 +891,7 @@ mod tests {
         assert_eq!(
             Hash::compute(&buf),
             Hash::from_hex(
-                "8fd910701a748a13e71c71ce72d7ee5768c2bdeb82ee42c788f223fad6b5086eefdd85ab998e8b5e"
+                "0be0718dac05cb080f37c36c84b12a0c364c4110944db8232c144f509b18a00d4f18bae604701300"
             )
             .unwrap()
         );

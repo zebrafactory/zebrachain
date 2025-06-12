@@ -8,12 +8,12 @@ use std::time::SystemTime;
 const TIME_RANGE: Range<usize> = 0..TIME;
 const STATE_HASH_RANGE: Range<usize> = TIME..TIME + DIGEST;
 
-fn system_time() -> u128 {
-    let now = SystemTime::now();
-    match now.duration_since(SystemTime::UNIX_EPOCH) {
+fn system_time() -> u64 {
+    let now = match SystemTime::now().duration_since(SystemTime::UNIX_EPOCH) {
         Ok(duration) => duration.as_nanos(),
         Err(_) => 0,
-    }
+    };
+    now.try_into().unwrap()
 }
 
 /// Content to be included in block and signed.
@@ -26,7 +26,7 @@ fn system_time() -> u128 {
 /// // A payload includes a state hash, which you can create like this:
 /// let state_hash = Hash::compute(b"My first ZebraChain signature");
 ///
-/// // A payload also includes a u128 timestamp (nanoseconds since the Unix Epoch). You can
+/// // A payload also includes a u64 timestamp (nanoseconds since the Unix Epoch). You can
 /// // provide the timestamp as the first argument to Payload::new() like this:
 /// let payload = Payload::new(123456789, state_hash);
 ///
@@ -37,7 +37,7 @@ fn system_time() -> u128 {
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct Payload {
     /// Timestamp (nanoseconds since the UNIX Epoch).
-    pub time: u128,
+    pub time: u64,
 
     /// Hash of top-level state object in a hypothetical object store.
     pub state_hash: Hash,
@@ -45,7 +45,7 @@ pub struct Payload {
 
 impl Payload {
     /// Create a new payload.
-    pub fn new(time: u128, state_hash: Hash) -> Self {
+    pub fn new(time: u64, state_hash: Hash) -> Self {
         Self { time, state_hash }
     }
 
@@ -59,7 +59,7 @@ impl Payload {
     pub fn from_buf(buf: &[u8]) -> Self {
         assert_eq!(buf.len(), PAYLOAD);
         Self {
-            time: u128::from_le_bytes(buf[TIME_RANGE].try_into().unwrap()),
+            time: u64::from_le_bytes(buf[TIME_RANGE].try_into().unwrap()),
             state_hash: Hash::from_slice(&buf[STATE_HASH_RANGE]).unwrap(),
         }
     }
@@ -75,7 +75,7 @@ impl Payload {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::testhelpers::{random_hash, random_u128};
+    use crate::testhelpers::{random_hash, random_u64};
     use getrandom;
 
     #[test]
@@ -91,7 +91,7 @@ mod tests {
         let buf = [69; PAYLOAD];
         let payload = Payload::from_buf(&buf);
         assert_eq!(payload.state_hash, Hash::from_bytes([69; DIGEST]));
-        assert_eq!(payload.time, 92076405166842172466560187893301986629);
+        assert_eq!(payload.time, 4991471925827290437);
     }
 
     #[test]
@@ -104,9 +104,9 @@ mod tests {
         assert_eq!(
             buf,
             [
-                58, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 42, 42, 42, 42, 42, 42, 42, 42,
+                58, 1, 0, 0, 0, 0, 0, 0, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42,
                 42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42,
-                42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42
+                42, 42, 42, 42, 42
             ]
         );
     }
@@ -115,7 +115,7 @@ mod tests {
     fn test_payload_roundtrip() {
         let mut buf = [0; PAYLOAD];
         for _ in 0..420 {
-            let time = random_u128();
+            let time = random_u64();
             let state_hash = random_hash();
             let payload = Payload::new(time, state_hash);
             payload.write_to_buf(&mut buf);

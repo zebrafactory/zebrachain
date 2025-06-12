@@ -48,13 +48,13 @@ pub(crate) const SEED: usize = 2 * SECRET;
 pub(crate) const SIGNATURE: usize = SIG_ED25519 + SIG_MLDSA;
 pub(crate) const PUBKEY: usize = PUB_ED25519 + PUB_MLDSA;
 
-pub(crate) const INDEX: usize = 16;
-pub(crate) const TIME: usize = 16;
+pub(crate) const INDEX: usize = 8;
+pub(crate) const TIME: usize = 8;
 
-/// Size of the ZebraChain payload (56 bytes).
+/// Size of the ZebraChain payload (48 bytes).
 pub const PAYLOAD: usize = TIME + DIGEST;
 
-/// Size of the ZebraChain block (4060 bytes).
+/// Size of the ZebraChain block (4044 bytes).
 pub const BLOCK: usize = (4 * DIGEST) + SIGNATURE + PUBKEY + PAYLOAD + INDEX;
 
 pub(crate) const HASHABLE_RANGE: Range<usize> = DIGEST..BLOCK;
@@ -183,12 +183,12 @@ pub(crate) fn set_secret(buf: &mut [u8], range: Range<usize>, value: &Secret) {
 }
 
 #[inline]
-pub(crate) fn get_u128(buf: &[u8], range: Range<usize>) -> u128 {
-    u128::from_le_bytes(buf[range].try_into().unwrap())
+pub(crate) fn get_u64(buf: &[u8], range: Range<usize>) -> u64 {
+    u64::from_le_bytes(buf[range].try_into().unwrap())
 }
 
 #[inline]
-pub(crate) fn set_u128(buf: &mut [u8], range: Range<usize>, value: u128) {
+pub(crate) fn set_u64(buf: &mut [u8], range: Range<usize>, value: u64) {
     buf[range].copy_from_slice(&value.to_le_bytes());
 }
 
@@ -198,9 +198,9 @@ mod tests {
 
     #[test]
     fn test_ranges() {
-        assert_eq!(HASHABLE_RANGE, 40..4060);
-        assert_eq!(SIGNABLE_RANGE, 2524..4060);
-        assert_eq!(SIGNABLE2_RANGE, 2460..4060);
+        assert_eq!(HASHABLE_RANGE, 40..4044);
+        assert_eq!(SIGNABLE_RANGE, 2524..4044);
+        assert_eq!(SIGNABLE2_RANGE, 2460..4044);
 
         assert_eq!(HASH_RANGE, 0..40);
 
@@ -208,11 +208,11 @@ mod tests {
         assert_eq!(PUBKEY_RANGE, 2524..3868);
         assert_eq!(NEXT_PUBKEY_HASH_RANGE, 3868..3908);
 
-        assert_eq!(PAYLOAD_RANGE, 3908..3964);
+        assert_eq!(PAYLOAD_RANGE, 3908..3956);
 
-        assert_eq!(INDEX_RANGE, 3964..3980);
-        assert_eq!(CHAIN_HASH_RANGE, 3980..4020);
-        assert_eq!(PREVIOUS_HASH_RANGE, 4020..4060);
+        assert_eq!(INDEX_RANGE, 3956..3964);
+        assert_eq!(CHAIN_HASH_RANGE, 3964..4004);
+        assert_eq!(PREVIOUS_HASH_RANGE, 4004..4044);
 
         assert_eq!(HASHABLE_RANGE.end, BLOCK);
         assert_eq!(SIGNABLE_RANGE.end, BLOCK);
@@ -221,16 +221,16 @@ mod tests {
 
     #[test]
     fn test_sec_ranges() {
-        assert_eq!(SEC_HASHABLE_RANGE, 40..288);
+        assert_eq!(SEC_HASHABLE_RANGE, 40..272);
 
         assert_eq!(SEC_HASH_RANGE, 0..40);
         assert_eq!(SEC_PUBLIC_HASH_RANGE, 40..80);
         assert_eq!(SEC_SEED_RANGE, 80..176);
-        assert_eq!(SEC_PAYLOAD_RANGE, 176..232);
-        assert_eq!(SEC_INDEX_RANGE, 232..248);
-        assert_eq!(SEC_PREV_HASH_RANGE, 248..288);
+        assert_eq!(SEC_PAYLOAD_RANGE, 176..224);
+        assert_eq!(SEC_INDEX_RANGE, 224..232);
+        assert_eq!(SEC_PREV_HASH_RANGE, 232..272);
         assert_eq!(SEC_PREV_HASH_RANGE.end, SECRET_BLOCK);
 
-        assert_eq!(SECRET_BLOCK_AEAD, 304);
+        assert_eq!(SECRET_BLOCK_AEAD, 288);
     }
 }

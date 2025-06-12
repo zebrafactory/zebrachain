@@ -219,11 +219,7 @@ impl Secret {
     /// Derive a 256-bit (32-byte) sub-secret from this secret, the block index, and context bytes.
     ///
     /// This is used for the XChaCha20Poly1305 key, the ed25519 seed, and the ML-DSA seed.
-    pub fn derive_sub_secret_256(
-        &self,
-        block_index: u128,
-        context: &[u8; CONTEXT],
-    ) -> SubSecret256 {
+    pub fn derive_sub_secret_256(&self, block_index: u64, context: &[u8; CONTEXT]) -> SubSecret256 {
         let mut hasher = Blake2bMac256::new_with_salt_and_personal(
             self.as_bytes(),
             &block_index.to_le_bytes(),
@@ -238,11 +234,7 @@ impl Secret {
     /// Derive a 192-bit (42-byte) sub-secret from this secret, the block index, and context bytes.
     ///
     /// This is used for the XChaCha20Poly1305 nonce.
-    pub fn derive_sub_secret_192(
-        &self,
-        block_index: u128,
-        context: &[u8; CONTEXT],
-    ) -> SubSecret192 {
+    pub fn derive_sub_secret_192(&self, block_index: u64, context: &[u8; CONTEXT]) -> SubSecret192 {
         let mut hasher = Blake2bMac192::new_with_salt_and_personal(
             self.as_bytes(),
             &block_index.to_le_bytes(),

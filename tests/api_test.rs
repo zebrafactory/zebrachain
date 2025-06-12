@@ -9,24 +9,24 @@ use zf_zebrachain::{
 };
 
 const SAMPLE_PAYLOAD_0: &str =
-    "8e11460d9b318fa727025dd624f25ec398147cfd2b05a40f1298687a4047b9c29bfea7a32bbb58c2";
+    "f78f0a75bd49cee04ae73541752b0122de2810fc1bf82d82da8950612769e877ca092af9e57a4662";
 const SAMPLE_PAYLOAD_419: &str =
-    "a0be8279752f518432298ee05b7938dcdd4e50dd4fb31ae99ec89ce24e188a4a7257c2842a963e7d";
+    "8ab3f4b28ab258bac7e42b43fd09c53e71b8aaebef302aa1db5fe12ec60b876980eda6a39d3afc94";
 
 const BLOCK_HASH_0: &str =
-    "8cc350c128838f6890d7423c8a17b3fb629b199d3da1a9657bc8711ac534ae53dd86da02d174035f";
+    "f3b27d9068de4fbfe588871b83fa049ec40f2aa212251116dbdb1ec85b87f8c5b11f288bd902d19d";
 const BLOCK_HASH_419: &str =
-    "3ab56be3fab372cba1b90dfeceb66d76f3dd0543663ca89d6b9afc63d62d3e2742771f51dea8599e";
+    "b284b9e26786b50d102fefaef4062af22752f8d99640c3fa04b1883c46dbeb13d589daa2f5aaf5a5";
 
 const SECRET_BLOCK_HASH_0: &str =
-    "53fcb61cf8e908fa1d28573d02b0fcb4f6b49e3270bde70b2236519294248b1ebd2297f555943305";
+    "6efa1dc28d8a64779e306e3b6f5566876dbf1b64db8b54eca5bdeec7e4924135246921c6f2e9c1f6";
 const SECRET_BLOCK_HASH_419: &str =
-    "59791451dc9ba4916d0bd29f3e756367a40f43250227cf16ee1f6253f9fb09b869c3160e91fc3020";
+    "cc5b881efbcb241386830d1fc07921660732e0bd84b089e04329fbdca6de56c22ae6c576f08b5fe3";
 
 const FULL_CHAIN_HASH: &str =
-    "0bab076066521775e1c986d206976b366e36c33a958ea0b089194fe17a180ed3465c0095913e547d";
+    "3addcb096a3ddf4c5df61dfba5eca3a39f04c6975f699d8d11bc33404dc60993465c5da789f3beb4";
 const FULL_SECRET_CHAIN_HASH: &str =
-    "a2ab709940a3921c9b75d91f34f08fee50a639b89f6da6f48caba0ba83b33858c357173c3e030c8c";
+    "3df1047dda7da1e54a6867cb4a0bc1bf2312ec88b20692ec230f019e5dbbc23f0ad2201a3d907d1b";
 
 static JUNK_ENTROPY: [u8; SECRET] = hex!(
     "517931cc2f0085cd414b57a07680df2c3097c9030be69f51990cee94b26dbe07a0ee06c69f4b1e0de776c3afc497f948"
@@ -41,7 +41,7 @@ static JUNK_PAYLOAD_TIME: [u8; SECRET] = hex!(
     "245eec220526eff45ad9f14cc01c7d2d7002910d5c6b98e10faf926c12e2711eea908b0a9d50523fbd602fb456584d74"
 );
 
-fn sample_entropy(index: u128) -> Secret {
+fn sample_entropy(index: u64) -> Secret {
     let root = Secret::from_bytes(JUNK_ENTROPY);
     root.keyed_hash(&index.to_le_bytes())
 }
@@ -51,17 +51,17 @@ fn test_sample_entropy() {
     assert_eq!(
         sample_entropy(0).as_bytes(),
         &[
-            188, 75, 162, 140, 243, 202, 214, 235, 249, 24, 62, 189, 239, 213, 48, 126, 30, 15, 20,
-            5, 89, 188, 124, 180, 244, 186, 122, 114, 207, 215, 161, 190, 87, 44, 169, 192, 78,
-            159, 177, 225, 192, 51, 50, 212, 57, 100, 67, 146
+            242, 230, 239, 76, 178, 51, 51, 169, 87, 15, 73, 64, 38, 241, 26, 37, 204, 187, 207,
+            249, 4, 196, 44, 186, 50, 165, 95, 62, 88, 57, 200, 155, 202, 33, 250, 72, 166, 147,
+            66, 210, 176, 173, 198, 176, 200, 83, 234, 207
         ]
     );
     assert_eq!(
         sample_entropy(419).as_bytes(),
         &[
-            102, 138, 91, 147, 7, 148, 195, 246, 107, 174, 47, 196, 35, 9, 1, 253, 15, 159, 153,
-            55, 74, 47, 18, 49, 184, 132, 97, 253, 36, 112, 152, 38, 140, 97, 71, 244, 45, 222, 44,
-            158, 220, 132, 170, 207, 148, 143, 115, 95
+            12, 116, 50, 12, 242, 193, 80, 198, 167, 63, 5, 3, 139, 182, 139, 119, 118, 171, 186,
+            155, 103, 210, 89, 216, 32, 93, 18, 5, 2, 51, 59, 70, 18, 112, 98, 227, 132, 69, 20,
+            142, 7, 14, 38, 30, 189, 252, 209, 21
         ]
     );
     let mut hset: HashSet<Secret> = HashSet::with_capacity(420);
@@ -71,7 +71,7 @@ fn test_sample_entropy() {
     assert_eq!(hset.len(), 420);
 }
 
-fn sample_storage_secret(index: u128) -> Secret {
+fn sample_storage_secret(index: u64) -> Secret {
     let root = Secret::from_bytes(JUNK_STORAGE_SECRET);
     root.keyed_hash(&index.to_le_bytes())
 }
@@ -81,17 +81,17 @@ fn test_sample_storage_secret() {
     assert_eq!(
         sample_storage_secret(0).as_bytes(),
         &[
-            152, 170, 109, 216, 231, 164, 137, 210, 215, 218, 38, 245, 199, 75, 128, 173, 138, 20,
-            92, 209, 17, 64, 169, 250, 212, 49, 154, 187, 20, 114, 62, 207, 113, 152, 210, 93, 51,
-            115, 187, 174, 22, 14, 94, 77, 166, 92, 141, 190
+            184, 239, 26, 147, 24, 96, 207, 58, 2, 131, 138, 253, 14, 9, 2, 9, 21, 62, 19, 202,
+            146, 201, 148, 239, 201, 127, 238, 63, 143, 105, 180, 36, 39, 18, 72, 102, 117, 178,
+            238, 53, 54, 41, 150, 241, 3, 210, 248, 96
         ]
     );
     assert_eq!(
         sample_storage_secret(419).as_bytes(),
         &[
-            56, 130, 230, 202, 59, 239, 46, 177, 70, 112, 229, 226, 199, 119, 79, 169, 180, 76, 84,
-            237, 99, 232, 227, 241, 216, 74, 214, 230, 191, 69, 172, 90, 12, 254, 63, 230, 154,
-            189, 130, 204, 128, 204, 104, 76, 60, 189, 220, 42
+            41, 27, 137, 191, 34, 61, 217, 246, 252, 231, 34, 120, 56, 43, 42, 149, 101, 105, 180,
+            251, 219, 236, 37, 127, 57, 36, 30, 217, 4, 137, 210, 104, 248, 118, 122, 53, 24, 243,
+            193, 203, 9, 125, 57, 204, 89, 57, 183, 51
         ]
     );
     let mut hset: HashSet<Secret> = HashSet::with_capacity(420);
@@ -101,11 +101,11 @@ fn test_sample_storage_secret() {
     assert_eq!(hset.len(), 420);
 }
 
-fn sample_payload(index: u128) -> Payload {
+fn sample_payload(index: u64) -> Payload {
     let root1 = Secret::from_bytes(JUNK_PAYLOAD_HASH).keyed_hash(&index.to_le_bytes());
     let state_hash = Hash::compute(root1.as_bytes());
     let root2 = Secret::from_bytes(JUNK_PAYLOAD_TIME).keyed_hash(&index.to_le_bytes());
-    let time = u128::from_le_bytes(root2.as_bytes()[0..16].try_into().unwrap());
+    let time = u64::from_le_bytes(root2.as_bytes()[0..8].try_into().unwrap());
     Payload::new(time, state_hash)
 }
 

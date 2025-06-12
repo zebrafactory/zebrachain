@@ -64,7 +64,7 @@ fn main() {
     println!("Head: {}", chain.head().block_hash);
     println!("Tead: {}", chain.tail().block_hash);
     println!("Count: {}", chain.count());
-    assert_eq!(chain.count(), payloads.len() as u128);
+    assert_eq!(chain.count(), payloads.len() as u64);
     assert_eq!(&head, chain.head());
     assert_eq!(&tail, chain.tail());
 
@@ -74,7 +74,7 @@ fn main() {
     println!("Head: {}", chain.head().block_hash);
     println!("Tead: {}", chain.tail().block_hash);
     println!("Count: {}", chain.count());
-    assert_eq!(chain.count(), payloads.len() as u128);
+    assert_eq!(chain.count(), payloads.len() as u64);
     assert_eq!(&head, chain.head());
     assert_eq!(&tail, chain.tail());
 }

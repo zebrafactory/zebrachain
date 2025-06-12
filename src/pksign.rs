@@ -22,7 +22,7 @@ struct KeyPair {
 }
 
 impl KeyPair {
-    fn new(secret: &Secret, block_index: u128) -> Self {
+    fn new(secret: &Secret, block_index: u64) -> Self {
         // Why use the block index as salt when deriving the keys? Say something went horribly
         // wrong and somehow every single block in the chain was signed with the same Secret.
         // Well, using the index as salt means that each block-wise position in the chain would
@@ -87,7 +87,7 @@ pub(crate) struct SecretSigner {
 }
 
 impl SecretSigner {
-    pub(crate) fn new(seed: &Seed, index: u128) -> Self {
+    pub(crate) fn new(seed: &Seed, index: u64) -> Self {
         assert_ne!(seed.secret, seed.next_secret);
         Self {
             keypair: KeyPair::new(&seed.secret, index),

@@ -61,7 +61,7 @@ fn validate_from_checkpoint(
     };
 
     // Read and validate checkpoint block
-    file.seek(SeekFrom::Start(checkpoint.index_as_u64() * BLOCK as u64))?;
+    file.seek(SeekFrom::Start(checkpoint.block_index * BLOCK as u64))?;
     let mut file = BufReader::with_capacity(BLOCK_READ_BUF, file);
     file.read_exact(&mut buf)?;
     let mut tail = match Block::new(&buf).from_checkpoint(checkpoint) {
@@ -134,7 +134,7 @@ impl Chain {
     }
 
     /// Return the number of blocks in the chain.
-    pub fn count(&self) -> u128 {
+    pub fn count(&self) -> u64 {
         self.tail.block_index + 1
     }
 
@@ -177,13 +177,13 @@ impl IntoIterator for &Chain {
 pub struct ChainIter {
     file: BufReader<File>,
     chain_hash: Hash,
-    count: u128,
+    count: u64,
     tail: Option<BlockState>,
     buf: [u8; BLOCK],
 }
 
 impl ChainIter {
-    fn new(file: File, chain_hash: Hash, count: u128) -> Self {
+    fn new(file: File, chain_hash: Hash, count: u64) -> Self {
         let file = BufReader::with_capacity(BLOCK_READ_BUF, file);
         Self {
             file,
@@ -194,7 +194,7 @@ impl ChainIter {
         }
     }
 
-    fn index(&self) -> u128 {
+    fn index(&self) -> u64 {
         if let Some(tail) = self.tail.as_ref() {
             tail.block_index + 1
         } else {
