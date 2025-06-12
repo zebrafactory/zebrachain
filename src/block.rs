@@ -13,16 +13,16 @@ pub struct CheckPoint {
     pub block_hash: Hash,
 
     /// Block-wise position in chain, starting from zero.
-    pub index: u128,
+    pub block_index: u128,
 }
 
 impl CheckPoint {
     /// Create a checkpoint.
-    pub fn new(chain_hash: Hash, block_hash: Hash, index: u128) -> Self {
+    pub fn new(chain_hash: Hash, block_hash: Hash, block_index: u128) -> Self {
         Self {
             chain_hash,
             block_hash,
-            index,
+            block_index,
         }
     }
 
@@ -33,7 +33,7 @@ impl CheckPoint {
     ///
     /// Aside: We actually have a considerable amount of time to fix this 😎
     pub fn index_as_u64(&self) -> u64 {
-        self.index.try_into().unwrap()
+        self.block_index.try_into().unwrap()
     }
 }
 
@@ -50,7 +50,7 @@ fn check_block_buf(buf: &[u8]) {
 #[derive(Clone, Debug, PartialEq)]
 pub struct BlockState {
     /// Block-wise position in chain, starting from zero.
-    pub index: u128,
+    pub block_index: u128,
 
     /// Hash of this block.
     pub block_hash: Hash,
@@ -75,7 +75,7 @@ pub struct BlockState {
 impl BlockState {
     /// Construct a new [BlockState].
     pub fn new(
-        index: u128,
+        block_index: u128,
         block_hash: Hash,
         chain_hash: Hash,
         previous_hash: Hash,
@@ -83,7 +83,7 @@ impl BlockState {
         payload: Payload,
     ) -> Self {
         Self {
-            index,
+            block_index,
             block_hash,
             chain_hash,
             previous_hash,
@@ -98,9 +98,9 @@ impl BlockState {
     /// the chain. The chain hash is likewise included in the block as a back reference for blocks
     /// after the first block.
     ///
-    /// If this is the first block (index is 0), the chain hash is all zeros.
+    /// If this is the first block (block_index is 0), the chain hash is all zeros.
     pub fn effective_chain_hash(&self) -> Hash {
-        if self.index == 0 {
+        if self.block_index == 0 {
             self.block_hash
         } else {
             self.chain_hash
@@ -112,14 +112,14 @@ impl BlockState {
         CheckPoint {
             chain_hash: self.effective_chain_hash(),
             block_hash: self.block_hash,
-            index: self.index,
+            block_index: self.block_index,
         }
     }
 
     // Warning: this does ZERO validation!
     fn from_buf(buf: &[u8]) -> Self {
         Self {
-            index: u128::from_le_bytes(buf[INDEX_RANGE].try_into().unwrap()),
+            block_index: u128::from_le_bytes(buf[INDEX_RANGE].try_into().unwrap()),
             block_hash: Hash::from_slice(&buf[HASH_RANGE]).unwrap(),
             chain_hash: Hash::from_slice(&buf[CHAIN_HASH_RANGE]).unwrap(),
             previous_hash: Hash::from_slice(&buf[PREVIOUS_HASH_RANGE]).unwrap(),
@@ -129,7 +129,7 @@ impl BlockState {
     }
 
     fn first_block_is_valid(&self) -> bool {
-        if self.index == 0 {
+        if self.block_index == 0 {
             self.chain_hash.is_zeros() && self.previous_hash.is_zeros()
         } else {
             true
@@ -165,16 +165,16 @@ impl<'a> Block<'a> {
         }
     }
 
-    /// Open and verify a block with `block_hash` at position `index` in the chain.
+    /// Open and verify a block with `block_hash` at position `block_index` in the chain.
     pub fn from_hash_at_index(
         &self,
         block_hash: &Hash,
-        index: u128,
+        block_index: u128,
     ) -> Result<BlockState, BlockError> {
         let state = self.open()?;
         if block_hash != &state.block_hash {
             Err(BlockError::BlockHash)
-        } else if index != state.index {
+        } else if block_index != state.block_index {
             Err(BlockError::Index)
         } else {
             Ok(state)
@@ -183,7 +183,7 @@ impl<'a> Block<'a> {
 
     /// Read and verify block from a checkpoint.
     pub fn from_checkpoint(&self, checkpoint: &CheckPoint) -> Result<BlockState, BlockError> {
-        let state = self.from_hash_at_index(&checkpoint.block_hash, checkpoint.index)?;
+        let state = self.from_hash_at_index(&checkpoint.block_hash, checkpoint.block_index)?;
         if checkpoint.chain_hash != state.effective_chain_hash() {
             Err(BlockError::ChainHash)
         } else {
@@ -199,7 +199,7 @@ impl<'a> Block<'a> {
         let state = self.open()?;
         if self.compute_pubkey_hash() != prev.next_pubkey_hash {
             Err(BlockError::PubKeyHash)
-        } else if state.index != prev.index + 1 {
+        } else if state.block_index != prev.block_index + 1 {
             Err(BlockError::Index)
         } else if state.previous_hash != prev.block_hash {
             Err(BlockError::PreviousHash)
@@ -282,7 +282,7 @@ impl<'a> MutBlock<'a> {
 
     /// Set index, chain_hash, and prev_hash based on [BlockState] `prev`.
     pub fn set_previous(&mut self, prev: &BlockState) {
-        self.buf[INDEX_RANGE].copy_from_slice(&(prev.index + 1).to_le_bytes());
+        self.buf[INDEX_RANGE].copy_from_slice(&(prev.block_index + 1).to_le_bytes());
         self.buf[PREVIOUS_HASH_RANGE].copy_from_slice(prev.block_hash.as_bytes());
         let chain_hash = prev.effective_chain_hash(); // Don't use prev.chain_hash !
         self.buf[CHAIN_HASH_RANGE].copy_from_slice(chain_hash.as_bytes());
@@ -298,7 +298,7 @@ impl<'a> MutBlock<'a> {
     /// This sets the `pubkey` and `next_pubkey_hash` fields, computes the signature, and then
     /// sets the `signature` field.
     pub fn sign(&mut self, seed: &Seed) {
-        let signer = SecretSigner::new(seed, self.index());
+        let signer = SecretSigner::new(seed, self.block_index());
         signer.sign(self);
     }
 
@@ -334,7 +334,7 @@ impl<'a> MutBlock<'a> {
         Hash::compute(&self.buf[PUBKEY_RANGE])
     }
 
-    fn index(&self) -> u128 {
+    fn block_index(&self) -> u128 {
         u128::from_le_bytes(self.buf[INDEX_RANGE].try_into().unwrap())
     }
 }
@@ -392,9 +392,9 @@ mod tests {
 
     #[test]
     fn test_blockstate_to_checkpoint() {
-        // when index == 0
+        // when block_index == 0
         let bs = BlockState::new(
-            0,             // index
+            0,             // block_index
             random_hash(), // block_hash
             random_hash(), // chain_hash
             random_hash(), // previous_hash
@@ -402,13 +402,13 @@ mod tests {
             random_payload(),
         );
         let checkpoint = bs.to_checkpoint();
-        assert_eq!(checkpoint.index, 0);
+        assert_eq!(checkpoint.block_index, 0);
         assert_eq!(checkpoint.block_hash, bs.block_hash);
         assert_eq!(checkpoint.chain_hash, bs.block_hash); // Only on 1st block
 
-        // when index > 0
+        // when block_index > 0
         let bs = BlockState::new(
-            1,             // index
+            1,             // block_index
             random_hash(), // block_hash
             random_hash(), // chain_hash
             random_hash(), // previous_hash
@@ -416,7 +416,7 @@ mod tests {
             random_payload(),
         );
         let checkpoint = bs.to_checkpoint();
-        assert_eq!(checkpoint.index, bs.index);
+        assert_eq!(checkpoint.block_index, bs.block_index);
         assert_eq!(checkpoint.block_hash, bs.block_hash);
         assert_eq!(checkpoint.chain_hash, bs.chain_hash);
     }
@@ -433,7 +433,7 @@ mod tests {
         buf[PREVIOUS_HASH_RANGE].copy_from_slice(&[6; DIGEST]);
 
         let expected = BlockState {
-            index: 5337762618367662171974503645988520964,
+            block_index: 5337762618367662171974503645988520964,
             block_hash: Hash::from_bytes([1; DIGEST]),
             chain_hash: Hash::from_bytes([5; DIGEST]),
             previous_hash: Hash::from_bytes([6; DIGEST]),
@@ -449,7 +449,7 @@ mod tests {
     #[test]
     fn test_blockstate_first_block_is_valid() {
         let bs = BlockState {
-            index: 0,
+            block_index: 0,
             block_hash: Hash::from_bytes([1; DIGEST]),
             chain_hash: Hash::from_bytes([5; DIGEST]),
             previous_hash: Hash::from_bytes([6; DIGEST]),
@@ -462,7 +462,7 @@ mod tests {
         assert!(!bs.first_block_is_valid());
 
         let bs = BlockState {
-            index: 0,
+            block_index: 0,
             block_hash: Hash::from_bytes([1; DIGEST]),
             chain_hash: Hash::from_bytes([5; DIGEST]),
             previous_hash: Hash::from_bytes([0; DIGEST]), // ZERO_HASH
@@ -475,7 +475,7 @@ mod tests {
         assert!(!bs.first_block_is_valid());
 
         let bs = BlockState {
-            index: 0,
+            block_index: 0,
             block_hash: Hash::from_bytes([1; DIGEST]),
             chain_hash: Hash::from_bytes([0; DIGEST]), // ZERO_HASH
             previous_hash: Hash::from_bytes([6; DIGEST]),
@@ -488,7 +488,7 @@ mod tests {
         assert!(!bs.first_block_is_valid());
 
         let bs = BlockState {
-            index: 0,
+            block_index: 0,
             block_hash: Hash::from_bytes([1; DIGEST]),
             chain_hash: Hash::from_bytes([0; DIGEST]), // ZERO_HASH
             previous_hash: Hash::from_bytes([0; DIGEST]), // ZERO_HASH
@@ -501,7 +501,7 @@ mod tests {
         assert!(bs.first_block_is_valid());
 
         let bs = BlockState {
-            index: 1,
+            block_index: 1,
             block_hash: Hash::from_bytes([1; DIGEST]),
             chain_hash: Hash::from_bytes([5; DIGEST]),
             previous_hash: Hash::from_bytes([6; DIGEST]),
@@ -675,14 +675,17 @@ mod tests {
 
         // Make sure Block::from_hash_at_index() is getting called
         for bad_block_hash in HashBitFlipper::new(&checkpoint.block_hash) {
-            let bad_checkpoint =
-                CheckPoint::new(checkpoint.chain_hash, bad_block_hash, checkpoint.index);
+            let bad_checkpoint = CheckPoint::new(
+                checkpoint.chain_hash,
+                bad_block_hash,
+                checkpoint.block_index,
+            );
             assert_eq!(
                 Block::new(&buf).from_checkpoint(&bad_checkpoint),
                 Err(BlockError::BlockHash)
             );
         }
-        for bad_index in U128BitFlipper::new(checkpoint.index) {
+        for bad_index in U128BitFlipper::new(checkpoint.block_index) {
             let bad_checkpoint =
                 CheckPoint::new(checkpoint.chain_hash, checkpoint.block_hash, bad_index);
             assert_eq!(
@@ -693,8 +696,11 @@ mod tests {
 
         // Test Block::from_checkpoint() specific error
         for bad_chain_hash in HashBitFlipper::new(&checkpoint.chain_hash) {
-            let bad_checkpoint =
-                CheckPoint::new(bad_chain_hash, checkpoint.block_hash, checkpoint.index);
+            let bad_checkpoint = CheckPoint::new(
+                bad_chain_hash,
+                checkpoint.block_hash,
+                checkpoint.block_index,
+            );
             assert_eq!(
                 Block::new(&buf).from_checkpoint(&bad_checkpoint),
                 Err(BlockError::ChainHash)
@@ -708,7 +714,7 @@ mod tests {
         let block_hash = sign_block(&mut buf, &seed, &payload, None);
         let state = Block::new(&buf).from_hash_at_index(&block_hash, 0).unwrap();
         let checkpoint = state.to_checkpoint();
-        assert_eq!(checkpoint.index, 0);
+        assert_eq!(checkpoint.block_index, 0);
         assert_eq!(checkpoint.block_hash, block_hash);
         assert_eq!(checkpoint.chain_hash, block_hash);
         assert_eq!(Block::new(&buf).from_checkpoint(&checkpoint), Ok(state));

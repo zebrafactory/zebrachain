@@ -199,12 +199,12 @@ mod tests {
 
         let initial_entropy = Secret::generate().unwrap();
         let mut chain = ocs.create_chain(&initial_entropy, &payload).unwrap();
-        assert_eq!(chain.tail().index, 0);
+        assert_eq!(chain.tail().block_index, 0);
         let chain_hash = chain.chain_hash().clone();
         for i in 1..=420 {
             let new_entropy = Secret::generate().unwrap();
             chain.sign_raw(&new_entropy, &random_payload()).unwrap();
-            assert_eq!(chain.tail().index, i);
+            assert_eq!(chain.tail().block_index, i);
         }
         assert_eq!(chain.count(), 421);
         let tail = chain.tail().clone();

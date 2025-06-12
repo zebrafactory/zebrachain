@@ -135,7 +135,7 @@ impl Chain {
 
     /// Return the number of blocks in the chain.
     pub fn count(&self) -> u128 {
-        self.tail.index + 1
+        self.tail.block_index + 1
     }
 
     /// Reference to [BlockState] of first block in chain.
@@ -196,7 +196,7 @@ impl ChainIter {
 
     fn index(&self) -> u128 {
         if let Some(tail) = self.tail.as_ref() {
-            tail.index + 1
+            tail.block_index + 1
         } else {
             0
         }
@@ -315,15 +315,15 @@ mod tests {
         let (file, head, tail) = validate_chain(file, &chain_hash).unwrap();
         assert_eq!(head, state1);
         assert_eq!(tail, head);
-        assert_eq!(head.index, 0);
-        assert_eq!(tail.index, 0);
+        assert_eq!(head.block_index, 0);
+        assert_eq!(tail.block_index, 0);
 
         // Open a 2nd time, should work the same (file.rewind() should be called):
         let (mut file, head, tail) = validate_chain(file, &chain_hash).unwrap();
         assert_eq!(head, state1);
         assert_eq!(tail, head);
-        assert_eq!(head.index, 0);
-        assert_eq!(tail.index, 0);
+        assert_eq!(head.block_index, 0);
+        assert_eq!(tail.block_index, 0);
 
         // Generate a 2nd block
         let next = seed.advance().unwrap();
@@ -341,8 +341,8 @@ mod tests {
         let (mut file, head, tail) = validate_chain(file, &chain_hash).unwrap();
         assert_eq!(head, state1);
         assert_eq!(tail, state2);
-        assert_eq!(head.index, 0);
-        assert_eq!(tail.index, 1);
+        assert_eq!(head.block_index, 0);
+        assert_eq!(tail.block_index, 1);
 
         let mut good = Vec::with_capacity(BLOCK * 2);
         good.extend_from_slice(&buf1);
@@ -353,7 +353,7 @@ mod tests {
         let (_, head, tail) = validate_chain(file.try_clone().unwrap(), &chain_hash).unwrap();
         assert_eq!(head, state1);
         assert_eq!(tail, state2);
-        assert_eq!(tail.index, 1);
+        assert_eq!(tail.block_index, 1);
 
         for bad in BitFlipper::new(&good) {
             file.rewind().unwrap();
@@ -368,7 +368,7 @@ mod tests {
         let (_, head, tail) = validate_chain(file.try_clone().unwrap(), &chain_hash).unwrap();
         assert_eq!(head, state1);
         assert_eq!(tail, state2);
-        assert_eq!(tail.index, 1);
+        assert_eq!(tail.block_index, 1);
         // FIXME: We aren't currently handling truncation
         let length = (BLOCK * 2) as u64;
         for reduce in 1..=length {
