@@ -24,7 +24,7 @@ pub enum BlockError {
     ChainHash,
 
     /// Index does not match expected external value (previous block index + 1).
-    Index,
+    BlockIndex,
 
     /// First block does not meet 1st block constraints
     FirstBlock,
@@ -56,7 +56,7 @@ pub enum SecretBlockError {
     Hash,
 
     /// Block index is wrong.
-    Index,
+    BlockIndex,
 
     /// Previous hash in block does not match expected external value.
     PreviousHash,

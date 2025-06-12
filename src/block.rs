@@ -175,7 +175,7 @@ impl<'a> Block<'a> {
         if block_hash != &state.block_hash {
             Err(BlockError::BlockHash)
         } else if block_index != state.block_index {
-            Err(BlockError::Index)
+            Err(BlockError::BlockIndex)
         } else {
             Ok(state)
         }
@@ -200,7 +200,7 @@ impl<'a> Block<'a> {
         if self.compute_pubkey_hash() != prev.next_pubkey_hash {
             Err(BlockError::PubKeyHash)
         } else if state.block_index != prev.block_index + 1 {
-            Err(BlockError::Index)
+            Err(BlockError::BlockIndex)
         } else if state.previous_hash != prev.block_hash {
             Err(BlockError::PreviousHash)
         } else if state.chain_hash != prev.effective_chain_hash() {
@@ -641,7 +641,7 @@ mod tests {
         for bad_index in U128BitFlipper::new(1) {
             assert_eq!(
                 Block::new(&buf).from_hash_at_index(&good, bad_index),
-                Err(BlockError::Index)
+                Err(BlockError::BlockIndex)
             );
         }
     }
@@ -690,7 +690,7 @@ mod tests {
                 CheckPoint::new(checkpoint.chain_hash, checkpoint.block_hash, bad_index);
             assert_eq!(
                 Block::new(&buf).from_checkpoint(&bad_checkpoint),
-                Err(BlockError::Index)
+                Err(BlockError::BlockIndex)
             );
         }
 
@@ -810,7 +810,7 @@ mod tests {
             );
             assert_eq!(
                 Block::new(&buf).from_previous(&bad_prev),
-                Err(BlockError::Index)
+                Err(BlockError::BlockIndex)
             );
         }
     }

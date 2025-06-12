@@ -149,7 +149,7 @@ impl<'a> SecretBlock<'a> {
         decrypt_in_place(self.buf, chain_secret, block_index)?;
         let state = SecretBlockState::from_buf(&self.buf[0..SECRET_BLOCK])?;
         if block_index != state.block_index {
-            Err(SecretBlockError::Index)
+            Err(SecretBlockError::BlockIndex)
         } else {
             Ok(state)
         }
@@ -473,7 +473,7 @@ mod tests {
                     let block = SecretBlock::new(&mut buf);
                     assert_eq!(
                         block.from_index(&chain_secret, block_index),
-                        Err(SecretBlockError::Index)
+                        Err(SecretBlockError::BlockIndex)
                     );
                 }
                 assert_eq!(buf.len(), 0); // Make sure it was zeroized
