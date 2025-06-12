@@ -62,10 +62,10 @@
 //! // Let us sign another payload. Each signatures requires new entropy, which is mixed into the
 //! // the secret chain state using a keyed hash. This latest seed will be used to create a 3rd
 //! // keypair, and the hash of its public key is included this block. The 2nd block is signed with
-//! // the 2nd keypair created above. OwnedChain.auto_sign() internally generates the needed new
+//! // the 2nd keypair created above. OwnedChain.sign() internally generates the needed new
 //! // entropy.
 //! let payload2 = Payload::new_time_stamped(Hash::compute(b"Message number 2"));
-//! mychain.auto_sign(&payload2);
+//! mychain.sign(&payload2);
 //! assert_eq!(mychain.tail().payload, payload2);
 //!
 //! // A chain is identified by its `chain_hash`, which is the hash of the 1st block in the chain:

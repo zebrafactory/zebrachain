@@ -27,7 +27,7 @@ fn main() {
 
     println!("Signing remaning {} requests... ", COUNT - 1);
     for payload in &payloads[1..] {
-        chain.auto_sign(&payload).unwrap();
+        chain.sign(&payload).unwrap();
     }
     let chain_hash = chain.tail().chain_hash;
     let head = chain.head().clone();

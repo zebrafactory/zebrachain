@@ -125,16 +125,16 @@ impl OwnedChain {
     }
 
     /// Sign next block, internally generating new entropy.
-    pub fn auto_sign(&mut self, payload: &Payload) -> io::Result<&BlockState> {
+    pub fn sign(&mut self, payload: &Payload) -> io::Result<&BlockState> {
         let new_entropy = match Secret::generate() {
             Ok(secret) => secret,
             Err(err) => return Err(err.to_io_error()),
         };
-        self.sign(&new_entropy, payload)
+        self.sign_raw(&new_entropy, payload)
     }
 
     /// Sign next block.
-    pub fn sign(&mut self, new_entropy: &Secret, payload: &Payload) -> io::Result<&BlockState> {
+    pub fn sign_raw(&mut self, new_entropy: &Secret, payload: &Payload) -> io::Result<&BlockState> {
         let seed = self.secret_chain.advance(new_entropy);
         let obs = self.state();
         let mut buf = [0; BLOCK];
@@ -203,7 +203,7 @@ mod tests {
         let chain_hash = chain.chain_hash().clone();
         for i in 1..=420 {
             let new_entropy = Secret::generate().unwrap();
-            chain.sign(&new_entropy, &random_payload()).unwrap();
+            chain.sign_raw(&new_entropy, &random_payload()).unwrap();
             assert_eq!(chain.tail().index, i);
         }
         assert_eq!(chain.count(), 421);
@@ -238,7 +238,7 @@ mod tests {
         let mut chain = ocs.create_chain(&initial_entropy, &payload).unwrap();
         for _ in 0..420 {
             let new_entropy = Secret::generate().unwrap();
-            chain.sign(&new_entropy, &random_payload()).unwrap();
+            chain.sign_raw(&new_entropy, &random_payload()).unwrap();
         }
         let tail = chain.tail().clone();
         ocs.store().remove_chain_file(&tail.chain_hash).unwrap();

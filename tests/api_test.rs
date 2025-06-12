@@ -195,7 +195,7 @@ fn test_owned_chain_store() {
     );
     for index in 1..420 {
         chain
-            .sign(&sample_entropy(index), &sample_payload(index))
+            .sign_raw(&sample_entropy(index), &sample_payload(index))
             .unwrap();
     }
     assert_eq!(
