@@ -243,7 +243,7 @@ impl Secret {
         SubSecret::from_bytes(output.into_bytes().into())
     }
 
-    /// Derive a 192-bit (42-byte) sub-secret from this secret, the block index, and context bytes.
+    /// Derive a 192-bit (24-byte) sub-secret from this secret, the block index, and context bytes.
     ///
     /// This is used for the XChaCha20Poly1305 nonce.
     pub fn derive_sub_secret_192(&self, block_index: u64, context: &[u8; CONTEXT]) -> SubSecret192 {
