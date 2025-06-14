@@ -15,6 +15,16 @@ type Blake2bMac192 = Blake2bMac<U24>;
 type Blake2bMac256 = Blake2bMac<U32>;
 type Blake2bMac384 = Blake2bMac<U48>;
 
+/// Error when trying to decode a hex encoded [Hash](crate::Hash).
+#[derive(Debug, PartialEq, Eq)]
+pub enum HexError {
+    /// The length in wrong
+    BadLen(usize),
+
+    /// Contains an invalid byte
+    BadByte(u8),
+}
+
 /// Buffer containing the hash digest, with constant time comparison.
 ///
 /// # Examples
@@ -26,16 +36,6 @@ type Blake2bMac384 = Blake2bMac<U48>;
 #[derive(Eq, Clone, Copy)]
 pub struct Hash {
     value: [u8; DIGEST],
-}
-
-/// Error when trying to decode a hex encoded [Hash](crate::Hash).
-#[derive(Debug, PartialEq, Eq)]
-pub enum HexError {
-    /// The length in wrong
-    BadLen(usize),
-
-    /// Contains an invalid byte
-    BadByte(u8),
 }
 
 impl Hash {
