@@ -10,7 +10,7 @@ use std::io::{BufReader, Read, Seek, Write};
 use std::path::{Path, PathBuf};
 
 /// Secret chain header
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq)]
 pub struct SecretChainHeader {
     hash: Hash,
     salt: Secret,
@@ -342,10 +342,50 @@ impl SecretChainStore {
 mod tests {
     use super::*;
     use crate::secretblock::MutSecretBlock;
-    use crate::testhelpers::{random_hash, random_payload};
+    use crate::testhelpers::{BitFlipper, random_hash, random_payload};
     use getrandom;
+    use std::collections::HashSet;
     use std::io::Seek;
     use tempfile::{TempDir, tempfile};
+
+    #[test]
+    fn test_secret_chain_header() {
+        let salt = Secret::generate().unwrap();
+        let header = SecretChainHeader::create(salt.clone());
+        assert_eq!(header.hash, Hash::compute(salt.as_bytes()));
+        assert_eq!(header.salt, salt);
+        let mut buf = [0; SECRET_CHAIN_HEADER];
+        header.write_to_buf(&mut buf);
+
+        let header2 = SecretChainHeader::from_buf(&buf).unwrap();
+        assert_eq!(header2.hash, header.hash);
+        assert_eq!(header2.salt, salt);
+        assert_eq!(header2, header);
+
+        for bad_buf in BitFlipper::new(&buf) {
+            assert_eq!(
+                SecretChainHeader::from_buf(&bad_buf),
+                Err(SecretBlockError::ChainHeader)
+            );
+        }
+
+        // Test PBKDF
+        let mut hset = HashSet::new();
+        assert!(hset.insert(salt.clone()));
+        let passwords: [&[u8; 21]; 3] = [
+            b"Super Bader Passwords",
+            b"Yeah don't use this!!",
+            b"whatever, same length",
+        ];
+        for pw in passwords {
+            for _ in 0..11 {
+                let chain_hash = random_hash();
+                let chain_secret = header.derive_chain_secret(pw, &chain_hash);
+                assert!(hset.insert(chain_secret));
+            }
+        }
+        assert_eq!(hset.len(), passwords.len() * 11 + 1);
+    }
 
     #[test]
     fn test_chain_create_open() {
