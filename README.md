@@ -84,6 +84,8 @@ These key crates are used:
 
 * [chacha20poly1305](https://crates.io/crates/chacha20poly1305) for encrypting the secret blocks.
 
+* [argon2](https://crates.io/crates/argon2) for PBKDF.
+
 ## 🔗 Wire Format
 
 A ZebraChain block has 8 fields:
