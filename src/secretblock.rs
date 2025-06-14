@@ -17,11 +17,13 @@ pub struct SecretChainHeader {
 }
 
 impl SecretChainHeader {
+    /// Create new header
     pub fn create(salt: Secret) -> Self {
         let hash = Hash::compute(salt.as_bytes());
         Self { hash, salt }
     }
 
+    /// Load header from buffer
     pub fn from_buf(buf: &[u8]) -> Result<Self, SecretBlockError> {
         assert_eq!(buf.len(), SECRET_CHAIN_HEADER);
         let hash = Hash::from_slice(&buf[0..DIGEST]).unwrap();
@@ -34,12 +36,14 @@ impl SecretChainHeader {
         }
     }
 
+    /// Write header to buffer
     pub fn write_to_buf(&self, buf: &mut [u8]) {
         assert_eq!(buf.len(), SECRET_CHAIN_HEADER);
         buf[0..DIGEST].copy_from_slice(self.hash.as_bytes());
         buf[DIGEST..SECRET_CHAIN_HEADER].copy_from_slice(self.salt.as_bytes());
     }
 
+    /// Derive the chain secret using Argon2.
     pub fn derive_chain_secret(&self, password: &[u8], chain_hash: &Hash) -> Secret {
         // In case the salt and password get reused between chains, we first domain-ify the salt by
         // mixing it with the chain_hash. The chain_hash should be unique.

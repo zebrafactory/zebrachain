@@ -2,7 +2,7 @@
 
 use crate::always::*;
 use crate::fsutil::{create_for_append, open_for_append, secret_chain_filename};
-use crate::{Hash, Secret, SecretBlock, SecretBlockState, Seed};
+use crate::{Hash, Secret, SecretBlock, SecretBlockState, SecretChainHeader, Seed};
 use std::fs::{File, remove_file};
 use std::io;
 use std::io::{BufReader, Read, Seek, Write};
@@ -47,6 +47,51 @@ impl SecretChain {
     pub fn open(file: File, chain_secret: Secret) -> io::Result<Self> {
         let mut file = BufReader::with_capacity(SECRET_BLOCK_AEAD_READ_BUF, file);
         file.rewind()?;
+        let mut buf = vec![0; SECRET_BLOCK_AEAD];
+        let mut tail = {
+            let mut block = SecretBlock::new(&mut buf);
+            file.read_exact(block.as_mut_read_buf())?;
+            match block.from_index(&chain_secret, 0) {
+                Ok(state) => state,
+                Err(err) => return Err(err.to_io_error()),
+            }
+        };
+        let first_block_hash = tail.block_hash;
+        loop {
+            tail = {
+                let mut block = SecretBlock::new(&mut buf);
+                if file.read_exact(block.as_mut_read_buf()).is_err() {
+                    break;
+                }
+                match block.from_previous(&chain_secret, &tail) {
+                    Ok(state) => state,
+                    Err(err) => return Err(err.to_io_error()),
+                }
+            };
+        }
+        Ok(Self {
+            file: file.into_inner(),
+            first_block_hash,
+            tail,
+            secret: chain_secret,
+            buf,
+        })
+    }
+
+    /// Open and fully validate a secret chain.
+    pub fn open2(file: File, password: &[u8], chain_hash: &Hash) -> io::Result<Self> {
+        let mut file = BufReader::with_capacity(SECRET_BLOCK_AEAD_READ_BUF, file);
+        file.rewind()?;
+
+        // Read the header
+        let mut buf = [0; SECRET_CHAIN_HEADER];
+        file.read_exact(&mut buf)?;
+        let header = match SecretChainHeader::from_buf(&buf) {
+            Ok(header) => header,
+            Err(err) => return Err(err.to_io_error()),
+        };
+        let chain_secret = header.derive_chain_secret(password, chain_hash);
+
         let mut buf = vec![0; SECRET_BLOCK_AEAD];
         let mut tail = {
             let mut block = SecretBlock::new(&mut buf);
