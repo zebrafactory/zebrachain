@@ -2,11 +2,59 @@
 
 use crate::always::*;
 use crate::fsutil::{create_for_append, open_for_append, secret_chain_filename};
-use crate::{Hash, Secret, SecretBlock, SecretBlockState, SecretChainHeader, Seed};
+use crate::{Hash, Secret, SecretBlock, SecretBlockError, SecretBlockState, Seed};
+use argon2::Argon2;
 use std::fs::{File, remove_file};
 use std::io;
 use std::io::{BufReader, Read, Seek, Write};
 use std::path::{Path, PathBuf};
+
+/// Secret chain header
+#[derive(Debug)]
+pub struct SecretChainHeader {
+    hash: Hash,
+    salt: Secret,
+}
+
+impl SecretChainHeader {
+    /// Create new header
+    pub fn create(salt: Secret) -> Self {
+        let hash = Hash::compute(salt.as_bytes());
+        Self { hash, salt }
+    }
+
+    /// Load header from buffer
+    pub fn from_buf(buf: &[u8]) -> Result<Self, SecretBlockError> {
+        assert_eq!(buf.len(), SECRET_CHAIN_HEADER);
+        let hash = Hash::from_slice(&buf[0..DIGEST]).unwrap();
+        let salt = Secret::from_slice(&buf[DIGEST..SECRET_CHAIN_HEADER]).unwrap();
+        let computed = Hash::compute(salt.as_bytes());
+        if hash != computed {
+            Err(SecretBlockError::ChainHeader)
+        } else {
+            Ok(Self { hash, salt })
+        }
+    }
+
+    /// Write header to buffer
+    pub fn write_to_buf(&self, buf: &mut [u8]) {
+        assert_eq!(buf.len(), SECRET_CHAIN_HEADER);
+        buf[0..DIGEST].copy_from_slice(self.hash.as_bytes());
+        buf[DIGEST..SECRET_CHAIN_HEADER].copy_from_slice(self.salt.as_bytes());
+    }
+
+    /// Derive the chain secret using Argon2.
+    pub fn derive_chain_secret(&self, password: &[u8], chain_hash: &Hash) -> Secret {
+        // In case the salt and password get reused between chains, we first domain-ify the salt by
+        // mixing it with the chain_hash. The chain_hash should be unique.
+        let spice = self.salt.mix_with_hash(chain_hash);
+        let mut secret = [0; SECRET];
+        Argon2::default()
+            .hash_password_into(password, spice.as_bytes(), &mut secret)
+            .unwrap();
+        Secret::from_bytes(secret)
+    }
+}
 
 pub(crate) fn derive_chain_secret(store_secret: &Secret, chain_hash: &Hash) -> Secret {
     store_secret.mix_with_hash(chain_hash)

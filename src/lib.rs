@@ -105,6 +105,6 @@ pub use hashing::{Hash, HexError, Secret, SubSecret, SubSecret192, SubSecret256}
 pub use ownedblock::{MutOwnedBlock, OwnedBlockState};
 pub use ownedchain::{OwnedChain, OwnedChainStore};
 pub use payload::Payload;
-pub use secretblock::{MutSecretBlock, SecretBlock, SecretBlockState, SecretChainHeader};
-pub use secretchain::{SecretChain, SecretChainIter, SecretChainStore};
+pub use secretblock::{MutSecretBlock, SecretBlock, SecretBlockState};
+pub use secretchain::{SecretChain, SecretChainHeader, SecretChainIter, SecretChainStore};
 pub use secretseed::Seed;
