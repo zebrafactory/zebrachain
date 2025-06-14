@@ -68,6 +68,13 @@ impl OwnedChainStore {
         Ok(OwnedChain::new(chain, secret_chain))
     }
 
+    /// Open and full validate both chain and secret chain.
+    pub fn open_chain2(&self, chain_hash: &Hash, password: &[u8]) -> io::Result<OwnedChain> {
+        let chain = self.store.open_chain(chain_hash)?;
+        let secret_chain = self.secret_store.open_chain2(chain_hash, password)?;
+        Ok(OwnedChain::new(chain, secret_chain))
+    }
+
     /// Open and partially validate chain from a [CheckPoint] forward.
     ///
     /// FIXME: secret chains don't yet support resuming from a checkpoint, so

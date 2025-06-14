@@ -19,7 +19,10 @@ Because the public block can be recreated from the secret block, this gives us a
 */
 
 use crate::secretchain::derive_chain_secret;
-use crate::{BlockState, Hash, MutBlock, MutSecretBlock, Payload, Secret, SecretBlockState, Seed};
+use crate::{
+    BlockState, Hash, MutBlock, MutSecretBlock, Payload, Secret, SecretBlockState,
+    SecretChainHeader, Seed,
+};
 
 /// Combines [BlockState] and [SecretBlockState].
 pub struct OwnedBlockState {
@@ -84,6 +87,19 @@ impl<'a> MutOwnedBlock<'a> {
         let chain_secret = derive_chain_secret(store_secret, &chain_hash);
         let secret_block_hash = self.secret_block.finalize(&chain_secret);
         (chain_hash, secret_block_hash)
+    }
+
+    /// FIXME: Kinda hacky, but works for now.
+    pub fn finalize_first2(
+        mut self,
+        header: &SecretChainHeader,
+        password: &[u8],
+    ) -> (Hash, Hash, Secret) {
+        let chain_hash = self.block.finalize();
+        self.secret_block.set_public_block_hash(&chain_hash);
+        let chain_secret = header.derive_chain_secret(&chain_hash, password);
+        let secret_block_hash = self.secret_block.finalize(&chain_secret);
+        (chain_hash, secret_block_hash, chain_secret)
     }
 }
 

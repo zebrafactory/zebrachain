@@ -44,7 +44,7 @@ impl SecretChainHeader {
     }
 
     /// Derive the chain secret using Argon2.
-    pub fn derive_chain_secret(&self, password: &[u8], chain_hash: &Hash) -> Secret {
+    pub fn derive_chain_secret(&self, chain_hash: &Hash, password: &[u8]) -> Secret {
         // In case the salt and password get reused between chains, we first domain-ify the salt by
         // mixing it with the chain_hash. The chain_hash should be unique.
         let spice = self.salt.mix_with_hash(chain_hash);
@@ -127,7 +127,7 @@ impl SecretChain {
     }
 
     /// Open and fully validate a secret chain.
-    pub fn open2(file: File, password: &[u8], chain_hash: &Hash) -> io::Result<Self> {
+    pub fn open2(file: File, chain_hash: &Hash, password: &[u8]) -> io::Result<Self> {
         let mut file = BufReader::with_capacity(SECRET_BLOCK_AEAD_READ_BUF, file);
         file.rewind()?;
 
@@ -138,7 +138,7 @@ impl SecretChain {
             Ok(header) => header,
             Err(err) => return Err(err.to_io_error()),
         };
-        let chain_secret = header.derive_chain_secret(password, chain_hash);
+        let chain_secret = header.derive_chain_secret(chain_hash, password);
 
         let mut buf = vec![0; SECRET_BLOCK_AEAD];
         let mut tail = {
@@ -331,6 +331,13 @@ impl SecretChainStore {
         SecretChain::open(file, secret)
     }
 
+    /// Open a secret chain identified by its public chain-hash.
+    pub fn open_chain2(&self, chain_hash: &Hash, password: &[u8]) -> io::Result<SecretChain> {
+        let filename = self.chain_filename(chain_hash);
+        let file = open_for_append(&filename)?;
+        SecretChain::open2(file, chain_hash, password)
+    }
+
     /// Remove secret chain file.
     pub fn remove_chain_file(&self, chain_hash: &Hash) -> io::Result<()> {
         let filename = self.chain_filename(chain_hash);
@@ -380,7 +387,7 @@ mod tests {
         for pw in passwords {
             for _ in 0..11 {
                 let chain_hash = random_hash();
-                let chain_secret = header.derive_chain_secret(pw, &chain_hash);
+                let chain_secret = header.derive_chain_secret(&chain_hash, pw);
                 assert!(hset.insert(chain_secret));
             }
         }
