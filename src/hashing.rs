@@ -1,6 +1,5 @@
 use crate::EntropyError;
 use crate::always::*;
-use argon2::Argon2;
 use blake2::{
     Blake2b, Blake2bMac, Digest,
     digest::{
@@ -15,17 +14,6 @@ type Blake2b320 = Blake2b<U40>;
 type Blake2bMac192 = Blake2bMac<U24>;
 type Blake2bMac256 = Blake2bMac<U32>;
 type Blake2bMac384 = Blake2bMac<U48>;
-
-fn derive_chain_secret_pbkdf(password: &[u8], salt: &Secret, chain_hash: &Hash) -> Secret {
-    // In case the salt and password get reused between chains, we first domain-ify the salt by
-    // mixing it with the chain_hash. The chain_hash should be unique.
-    let spice = salt.mix_with_hash(chain_hash);
-    let mut secret = [0; SECRET];
-    Argon2::default()
-        .hash_password_into(password, spice.as_bytes(), &mut secret)
-        .unwrap();
-    Secret::from_bytes(secret)
-}
 
 /// Buffer containing the hash digest, with constant time comparison.
 ///

@@ -60,6 +60,9 @@ pub enum SecretBlockError {
 
     /// Previous hash in block does not match expected external value.
     PreviousHash,
+
+    /// Header at start of chain is malformed
+    ChainHeader,
 }
 
 impl SecretBlockError {

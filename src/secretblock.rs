@@ -2,11 +2,55 @@
 
 use crate::always::*;
 use crate::{Hash, Payload, Secret, SecretBlockError, Seed, SubSecret192, SubSecret256};
+use argon2::Argon2;
 use chacha20poly1305::{
     Key, XChaCha20Poly1305, XNonce,
     aead::{AeadInPlace, KeyInit},
 };
 use zeroize::{Zeroize, ZeroizeOnDrop};
+
+/// Secret chain header
+#[derive(Debug)]
+pub struct SecretChainHeader {
+    hash: Hash,
+    salt: Secret,
+}
+
+impl SecretChainHeader {
+    pub fn create(salt: Secret) -> Self {
+        let hash = Hash::compute(salt.as_bytes());
+        Self { hash, salt }
+    }
+
+    pub fn from_buf(buf: &[u8]) -> Result<Self, SecretBlockError> {
+        assert_eq!(buf.len(), SECRET_CHAIN_HEADER);
+        let hash = Hash::from_slice(&buf[0..DIGEST]).unwrap();
+        let salt = Secret::from_slice(&buf[DIGEST..SECRET_CHAIN_HEADER]).unwrap();
+        let computed = Hash::compute(salt.as_bytes());
+        if hash != computed {
+            Err(SecretBlockError::ChainHeader)
+        } else {
+            Ok(Self { hash, salt })
+        }
+    }
+
+    pub fn write_to_buf(&self, buf: &mut [u8]) {
+        assert_eq!(buf.len(), SECRET_CHAIN_HEADER);
+        buf[0..DIGEST].copy_from_slice(self.hash.as_bytes());
+        buf[DIGEST..SECRET_CHAIN_HEADER].copy_from_slice(self.salt.as_bytes());
+    }
+
+    pub fn derive_chain_secret(&self, password: &[u8], chain_hash: &Hash) -> Secret {
+        // In case the salt and password get reused between chains, we first domain-ify the salt by
+        // mixing it with the chain_hash. The chain_hash should be unique.
+        let spice = self.salt.mix_with_hash(chain_hash);
+        let mut secret = [0; SECRET];
+        Argon2::default()
+            .hash_password_into(password, spice.as_bytes(), &mut secret)
+            .unwrap();
+        Secret::from_bytes(secret)
+    }
+}
 
 fn check_secretblock_buf(buf: &[u8]) {
     if buf.len() != SECRET_BLOCK {
