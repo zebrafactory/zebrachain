@@ -32,7 +32,7 @@
 //!
 //! ```
 //! use tempfile;
-//! use zf_zebrachain::{ChainStore, OwnedChainStore, Hash, Payload, Secret};
+//! use zf_zebrachain::{ChainStore, OwnedChainStore, Hash, Payload};
 //!
 //! // Chains are just files in a directory (for now). To get started you need a directory for
 //! // your public chain files and a `ChainStore`:
@@ -40,11 +40,10 @@
 //! let store = ChainStore::new(chain_dir.path());
 //!
 //! // To create signatures in a chain that you own, you also need a directory for your secret
-//! // chain files and a secret storage key that will be used to encrypt them:
+//! // chain files:
 //! let secret_chain_dir = tempfile::TempDir::new().unwrap();
-//! let storage_secret = Secret::generate().unwrap(); // Uses getrandom::fill()
 //! let owned_store = OwnedChainStore::build(
-//!     chain_dir.path(), secret_chain_dir.path(), storage_secret
+//!     chain_dir.path(), secret_chain_dir.path()
 //! );
 //!
 //! // A Payload is what you to sign. Currently it's a 64-bit timestamp and a 320-bit hash. To
@@ -56,7 +55,7 @@
 //! // included in the 1st block. This is the forward contract for the keypair that will be used
 //! // to sign the next block. OwnedChainStore.generate_chain() internally generates the
 //! // needed initial entropy.
-//! let mut owned_chain = owned_store.generate_chain(&payload1).unwrap();
+//! let mut owned_chain = owned_store.generate_chain(&payload1, b"SUPER BAD PASSWORD").unwrap();
 //! assert_eq!(owned_chain.tail().payload, payload1);
 //!
 //! // Let us sign another payload. Each signatures requires new entropy, which is mixed into the
@@ -97,7 +96,9 @@ mod secretseed;
 #[cfg(test)]
 pub mod testhelpers;
 
-pub use always::{BLOCK, CONTEXT, DIGEST, PAYLOAD, SECRET, SECRET_BLOCK, SECRET_BLOCK_AEAD};
+pub use always::{
+    BLOCK, CONTEXT, DIGEST, PAYLOAD, SECRET, SECRET_BLOCK, SECRET_BLOCK_AEAD, SECRET_CHAIN_HEADER,
+};
 pub use block::{Block, BlockState, CheckPoint, MutBlock, sign_block};
 pub use chain::{Chain, ChainIter, ChainStore};
 pub use errors::{BlockError, EntropyError, SecretBlockError};

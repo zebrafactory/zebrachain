@@ -18,7 +18,6 @@ We want signing to have robust transactionality using the following sequence:
 Because the public block can be recreated from the secret block, this gives us a nice double commit.
 */
 
-use crate::secretchain::derive_chain_secret;
 use crate::{
     BlockState, Hash, MutBlock, MutSecretBlock, Payload, Secret, SecretBlockState,
     SecretChainHeader, Seed,
@@ -81,16 +80,7 @@ impl<'a> MutOwnedBlock<'a> {
     }
 
     /// FIXME: Kinda hacky, but works for now.
-    pub fn finalize_first(mut self, store_secret: &Secret) -> (Hash, Hash) {
-        let chain_hash = self.block.finalize();
-        self.secret_block.set_public_block_hash(&chain_hash);
-        let chain_secret = derive_chain_secret(store_secret, &chain_hash);
-        let secret_block_hash = self.secret_block.finalize(&chain_secret);
-        (chain_hash, secret_block_hash)
-    }
-
-    /// FIXME: Kinda hacky, but works for now.
-    pub fn finalize_first2(
+    pub fn finalize_first(
         mut self,
         header: &SecretChainHeader,
         password: &[u8],

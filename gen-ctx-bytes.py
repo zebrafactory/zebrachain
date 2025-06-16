@@ -6,9 +6,9 @@ names = [
     'CONTEXT_ED25519',
     'CONTEXT_ML_DSA',
     'CONTEXT_SLH_DSA',
-    'CONTEXT_CHAIN_SALT'
-    'CONTEXT_STORE_KEY',
-    'CONTEXT_STORE_NONCE',
+    'CONTEXT_CHAIN_SALT',
+    'CONTEXT_BLOCK_KEY',
+    'CONTEXT_BLOCK_NONCE',
 ]
 
 template = '''pub(crate) static {}: &[u8; CONTEXT] =

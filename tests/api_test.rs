@@ -5,7 +5,7 @@ use std::io::Read;
 use tempfile;
 use zf_zebrachain::{
     BLOCK, ChainStore, DIGEST, Hash, MutSecretBlock, OwnedChainStore, PAYLOAD, Payload, SECRET,
-    SECRET_BLOCK_AEAD, Secret, SecretChainStore, Seed,
+    SECRET_BLOCK_AEAD, SECRET_CHAIN_HEADER, Secret, SecretChainHeader, SecretChainStore, Seed,
 };
 
 const SAMPLE_PAYLOAD_0: &str =
@@ -26,7 +26,7 @@ const SECRET_BLOCK_HASH_419: &str =
 const FULL_CHAIN_HASH: &str =
     "3addcb096a3ddf4c5df61dfba5eca3a39f04c6975f699d8d11bc33404dc60993465c5da789f3beb4";
 const FULL_SECRET_CHAIN_HASH: &str =
-    "3df1047dda7da1e54a6867cb4a0bc1bf2312ec88b20692ec230f019e5dbbc23f0ad2201a3d907d1b";
+    "f5f74bac662854def4e51af8f3dea873d431ff1aa7f149a0188c7f35b15a4c1ba4c07c49710873b2";
 
 static JUNK_ENTROPY: [u8; SECRET] = hex!(
     "517931cc2f0085cd414b57a07680df2c3097c9030be69f51990cee94b26dbe07a0ee06c69f4b1e0de776c3afc497f948"
@@ -40,6 +40,7 @@ static JUNK_PAYLOAD_HASH: [u8; SECRET] = hex!(
 static JUNK_PAYLOAD_TIME: [u8; SECRET] = hex!(
     "245eec220526eff45ad9f14cc01c7d2d7002910d5c6b98e10faf926c12e2711eea908b0a9d50523fbd602fb456584d74"
 );
+static PASSWORD: &[u8] = b"Don't Ever Use This Password In Real Life";
 
 fn sample_entropy(index: u64) -> Secret {
     let root = Secret::from_bytes(JUNK_ENTROPY);
@@ -121,10 +122,10 @@ fn test_chain_store() {
 #[test]
 fn test_secret_chain_store() {
     let tmpdir = tempfile::TempDir::new().unwrap();
-    let storage_secret = Secret::generate().unwrap();
-    let store = SecretChainStore::new(tmpdir.path(), storage_secret.clone());
+    let pw = Secret::generate().unwrap();
+    let store = SecretChainStore::new(tmpdir.path());
     let chain_hash = Hash::from_bytes([42; DIGEST]);
-    assert!(store.open_chain(&chain_hash).is_err());
+    assert!(store.open_chain(&chain_hash, pw.as_bytes()).is_err());
 
     let mut buf = Vec::new();
     let payload = sample_payload(0);
@@ -133,16 +134,20 @@ fn test_secret_chain_store() {
     block.set_seed(&seed);
     block.set_public_block_hash(&chain_hash);
 
-    let chain_secret = storage_secret.mix_with_hash(&chain_hash);
+    let salt = Secret::generate().unwrap();
+    let header = SecretChainHeader::create(salt);
+    let chain_secret = header.derive_chain_secret(&chain_hash, pw.as_bytes());
     let block_hash = block.finalize(&chain_secret);
-    let chain = store.create_chain(&chain_hash, buf, &block_hash).unwrap();
+    let chain = store
+        .create_chain(buf, header, chain_secret, &chain_hash, &block_hash)
+        .unwrap();
     assert_eq!(chain.tail().payload, payload);
     let tail = chain.tail().clone();
 
-    let chain = store.open_chain(&chain_hash).unwrap();
+    let chain = store.open_chain(&chain_hash, pw.as_bytes()).unwrap();
     assert_eq!(chain.tail(), &tail);
     store.remove_chain_file(&chain_hash).unwrap();
-    assert!(store.open_chain(&chain_hash).is_err());
+    assert!(store.open_chain(&chain_hash, pw.as_bytes()).is_err());
     assert!(store.remove_chain_file(&chain_hash).is_err());
 }
 
@@ -180,9 +185,9 @@ fn test_payload() {
 #[test]
 fn test_owned_chain_store() {
     let tmpdir = tempfile::TempDir::new().unwrap();
-    let store = OwnedChainStore::build(tmpdir.path(), tmpdir.path(), sample_storage_secret(0));
+    let store = OwnedChainStore::build(tmpdir.path(), tmpdir.path());
     let mut chain = store
-        .create_chain(&sample_entropy(0), &sample_payload(0))
+        .create_chain(&sample_entropy(0), &sample_payload(0), PASSWORD)
         .unwrap();
     assert_eq!(
         chain.head().block_hash,
@@ -229,7 +234,7 @@ fn test_owned_chain_store() {
     let mut chain_file = File::open(&chain_filename).unwrap();
     let mut buf = Vec::new();
     chain_file.read_to_end(&mut buf).unwrap();
-    assert_eq!(buf.len(), SECRET_BLOCK_AEAD * 420);
+    assert_eq!(buf.len(), SECRET_CHAIN_HEADER + SECRET_BLOCK_AEAD * 420);
     assert_eq!(
         Hash::compute(&buf),
         Hash::from_hex(FULL_SECRET_CHAIN_HASH).unwrap()

@@ -153,6 +153,9 @@ pub(crate) static CONTEXT_ML_DSA: &[u8; CONTEXT] = &hex!(
 );
 //pub(crate) static CONTEXT_SLH_DSA: &[u8; CONTEXT] =
 //    &hex!("1ce7f9e27feffbb8d02bb00906d27ccb90614c35c7b9b3c2cff8e7ce8ef8f19e7df3b3f3140cf009fbee85e2b19ec77c");
+pub(crate) static CONTEXT_CHAIN_SALT: &[u8; CONTEXT] = &hex!(
+    "1ed15c558923eea0d39e21e29142a8837a215e7cf63d6cb88c3caefb4a31ef91c0f2f6489b2c7f9ad80b95458f0fefad"
+);
 pub(crate) static CONTEXT_BLOCK_KEY: &[u8; CONTEXT] = &hex!(
     "f5c4428f694529e8139c825044e130dfd54182b8324142a3ea03b13085d83c63a01533f3ba4ddcd3835beaf086dc0d8b"
 );

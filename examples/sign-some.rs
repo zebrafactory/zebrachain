@@ -19,9 +19,12 @@ fn main() {
     println!("Pre-generating {} random signing requests...", COUNT);
     let payloads = build_payloads();
     let tmpdir = tempfile::TempDir::new().unwrap();
-    let root_secret = Secret::generate().unwrap();
-    let ocs = OwnedChainStore::build(tmpdir.path(), tmpdir.path(), root_secret);
-    let mut chain = ocs.generate_chain(&payloads[0]).unwrap();
+    let ocs = OwnedChainStore::build(tmpdir.path(), tmpdir.path());
+
+    let password = Secret::generate().unwrap();
+    let mut chain = ocs
+        .generate_chain(&payloads[0], password.as_bytes())
+        .unwrap();
 
     println!("Created new chain in directory {:?}", tmpdir.path());
 
@@ -47,7 +50,10 @@ fn main() {
     ocs.store().remove_chain_file(&chain_hash).unwrap();
 
     println!("Opening secret chain and fully validating...");
-    let secchain = ocs.secret_store().open_chain(&chain_hash).unwrap();
+    let secchain = ocs
+        .secret_store()
+        .open_chain(&chain_hash, password.as_bytes())
+        .unwrap();
 
     println!("Iterating through secret chain and fully validating...");
     for result in &secchain {
@@ -60,7 +66,7 @@ fn main() {
     assert_eq!(&tail, chain.tail());
 
     println!("Opening chain and fully validating...");
-    let chain = ocs.open_chain(&chain_hash).unwrap();
+    let chain = ocs.open_chain(&chain_hash, password.as_bytes()).unwrap();
     println!("Head: {}", chain.head().block_hash);
     println!("Tead: {}", chain.tail().block_hash);
     println!("Count: {}", chain.count());
@@ -70,7 +76,7 @@ fn main() {
 
     let checkpoint = tail.to_checkpoint();
     println!("Resuming chain from a checkpoint and partially validating...");
-    let chain = ocs.resume_chain(&checkpoint).unwrap();
+    let chain = ocs.resume_chain(&checkpoint, password.as_bytes()).unwrap();
     println!("Head: {}", chain.head().block_hash);
     println!("Tead: {}", chain.tail().block_hash);
     println!("Count: {}", chain.count());
