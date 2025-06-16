@@ -314,7 +314,7 @@ mod tests {
     use std::collections::HashSet;
     use std::io::Seek;
     use tempfile::{TempDir, tempfile};
-    /*
+
     #[test]
     fn test_secret_chain_header() {
         let salt = Secret::generate().unwrap();
@@ -363,7 +363,11 @@ mod tests {
         let seed = Seed::generate().unwrap();
         block.set_seed(&seed);
 
-        let chain_secret = Secret::generate().unwrap();
+        let salt = Secret::generate().unwrap();
+        let header = SecretChainHeader::create(salt);
+        let chain_hash = random_hash();
+        let password = random_hash();
+        let chain_secret = header.derive_chain_secret(&chain_hash, password.as_bytes());
         let block_hash = block.finalize(&chain_secret);
 
         let mut buf2 = buf.clone();
@@ -374,32 +378,36 @@ mod tests {
         let file = tempfile().unwrap();
         let chain = SecretChain::create(
             file.try_clone().unwrap(),
-            chain_secret.clone(),
             buf,
+            header,
+            chain_secret,
             &block_hash,
         )
         .unwrap();
         assert_eq!(chain.tail(), &state);
 
         // Reopen chain, test SecretChain::open()
-        let chain = SecretChain::open(file, chain_secret).unwrap();
+        let chain = SecretChain::open(file, &chain_hash, password.as_bytes()).unwrap();
         assert_eq!(chain.tail(), &state);
     }
 
     #[test]
     fn test_chain_open() {
         let mut file = tempfile().unwrap();
-        let chain_secret = Secret::generate().unwrap();
+        let chain_hash = random_hash();
+        let password = random_hash();
 
         // Empty file
-        assert!(SecretChain::open(file.try_clone().unwrap(), chain_secret.clone()).is_err());
+        assert!(
+            SecretChain::open(file.try_clone().unwrap(), &chain_hash, password.as_bytes()).is_err()
+        );
 
         // A secret aead block full of random data
         let mut buf = vec![0; SECRET_BLOCK_AEAD];
         getrandom::fill(&mut buf).unwrap();
         file.write_all(&buf).unwrap();
         file.rewind().unwrap();
-        assert!(SecretChain::open(file, chain_secret).is_err());
+        assert!(SecretChain::open(file, &chain_hash, password.as_bytes()).is_err());
     }
 
     #[test]
@@ -410,13 +418,23 @@ mod tests {
 
         let mut seed = Seed::generate().unwrap();
         block.set_seed(&seed);
-        let secret = Secret::generate().unwrap();
-        let block_hash = block.finalize(&secret);
+
+        let salt = Secret::generate().unwrap();
+        let header = SecretChainHeader::create(salt);
+        let chain_hash = random_hash();
+        let password = random_hash();
+        let chain_secret = header.derive_chain_secret(&chain_hash, password.as_bytes());
+        let block_hash = block.finalize(&chain_secret);
 
         let mut file = tempfile().unwrap();
-        let mut chain =
-            SecretChain::create(file.try_clone().unwrap(), secret.clone(), buf, &block_hash)
-                .unwrap();
+        let mut chain = SecretChain::create(
+            file.try_clone().unwrap(),
+            buf,
+            header,
+            chain_secret.clone(),
+            &block_hash,
+        )
+        .unwrap();
         assert_eq!(chain.count(), 1);
         for i in 2..69 {
             seed = seed.advance().unwrap();
@@ -425,44 +443,18 @@ mod tests {
             let mut block = MutSecretBlock::new(chain.as_mut_buf(), &payload);
             block.set_previous(&tail);
             block.set_seed(&seed);
-            let block_hash = block.finalize(&secret);
+            let block_hash = block.finalize(&chain_secret);
             chain.append(&block_hash).unwrap();
             assert_eq!(chain.count(), i);
         }
         file.rewind().unwrap();
-        SecretChain::open(file, secret).unwrap();
-    }
-
-    #[test]
-    fn test_store_derive_secret() {
-        let dir = PathBuf::from("/nope");
-        let secret = Secret::from_bytes([42; SECRET]);
-        let store = SecretChainStore::new(&dir, secret.clone());
-        let chain_hash = Hash::from_bytes([69; DIGEST]);
-        let sec = store.derive_chain_secret(&chain_hash);
-        assert_eq!(
-            sec.as_bytes(),
-            &[
-                31, 60, 166, 42, 214, 140, 210, 202, 18, 4, 172, 14, 173, 70, 52, 141, 162, 157,
-                60, 215, 217, 14, 85, 37, 105, 38, 162, 251, 196, 144, 46, 239, 193, 1, 245, 219,
-                204, 45, 250, 23, 199, 180, 15, 59, 45, 30, 211, 29
-            ]
-        );
-        assert_eq!(sec, secret.mix_with_hash(&chain_hash));
-        let secret = Secret::generate().unwrap();
-        let chain_hash = random_hash();
-        let store = SecretChainStore::new(&dir, secret.clone());
-        assert_eq!(
-            store.derive_chain_secret(&chain_hash),
-            secret.mix_with_hash(&chain_hash)
-        );
+        SecretChain::open(file, &chain_hash, password.as_bytes()).unwrap();
     }
 
     #[test]
     fn test_store_chain_filename() {
         let dir = PathBuf::from("/nope");
-        let secret = Secret::generate().unwrap();
-        let store = SecretChainStore::new(dir.as_path(), secret);
+        let store = SecretChainStore::new(dir.as_path());
         let chain_hash = Hash::from_bytes([69; DIGEST]);
         assert_eq!(
             store.chain_filename(&chain_hash),
@@ -480,26 +472,27 @@ mod tests {
     #[test]
     fn test_store_open_chain() {
         let dir = TempDir::new().unwrap();
-        let store_secret = Secret::generate().unwrap();
-        let store = SecretChainStore::new(dir.path(), store_secret);
-
+        let store = SecretChainStore::new(dir.path());
         let chain_hash = random_hash();
-        assert!(store.open_chain(&chain_hash).is_err());
+        assert!(store.open_chain(&chain_hash, b"Bad Password").is_err());
         let filename = store.chain_filename(&chain_hash);
 
         let mut file = create_for_append(&filename).unwrap();
-        let mut buf = [0; SECRET_BLOCK_AEAD];
+        let mut buf = [0; SECRET_CHAIN_HEADER + SECRET_BLOCK_AEAD];
         getrandom::fill(&mut buf).unwrap();
         file.write_all(&buf).unwrap();
         file.rewind().unwrap();
-        assert!(store.open_chain(&chain_hash).is_err()); // Not valid ChaCha20Poly1305 content
+        assert!(store.open_chain(&chain_hash, b"Bad Password").is_err()); // Not valid ChaCha20Poly1305 content
     }
 
     #[test]
     fn test_store_create_chain_open() {
-        let store_secret = Secret::generate().unwrap();
+        let salt = Secret::generate().unwrap();
+        let header = SecretChainHeader::create(salt);
         let chain_hash = random_hash();
-        let chain_secret = derive_chain_secret(&store_secret, &chain_hash);
+        let password = random_hash();
+        let chain_secret = header.derive_chain_secret(&chain_hash, password.as_bytes());
+
         let seed = Seed::generate().unwrap();
         let payload = random_payload();
 
@@ -509,25 +502,24 @@ mod tests {
         let block_hash = block.finalize(&chain_secret);
 
         let dir = TempDir::new().unwrap();
-        let store = SecretChainStore::new(dir.path(), store_secret.clone());
-        let chain = store.create_chain(&chain_hash, buf, &block_hash).unwrap();
+        let store = SecretChainStore::new(dir.path());
+        let chain = store
+            .create_chain(buf, header, chain_secret, &chain_hash, &block_hash)
+            .unwrap();
 
-        assert_ne!(chain.secret, store_secret);
-        assert_eq!(chain.secret, chain_secret);
         let state = chain.tail().clone();
         assert_eq!(state.payload, payload);
         assert_eq!(state.seed, seed);
 
         // Reopen the chain
-        let chain = store.open_chain(&chain_hash).unwrap();
+        let chain = store.open_chain(&chain_hash, password.as_bytes()).unwrap();
         assert_eq!(chain.tail(), &state);
     }
 
     #[test]
     fn test_store_remove_file() {
         let dir = TempDir::new().unwrap();
-        let secret = Secret::generate().unwrap();
-        let store = SecretChainStore::new(dir.path(), secret);
+        let store = SecretChainStore::new(dir.path());
         let chain_hash = random_hash();
         assert!(store.remove_chain_file(&chain_hash).is_err());
         let filename = store.chain_filename(&chain_hash);
@@ -535,5 +527,4 @@ mod tests {
         assert!(store.remove_chain_file(&chain_hash).is_ok());
         assert!(store.remove_chain_file(&chain_hash).is_err());
     }
-        */
 }
