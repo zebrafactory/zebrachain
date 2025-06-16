@@ -196,65 +196,71 @@ mod tests {
     use super::*;
     use crate::testhelpers::random_payload;
     use tempfile;
-    /*
-        #[test]
-        fn test_ownedchainstore() {
-            let payload = random_payload();
 
-            let tmpdir1 = tempfile::TempDir::new().unwrap();
-            let tmpdir2 = tempfile::TempDir::new().unwrap();
-            let store = ChainStore::new(tmpdir1.path());
-            let secstore = SecretChainStore::new(tmpdir2.path(), Secret::generate().unwrap());
-            let ocs = OwnedChainStore::new(store, secstore);
+    #[test]
+    fn test_ownedchainstore() {
+        let payload = random_payload();
 
-            let initial_entropy = Secret::generate().unwrap();
-            let mut chain = ocs.create_chain(&initial_entropy, &payload).unwrap();
-            assert_eq!(chain.tail().block_index, 0);
-            let chain_hash = chain.chain_hash().clone();
-            for i in 1..=420 {
-                let new_entropy = Secret::generate().unwrap();
-                chain.sign_raw(&new_entropy, &random_payload()).unwrap();
-                assert_eq!(chain.tail().block_index, i);
-            }
-            assert_eq!(chain.count(), 421);
-            let tail = chain.tail().clone();
-            let chain = ocs.open_chain(&chain_hash).unwrap();
-            assert_eq!(chain.tail(), &tail);
-            assert_eq!(chain.count(), 421);
+        let tmpdir1 = tempfile::TempDir::new().unwrap();
+        let tmpdir2 = tempfile::TempDir::new().unwrap();
+        let store = ChainStore::new(tmpdir1.path());
+        let secstore = SecretChainStore::new(tmpdir2.path());
+        let ocs = OwnedChainStore::new(store, secstore);
+
+        let initial_entropy = Secret::generate().unwrap();
+        let mut chain = ocs
+            .create_chain(&initial_entropy, &payload, b"Bad Password")
+            .unwrap();
+        assert_eq!(chain.tail().block_index, 0);
+        let chain_hash = chain.chain_hash().clone();
+        for i in 1..=420 {
+            let new_entropy = Secret::generate().unwrap();
+            chain.sign_raw(&new_entropy, &random_payload()).unwrap();
+            assert_eq!(chain.tail().block_index, i);
         }
+        assert_eq!(chain.count(), 421);
+        let tail = chain.tail().clone();
+        let chain = ocs.open_chain(&chain_hash, b"Bad Password").unwrap();
+        assert_eq!(chain.tail(), &tail);
+        assert_eq!(chain.count(), 421);
+    }
 
-        #[test]
-        fn test_ocs_build() {
-            let tmpdir = tempfile::TempDir::new().unwrap();
-            let secret = Secret::generate().unwrap();
-            let ocs = OwnedChainStore::build(tmpdir.path(), tmpdir.path(), secret);
-            let payload = random_payload();
-            let initial_entropy = Secret::generate().unwrap();
-            let oc = ocs.create_chain(&initial_entropy, &payload).unwrap();
-            let chain_hash = oc.chain_hash();
-            let tail = oc.tail();
-            let oc = ocs.open_chain(&chain_hash).unwrap();
-            assert_eq!(oc.chain_hash(), chain_hash);
-            assert_eq!(oc.tail(), tail);
-        }
+    #[test]
+    fn test_ocs_build() {
+        let tmpdir = tempfile::TempDir::new().unwrap();
+        let ocs = OwnedChainStore::build(tmpdir.path(), tmpdir.path());
+        let payload = random_payload();
+        let initial_entropy = Secret::generate().unwrap();
+        let oc = ocs
+            .create_chain(&initial_entropy, &payload, b"Bad Password")
+            .unwrap();
+        let chain_hash = oc.chain_hash();
+        let tail = oc.tail();
+        let oc = ocs.open_chain(&chain_hash, b"Bad Password").unwrap();
+        assert_eq!(oc.chain_hash(), chain_hash);
+        assert_eq!(oc.tail(), tail);
+    }
 
-        #[test]
-        fn test_ocs_secret_to_public() {
-            let tmpdir = tempfile::TempDir::new().unwrap();
-            let secret = Secret::generate().unwrap();
-            let ocs = OwnedChainStore::build(tmpdir.path(), tmpdir.path(), secret);
-            let payload = random_payload();
-            let initial_entropy = Secret::generate().unwrap();
-            let mut chain = ocs.create_chain(&initial_entropy, &payload).unwrap();
-            for _ in 0..420 {
-                let new_entropy = Secret::generate().unwrap();
-                chain.sign_raw(&new_entropy, &random_payload()).unwrap();
-            }
-            let tail = chain.tail().clone();
-            ocs.store().remove_chain_file(&tail.chain_hash).unwrap();
-            let secret_chain = ocs.secret_store.open_chain(&tail.chain_hash).unwrap();
-            let chain = ocs.secret_to_public(&secret_chain).unwrap();
-            assert_eq!(chain.tail(), &tail);
+    #[test]
+    fn test_ocs_secret_to_public() {
+        let tmpdir = tempfile::TempDir::new().unwrap();
+        let ocs = OwnedChainStore::build(tmpdir.path(), tmpdir.path());
+        let payload = random_payload();
+        let initial_entropy = Secret::generate().unwrap();
+        let mut chain = ocs
+            .create_chain(&initial_entropy, &payload, b"Bad Password")
+            .unwrap();
+        for _ in 0..420 {
+            let new_entropy = Secret::generate().unwrap();
+            chain.sign_raw(&new_entropy, &random_payload()).unwrap();
         }
-    */
+        let tail = chain.tail().clone();
+        ocs.store().remove_chain_file(&tail.chain_hash).unwrap();
+        let secret_chain = ocs
+            .secret_store
+            .open_chain(&tail.chain_hash, b"Bad Password")
+            .unwrap();
+        let chain = ocs.secret_to_public(&secret_chain).unwrap();
+        assert_eq!(chain.tail(), &tail);
+    }
 }
