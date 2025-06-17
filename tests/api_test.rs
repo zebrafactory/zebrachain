@@ -185,7 +185,7 @@ fn test_payload() {
 #[test]
 fn test_owned_chain_store() {
     let tmpdir = tempfile::TempDir::new().unwrap();
-    let store = OwnedChainStore::build(tmpdir.path(), tmpdir.path());
+    let store = OwnedChainStore::new(tmpdir.path(), tmpdir.path());
     let mut chain = store
         .create_chain(&sample_entropy(0), &sample_payload(0), PASSWORD)
         .unwrap();

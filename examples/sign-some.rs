@@ -19,7 +19,7 @@ fn main() {
     println!("Pre-generating {} random signing requests...", COUNT);
     let payloads = build_payloads();
     let tmpdir = tempfile::TempDir::new().unwrap();
-    let ocs = OwnedChainStore::build(tmpdir.path(), tmpdir.path());
+    let ocs = OwnedChainStore::new(tmpdir.path(), tmpdir.path());
 
     let password = Secret::generate().unwrap();
     let mut chain = ocs

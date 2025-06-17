@@ -18,19 +18,16 @@ pub struct OwnedChainStore {
 }
 
 impl OwnedChainStore {
-    /// Create a new [OwnedChainStore].
-    pub fn new(store: ChainStore, secret_store: SecretChainStore) -> Self {
+    /// Create an OwnedChainStore.
+    ///
+    /// This has no side effects, performs no file system operations.
+    pub fn new(store_dir: &Path, secret_store_dir: &Path) -> Self {
+        let store = ChainStore::new(store_dir);
+        let secret_store = SecretChainStore::new(secret_store_dir);
         Self {
             store,
             secret_store,
         }
-    }
-
-    /// Convenience method for creating an [OwnedChainStore].
-    pub fn build(store_dir: &Path, secret_store_dir: &Path) -> Self {
-        let store = ChainStore::new(store_dir);
-        let secret_store = SecretChainStore::new(secret_store_dir);
-        Self::new(store, secret_store)
     }
 
     /// Create a new owned chain, internally generating the entropy.
@@ -203,9 +200,7 @@ mod tests {
 
         let tmpdir1 = tempfile::TempDir::new().unwrap();
         let tmpdir2 = tempfile::TempDir::new().unwrap();
-        let store = ChainStore::new(tmpdir1.path());
-        let secstore = SecretChainStore::new(tmpdir2.path());
-        let ocs = OwnedChainStore::new(store, secstore);
+        let ocs = OwnedChainStore::new(tmpdir1.path(), tmpdir2.path());
 
         let initial_entropy = Secret::generate().unwrap();
         let mut chain = ocs
@@ -228,7 +223,7 @@ mod tests {
     #[test]
     fn test_ocs_build() {
         let tmpdir = tempfile::TempDir::new().unwrap();
-        let ocs = OwnedChainStore::build(tmpdir.path(), tmpdir.path());
+        let ocs = OwnedChainStore::new(tmpdir.path(), tmpdir.path());
         let payload = random_payload();
         let initial_entropy = Secret::generate().unwrap();
         let oc = ocs
@@ -244,7 +239,7 @@ mod tests {
     #[test]
     fn test_ocs_secret_to_public() {
         let tmpdir = tempfile::TempDir::new().unwrap();
-        let ocs = OwnedChainStore::build(tmpdir.path(), tmpdir.path());
+        let ocs = OwnedChainStore::new(tmpdir.path(), tmpdir.path());
         let payload = random_payload();
         let initial_entropy = Secret::generate().unwrap();
         let mut chain = ocs

@@ -39,8 +39,8 @@
 //! let chain_dir = tempfile::TempDir::new().unwrap();
 //! let secret_chain_dir = tempfile::TempDir::new().unwrap();
 //!
-//! // Now use both to build an OwnedChainStore:
-//! let owned_store = OwnedChainStore::build(chain_dir.path(), secret_chain_dir.path());
+//! // Use both directories in your OwnedChainStore:
+//! let owned_store = OwnedChainStore::new(chain_dir.path(), secret_chain_dir.path());
 //!
 //! // A Payload is what you to sign. Currently it's a 64-bit timestamp and a 320-bit hash. To
 //! // create a new chain, you need the first payload that you want to sign:
@@ -72,7 +72,7 @@
 //! // A ChainStore is used for consuming the public side of the chain:
 //! let store = ChainStore::new(chain_dir.path());
 //!
-//! // Open and fully verify the public chain the `chain_hash` like this:
+//! // Open and fully verify the public chain by the `chain_hash` like this:
 //! let chain = store.open_chain(&chain_hash).unwrap();
 //! assert_eq!(chain.head().payload, payload1);
 //! assert_eq!(chain.tail().payload, payload3);
