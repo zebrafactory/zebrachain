@@ -32,49 +32,50 @@
 //!
 //! ```
 //! use tempfile;
-//! use zf_zebrachain::{ChainStore, OwnedChainStore, Hash, Payload};
+//! use zf_zebrachain::{ChainStore, Hash, OwnedChainStore, Payload};
 //!
-//! // Chains are just files in a directory (for now). To get started you need a directory for
-//! // your public chain files and a `ChainStore`:
+//! // To create a chain and make signatures, you need a directory for your public chain files
+//! // and other directory for your secret chain files:
 //! let chain_dir = tempfile::TempDir::new().unwrap();
-//! let store = ChainStore::new(chain_dir.path());
-//!
-//! // To create signatures in a chain that you own, you also need a directory for your secret
-//! // chain files:
 //! let secret_chain_dir = tempfile::TempDir::new().unwrap();
-//! let owned_store = OwnedChainStore::build(
-//!     chain_dir.path(), secret_chain_dir.path()
-//! );
+//!
+//! // Now use both to build an OwnedChainStore:
+//! let owned_store = OwnedChainStore::build(chain_dir.path(), secret_chain_dir.path());
 //!
 //! // A Payload is what you to sign. Currently it's a 64-bit timestamp and a 320-bit hash. To
 //! // create a new chain, you need the first payload that you want to sign:
 //! let payload1 = Payload::new_time_stamped(Hash::compute(b"Message number 1"));
 //!
-//! // Create a chain, the first block of which will contain the signed payload. The first block
-//! // is signed with the 1st keypair, but the hash of the public key of the 2nd keypair is
-//! // included in the 1st block. This is the forward contract for the keypair that will be used
-//! // to sign the next block. OwnedChainStore.generate_chain() internally generates the
-//! // needed initial entropy.
-//! let mut owned_chain = owned_store.generate_chain(&payload1, b"SUPER BAD PASSWORD").unwrap();
+//! // Lastly, you need a password (or a key from a hardware security module or similar) that will
+//! // be used to encrypt this secret chain (PBKDF is done with with Argon2):
+//! let password = b"SUPER BAD PASSWORD";
+//! let mut owned_chain = owned_store.generate_chain(&payload1, password).unwrap();
+//! assert_eq!(owned_chain.head().payload, payload1);
 //! assert_eq!(owned_chain.tail().payload, payload1);
 //!
-//! // Let us sign another payload. Each signatures requires new entropy, which is mixed into the
-//! // the secret chain state using a keyed hash. This latest seed will be used to create a 3rd
-//! // keypair, and the hash of its public key is included this block. The 2nd block is signed with
-//! // the 2nd keypair created above. OwnedChain.sign() internally generates the needed new
-//! // entropy.
+//! // Make another signature like this:
 //! let payload2 = Payload::new_time_stamped(Hash::compute(b"Message number 2"));
 //! owned_chain.sign(&payload2).unwrap();
+//! assert_eq!(owned_chain.head().payload, payload1);
 //! assert_eq!(owned_chain.tail().payload, payload2);
 //!
 //! // A chain is identified by its `chain_hash`, which is the hash of the 1st block in the chain:
 //! let chain_hash = owned_chain.chain_hash();
 //!
-//! // We can now open that chain from the public chain store, which will fully validate the chain
-//! // and set the tail at the latest block:
+//! // Reopen the owned chain and create additional signatures like this:
+//! let mut owned_chain = owned_store.open_chain(&chain_hash, password).unwrap();
+//! let payload3 = Payload::new_time_stamped(Hash::compute(b"Message number 3"));
+//! owned_chain.sign(&payload3).unwrap();
+//! assert_eq!(owned_chain.head().payload, payload1);
+//! assert_eq!(owned_chain.tail().payload, payload3);
+//!
+//! // A ChainStore is used for consuming the public side of the chain:
+//! let store = ChainStore::new(chain_dir.path());
+//!
+//! // Open and fully verify the public chain the `chain_hash` like this:
 //! let chain = store.open_chain(&chain_hash).unwrap();
 //! assert_eq!(chain.head().payload, payload1);
-//! assert_eq!(chain.tail().payload, payload2);
+//! assert_eq!(chain.tail().payload, payload3);
 //! ```
 //!
 //! [ML-DSA]: https://github.com/RustCrypto/signatures/tree/master/ml-dsa
