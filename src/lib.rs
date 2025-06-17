@@ -47,7 +47,7 @@
 //! let payload1 = Payload::new_time_stamped(Hash::compute(b"Message number 1"));
 //!
 //! // Lastly, you need a password (or a key from a hardware security module or similar) that will
-//! // be used to encrypt this secret chain (PBKDF is done with with Argon2):
+//! // be used to encrypt this secret chain:
 //! let password = b"SUPER BAD PASSWORD";
 //! let mut owned_chain = owned_store.generate_chain(&payload1, password).unwrap();
 //! assert_eq!(owned_chain.head().payload, payload1);
@@ -61,6 +61,7 @@
 //!
 //! // A chain is identified by its `chain_hash`, which is the hash of the 1st block in the chain:
 //! let chain_hash = owned_chain.chain_hash();
+//! assert_eq!(chain_hash, &owned_chain.head().block_hash);
 //!
 //! // Reopen the owned chain and create additional signatures like this:
 //! let mut owned_chain = owned_store.open_chain(&chain_hash, password).unwrap();

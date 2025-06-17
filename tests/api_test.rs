@@ -217,7 +217,7 @@ fn test_owned_chain_store() {
     );
     assert_ne!(chain.head(), chain.tail());
 
-    // Hash the entire chain file to make extra sure we are consistent
+    // Hash the entire chain file to make extra sure we are consistent.
     let chain_filename = tmpdir.path().join(format!("{}", chain.chain_hash()));
     let mut chain_file = File::open(&chain_filename).unwrap();
     let mut buf = Vec::new();
@@ -228,8 +228,8 @@ fn test_owned_chain_store() {
         Hash::from_hex(FULL_CHAIN_HASH).unwrap()
     );
 
-    // And hash the entire secret chain file too. This is extra important because this is how we
-    // check that the secret block encryption is being done the same.
+    // And hash the entire secret chain file too. This is important because this is how we check
+    // that the secret block encryption is being done the same.
     let chain_filename = tmpdir.path().join(format!("{}.secret", chain.chain_hash()));
     let mut chain_file = File::open(&chain_filename).unwrap();
     let mut buf = Vec::new();

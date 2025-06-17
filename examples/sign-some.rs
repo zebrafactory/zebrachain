@@ -1,16 +1,16 @@
 //! Create a new chain and some signatures.
 
 use tempfile;
-use zf_zebrachain::{DIGEST, Hash, OwnedChainStore, Payload, Secret};
+use zf_zebrachain::{OwnedChainStore, PAYLOAD, Payload, Secret};
 
 const COUNT: usize = 420;
 
 fn build_payloads() -> Vec<Payload> {
     let mut payloads = Vec::with_capacity(COUNT);
+    let mut buf = [0; PAYLOAD];
     for _ in 0..COUNT {
-        let mut buf = [0; DIGEST];
         getrandom::fill(&mut buf).unwrap();
-        payloads.push(Payload::new(0, Hash::from_bytes(buf)));
+        payloads.push(Payload::from_buf(&buf));
     }
     payloads
 }
@@ -28,7 +28,7 @@ fn main() {
 
     println!("Created new chain in directory {:?}", tmpdir.path());
 
-    println!("Signing remaning {} requests... ", COUNT - 1);
+    println!("Signing remaining {} requests... ", COUNT - 1);
     for payload in &payloads[1..] {
         chain.sign(&payload).unwrap();
     }

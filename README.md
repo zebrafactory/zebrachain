@@ -82,7 +82,7 @@ These key crates are used:
 
 * [blake2](https://crates.io/crates/blake2) for hashing and KDF.
 
-* [chacha20poly1305](https://crates.io/crates/chacha20poly1305) for encrypting the secret blocks.
+* [chacha20poly1305](https://crates.io/crates/chacha20poly1305) for encrypting and authenticating the secret blocks.
 
 * [argon2](https://crates.io/crates/argon2) for PBKDF.
 

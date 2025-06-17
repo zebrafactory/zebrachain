@@ -246,9 +246,9 @@ impl<'a> Block<'a> {
 ///
 /// // Build, sign, and finalize a new block like this:
 /// let mut buf = [0; BLOCK];
-/// let seed = Seed::generate().unwrap();
 /// let payload = Payload::new(123, Hash::from_bytes([69; DIGEST]));
 /// let mut block = MutBlock::new(&mut buf, &payload);
+/// let seed = Seed::generate().unwrap();
 /// block.sign(&seed);
 /// let block_hash = block.finalize();
 ///
