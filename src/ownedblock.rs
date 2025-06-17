@@ -79,7 +79,10 @@ impl<'a> MutOwnedBlock<'a> {
         (block_hash, secret_block_hash)
     }
 
-    /// FIXME: Kinda hacky, but works for now.
+    /// Finalize both public and secret blocks when creating a new chain.
+    ///
+    /// This must be done differently on the first block because we don't know the `chain_secret`
+    /// till we know the `chain_hash`.
     pub fn finalize_first(
         mut self,
         header: &SecretChainHeader,

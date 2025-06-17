@@ -35,7 +35,7 @@
 //! use zf_zebrachain::{ChainStore, Hash, OwnedChainStore, Payload};
 //!
 //! // To create a chain and make signatures, you need a directory for your public chain files
-//! // and other directory for your secret chain files:
+//! // and another directory for your secret chain files:
 //! let chain_dir = tempfile::TempDir::new().unwrap();
 //! let secret_chain_dir = tempfile::TempDir::new().unwrap();
 //!

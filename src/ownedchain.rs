@@ -22,15 +22,13 @@ impl OwnedChainStore {
     ///
     /// This has no side effects, performs no file system operations.
     pub fn new(store_dir: &Path, secret_store_dir: &Path) -> Self {
-        let store = ChainStore::new(store_dir);
-        let secret_store = SecretChainStore::new(secret_store_dir);
         Self {
-            store,
-            secret_store,
+            store: ChainStore::new(store_dir),
+            secret_store: SecretChainStore::new(secret_store_dir),
         }
     }
 
-    /// Create a new owned chain, internally generating the entropy.
+    /// Create a new owned chain, internally generating the initial entropy.
     pub fn generate_chain(&self, payload: &Payload, password: &[u8]) -> io::Result<OwnedChain> {
         let initial_entropy = match Secret::generate() {
             Ok(secret) => secret,
@@ -39,7 +37,7 @@ impl OwnedChainStore {
         self.create_chain(&initial_entropy, payload, password)
     }
 
-    /// Create a new [OwnedChain].
+    /// Create a new owned chain using the provided `initial_entropy`.
     pub fn create_chain(
         &self,
         initial_entropy: &Secret,
@@ -66,7 +64,7 @@ impl OwnedChainStore {
         Ok(OwnedChain::new(chain, secret_chain))
     }
 
-    /// Open and full validate both chain and secret chain.
+    /// Open and full validate both the public and the secret chains.
     pub fn open_chain(&self, chain_hash: &Hash, password: &[u8]) -> io::Result<OwnedChain> {
         let chain = self.store.open_chain(chain_hash)?;
         let secret_chain = self.secret_store.open_chain(chain_hash, password)?;

@@ -267,6 +267,8 @@ pub struct SecretChainStore {
 
 impl SecretChainStore {
     /// Creates a new place for your super secret chains.
+    ///
+    /// This has no side effects, performs no file system operations.
     pub fn new(dir: &Path) -> Self {
         Self {
             dir: dir.to_path_buf(),
