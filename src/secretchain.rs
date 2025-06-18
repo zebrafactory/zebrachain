@@ -63,7 +63,7 @@ impl SecretChainHeader {
     }
 }
 
-/// Save secret chain to non-volitile storage (encrypted and authenticated).
+/// Save secret chain to non-volatile storage (encrypted and authenticated).
 pub struct SecretChain {
     file: File,
     buf: Vec<u8>,

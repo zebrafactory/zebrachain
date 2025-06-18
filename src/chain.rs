@@ -1,4 +1,4 @@
-//! Writes/reads blocks to/from non-volitile storage and network.
+//! Writes/reads blocks to/from non-volatile storage and network.
 
 use crate::always::*;
 use crate::fsutil::{chain_filename, create_for_append, open_for_append};
