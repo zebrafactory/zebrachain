@@ -275,7 +275,7 @@ impl ChainStore {
             let entry = entry?;
             if let Some(osname) = entry.path().file_name() {
                 if let Some(name) = osname.to_str() {
-                    if let Ok(hash) = Hash::from_slice(name.as_bytes()) {
+                    if let Ok(hash) = Hash::from_hex(name.as_bytes()) {
                         list.push(hash);
                     }
                 }
@@ -415,6 +415,17 @@ mod tests {
                 "/tmp/stuff/junk/2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a"
             )
         );
+    }
+
+    #[test]
+    fn test_chainstore_list_chains() {
+        let tmpdir = tempfile::TempDir::new().unwrap();
+        let chainstore = ChainStore::new(tmpdir.path());
+        assert_eq!(chainstore.list_chains().unwrap(), []);
+        let hash = random_hash();
+        let name = tmpdir.path().join(&hash.to_hex());
+        create_for_append(&name).unwrap();
+        assert_eq!(chainstore.list_chains().unwrap(), [hash]);
     }
 
     #[test]
