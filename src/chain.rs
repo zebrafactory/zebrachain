@@ -268,6 +268,23 @@ impl ChainStore {
         Chain::resume(file, checkpoint)
     }
 
+    /// List chains in this chain store.
+    pub fn list_chains(&self) -> io::Result<Vec<Hash>> {
+        let mut list = Vec::new();
+        for entry in std::fs::read_dir(&self.dir)? {
+            let entry = entry?;
+            if let Some(osname) = entry.path().file_name() {
+                if let Some(name) = osname.to_str() {
+                    if let Ok(hash) = Hash::from_slice(name.as_bytes()) {
+                        list.push(hash);
+                    }
+                }
+            }
+        }
+        //list.sort(); // FIXME: Hash needs Ord
+        Ok(list)
+    }
+
     /// Return the path of the chain file identified by `chain_hash`.
     pub fn chain_filename(&self, chain_hash: &Hash) -> PathBuf {
         chain_filename(&self.dir, chain_hash)
