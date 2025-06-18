@@ -1,5 +1,3 @@
-//! Wire format for secret seeds when written to nonvolatile storage.
-
 use crate::always::*;
 use crate::{Hash, Payload, Secret, SecretBlockError, Seed, SubSecret192, SubSecret256};
 use chacha20poly1305::{
@@ -26,10 +24,9 @@ fn check_secretblock_buf_aead(buf: &[u8]) {
     }
 }
 
-// Split out of derive_block_key_and_nonce() for testability.
-// Here we take a 384 bit chain_secret and derive a unique XChaCha20Poly1305 256-bit key and a
-// unique 192-bit nonce for every block-wise position in the secret chain. Never reuse a key, never
-// reuse a nonce. Take that, entropy.
+// Here we take a 384-bit chain_secret and derive a unique XChaCha20Poly1305 256-bit key and a
+// unique XChaCha20Poly1305 192-bit nonce for every block-wise position in the secret chain. Never
+// reuse a key, never reuse a nonce.
 #[inline]
 fn derive_block_sub_secrets(
     chain_secret: &Secret,
@@ -79,16 +76,18 @@ fn decrypt_in_place(
     }
 }
 
-/// State needed to validate next secret block.
+/// State from this secret block needed to validate the next block, plus the payload.
+///
+/// This includes everything from the decrypted secret block.
 #[derive(Debug, PartialEq, Clone)]
 pub struct SecretBlockState {
     /// Hash of this secret block.
     pub block_hash: Hash,
 
-    /// Hash of corresponding public block.
+    /// Hash of corresponding block in the public chain.
     pub public_block_hash: Hash,
 
-    /// Seed use to sign this block position.
+    /// Seed used to sign this block position.
     pub seed: Seed,
 
     /// Payload to be signed.

@@ -1,18 +1,16 @@
-//! Block construction, validation, and wire format.
-
 use crate::always::*;
 use crate::pksign::{SecretSigner, verify_block_signature};
 use crate::{BlockError, Hash, Payload, Seed};
 
 /// Check point a chain for fast reload.
 pub struct CheckPoint {
-    /// Chain hash
+    /// Chain hash.
     pub chain_hash: Hash,
 
-    /// Block hash
+    /// Block hash.
     pub block_hash: Hash,
 
-    /// Block-wise position in chain, starting from zero.
+    /// Block-wise position in the chain, starting from zero.
     pub block_index: u64,
 }
 
@@ -82,7 +80,7 @@ impl BlockState {
         }
     }
 
-    /// Returns the block_hash if the index is 0, otherwise the chain hash.
+    /// Returns the block_hash if the index is 0, otherwise the chain_hash.
     ///
     /// A ZebraChain is identified by its "chain hash", which is the hash of the first block in
     /// the chain. The chain hash is likewise included in the block as a back reference for blocks
