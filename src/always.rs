@@ -101,7 +101,7 @@ A SecretBlock currently has 6 fields:
 /// Size of the decrypted secret block (272 bytes).
 pub const SECRET_BLOCK: usize = 3 * DIGEST + SEED + PAYLOAD + INDEX;
 
-/// Size of header at start of secret chain
+/// Size of header at start of secret chain (88 bytes).
 pub const SECRET_CHAIN_HEADER: usize = DIGEST + SECRET;
 
 /// Size of the encrypted secret block (288 bytes) [this is the size on disk].

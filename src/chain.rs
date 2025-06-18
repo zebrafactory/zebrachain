@@ -154,7 +154,7 @@ impl Chain {
         &self.head.block_hash
     }
 
-    /// Iterate through block in this chain.
+    /// Iterate through blocks in this chain.
     pub fn iter(&self) -> ChainIter {
         ChainIter::new(
             self.file.try_clone().unwrap(),

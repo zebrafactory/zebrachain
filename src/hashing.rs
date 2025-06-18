@@ -25,7 +25,7 @@ pub enum HexError {
     BadByte(u8),
 }
 
-/// Buffer containing the hash digest, with constant time comparison.
+/// Buffer containing the 320-bit (40-byte) BLAKE2b hash, with ConstantTimeEq.
 ///
 /// # Examples
 ///
@@ -49,8 +49,8 @@ impl Hash {
     }
 
     /// Load from a slice
-    pub fn from_slice(bytes: &[u8]) -> Result<Self, core::array::TryFromSliceError> {
-        Ok(Self::from_bytes(bytes.try_into()?))
+    pub fn from_slice(slice: &[u8]) -> Result<Self, core::array::TryFromSliceError> {
+        Ok(Self::from_bytes(slice.try_into()?))
     }
 
     /// Create from bytes.
@@ -65,7 +65,7 @@ impl Hash {
 
     /// Constant time check of whether every byte is a zero.
     pub fn is_zeros(&self) -> bool {
-        // FIXME: Do this without comparing to another [u8; SECRET]
+        // FIXME: Do this without comparing to another [u8; DIGEST]
         self.value.ct_eq(&[0; DIGEST]).into()
     }
 
@@ -185,7 +185,7 @@ impl Secret {
         self.value.ct_eq(&[0; SECRET]).into()
     }
 
-    /// Experimental keyed hashing with blake2b
+    /// Keyed hashing using BLAKE2b-384. The mix*() methods all use this.
     #[doc(hidden)]
     pub fn keyed_hash(&self, input: &[u8]) -> Self {
         if input.len() < 8 {
