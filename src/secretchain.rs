@@ -275,10 +275,6 @@ impl SecretChainStore {
         }
     }
 
-    fn chain_filename(&self, chain_hash: &Hash) -> PathBuf {
-        secret_chain_filename(&self.dir, chain_hash)
-    }
-
     /// Create a new secret chain.
     pub fn create_chain(
         &self,
@@ -288,19 +284,34 @@ impl SecretChainStore {
         chain_hash: &Hash,
         block_hash: &Hash,
     ) -> io::Result<SecretChain> {
-        let filename = self.chain_filename(chain_hash);
-        let file = create_for_append(&filename)?;
+        let file = self.create_chain_file(chain_hash)?;
         SecretChain::create(file, buf, chain_header, chain_secret, block_hash)
     }
 
-    /// Open a secret chain identified by its public chain-hash.
+    /// Open secret chain file identified by its public `chain_hash`.
     pub fn open_chain(&self, chain_hash: &Hash, password: &[u8]) -> io::Result<SecretChain> {
-        let filename = self.chain_filename(chain_hash);
-        let file = open_for_append(&filename)?;
+        let file = self.open_chain_file(chain_hash)?;
         SecretChain::open(file, chain_hash, password)
     }
 
-    /// Remove secret chain file.
+    /// Path of secret chain file identified by its public `chain_hash`.
+    pub fn chain_filename(&self, chain_hash: &Hash) -> PathBuf {
+        secret_chain_filename(&self.dir, chain_hash)
+    }
+
+    /// Open the existing secret chain file identified by its public `chain_hash`.
+    pub fn open_chain_file(&self, chain_hash: &Hash) -> io::Result<File> {
+        let filename = self.chain_filename(chain_hash);
+        open_for_append(&filename)
+    }
+
+    /// Create a new secret chain file identified by its public `chain_hash`.
+    pub fn create_chain_file(&self, chain_hash: &Hash) -> io::Result<File> {
+        let filename = self.chain_filename(chain_hash);
+        create_for_append(&filename)
+    }
+
+    /// Remove the secret chain file identified by its public `chain_hash`.
     pub fn remove_chain_file(&self, chain_hash: &Hash) -> io::Result<()> {
         let filename = self.chain_filename(chain_hash);
         remove_file(&filename)

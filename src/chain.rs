@@ -250,19 +250,19 @@ impl ChainStore {
         }
     }
 
-    /// Create a new chain.
+    /// Create a new chain identified by `chain_hash` whose 1st block is in `buf`.
     pub fn create_chain(&self, buf: &[u8], chain_hash: &Hash) -> io::Result<Chain> {
         let file = self.create_chain_file(chain_hash)?;
         Chain::create(file, buf, chain_hash)
     }
 
-    /// Open chain and fully validate.
+    /// Open and fully validate the chain identified by `chain_hash`.
     pub fn open_chain(&self, chain_hash: &Hash) -> io::Result<Chain> {
         let file = self.open_chain_file(chain_hash)?;
         Chain::open(file, chain_hash)
     }
 
-    /// Open chain and partially validate from a [CheckPoint] forward.
+    /// Open and partially validate a chain from a `checkpoint` forward.
     pub fn resume_chain(&self, checkpoint: &CheckPoint) -> io::Result<Chain> {
         let file = self.open_chain_file(&checkpoint.chain_hash)?;
         Chain::resume(file, checkpoint)
