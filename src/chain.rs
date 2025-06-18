@@ -250,20 +250,6 @@ impl ChainStore {
         }
     }
 
-    fn chain_filename(&self, chain_hash: &Hash) -> PathBuf {
-        chain_filename(&self.dir, chain_hash)
-    }
-
-    fn open_chain_file(&self, chain_hash: &Hash) -> io::Result<File> {
-        let filename = self.chain_filename(chain_hash);
-        open_for_append(&filename)
-    }
-
-    fn create_chain_file(&self, chain_hash: &Hash) -> io::Result<File> {
-        let filename = self.chain_filename(chain_hash);
-        create_for_append(&filename)
-    }
-
     /// Create a new chain.
     pub fn create_chain(&self, buf: &[u8], chain_hash: &Hash) -> io::Result<Chain> {
         let file = self.create_chain_file(chain_hash)?;
@@ -282,7 +268,24 @@ impl ChainStore {
         Chain::resume(file, checkpoint)
     }
 
-    /// Remove file for specified chain.
+    /// Return the path of the chain file identified by `chain_hash`.
+    pub fn chain_filename(&self, chain_hash: &Hash) -> PathBuf {
+        chain_filename(&self.dir, chain_hash)
+    }
+
+    /// Open the existing chain file identified by `chain_hash`.
+    pub fn open_chain_file(&self, chain_hash: &Hash) -> io::Result<File> {
+        let filename = self.chain_filename(chain_hash);
+        open_for_append(&filename)
+    }
+
+    /// Create a new chain file identified by `chain_hash`.
+    pub fn create_chain_file(&self, chain_hash: &Hash) -> io::Result<File> {
+        let filename = self.chain_filename(chain_hash);
+        create_for_append(&filename)
+    }
+
+    /// Remove the chain file identified by `chain_hash`.
     pub fn remove_chain_file(&self, chain_hash: &Hash) -> io::Result<()> {
         let filename = self.chain_filename(chain_hash);
         remove_file(&filename)
