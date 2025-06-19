@@ -1,9 +1,9 @@
 [package]
 name = "zf-zebrachain"
-version = "0.0.9"
+version = "0.0.10"
 description = """
-ZebraChain is a logged, quantum safe signing protocol designed to replace the long lived asymmetric
-key pairs used to sign software releases (and to sign other super important stuff).
+🦓 🔗 ZebraChain is a logged, quantum safe signing protocol designed to replace the long lived
+asymmetric key pairs used to sign software releases (and to sign other super important stuff).
 """
 authors = ["Jason Gerard DeRose <jasonderose@gmail.com>"]
 license = "MIT OR Apache-2.0"
