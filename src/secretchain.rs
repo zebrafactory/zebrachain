@@ -294,6 +294,27 @@ impl SecretChainStore {
         SecretChain::open(file, chain_hash, password)
     }
 
+    /// List chains in this secret chain store.
+    pub fn list_chains(&self) -> io::Result<Vec<Hash>> {
+        let mut list = Vec::new();
+        for entry in std::fs::read_dir(&self.dir)? {
+            let entry = entry?;
+            if let Some(osname) = entry.path().file_name() {
+                if let Some(name) = osname.to_str() {
+                    println!("{name} {}", name.len());
+                    if name.len() == 2 * DIGEST + 7 && &name[2 * DIGEST..] == ".secret" {
+                        println!("got here");
+                        if let Ok(hash) = Hash::from_hex(&name.as_bytes()[0..2 * DIGEST]) {
+                            list.push(hash);
+                        }
+                    }
+                }
+            }
+        }
+        //list.sort(); // FIXME: Hash needs Ord
+        Ok(list)
+    }
+
     /// Path of secret chain file identified by its public `chain_hash`.
     pub fn chain_filename(&self, chain_hash: &Hash) -> PathBuf {
         secret_chain_filename(&self.dir, chain_hash)
@@ -462,6 +483,26 @@ mod tests {
         }
         file.rewind().unwrap();
         SecretChain::open(file, &chain_hash, password.as_bytes()).unwrap();
+    }
+
+    #[test]
+    fn test_store_list_chains() {
+        let tmpdir = tempfile::TempDir::new().unwrap();
+        let store = SecretChainStore::new(tmpdir.path());
+        assert_eq!(store.list_chains().unwrap(), []);
+
+        let hash = random_hash();
+        let mut name = tmpdir.path().join(&hash.to_hex());
+        create_for_append(&name).unwrap();
+        assert_eq!(store.list_chains().unwrap(), []); // Public chain files should be ignored
+
+        name.set_extension("secret");
+        create_for_append(&name).unwrap();
+        assert_eq!(store.list_chains().unwrap(), [hash]);
+
+        create_for_append(&tmpdir.path().join("foo")).unwrap();
+        create_for_append(&tmpdir.path().join("bar")).unwrap();
+        assert_eq!(store.list_chains().unwrap(), [hash]);
     }
 
     #[test]

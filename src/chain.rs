@@ -426,6 +426,10 @@ mod tests {
         let name = tmpdir.path().join(&hash.to_hex());
         create_for_append(&name).unwrap();
         assert_eq!(chainstore.list_chains().unwrap(), [hash]);
+
+        create_for_append(&tmpdir.path().join("foo")).unwrap();
+        create_for_append(&tmpdir.path().join("bar")).unwrap();
+        assert_eq!(chainstore.list_chains().unwrap(), [hash]);
     }
 
     #[test]
