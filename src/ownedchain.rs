@@ -83,6 +83,11 @@ impl OwnedChainStore {
         Ok(OwnedChain::new(chain, secret_chain))
     }
 
+    /// List owned chains in this store.
+    pub fn list_chains(&self) -> io::Result<Vec<Hash>> {
+        self.secret_store.list_chains()
+    }
+
     /// Reconstruct public chain from its secret chain.
     pub fn secret_to_public(&self, secret_chain: &SecretChain) -> io::Result<Chain> {
         let mut buf = [0; BLOCK];
@@ -189,7 +194,8 @@ impl OwnedChain {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::testhelpers::random_payload;
+    use crate::fsutil::create_for_append;
+    use crate::testhelpers::{random_hash, random_payload};
     use tempfile;
 
     #[test]
@@ -216,6 +222,26 @@ mod tests {
         let chain = ocs.open_chain(&chain_hash, b"Bad Password").unwrap();
         assert_eq!(chain.tail(), &tail);
         assert_eq!(chain.count(), 421);
+    }
+
+    #[test]
+    fn test_ocs_list_chains() {
+        let tmpdir = tempfile::TempDir::new().unwrap();
+        let store = OwnedChainStore::new(tmpdir.path(), tmpdir.path());
+        assert_eq!(store.list_chains().unwrap(), []);
+
+        let hash = random_hash();
+        let mut name = tmpdir.path().join(&hash.to_hex());
+        create_for_append(&name).unwrap();
+        assert_eq!(store.list_chains().unwrap(), []); // Public chain files should be ignored
+
+        name.set_extension("secret");
+        create_for_append(&name).unwrap();
+        assert_eq!(store.list_chains().unwrap(), [hash]);
+
+        create_for_append(&tmpdir.path().join("foo")).unwrap();
+        create_for_append(&tmpdir.path().join("bar")).unwrap();
+        assert_eq!(store.list_chains().unwrap(), [hash]);
     }
 
     #[test]
