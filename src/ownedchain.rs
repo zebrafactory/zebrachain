@@ -165,17 +165,17 @@ impl OwnedChain {
         self.chain.count()
     }
 
-    /// [Chain.tail()].
+    /// Reference to the [BlockState] of the first block in the public chain.
     pub fn head(&self) -> &BlockState {
         self.chain.head()
     }
 
-    /// [Chain.tail()].
+    /// Reference to the [BlockState] of the latest block in the public chain.
     pub fn tail(&self) -> &BlockState {
         self.chain.tail()
     }
 
-    /// [SecretChain.tail()].
+    /// Reference to the [SecretBlockState] of the latest block in the secret chain.
     pub fn secret_tail(&self) -> &SecretBlockState {
         self.secret_chain.tail()
     }
