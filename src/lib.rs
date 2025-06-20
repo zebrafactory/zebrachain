@@ -42,6 +42,9 @@
 //! // Use both directories in your OwnedChainStore:
 //! let owned_store = OwnedChainStore::new(chain_dir.path(), secret_chain_dir.path());
 //!
+//! // OwnedChainStore.list_chains() will return zero chains (as we haven't created any yet):
+//! assert_eq!(owned_store.list_chains().unwrap(), []);
+//!
 //! // A Payload is what you to sign. Currently it's a 64-bit timestamp and a 320-bit hash. To
 //! // create a new chain, you need the first payload that you want to sign:
 //! let payload1 = Payload::new_time_stamped(Hash::compute(b"Message number 1"));
@@ -63,6 +66,9 @@
 //! let chain_hash = *owned_chain.chain_hash();
 //! assert_eq!(chain_hash, owned_chain.head().block_hash);
 //!
+//! // OwnedChainStore.list_chains() now shows our expected chain:
+//! assert_eq!(owned_store.list_chains().unwrap(), [chain_hash]);
+//!
 //! // Reopen the owned chain and create additional signatures like this:
 //! let mut owned_chain = owned_store.open_chain(&chain_hash, password).unwrap();
 //! let payload3 = Payload::new_time_stamped(Hash::compute(b"Message number 3"));
@@ -72,6 +78,9 @@
 //!
 //! // A ChainStore is used for consuming the public side of the chain:
 //! let store = ChainStore::new(chain_dir.path());
+//!
+//! // ChainStore.list_chains() likewise shows our expected chain:
+//! assert_eq!(store.list_chains().unwrap(), [chain_hash]);
 //!
 //! // Open and fully verify the public chain by the `chain_hash` like this:
 //! let chain = store.open_chain(&chain_hash).unwrap();
