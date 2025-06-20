@@ -41,6 +41,9 @@ pub const DIGEST: usize = 40;
 /// Size of hex-encoded hash (80 bytes).
 pub const HEXDIGEST: usize = DIGEST * 2;
 
+/// Size of ZBase32-encoded hash (64 bytes).
+pub const Z32DIGEST: usize = DIGEST * 8 / 5;
+
 /// Size of secrets (48 bytes)
 pub const SECRET: usize = 48;
 

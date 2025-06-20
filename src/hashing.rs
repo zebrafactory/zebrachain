@@ -91,7 +91,7 @@ impl Hash {
     }
 
     /// Encode in lowercase hexidecimal
-    pub fn to_hex(&self) -> arrayvec::ArrayString<{ DIGEST * 2 }> {
+    pub fn to_hex(&self) -> arrayvec::ArrayString<HEXDIGEST> {
         // Totally copied from blake3::Hash.to_hex()
         let mut hex = arrayvec::ArrayString::new();
         let table = b"0123456789abcdef";
@@ -100,6 +100,30 @@ impl Hash {
             hex.push(table[(b & 0xf) as usize] as char);
         }
         hex
+    }
+
+    /// Encode in ZBase32.
+    pub fn to_zbase32(&self) -> arrayvec::ArrayString<Z32DIGEST> {
+        let mut z32 = arrayvec::ArrayString::new();
+        let table = b"456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+        for i in 0..DIGEST / 5 {
+            let a = i * 5;
+            let taxi = self.value[a] as u64;
+            let taxi = self.value[a + 1] as u64 | taxi << 8;
+            let taxi = self.value[a + 2] as u64 | taxi << 8;
+            let taxi = self.value[a + 3] as u64 | taxi << 8;
+            let taxi = self.value[a + 4] as u64 | taxi << 8;
+
+            z32.push(table[((taxi >> 35) & 31) as usize] as char);
+            z32.push(table[((taxi >> 30) & 31) as usize] as char);
+            z32.push(table[((taxi >> 25) & 31) as usize] as char);
+            z32.push(table[((taxi >> 20) & 31) as usize] as char);
+            z32.push(table[((taxi >> 15) & 31) as usize] as char);
+            z32.push(table[((taxi >> 10) & 31) as usize] as char);
+            z32.push(table[((taxi >> 5) & 31) as usize] as char);
+            z32.push(table[(taxi & 31) as usize] as char);
+        }
+        z32
     }
 }
 
