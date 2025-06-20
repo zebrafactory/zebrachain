@@ -301,8 +301,8 @@ impl SecretChainStore {
             let entry = entry?;
             if let Some(osname) = entry.path().file_name() {
                 if let Some(name) = osname.to_str() {
-                    if name.len() == 2 * DIGEST + 7 && &name[2 * DIGEST..] == ".secret" {
-                        if let Ok(hash) = Hash::from_hex(&name.as_bytes()[0..2 * DIGEST]) {
+                    if name.len() == HEXDIGEST + 7 && &name[HEXDIGEST..] == ".secret" {
+                        if let Ok(hash) = Hash::from_hex(&name.as_bytes()[0..HEXDIGEST]) {
                             list.push(hash);
                         }
                     }

@@ -80,7 +80,7 @@ impl Hash {
             }
         }
         let hex_bytes: &[u8] = hex.as_ref();
-        if hex_bytes.len() != DIGEST * 2 {
+        if hex_bytes.len() != HEXDIGEST {
             return Err(HexError::BadLen(hex_bytes.len()));
         }
         let mut hash_bytes: [u8; DIGEST] = [0; DIGEST];

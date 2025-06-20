@@ -108,7 +108,8 @@ mod secretseed;
 pub mod testhelpers;
 
 pub use always::{
-    BLOCK, CONTEXT, DIGEST, PAYLOAD, SECRET, SECRET_BLOCK, SECRET_BLOCK_AEAD, SECRET_CHAIN_HEADER,
+    BLOCK, CONTEXT, DIGEST, HEXDIGEST, PAYLOAD, SECRET, SECRET_BLOCK, SECRET_BLOCK_AEAD,
+    SECRET_CHAIN_HEADER,
 };
 pub use block::{Block, BlockState, CheckPoint, MutBlock, sign_block};
 pub use chain::{Chain, ChainIter, ChainStore};
