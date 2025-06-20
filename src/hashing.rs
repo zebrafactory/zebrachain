@@ -15,6 +15,78 @@ type Blake2bMac192 = Blake2bMac<U24>;
 type Blake2bMac256 = Blake2bMac<U32>;
 type Blake2bMac384 = Blake2bMac<U48>;
 
+/// Error when trying to decode a Z-Base32 encoded [Hash](crate::Hash).
+#[derive(Debug, PartialEq, Eq)]
+pub enum Zbase32Error {
+    /// The length in wrong
+    BadLen(usize),
+
+    /// Contains an invalid byte
+    BadByte(u8),
+}
+
+/// Encode in ZBase32.
+fn zbase32_enc_into(src: &[u8], dst: &mut [u8]) {
+    assert_eq!(dst.len(), src.len() * 8 / 5);
+    let table = b"456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+    for i in 0..src.len() / 5 {
+        // Pack 40 bits into taxi (8 bits at a time)
+        let a = i * 5;
+        let taxi = src[a] as u64;
+        let taxi = src[a + 1] as u64 | taxi << 8;
+        let taxi = src[a + 2] as u64 | taxi << 8;
+        let taxi = src[a + 3] as u64 | taxi << 8;
+        let taxi = src[a + 4] as u64 | taxi << 8;
+
+        // Unpack 40 bits from taxi (5 bits at a time)
+        let b = i * 8;
+        dst[b] = table[((taxi >> 35) & 31) as usize];
+        dst[b + 1] = table[((taxi >> 30) & 31) as usize];
+        dst[b + 2] = table[((taxi >> 25) & 31) as usize];
+        dst[b + 3] = table[((taxi >> 20) & 31) as usize];
+        dst[b + 4] = table[((taxi >> 15) & 31) as usize];
+        dst[b + 5] = table[((taxi >> 10) & 31) as usize];
+        dst[b + 6] = table[((taxi >> 5) & 31) as usize];
+        dst[b + 7] = table[(taxi & 31) as usize];
+    }
+}
+
+fn zbase32_dec_into(src: &[u8], dst: &mut [u8]) -> Result<(), Zbase32Error> {
+    assert_eq!(dst.len(), src.len() * 5 / 8);
+
+    if src.len() != Z32DIGEST {
+        return Err(Zbase32Error::BadLen(src.len()));
+    }
+
+    fn zb32_to_u64(byte: u8) -> Result<u64, Zbase32Error> {
+        match byte {
+            b'4'..=b'9' => Ok((byte - b'4').into()),
+            b'A'..=b'Z' => Ok((byte - b'A' + 6).into()),
+            _ => Err(Zbase32Error::BadByte(byte)),
+        }
+    }
+
+    for i in 0..src.len() / 8 {
+        let a = i * 8;
+        let taxi: u64 = zb32_to_u64(src[a])?;
+        let taxi = zb32_to_u64(src[a + 1])? | taxi << 5;
+        let taxi = zb32_to_u64(src[a + 2])? | taxi << 5;
+        let taxi = zb32_to_u64(src[a + 3])? | taxi << 5;
+        let taxi = zb32_to_u64(src[a + 4])? | taxi << 5;
+        let taxi = zb32_to_u64(src[a + 5])? | taxi << 5;
+        let taxi = zb32_to_u64(src[a + 6])? | taxi << 5;
+        let taxi = zb32_to_u64(src[a + 7])? | taxi << 5;
+
+        let b = i * 5;
+        dst[b] = (taxi >> 32) as u8;
+        dst[b + 1] = (taxi >> 24) as u8;
+        dst[b + 2] = (taxi >> 16) as u8;
+        dst[b + 3] = (taxi >> 8) as u8;
+        dst[b + 4] = taxi as u8;
+    }
+    Ok(())
+}
+
 /// Error when trying to decode a hex encoded [Hash](crate::Hash).
 #[derive(Debug, PartialEq, Eq)]
 pub enum HexError {
@@ -103,26 +175,9 @@ impl Hash {
     }
 
     /// Encode in ZBase32.
-    pub fn to_zbase32(&self) -> arrayvec::ArrayString<Z32DIGEST> {
-        let mut z32 = arrayvec::ArrayString::new();
-        let table = b"456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-        for i in 0..DIGEST / 5 {
-            let a = i * 5;
-            let taxi = self.value[a] as u64;
-            let taxi = self.value[a + 1] as u64 | taxi << 8;
-            let taxi = self.value[a + 2] as u64 | taxi << 8;
-            let taxi = self.value[a + 3] as u64 | taxi << 8;
-            let taxi = self.value[a + 4] as u64 | taxi << 8;
-
-            z32.push(table[((taxi >> 35) & 31) as usize] as char);
-            z32.push(table[((taxi >> 30) & 31) as usize] as char);
-            z32.push(table[((taxi >> 25) & 31) as usize] as char);
-            z32.push(table[((taxi >> 20) & 31) as usize] as char);
-            z32.push(table[((taxi >> 15) & 31) as usize] as char);
-            z32.push(table[((taxi >> 10) & 31) as usize] as char);
-            z32.push(table[((taxi >> 5) & 31) as usize] as char);
-            z32.push(table[(taxi & 31) as usize] as char);
-        }
+    pub fn to_zbase32(&self) -> [u8; Z32DIGEST] {
+        let mut z32 = [0; Z32DIGEST];
+        zbase32_enc_into(&self.value, &mut z32);
         z32
     }
 }
@@ -350,7 +405,29 @@ pub type SubSecret256 = SubSecret<32>;
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::testhelpers::random_hash;
     use std::collections::HashSet;
+
+    #[test]
+    fn test_zbase32_enc_into() {
+        let mut dst = [0; Z32DIGEST];
+        zbase32_enc_into(&[0; DIGEST], &mut dst);
+        assert_eq!(dst, [b'4'; Z32DIGEST]);
+        zbase32_enc_into(&[255; DIGEST], &mut dst);
+        assert_eq!(dst, [b'Z'; Z32DIGEST]);
+    }
+
+    #[test]
+    fn test_zbase32_roundtrip() {
+        for _ in 0..420 {
+            let src = random_hash();
+            let mut dst = [0; Z32DIGEST];
+            zbase32_enc_into(src.as_bytes(), &mut dst);
+            let mut tripped = [0; DIGEST];
+            zbase32_dec_into(&dst, &mut tripped).unwrap();
+            assert_eq!(src.as_bytes(), &tripped);
+        }
+    }
 
     #[test]
     fn test_argon2() {
