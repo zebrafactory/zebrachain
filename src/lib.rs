@@ -60,8 +60,8 @@
 //! assert_eq!(owned_chain.tail().payload, payload2);
 //!
 //! // A chain is identified by its `chain_hash`, which is the hash of the 1st block in the chain:
-//! let chain_hash = owned_chain.chain_hash();
-//! assert_eq!(chain_hash, &owned_chain.head().block_hash);
+//! let chain_hash = *owned_chain.chain_hash();
+//! assert_eq!(chain_hash, owned_chain.head().block_hash);
 //!
 //! // Reopen the owned chain and create additional signatures like this:
 //! let mut owned_chain = owned_store.open_chain(&chain_hash, password).unwrap();
