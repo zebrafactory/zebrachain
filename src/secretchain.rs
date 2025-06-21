@@ -301,8 +301,9 @@ impl SecretChainStore {
             let entry = entry?;
             if let Some(osname) = entry.path().file_name() {
                 if let Some(name) = osname.to_str() {
-                    if name.len() == HEXDIGEST + 7 && &name[HEXDIGEST..] == ".secret" {
-                        if let Ok(hash) = Hash::from_hex(&name.as_bytes()[0..HEXDIGEST]) {
+                    println!("name len: {} {}", name.len(), name);
+                    if name.len() == Z32DIGEST + 7 && &name[Z32DIGEST..] == ".secret" {
+                        if let Ok(hash) = Hash::from_zbase32(&name.as_bytes()[0..Z32DIGEST]) {
                             list.push(hash);
                         }
                     }
@@ -490,7 +491,7 @@ mod tests {
         assert_eq!(store.list_chains().unwrap(), []);
 
         let hash = random_hash();
-        let mut name = tmpdir.path().join(&hash.to_hex());
+        let mut name = tmpdir.path().join(&hash.to_z32_string());
         create_for_append(&name).unwrap();
         assert_eq!(store.list_chains().unwrap(), []); // Public chain files should be ignored
 
@@ -511,7 +512,7 @@ mod tests {
         assert_eq!(
             store.chain_filename(&chain_hash),
             PathBuf::from(
-                "/nope/45454545454545454545454545454545454545454545454545454545454545454545454545454545.secret"
+                "/nope/CP6OELE9CP6OELE9CP6OELE9CP6OELE9CP6OELE9CP6OELE9CP6OELE9CP6OELE9.secret"
             )
         );
         let chain_hash = random_hash();

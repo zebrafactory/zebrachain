@@ -231,7 +231,7 @@ mod tests {
         assert_eq!(store.list_chains().unwrap(), []);
 
         let hash = random_hash();
-        let mut name = tmpdir.path().join(&hash.to_hex());
+        let mut name = tmpdir.path().join(&hash.to_z32_string());
         create_for_append(&name).unwrap();
         assert_eq!(store.list_chains().unwrap(), []); // Public chain files should be ignored
 

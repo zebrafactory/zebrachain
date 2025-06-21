@@ -18,14 +18,14 @@ type Blake2bMac384 = Blake2bMac<U48>;
 /// Error when trying to decode a Z-Base32 encoded [Hash](crate::Hash).
 #[derive(Debug, PartialEq, Eq)]
 pub enum Zbase32Error {
-    /// The length in wrong
+    /// The length is wrong
     BadLen(usize),
 
     /// Contains an invalid byte
     BadByte(u8),
 }
 
-/// Encode in ZBase32.
+// Encode in ZBase32.
 fn zbase32_enc_into(src: &[u8], dst: &mut [u8]) {
     assert_eq!(dst.len(), src.len() * 8 / 5);
     let table = b"456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
@@ -52,8 +52,7 @@ fn zbase32_enc_into(src: &[u8], dst: &mut [u8]) {
 }
 
 fn zbase32_dec_into(src: &[u8], dst: &mut [u8]) -> Result<(), Zbase32Error> {
-    assert_eq!(dst.len(), src.len() * 5 / 8);
-
+    assert_eq!(dst.len(), DIGEST);
     if src.len() != Z32DIGEST {
         return Err(Zbase32Error::BadLen(src.len()));
     }
@@ -174,11 +173,25 @@ impl Hash {
         hex
     }
 
+    /// Decode Zbase32 encoded Hash.
+    pub fn from_zbase32(src: &[u8]) -> Result<Self, Zbase32Error> {
+        let mut dst = [0; DIGEST];
+        zbase32_dec_into(src, &mut dst)?;
+        Ok(Self::from_bytes(dst))
+    }
+
     /// Encode in ZBase32.
     pub fn to_zbase32(&self) -> [u8; Z32DIGEST] {
         let mut z32 = [0; Z32DIGEST];
         zbase32_enc_into(&self.value, &mut z32);
         z32
+    }
+
+    /// Encode as Zbase32 String
+    pub fn to_z32_string(&self) -> String {
+        let mut z32 = vec![0; Z32DIGEST];
+        zbase32_enc_into(&self.value, &mut z32);
+        String::from_utf8(z32).unwrap()
     }
 }
 
@@ -202,15 +215,14 @@ impl core::hash::Hash for Hash {
 
 impl core::fmt::Debug for Hash {
     fn fmt(&self, f: &mut core::fmt::Formatter) -> core::fmt::Result {
-        let hex = self.to_hex();
-        let hex: &str = hex.as_str();
-        f.debug_tuple("Hash").field(&hex).finish()
+        let z32 = self.to_z32_string();
+        f.debug_tuple("Hash").field(&z32).finish()
     }
 }
 
 impl core::fmt::Display for Hash {
     fn fmt(&self, f: &mut core::fmt::Formatter) -> core::fmt::Result {
-        f.write_str(self.to_hex().as_str())
+        f.write_str(&self.to_z32_string())
     }
 }
 
@@ -454,7 +466,7 @@ mod tests {
         let hash = Hash::from_bytes([42; DIGEST]);
         assert_eq!(
             format!("{hash}"),
-            "2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a"
+            "9CP6OELE9CP6OELE9CP6OELE9CP6OELE9CP6OELE9CP6OELE9CP6OELE9CP6OELE"
         );
     }
 
@@ -463,7 +475,7 @@ mod tests {
         let hash = Hash::from_bytes([42; DIGEST]);
         assert_eq!(
             format!("{hash:?}"),
-            "Hash(\"2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a\")"
+            "Hash(\"9CP6OELE9CP6OELE9CP6OELE9CP6OELE9CP6OELE9CP6OELE9CP6OELE9CP6OELE\")"
         );
     }
 

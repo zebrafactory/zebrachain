@@ -275,7 +275,8 @@ impl ChainStore {
             let entry = entry?;
             if let Some(osname) = entry.path().file_name() {
                 if let Some(name) = osname.to_str() {
-                    if let Ok(hash) = Hash::from_hex(name.as_bytes()) {
+                    println!("{}", name);
+                    if let Ok(hash) = Hash::from_zbase32(name.as_bytes()) {
                         list.push(hash);
                     }
                 }
@@ -412,7 +413,7 @@ mod tests {
         assert_eq!(
             chainstore.chain_filename(&chain_hash),
             PathBuf::from(
-                "/tmp/stuff/junk/2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a"
+                "/tmp/stuff/junk/9CP6OELE9CP6OELE9CP6OELE9CP6OELE9CP6OELE9CP6OELE9CP6OELE9CP6OELE"
             )
         );
     }
@@ -423,7 +424,7 @@ mod tests {
         let chainstore = ChainStore::new(tmpdir.path());
         assert_eq!(chainstore.list_chains().unwrap(), []);
         let hash = random_hash();
-        let name = tmpdir.path().join(&hash.to_hex());
+        let name = tmpdir.path().join(&hash.to_z32_string());
         create_for_append(&name).unwrap();
         assert_eq!(chainstore.list_chains().unwrap(), [hash]);
 

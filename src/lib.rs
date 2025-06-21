@@ -109,7 +109,7 @@ pub mod testhelpers;
 
 pub use always::{
     BLOCK, CONTEXT, DIGEST, HEXDIGEST, PAYLOAD, SECRET, SECRET_BLOCK, SECRET_BLOCK_AEAD,
-    SECRET_CHAIN_HEADER,
+    SECRET_CHAIN_HEADER, Z32DIGEST,
 };
 pub use block::{Block, BlockState, CheckPoint, MutBlock, sign_block};
 pub use chain::{Chain, ChainIter, ChainStore};
