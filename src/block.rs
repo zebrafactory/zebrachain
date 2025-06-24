@@ -256,7 +256,7 @@ impl<'a> Block<'a> {
 /// assert_eq!(state.payload, payload);
 /// ```
 pub struct MutBlock<'a> {
-    buf: &'a mut [u8],
+    pub(crate) buf: &'a mut [u8],
 }
 
 impl<'a> MutBlock<'a> {

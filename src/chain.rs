@@ -28,7 +28,6 @@ fn validate_chain(file: File, chain_hash: &Hash) -> io::Result<(File, BlockState
     // Read and validate first block
     file.rewind()?;
     file.read_exact(&mut buf)?;
-    // FIXME: Add test for when first block has index != 0
     let head = match Block::new(&buf).from_hash_at_index(chain_hash, 0) {
         Ok(state) => state,
         Err(err) => return Err(err.to_io_error()),
@@ -411,7 +410,6 @@ mod tests {
         assert_eq!(head, state1);
         assert_eq!(tail, state2);
         assert_eq!(tail.block_index, 1);
-        // FIXME: We aren't currently handling truncation
         let length = (BLOCK * 2) as u64;
         for reduce in 1..=length {
             assert!(reduce > 0);
@@ -422,6 +420,26 @@ mod tests {
                 assert!(validate_chain(file.try_clone().unwrap(), &chain_hash).is_ok());
             }
         }
+    }
+
+    #[test]
+    fn test_validate_chain_bad_first_block() {
+        /// Test a first block that has a non-zero block_index but is other wise valid
+        let mut buf = [0; BLOCK];
+        let payload = random_payload();
+        let mut block = MutBlock::new(&mut buf, &payload);
+
+        // Set index to 1
+        block.buf[INDEX_RANGE].copy_from_slice(&1u64.to_le_bytes());
+
+        let seed = Seed::generate().unwrap();
+        block.sign(&seed);
+        let chain_hash = block.finalize();
+
+        let mut file = tempfile::tempfile().unwrap();
+        file.write_all(&buf).unwrap();
+
+        assert!(validate_chain(file, &chain_hash).is_err());
     }
 
     #[test]
