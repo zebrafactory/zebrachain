@@ -15,7 +15,7 @@ type Blake2bMac192 = Blake2bMac<U24>;
 type Blake2bMac256 = Blake2bMac<U32>;
 type Blake2bMac384 = Blake2bMac<U48>;
 
-/// Error when trying to decode a Z-Base32 encoded [Hash](crate::Hash).
+/// Error when trying to decode a Zbase32 encoded [Hash](crate::Hash).
 #[derive(Debug, PartialEq, Eq)]
 pub enum Zbase32Error {
     /// The length is wrong
@@ -25,7 +25,7 @@ pub enum Zbase32Error {
     BadByte(u8),
 }
 
-// Encode in ZBase32.
+// Encode in Zbase32.
 fn zbase32_enc_into(src: &[u8], dst: &mut [u8]) {
     assert_eq!(dst.len(), src.len() * 8 / 5);
     let table = b"456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
@@ -180,7 +180,7 @@ impl Hash {
         Ok(Self::from_bytes(dst))
     }
 
-    /// Encode in ZBase32.
+    /// Encode in Zbase32.
     pub fn to_z32(&self) -> [u8; Z32DIGEST] {
         let mut z32 = [0; Z32DIGEST];
         zbase32_enc_into(&self.value, &mut z32);

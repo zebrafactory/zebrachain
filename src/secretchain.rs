@@ -2,7 +2,7 @@
 
 use crate::always::*;
 use crate::fsutil::{create_for_append, open_for_append, secret_chain_filename};
-use crate::{Hash, Secret, SecretBlock, SecretBlockError, SecretBlockState, Seed};
+use crate::{Hash, Secret, SecretBlock, SecretBlockError, SecretBlockState};
 use argon2::Argon2;
 use std::fs::{File, remove_file};
 use std::io;
@@ -152,11 +152,6 @@ impl SecretChain {
     /// Exposes internal secret block buffer as mutable bytes.
     pub fn as_mut_buf(&mut self) -> &mut Vec<u8> {
         &mut self.buf
-    }
-
-    /// Mix new entropy into chain and return next [Seed].
-    pub fn advance(&self, new_entropy: &Secret) -> Seed {
-        self.tail.seed.next(new_entropy)
     }
 
     /// Number of blocks in this secret chain.
@@ -346,8 +341,8 @@ impl SecretChainStore {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::secretblock::MutSecretBlock;
     use crate::testhelpers::{BitFlipper, random_hash, random_payload};
+    use crate::{MutSecretBlock, Seed};
     use getrandom;
     use std::collections::HashSet;
     use std::io::Seek;

@@ -154,7 +154,7 @@ impl OwnedChain {
 
     /// Sign next block.
     pub fn sign_raw(&mut self, new_entropy: &Secret, payload: &Payload) -> io::Result<&BlockState> {
-        let seed = self.secret_chain.advance(new_entropy);
+        let seed = self.secret_chain.tail().seed.next(new_entropy);
         let obs = self.state();
         let mut buf = [0; BLOCK];
         let chain_secret = self.secret_chain.chain_secret.clone();
