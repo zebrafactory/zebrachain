@@ -43,10 +43,9 @@ fn validate_chain(file: File, chain_hash: &Hash) -> io::Result<(File, BlockState
         };
     }
     // read_exact() exited the loop above because either (1) it read zero bytes in which case we
-    // reached the end of the file at an expected multiple of the BLOCK size or (2) it reads 1 or
-    // more bytes but less than BLOCK bytes in which case we encountered a partially written,
-    // invalid block that should be truncated. Either way, this truncation should be safe and
-    // correct:
+    // reached the end of the file at an expected multiple of the BLOCK size or (2) it read at
+    // least one byte but less than BLOCK bytes in which case we encountered a partially written
+    // block that should be truncated. Either way, this truncation should be safe and correct:
     let file = file.into_inner();
     file.set_len((tail.block_index + 1) * BLOCK as u64)?;
     Ok((file, head, tail))
