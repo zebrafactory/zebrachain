@@ -308,7 +308,7 @@ impl SecretChainStore {
             if let Some(osname) = entry.path().file_name() {
                 if let Some(name) = osname.to_str() {
                     if name.len() == Z32DIGEST + 7 && &name[Z32DIGEST..] == ".secret" {
-                        if let Ok(hash) = Hash::from_zbase32(&name.as_bytes()[0..Z32DIGEST]) {
+                        if let Ok(hash) = Hash::from_z32(&name.as_bytes()[0..Z32DIGEST]) {
                             list.push(hash);
                         }
                     }

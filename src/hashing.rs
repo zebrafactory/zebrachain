@@ -174,14 +174,14 @@ impl Hash {
     }
 
     /// Decode Zbase32 encoded Hash.
-    pub fn from_zbase32(src: &[u8]) -> Result<Self, Zbase32Error> {
+    pub fn from_z32(src: &[u8]) -> Result<Self, Zbase32Error> {
         let mut dst = [0; DIGEST];
         zbase32_dec_into(src, &mut dst)?;
         Ok(Self::from_bytes(dst))
     }
 
     /// Encode in ZBase32.
-    pub fn to_zbase32(&self) -> [u8; Z32DIGEST] {
+    pub fn to_z32(&self) -> [u8; Z32DIGEST] {
         let mut z32 = [0; Z32DIGEST];
         zbase32_enc_into(&self.value, &mut z32);
         z32

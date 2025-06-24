@@ -175,7 +175,7 @@ mod tests {
         let key = build_ed25519_keypair(subsecret);
         assert_eq!(
             Hash::compute(key.verifying_key().as_bytes()),
-            Hash::from_zbase32(b"9ZIK7EIF8SOTUMIID9VEFM5EG8BCFY6ZPN59F4C6O778T8NGGVUUDEBJYYDGFRVZ")
+            Hash::from_z32(b"9ZIK7EIF8SOTUMIID9VEFM5EG8BCFY6ZPN59F4C6O778T8NGGVUUDEBJYYDGFRVZ")
                 .unwrap()
         );
     }
@@ -186,7 +186,7 @@ mod tests {
         let key = build_mldsa_keypair(subsecret);
         assert_eq!(
             Hash::compute(key.verifying_key().encode().as_slice()),
-            Hash::from_zbase32(b"87XG7JVRYPIF66RVZCTCGN4MORCIE8LN86SIDOL8GCWORRBOCD5HBM9IRBJEB95O")
+            Hash::from_z32(b"87XG7JVRYPIF66RVZCTCGN4MORCIE8LN86SIDOL8GCWORRBOCD5HBM9IRBJEB95O")
                 .unwrap()
         );
     }

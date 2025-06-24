@@ -286,7 +286,7 @@ impl ChainStore {
             let entry = entry?;
             if let Some(osname) = entry.path().file_name() {
                 if let Some(name) = osname.to_str() {
-                    if let Ok(hash) = Hash::from_zbase32(name.as_bytes()) {
+                    if let Ok(hash) = Hash::from_z32(name.as_bytes()) {
                         list.push(hash);
                     }
                 }
@@ -424,7 +424,7 @@ mod tests {
 
     #[test]
     fn test_validate_chain_bad_first_block() {
-        // Test a first block that has a non-zero block_index but is otherwise valid
+        // Test a first block that has a non-zero block_index but is other wise valid
         let mut buf = [0; BLOCK];
         let payload = random_payload();
         let mut block = MutBlock::new(&mut buf, &payload);
