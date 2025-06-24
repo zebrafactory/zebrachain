@@ -42,7 +42,14 @@ fn validate_chain(file: File, chain_hash: &Hash) -> io::Result<(File, BlockState
             Err(err) => return Err(err.to_io_error()),
         };
     }
-    Ok((file.into_inner(), head, tail))
+    // read_exact() exited the loop above because either (1) it read zero bytes in which case we
+    // reached the end of the file at an expected multiple of the BLOCK size or (2) it reads 1 or
+    // more bytes but less than BLOCK bytes in which case we encountered a partially written,
+    // invalid block that should be truncated. Either way, this truncation should be safe and
+    // correct:
+    let file = file.into_inner();
+    file.set_len((tail.block_index + 1) * BLOCK as u64)?;
+    Ok((file, head, tail))
 }
 
 // Security Warning: This is ONLY secure if `checkpoint` is trustworthy and correct!
@@ -76,7 +83,9 @@ fn validate_from_checkpoint(
             Err(err) => return Err(err.to_io_error()),
         };
     }
-    Ok((file.into_inner(), head, tail))
+    let file = file.into_inner();
+    file.set_len((tail.block_index + 1) * BLOCK as u64)?;
+    Ok((file, head, tail))
 }
 
 /// Read and write blocks to a file.

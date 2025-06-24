@@ -134,8 +134,10 @@ impl SecretChain {
                 }
             };
         }
+        let file = file.into_inner();
+        file.set_len((tail.block_index + 1) * BLOCK as u64)?;
         Ok(Self {
-            file: file.into_inner(),
+            file,
             buf,
             chain_secret,
             first_block_hash,
