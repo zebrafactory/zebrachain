@@ -64,10 +64,19 @@ impl OwnedChainStore {
         Ok(OwnedChain::new(chain, secret_chain))
     }
 
-    /// Open and full validate both the public and the secret chains.
+    /// Open and fully validate both the public and the secret chains.
     pub fn open_chain(&self, chain_hash: &Hash, password: &[u8]) -> io::Result<OwnedChain> {
         let chain = self.store.open_chain(chain_hash)?;
         let secret_chain = self.secret_store.open_chain(chain_hash, password)?;
+        // FIXME: There could be block in the secret chain that was not fully written to the
+        // public chain. In this case, we should rebuild the public block and write it to the
+        // public chain.
+        assert_eq!(chain.count(), secret_chain.count());
+        assert_eq!(chain.tail().payload, secret_chain.tail().payload);
+        assert_eq!(
+            chain.tail().block_hash,
+            secret_chain.tail().public_block_hash
+        );
         Ok(OwnedChain::new(chain, secret_chain))
     }
 
