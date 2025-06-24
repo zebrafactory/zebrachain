@@ -424,7 +424,7 @@ mod tests {
 
     #[test]
     fn test_validate_chain_bad_first_block() {
-        /// Test a first block that has a non-zero block_index but is other wise valid
+        // Test a first block that has a non-zero block_index but is otherwise valid
         let mut buf = [0; BLOCK];
         let payload = random_payload();
         let mut block = MutBlock::new(&mut buf, &payload);

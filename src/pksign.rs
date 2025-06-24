@@ -166,12 +166,30 @@ mod tests {
 
     static HEX0: &str =
         "91fe0289ef25b99560858c4405f984d0c776d4bc9f761327c381ab709316dff3e66d9dd2af882d47";
-    //static HEX1: &str =
-    //    "d7c58110f5c997d2a4439c47d0212eca4f8f26236605841b44417a74fcacdbca034d3d2d1e64d019";
-    static HEX2: &str =
+    static HEX1: &str =
         "10e651d0df11d8980e51d7c2462751627148faf391e0c74be40bb364e8ba970a074602f552ba2477";
 
-    // FIXME: Add new tests for ml-dsa and ed25519 keypair generation, but API needs rework first
+    #[test]
+    fn test_build_ed25519_keypair() {
+        let subsecret = SubSecret256::from_bytes([69; 32]);
+        let key = build_ed25519_keypair(subsecret);
+        assert_eq!(
+            Hash::compute(key.verifying_key().as_bytes()),
+            Hash::from_zbase32(b"9ZIK7EIF8SOTUMIID9VEFM5EG8BCFY6ZPN59F4C6O778T8NGGVUUDEBJYYDGFRVZ")
+                .unwrap()
+        );
+    }
+
+    #[test]
+    fn test_build_mldsa_keypair() {
+        let subsecret = SubSecret256::from_bytes([69; 32]);
+        let key = build_mldsa_keypair(subsecret);
+        assert_eq!(
+            Hash::compute(key.verifying_key().encode().as_slice()),
+            Hash::from_zbase32(b"87XG7JVRYPIF66RVZCTCGN4MORCIE8LN86SIDOL8GCWORRBOCD5HBM9IRBJEB95O")
+                .unwrap()
+        );
+    }
 
     #[test]
     fn keypair_new() {
@@ -180,7 +198,7 @@ mod tests {
 
         let mut pubkey = [0u8; PUBKEY];
         pair.write_pubkey(&mut pubkey);
-        assert_eq!(Hash::compute(&pubkey), Hash::from_hex(HEX2).unwrap());
+        assert_eq!(Hash::compute(&pubkey), Hash::from_hex(HEX1).unwrap());
     }
 
     #[test]
