@@ -134,10 +134,12 @@ impl SecretChain {
                 }
             };
         }
-        let file = file.into_inner();
+        let mut file = file.into_inner();
         file.set_len(
             SECRET_CHAIN_HEADER as u64 + (tail.block_index + 1) * SECRET_BLOCK_AEAD as u64,
         )?;
+        // We need to seek to the end of the file after truncation
+        file.seek(SeekFrom::End(0))?;
         Ok(Self {
             file,
             buf,
@@ -305,7 +307,6 @@ impl SecretChainStore {
             let entry = entry?;
             if let Some(osname) = entry.path().file_name() {
                 if let Some(name) = osname.to_str() {
-                    println!("name len: {} {}", name.len(), name);
                     if name.len() == Z32DIGEST + 7 && &name[Z32DIGEST..] == ".secret" {
                         if let Ok(hash) = Hash::from_zbase32(&name.as_bytes()[0..Z32DIGEST]) {
                             list.push(hash);
@@ -412,20 +413,40 @@ mod tests {
             .from_hash_at_index(&chain_secret, &block_hash, 0)
             .unwrap();
 
-        let file = tempfile().unwrap();
+        let mut file = tempfile().unwrap();
         let chain = SecretChain::create(
             file.try_clone().unwrap(),
             buf,
             header,
-            chain_secret,
+            chain_secret.clone(),
             &block_hash,
         )
         .unwrap();
         assert_eq!(chain.tail(), &state);
 
+        // Write a single extra byte at end. If truncation isn't done correctly when reopening the chain
+        // the chain will be in an invalid state after the next block is written, and validation will fail
+        // with SecretBlockError::Decryption
+        file.write_all(b"0").unwrap();
+
+        // Reopen chain, test SecretChain::open()
+        let mut chain =
+            SecretChain::open(file.try_clone().unwrap(), &chain_hash, password.as_bytes()).unwrap();
+        assert_eq!(chain.tail(), &state);
+
+        // Sign another
+        let payload = random_payload();
+        let mut block = MutSecretBlock::new(chain.as_mut_buf(), &payload);
+        block.set_previous(&state);
+        let next_seed = seed.advance().unwrap();
+        block.set_seed(&next_seed);
+        let block_hash2 = block.finalize(&chain_secret);
+        chain.append(&block_hash2).unwrap();
+        let state2 = chain.tail().clone();
+
         // Reopen chain, test SecretChain::open()
         let chain = SecretChain::open(file, &chain_hash, password.as_bytes()).unwrap();
-        assert_eq!(chain.tail(), &state);
+        assert_eq!(chain.tail(), &state2);
     }
 
     #[test]

@@ -46,8 +46,10 @@ fn validate_chain(file: File, chain_hash: &Hash) -> io::Result<(File, BlockState
     // reached the end of the file at an expected multiple of the BLOCK size or (2) it read at
     // least one byte but less than BLOCK bytes in which case we encountered a partially written
     // block that should be truncated. Either way, this truncation should be safe and correct:
-    let file = file.into_inner();
+    let mut file = file.into_inner();
     file.set_len((tail.block_index + 1) * BLOCK as u64)?;
+    // We need to seek to the end of the file after truncation
+    file.seek(SeekFrom::End(0))?;
     Ok((file, head, tail))
 }
 
@@ -82,8 +84,10 @@ fn validate_from_checkpoint(
             Err(err) => return Err(err.to_io_error()),
         };
     }
-    let file = file.into_inner();
+    let mut file = file.into_inner();
     file.set_len((tail.block_index + 1) * BLOCK as u64)?;
+    // We need to seek to the end of the file after truncation
+    file.seek(SeekFrom::End(0))?;
     Ok((file, head, tail))
 }
 
@@ -283,7 +287,6 @@ impl ChainStore {
             let entry = entry?;
             if let Some(osname) = entry.path().file_name() {
                 if let Some(name) = osname.to_str() {
-                    println!("{}", name);
                     if let Ok(hash) = Hash::from_zbase32(name.as_bytes()) {
                         list.push(hash);
                     }
@@ -355,6 +358,14 @@ mod tests {
         assert_eq!(tail, head);
         assert_eq!(head.block_index, 0);
         assert_eq!(tail.block_index, 0);
+
+        // Write a single extra byte at end. If truncation isn't done correctly when reopening the chain
+        // the chain will be in an invalid state after the next block is written, and validation will fail
+        // with BlockError::Content the next time the chain is opened.
+        file.write_all(b"0").unwrap();
+        let (mut file, head, tail) = validate_chain(file, &chain_hash).unwrap();
+        assert_eq!(head, state1);
+        assert_eq!(tail, state1);
 
         // Generate a 2nd block
         let next = seed.advance().unwrap();
