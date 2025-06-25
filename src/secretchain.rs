@@ -159,7 +159,7 @@ impl SecretChain {
         self.tail.block_index + 1
     }
 
-    /// The [SecretBlock] of the latest block in this secret chain.
+    /// The [SecretBlockState] of the latest block in this secret chain.
     pub fn tail(&self) -> &SecretBlockState {
         &self.tail
     }
