@@ -160,6 +160,18 @@ with the following additional clauses:
   the community.  If someone wishes to contribute under a pseudonym different to
   their primary identity, that wish is to be respected by all contributors.
 
+## 🦀 MSRV Policy
+
+The Minimum Supported Rust Version is whatever the current stable Rust release is when a ZebraChain
+release is made.
+
+ZebraChain releases are made weekly (on Thursdays), and when that Thursday happens to correspond
+with a Rust release, the MSRV is bumped.
+
+## 🦀 SemVer Policy
+
+There will be one. There is not one yet and there wont be one till the 0.1.0 release.
+
 [crate-image]: https://img.shields.io/crates/v/zf-zebrachain?logo=rust
 [crate-link]: https://crates.io/crates/zf-zebrachain
 [docs-image]: https://docs.rs/zf-zebrachain/badge.svg
