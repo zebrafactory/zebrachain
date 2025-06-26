@@ -348,6 +348,12 @@ mod tests {
     use std::io::Seek;
     use tempfile::{TempDir, tempfile};
 
+    fn short_password() -> [u8; 5] {
+        let mut buf = [0; 5];
+        getrandom::fill(&mut buf).unwrap();
+        buf
+    }
+
     #[test]
     fn test_secret_chain_header() {
         let salt = Secret::generate().unwrap();
@@ -399,8 +405,9 @@ mod tests {
         let salt = Secret::generate().unwrap();
         let header = SecretChainHeader::create(salt);
         let chain_hash = random_hash();
-        let password = random_hash();
-        let chain_secret = header.derive_chain_secret(&chain_hash, password.as_bytes());
+        let password = short_password();
+
+        let chain_secret = header.derive_chain_secret(&chain_hash, &password);
         let block_hash = block.finalize(&chain_secret);
 
         let mut buf2 = buf.clone();
@@ -426,7 +433,7 @@ mod tests {
 
         // Reopen chain, test SecretChain::open()
         let mut chain =
-            SecretChain::open(file.try_clone().unwrap(), &chain_hash, password.as_bytes()).unwrap();
+            SecretChain::open(file.try_clone().unwrap(), &chain_hash, &password).unwrap();
         assert_eq!(chain.tail(), &state);
 
         // Sign another
@@ -440,8 +447,15 @@ mod tests {
         let state2 = chain.tail().clone();
 
         // Reopen chain, test SecretChain::open()
-        let chain = SecretChain::open(file, &chain_hash, password.as_bytes()).unwrap();
+        let chain = SecretChain::open(file.try_clone().unwrap(), &chain_hash, &password).unwrap();
         assert_eq!(chain.tail(), &state2);
+
+        // Test bit flips in password
+        for bad_password in BitFlipper::new(&password) {
+            assert!(
+                SecretChain::open(file.try_clone().unwrap(), &chain_hash, &bad_password).is_err()
+            );
+        }
     }
 
     #[test]
