@@ -140,8 +140,8 @@ pub(crate) const SEC_PREV_HASH_RANGE: Range<usize> = get_secrange(5);
 
 pub(crate) const SEC_HASHABLE_RANGE: Range<usize> = DIGEST..SECRET_BLOCK;
 
-pub(crate) const BLOCK_READ_BUF: usize = BLOCK * 64;
-pub(crate) const SECRET_BLOCK_AEAD_READ_BUF: usize = SECRET_BLOCK_AEAD * 64;
+pub(crate) const BLOCK_READ_BUF: usize = 128 * 1024;
+pub(crate) const SECRET_BLOCK_AEAD_READ_BUF: usize = 128 * 1024;
 
 pub(crate) static CONTEXT_SECRET: &[u8; CONTEXT] = &hex!(
     "e4bc91ef0f7db22dfce22bc884f08f95ba16e61a0877071463db33282e98a2c3a2874901005be7cbed8f1313ceee28aa"

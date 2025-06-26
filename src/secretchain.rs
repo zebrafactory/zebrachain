@@ -102,9 +102,10 @@ impl SecretChain {
     pub fn open(file: File, chain_hash: &Hash, password: &[u8]) -> io::Result<Self> {
         let mut file = BufReader::with_capacity(SECRET_BLOCK_AEAD_READ_BUF, file);
         file.rewind()?;
+        let mut buf = vec![0; SECRET_BLOCK_AEAD];
 
         // Read the header
-        let mut buf = [0; SECRET_CHAIN_HEADER];
+        buf.resize(SECRET_CHAIN_HEADER, 0);
         file.read_exact(&mut buf)?;
         let header = match SecretChainHeader::from_buf(&buf) {
             Ok(header) => header,
@@ -112,7 +113,6 @@ impl SecretChain {
         };
         let chain_secret = header.derive_chain_secret(chain_hash, password);
 
-        let mut buf = vec![0; SECRET_BLOCK_AEAD];
         let mut tail = {
             let mut block = SecretBlock::new(&mut buf);
             file.read_exact(block.as_mut_read_buf())?;
