@@ -20,13 +20,26 @@ And where:
 pub(crate) const PUB_ED25519: usize = 32;
 pub(crate) const SIG_ED25519: usize = 64;
 
+// FIXME: The remaining issue in finalizing the non-configurable "heavy" version of the protocol
+// is ML-DSA 44 vs 65 (currently 44 is used). ML-DSA-65 is a nice middle of the road choice.
+// But PQC signatures are huge and NIST required security for up to 2^64 signature (a rather large
+// number). ZebraChain is bonkers conservative in that it only makes a single signature per
+// keypair. Because of this, ML-DSA-44 is still quite conservative for ZebraChain (whereas if
+// multiple signatures were made per keypair, we'd probably want to use ML-DSA-65).
+
 // ML-DSA-44
 pub(crate) const PUB_MLDSA: usize = 1312;
 pub(crate) const SIG_MLDSA: usize = 2420;
 
+// FIXME: once the protocol is configurable, we will support 65 also.
 // ML-DSA-65
 //pub(crate) const PUB_MLDSA: usize = 1952;
 //pub(crate) const SIG_MLDSA: usize = 3309;
+
+// FIXME: once the protocol is configurable, we will support 87 also... but for now, too big!
+// ML-DSA-87
+//pub(crate) const PUB_MLDSA: usize = 2529;
+//pub(crate) const SIG_MLDSA: usize = 4627;
 
 pub(crate) const PUB_MLDSA_RANGE: Range<usize> = 0..PUB_MLDSA;
 pub(crate) const PUB_ED25519_RANGE: Range<usize> = PUB_MLDSA..PUB_MLDSA + PUB_ED25519;

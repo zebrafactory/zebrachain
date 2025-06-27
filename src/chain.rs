@@ -21,6 +21,9 @@ Or when resuming from a checkpoint, the chain validation process is:
     3. Walk remaining blocks till end of chain using Block::from_previous()
 */
 
+// FIXME: There is lots of duplication between validate_chain(), validate_from_checkpoint(), and
+// ChainIter.
+
 fn validate_chain(file: File, chain_hash: &Hash) -> io::Result<(File, BlockState, BlockState)> {
     let mut file = BufReader::with_capacity(BLOCK * 16, file);
     let mut buf = [0; BLOCK];
@@ -66,6 +69,11 @@ fn validate_from_checkpoint(
         Ok(state) => state,
         Err(err) => return Err(err.to_io_error()),
     };
+
+    // FIXME: We should do a fast verification (by hash only) from the first block all the way to
+    // the checkpoint block. Most of the compute time in on signature verification (although we still
+    // have the IO overhead). This could be relaxed later, but for now we should double check things
+    // are as expected. This requires some changes to the Block API.
 
     // Read and validate checkpoint block
     file.seek(SeekFrom::Start(checkpoint.block_index * BLOCK as u64))?;

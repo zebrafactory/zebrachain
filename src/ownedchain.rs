@@ -66,6 +66,9 @@ impl OwnedChainStore {
 
     /// Open and fully validate both the public and the secret chains.
     pub fn open_chain(&self, chain_hash: &Hash, password: &[u8]) -> io::Result<OwnedChain> {
+        // FIXME: It would be best to interleave the chain and secret_chain verification so that
+        // we can verify that state.block_hash == secret_state.public_block_hash for every block.
+        // This requires changes to the Chain and SecretChain API.
         let chain = self.store.open_chain(chain_hash)?;
         let secret_chain = self.secret_store.open_chain(chain_hash, password)?;
         // FIXME: There could be block in the secret chain that was not fully written to the
