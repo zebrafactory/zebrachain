@@ -1,7 +1,7 @@
 //! Writes/reads blocks to/from non-volatile storage and network.
 
 use crate::always::*;
-use crate::fsutil::{chain_filename, create_for_append, open_for_append};
+use crate::fsutil::{chain_filename, create_for_append, open_for_append, read_retry};
 use crate::{Block, BlockState, CheckPoint, Hash};
 use std::fs::{File, remove_file};
 use std::io;
@@ -38,21 +38,24 @@ fn validate_chain(file: File, chain_hash: &Hash) -> io::Result<(File, BlockState
 
     // Read and validate all remaining blocks till the end of the chain
     let mut tail = head.clone();
-    while file.read_exact(&mut buf).is_ok() {
-        tail = match Block::new(&buf).from_previous(&tail) {
-            Ok(state) => state,
-            Err(err) => return Err(err.to_io_error()),
-        };
+    loop {
+        let read = read_retry(&mut file, &mut buf)?;
+        if read < buf.len() {
+            let mut file = file.into_inner();
+            if read > 0 {
+                // Partially written block that should be truncated
+                file.set_len((tail.block_index + 1) * BLOCK as u64)?;
+                file.seek(SeekFrom::End(0))?;
+            }
+            return Ok((file, head, tail));
+        } else {
+            assert_eq!(read, buf.len());
+            tail = match Block::new(&buf).from_previous(&tail) {
+                Ok(state) => state,
+                Err(err) => return Err(err.to_io_error()),
+            };
+        }
     }
-    // read_exact() exited the loop above because either (1) it read zero bytes in which case we
-    // reached the end of the file at an expected multiple of the BLOCK size or (2) it read at
-    // least one byte but less than BLOCK bytes in which case we encountered a partially written
-    // block that should be truncated. Either way, this truncation should be safe and correct:
-    let mut file = file.into_inner();
-    file.set_len((tail.block_index + 1) * BLOCK as u64)?;
-    // We need to seek to the end of the file after truncation
-    file.seek(SeekFrom::End(0))?;
-    Ok((file, head, tail))
 }
 
 // Security Warning: This is ONLY secure if `checkpoint` is trustworthy and correct!
@@ -85,17 +88,24 @@ fn validate_from_checkpoint(
     };
 
     // Read and validate any remaining blocks till the end of the chain
-    while file.read_exact(&mut buf).is_ok() {
-        tail = match Block::new(&buf).from_previous(&tail) {
-            Ok(state) => state,
-            Err(err) => return Err(err.to_io_error()),
-        };
+    loop {
+        let read = read_retry(&mut file, &mut buf)?;
+        if read < buf.len() {
+            let mut file = file.into_inner();
+            if read > 0 {
+                // Partially written block that should be truncated
+                file.set_len((tail.block_index + 1) * BLOCK as u64)?;
+                file.seek(SeekFrom::End(0))?;
+            }
+            return Ok((file, head, tail));
+        } else {
+            assert_eq!(read, buf.len());
+            tail = match Block::new(&buf).from_previous(&tail) {
+                Ok(state) => state,
+                Err(err) => return Err(err.to_io_error()),
+            };
+        }
     }
-    let mut file = file.into_inner();
-    file.set_len((tail.block_index + 1) * BLOCK as u64)?;
-    // We need to seek to the end of the file after truncation
-    file.seek(SeekFrom::End(0))?;
-    Ok((file, head, tail))
 }
 
 /// Read and write blocks to a file.

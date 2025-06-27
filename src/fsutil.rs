@@ -3,7 +3,19 @@
 use crate::Hash;
 use std::fs::File;
 use std::io;
+use std::io::Read;
 use std::path::{Path, PathBuf};
+
+pub(crate) fn read_retry(file: &mut io::BufReader<File>, buf: &mut [u8]) -> io::Result<usize> {
+    let mut read = 0;
+    loop {
+        let new = file.read(&mut buf[read..])?;
+        read += new;
+        if read == buf.len() || new == 0 {
+            return Ok(read);
+        }
+    }
+}
 
 pub(crate) fn chain_filename(dir: &Path, chain_hash: &Hash) -> PathBuf {
     dir.join(format!("{chain_hash}"))
