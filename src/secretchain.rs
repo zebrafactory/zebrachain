@@ -1,7 +1,7 @@
 //! Read and write secret blocks in a chain.
 
 use crate::always::*;
-use crate::fsutil::{create_for_append, open_for_append, secret_chain_filename};
+use crate::fsutil::{create_for_append, open_for_append, read_retry, secret_chain_filename};
 use crate::{Hash, Secret, SecretBlock, SecretBlockError, SecretBlockState};
 use argon2::Argon2;
 use std::fs::{File, remove_file};
@@ -124,29 +124,34 @@ impl SecretChain {
         let first_block_hash = tail.block_hash;
         loop {
             tail = {
-                let mut block = SecretBlock::new(&mut buf);
-                if file.read_exact(block.as_mut_read_buf()).is_err() {
-                    break;
-                }
-                match block.from_previous(&chain_secret, &tail) {
-                    Ok(state) => state,
-                    Err(err) => return Err(err.to_io_error()),
+                buf.resize(SECRET_BLOCK_AEAD, 0);
+                let read = read_retry(&mut file, &mut buf)?;
+                if read < buf.len() {
+                    let mut file = file.into_inner();
+                    if read > 0 {
+                        // Partially written block that should be truncated
+                        let length = SECRET_CHAIN_HEADER as u64
+                            + (tail.block_index + 1) * SECRET_BLOCK_AEAD as u64;
+                        file.set_len(length)?;
+                        file.seek(SeekFrom::End(0))?;
+                    }
+                    return Ok(Self {
+                        file,
+                        buf,
+                        chain_secret,
+                        first_block_hash,
+                        tail,
+                    });
+                } else {
+                    assert_eq!(read, buf.len());
+                    let block = SecretBlock::new(&mut buf);
+                    match block.from_previous(&chain_secret, &tail) {
+                        Ok(state) => state,
+                        Err(err) => return Err(err.to_io_error()),
+                    }
                 }
             };
         }
-        let mut file = file.into_inner();
-        file.set_len(
-            SECRET_CHAIN_HEADER as u64 + (tail.block_index + 1) * SECRET_BLOCK_AEAD as u64,
-        )?;
-        // We need to seek to the end of the file after truncation
-        file.seek(SeekFrom::End(0))?;
-        Ok(Self {
-            file,
-            buf,
-            chain_secret,
-            first_block_hash,
-            tail,
-        })
     }
 
     /// Exposes internal secret block buffer as mutable bytes.
