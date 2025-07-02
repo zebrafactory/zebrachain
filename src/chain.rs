@@ -310,7 +310,7 @@ impl ChainStore {
                 }
             }
         }
-        //list.sort(); // FIXME: Hash needs Ord
+        list.sort();
         Ok(list)
     }
 
@@ -486,6 +486,13 @@ mod tests {
         create_for_append(&tmpdir.path().join("foo")).unwrap();
         create_for_append(&tmpdir.path().join("bar")).unwrap();
         assert_eq!(chainstore.list_chains().unwrap(), [hash]);
+
+        let hash2 = random_hash();
+        let name2 = tmpdir.path().join(&hash2.to_z32_string());
+        create_for_append(&name2).unwrap();
+        let mut expected = [hash, hash2];
+        expected.sort();
+        assert_eq!(chainstore.list_chains().unwrap(), expected);
     }
 
     #[test]

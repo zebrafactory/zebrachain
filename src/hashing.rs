@@ -104,7 +104,7 @@ pub enum HexError {
 /// use zf_zebrachain::Hash;
 /// let hash = Hash::compute(b"hello, world");
 /// ```
-#[derive(Eq, Clone, Copy)]
+#[derive(Eq, Clone, Copy, PartialOrd, Ord)]
 pub struct Hash {
     value: [u8; DIGEST],
 }
