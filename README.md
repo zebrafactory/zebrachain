@@ -29,7 +29,7 @@ ZebraChain is not yet suitable for production use.
 
 This is a nascent implementation of a yet to be finalized protocol. It's also built on a quite new
 Rust implementation of [ML-DSA](https://github.com/RustCrypto/signatures/tree/master/ml-dsa) that
-has its own security warning.
+has its own security warning (on account of not yet having sufficient independent review).
 
 ## 🦓 Overview
 
@@ -58,19 +58,15 @@ recommended by the ML-DSA authors). Support for
 
 ## 🧑‍🏭 Development Status
 
-The current implementation has low abstraction and is not configurable, making it easy to review the
-protocol. So please jump in and help! Feedback and pull requests welcome!
+As of the 0.0.12 release, ZebraChain has reached Minimum Viable Product. Assuming no errors are
+found in the design, backward compatibility will be maintained with the current public and secret
+chain formats.
 
-The next step is to make the implementation configurable for single, double, and triple hybrid
-signing with ed25519, ML-DSA, and SLH-DSA, supporting all ML-DSA and SLH-DSA parameter sets.
-Likewise, the hash function and digest size needs to be configurable.
+With time, both the protocol parameters and the payload will be configurable. There will also be a
+non-quantum-secure, light version of the protocol that only signs with ed25519, but otherwise
+maintains the same design.
 
-The Payload also needs to be abstracted into a trait to allow higher level code to define the size
-of payload and interpret its contents as needed.
-
-The current ZebraChain API is close to what it will be as the dust settles, except for it will
-soon be generic on two items: something that implements a parameter trait and something that
-implements a payload trait.
+If you are interested, please jump in and help! Feedback and pull requests welcome!
 
 ## 🦀 Dependencies of Interest
 
