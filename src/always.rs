@@ -46,13 +46,13 @@ pub(crate) const PUB_ED25519_RANGE: Range<usize> = PUB_MLDSA..PUB_MLDSA + PUB_ED
 pub(crate) const SIG_MLDSA_RANGE: Range<usize> = 0..SIG_MLDSA;
 pub(crate) const SIG_ED25519_RANGE: Range<usize> = SIG_MLDSA..SIG_MLDSA + SIG_ED25519;
 
-/// Size of hash output digest (40 bytes).
-pub const DIGEST: usize = 40;
+/// Size of hash output digest (45 bytes).
+pub const DIGEST: usize = 45;
 
-/// Size of hex-encoded hash (80 bytes).
+/// Size of hex-encoded hash (90 bytes).
 pub const HEXDIGEST: usize = DIGEST * 2;
 
-/// Size of Zbase32-encoded hash (64 bytes).
+/// Size of Zbase32-encoded hash (72 bytes).
 pub const Z32DIGEST: usize = DIGEST * 8 / 5;
 
 /// Size of secrets (48 bytes)
@@ -71,7 +71,7 @@ pub(crate) const TIME: usize = 8;
 /// Size of the ZebraChain payload (48 bytes).
 pub const PAYLOAD: usize = TIME + DIGEST;
 
-/// Size of the ZebraChain block (4044 bytes).
+/// Size of the ZebraChain block (4069 bytes).
 pub const BLOCK: usize = (4 * DIGEST) + SIGNATURE + PUBKEY + PAYLOAD + INDEX;
 
 pub(crate) const HASHABLE_RANGE: Range<usize> = DIGEST..BLOCK;
@@ -115,13 +115,13 @@ A SecretBlock currently has 6 fields:
                                               From the previous block
 */
 
-/// Size of the decrypted secret block (272 bytes).
+/// Size of the decrypted secret block (292 bytes).
 pub const SECRET_BLOCK: usize = 3 * DIGEST + SEED + PAYLOAD + INDEX;
 
 /// Size of header at start of secret chain (88 bytes).
 pub const SECRET_CHAIN_HEADER: usize = DIGEST + SECRET;
 
-/// Size of the encrypted secret block (288 bytes) [this is the size on disk].
+/// Size of the encrypted secret block (308 bytes) [this is the size on disk].
 ///
 /// This is larger than [SECRET_BLOCK] because it includes the 16-byte Poly1305 authentication tag.
 pub const SECRET_BLOCK_AEAD: usize = SECRET_BLOCK + 16;
@@ -221,21 +221,21 @@ mod tests {
 
     #[test]
     fn test_ranges() {
-        assert_eq!(HASHABLE_RANGE, 40..4044);
-        assert_eq!(SIGNABLE_RANGE, 2524..4044);
-        assert_eq!(SIGNABLE2_RANGE, 2460..4044);
+        assert_eq!(HASHABLE_RANGE, 45..4069);
+        assert_eq!(SIGNABLE_RANGE, 2529..4069);
+        assert_eq!(SIGNABLE2_RANGE, 2465..4069);
 
-        assert_eq!(HASH_RANGE, 0..40);
+        assert_eq!(HASH_RANGE, 0..45);
 
-        assert_eq!(SIGNATURE_RANGE, 40..2524);
-        assert_eq!(PUBKEY_RANGE, 2524..3868);
-        assert_eq!(NEXT_PUBKEY_HASH_RANGE, 3868..3908);
+        assert_eq!(SIGNATURE_RANGE, 45..2529);
+        assert_eq!(PUBKEY_RANGE, 2529..3873);
+        assert_eq!(NEXT_PUBKEY_HASH_RANGE, 3873..3918);
 
-        assert_eq!(PAYLOAD_RANGE, 3908..3956);
+        assert_eq!(PAYLOAD_RANGE, 3918..3971);
 
-        assert_eq!(INDEX_RANGE, 3956..3964);
-        assert_eq!(CHAIN_HASH_RANGE, 3964..4004);
-        assert_eq!(PREVIOUS_HASH_RANGE, 4004..4044);
+        assert_eq!(INDEX_RANGE, 3971..3979);
+        assert_eq!(CHAIN_HASH_RANGE, 3979..4024);
+        assert_eq!(PREVIOUS_HASH_RANGE, 4024..4069);
 
         assert_eq!(HASHABLE_RANGE.end, BLOCK);
         assert_eq!(SIGNABLE_RANGE.end, BLOCK);
@@ -244,16 +244,16 @@ mod tests {
 
     #[test]
     fn test_sec_ranges() {
-        assert_eq!(SEC_HASHABLE_RANGE, 40..272);
+        assert_eq!(SEC_HASHABLE_RANGE, 45..292);
 
-        assert_eq!(SEC_HASH_RANGE, 0..40);
-        assert_eq!(SEC_PUBLIC_HASH_RANGE, 40..80);
-        assert_eq!(SEC_SEED_RANGE, 80..176);
-        assert_eq!(SEC_PAYLOAD_RANGE, 176..224);
-        assert_eq!(SEC_INDEX_RANGE, 224..232);
-        assert_eq!(SEC_PREV_HASH_RANGE, 232..272);
+        assert_eq!(SEC_HASH_RANGE, 0..45);
+        assert_eq!(SEC_PUBLIC_HASH_RANGE, 45..90);
+        assert_eq!(SEC_SEED_RANGE, 90..186);
+        assert_eq!(SEC_PAYLOAD_RANGE, 186..239);
+        assert_eq!(SEC_INDEX_RANGE, 239..247);
+        assert_eq!(SEC_PREV_HASH_RANGE, 247..292);
         assert_eq!(SEC_PREV_HASH_RANGE.end, SECRET_BLOCK);
 
-        assert_eq!(SECRET_BLOCK_AEAD, 288);
+        assert_eq!(SECRET_BLOCK_AEAD, 308);
     }
 }

@@ -164,19 +164,16 @@ pub(crate) fn verify_block_signature(block: &Block) -> bool {
 mod tests {
     use super::*;
 
-    static HEX0: &str =
-        "91fe0289ef25b99560858c4405f984d0c776d4bc9f761327c381ab709316dff3e66d9dd2af882d47";
-    static HEX1: &str =
-        "10e651d0df11d8980e51d7c2462751627148faf391e0c74be40bb364e8ba970a074602f552ba2477";
-
     #[test]
     fn test_build_ed25519_keypair() {
         let subsecret = SubSecret256::from_bytes([69; 32]);
         let key = build_ed25519_keypair(subsecret);
         assert_eq!(
             Hash::compute(key.verifying_key().as_bytes()),
-            Hash::from_z32(b"9ZIK7EIF8SOTUMIID9VEFM5EG8BCFY6ZPN59F4C6O778T8NGGVUUDEBJYYDGFRVZ")
-                .unwrap()
+            Hash::from_z32(
+                b"QKYAO7UWYFZPETURPCIFXU7GDWAEU6JNCHOYCIHZKMGDE5SAP5IAQATGNYP9RF77KZKGIQEB"
+            )
+            .unwrap()
         );
     }
 
@@ -186,8 +183,10 @@ mod tests {
         let key = build_mldsa_keypair(subsecret);
         assert_eq!(
             Hash::compute(key.verifying_key().encode().as_slice()),
-            Hash::from_z32(b"87XG7JVRYPIF66RVZCTCGN4MORCIE8LN86SIDOL8GCWORRBOCD5HBM9IRBJEB95O")
-                .unwrap()
+            Hash::from_z32(
+                b"LXP8RYENBNBEB4KE6T7L8MW8F8R5KODJHG94GYHA5BTRY4SX7SLL6TJUCY69B8ZQVMJMPFLS"
+            )
+            .unwrap()
         );
     }
 
@@ -198,12 +197,24 @@ mod tests {
 
         let mut pubkey = [0u8; PUBKEY];
         pair.write_pubkey(&mut pubkey);
-        assert_eq!(Hash::compute(&pubkey), Hash::from_hex(HEX1).unwrap());
+        assert_eq!(
+            Hash::compute(&pubkey),
+            Hash::from_z32(
+                b"TH6HWZU8U55WXWAJCP4C8KIDMIOOFVXEKSKEKSTOHFU68V6YQ8IVQERYBLTHQEI9887GROAX"
+            )
+            .unwrap()
+        );
     }
 
     #[test]
     fn test_keypair_pubkey_hash() {
         let pair = KeyPair::new(&Secret::from_bytes([69; SECRET]), 0);
-        assert_eq!(pair.pubkey_hash(), Hash::from_hex(HEX0).unwrap());
+        assert_eq!(
+            pair.pubkey_hash(),
+            Hash::from_z32(
+                b"NC6KJX8GHPTH8F47DE6ICK9A4BR4N5RMVBAFZCAVINXCWF4GCIM47D8IMNFBRA5Z4IIRLU8B"
+            )
+            .unwrap()
+        );
     }
 }

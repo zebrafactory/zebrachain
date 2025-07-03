@@ -562,7 +562,7 @@ mod tests {
         assert_eq!(
             store.chain_filename(&chain_hash),
             PathBuf::from(
-                "/nope/CP6OELE9CP6OELE9CP6OELE9CP6OELE9CP6OELE9CP6OELE9CP6OELE9CP6OELE9.secret"
+                "/nope/CP6OELE9CP6OELE9CP6OELE9CP6OELE9CP6OELE9CP6OELE9CP6OELE9CP6OELE9CP6OELE9.secret"
             )
         );
         let chain_hash = random_hash();

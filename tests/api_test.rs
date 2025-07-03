@@ -8,25 +8,25 @@ use zf_zebrachain::{
     SECRET_BLOCK_AEAD, SECRET_CHAIN_HEADER, Secret, SecretChainHeader, SecretChainStore, Seed,
 };
 
-const SAMPLE_PAYLOAD_0: &str =
-    "f78f0a75bd49cee04ae73541752b0122de2810fc1bf82d82da8950612769e877ca092af9e57a4662";
-const SAMPLE_PAYLOAD_419: &str =
-    "8ab3f4b28ab258bac7e42b43fd09c53e71b8aaebef302aa1db5fe12ec60b876980eda6a39d3afc94";
+const SAMPLE_PAYLOAD_0: &[u8] =
+    b"IYXUY8QNPV6NB6S8OPOEDHDFH48PEAU4GFZOMCVCSJYN4U6Y65RCBZRNJHS6DDQYHN95FBXQ";
+const SAMPLE_PAYLOAD_419: &[u8] =
+    b"ZV6CDGRNJXIDOZJPKWQ7H5XNJ674LPSVR9X7JNH7BLWSOWUDZJTC6QGLBJGYRHMQPRTMBLXS";
 
-const BLOCK_HASH_0: &str =
-    "f3b27d9068de4fbfe588871b83fa049ec40f2aa212251116dbdb1ec85b87f8c5b11f288bd902d19d";
-const BLOCK_HASH_419: &str =
-    "b284b9e26786b50d102fefaef4062af22752f8d99640c3fa04b1883c46dbeb13d589daa2f5aaf5a5";
+const BLOCK_HASH_0: &[u8] =
+    b"AVL6IVH9RBVQ7ROBEZS8T94YFMVBX5LF5HUNE6ECB6Q8E6AJZUCAHPNKGHRD9JNVL8JDHTQ9";
+const BLOCK_HASH_419: &[u8] =
+    b"5RR9YI6UMTSGQAKBVEGPPSDYAAWSXSQ6YZWWQULRJIFPHAOUXM564NGXIRV9HLVPYHUM8L8G";
 
-const SECRET_BLOCK_HASH_0: &str =
-    "6efa1dc28d8a64779e306e3b6f5566876dbf1b64db8b54eca5bdeec7e4924135246921c6f2e9c1f6";
-const SECRET_BLOCK_HASH_419: &str =
-    "cc5b881efbcb241386830d1fc07921660732e0bd84b089e04329fbdca6de56c22ae6c576f08b5fe3";
+const SECRET_BLOCK_HASH_0: &[u8] =
+    b"JOBGLDU4W8FXYVINAO6ALZUTGXGICSP498JQ4AH6XTU8Y6EESOHEOQO8Y8WNOES6T9ASGW9Q";
+const SECRET_BLOCK_HASH_419: &[u8] =
+    b"TPGOAJTE9IGIWTOXKW6WLDPLLUHRFDO9CW8MVS45QV4GXJEMC76D75CRUAFWMYPOPKSI5UJC";
 
-const FULL_CHAIN_HASH: &str =
-    "3addcb096a3ddf4c5df61dfba5eca3a39f04c6975f699d8d11bc33404dc60993465c5da789f3beb4";
-const FULL_SECRET_CHAIN_HASH: &str =
-    "f5f74bac662854def4e51af8f3dea873d431ff1aa7f149a0188c7f35b15a4c1ba4c07c49710873b2";
+const FULL_CHAIN_HASH: &[u8] =
+    b"RNKGOUIQZ5GRQDAT9WC94WPMOEOKRROVX9FLA5GGNMR9SYJXGZTC7GKSDWSVBUHWZWUPPQDY";
+const FULL_SECRET_CHAIN_HASH: &[u8] =
+    b"RNWK6YFD5QD5TFHJ4H9UE6GQFJ9ZTMJSG7JZN6TPYZGNLDCC9KYO4HEG5G776M7FAYLWLHRN";
 
 static JUNK_ENTROPY: [u8; SECRET] = hex!(
     "517931cc2f0085cd414b57a07680df2c3097c9030be69f51990cee94b26dbe07a0ee06c69f4b1e0de776c3afc497f948"
@@ -159,7 +159,7 @@ fn test_payload() {
     p.write_to_buf(&mut buf);
     assert_eq!(
         Hash::compute(&buf),
-        Hash::from_hex(SAMPLE_PAYLOAD_0).unwrap()
+        Hash::from_z32(SAMPLE_PAYLOAD_0).unwrap()
     );
     let p2 = Payload::from_buf(&buf);
     assert_eq!(p, p2);
@@ -173,7 +173,7 @@ fn test_payload() {
     p.write_to_buf(&mut buf);
     assert_eq!(
         Hash::compute(&buf),
-        Hash::from_hex(SAMPLE_PAYLOAD_419).unwrap()
+        Hash::from_z32(SAMPLE_PAYLOAD_419).unwrap()
     );
     let p2 = Payload::from_buf(&buf);
     assert_eq!(p, p2);
@@ -191,12 +191,12 @@ fn test_owned_chain_store() {
         .unwrap();
     assert_eq!(
         chain.head().block_hash,
-        Hash::from_hex(BLOCK_HASH_0).unwrap()
+        Hash::from_z32(BLOCK_HASH_0).unwrap()
     );
     assert_eq!(chain.head(), chain.tail());
     assert_eq!(
         chain.secret_tail().block_hash,
-        Hash::from_hex(SECRET_BLOCK_HASH_0).unwrap()
+        Hash::from_z32(SECRET_BLOCK_HASH_0).unwrap()
     );
     for index in 1..420 {
         chain
@@ -205,15 +205,15 @@ fn test_owned_chain_store() {
     }
     assert_eq!(
         chain.head().block_hash,
-        Hash::from_hex(BLOCK_HASH_0).unwrap()
+        Hash::from_z32(BLOCK_HASH_0).unwrap()
     );
     assert_eq!(
         chain.tail().block_hash,
-        Hash::from_hex(BLOCK_HASH_419).unwrap()
+        Hash::from_z32(BLOCK_HASH_419).unwrap()
     );
     assert_eq!(
         chain.secret_tail().block_hash,
-        Hash::from_hex(SECRET_BLOCK_HASH_419).unwrap()
+        Hash::from_z32(SECRET_BLOCK_HASH_419).unwrap()
     );
     assert_ne!(chain.head(), chain.tail());
 
@@ -225,7 +225,7 @@ fn test_owned_chain_store() {
     assert_eq!(buf.len(), BLOCK * 420);
     assert_eq!(
         Hash::compute(&buf),
-        Hash::from_hex(FULL_CHAIN_HASH).unwrap()
+        Hash::from_z32(FULL_CHAIN_HASH).unwrap()
     );
 
     // And hash the entire secret chain file too. This is important because this is how we check
@@ -237,6 +237,6 @@ fn test_owned_chain_store() {
     assert_eq!(buf.len(), SECRET_CHAIN_HEADER + SECRET_BLOCK_AEAD * 420);
     assert_eq!(
         Hash::compute(&buf),
-        Hash::from_hex(FULL_SECRET_CHAIN_HASH).unwrap()
+        Hash::from_z32(FULL_SECRET_CHAIN_HASH).unwrap()
     );
 }

@@ -468,7 +468,7 @@ mod tests {
         assert_eq!(
             chainstore.chain_filename(&chain_hash),
             PathBuf::from(
-                "/tmp/stuff/junk/9CP6OELE9CP6OELE9CP6OELE9CP6OELE9CP6OELE9CP6OELE9CP6OELE9CP6OELE"
+                "/tmp/stuff/junk/9CP6OELE9CP6OELE9CP6OELE9CP6OELE9CP6OELE9CP6OELE9CP6OELE9CP6OELE9CP6OELE"
             )
         );
     }

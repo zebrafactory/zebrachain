@@ -484,13 +484,6 @@ mod tests {
         assert!(bs.first_block_is_valid());
     }
 
-    fn new_expected() -> Hash {
-        Hash::from_hex(
-            "05ff1460353d2fd0305bdd1b4c8305428ab40958701538eb979a6d1e083d6c8a064317d16950129a",
-        )
-        .unwrap()
-    }
-
     fn new_valid_block() -> Vec<u8> {
         let mut buf = vec![0; BLOCK];
         let seed = Seed::create(&Secret::from_bytes([69; SECRET]));
@@ -536,14 +529,14 @@ mod tests {
     }
 
     #[test]
-    #[should_panic(expected = "Need a 4044 byte slice; got 4043 bytes")]
+    #[should_panic(expected = "Need a 4069 byte slice; got 4068 bytes")]
     fn test_block_new_short_panic() {
         let buf: Vec<u8> = vec![0; BLOCK - 1];
         let _block = Block::new(&buf);
     }
 
     #[test]
-    #[should_panic(expected = "Need a 4044 byte slice; got 4045 bytes")]
+    #[should_panic(expected = "Need a 4069 byte slice; got 4070 bytes")]
     fn test_block_new_long_panic() {
         let buf: Vec<u8> = vec![0; BLOCK + 1];
         let _block = Block::new(&buf);
@@ -863,7 +856,13 @@ mod tests {
         let buf = new_dummy_block();
         let block = Block::new(&buf);
         let hash = block.compute_hash();
-        assert_eq!(hash, new_expected());
+        assert_eq!(
+            hash,
+            Hash::from_z32(
+                b"SQMWY5GAAQPOYM6KLCVK8TTNUJRJXRTQKCF7Z4Y7KQ66I6IVQW6MFEWKTFAR6DGEKVHWY5FQ"
+            )
+            .unwrap()
+        );
     }
 
     #[test]
@@ -888,8 +887,8 @@ mod tests {
         MutBlock::new(&mut buf, &payload);
         assert_eq!(
             Hash::compute(&buf),
-            Hash::from_hex(
-                "0be0718dac05cb080f37c36c84b12a0c364c4110944db8232c144f509b18a00d4f18bae604701300"
+            Hash::from_z32(
+                b"JDJCS4R469NXAVVV8EPDPAFUL4RUBZ754YQH4K4G9MMNNJG49QM9FK94JQADHWF9PXGDCFC8"
             )
             .unwrap()
         );

@@ -4,13 +4,13 @@ use blake2::{
     Blake2b, Blake2bMac, Digest,
     digest::{
         Mac,
-        consts::{U24, U32, U40, U48},
+        consts::{U24, U32, U45, U48},
     },
 };
 use subtle::{Choice, ConstantTimeEq};
 use zeroize::{Zeroize, ZeroizeOnDrop};
 
-type Blake2b320 = Blake2b<U40>;
+type Blake2b360 = Blake2b<U45>;
 type Blake2bMac192 = Blake2bMac<U24>;
 type Blake2bMac256 = Blake2bMac<U32>;
 type Blake2bMac384 = Blake2bMac<U48>;
@@ -113,7 +113,7 @@ impl Hash {
     /// Compute the 320-bit BLAKE2b hash of `input`, returning `Hash`.
     pub fn compute(input: &[u8]) -> Self {
         assert!(!input.is_empty());
-        let mut hasher = Blake2b320::new();
+        let mut hasher = Blake2b360::new();
         hasher.update(input);
         let output = hasher.finalize();
         Self::from_bytes(output.into())
@@ -466,7 +466,7 @@ mod tests {
         let hash = Hash::from_bytes([42; DIGEST]);
         assert_eq!(
             format!("{hash}"),
-            "9CP6OELE9CP6OELE9CP6OELE9CP6OELE9CP6OELE9CP6OELE9CP6OELE9CP6OELE"
+            "9CP6OELE9CP6OELE9CP6OELE9CP6OELE9CP6OELE9CP6OELE9CP6OELE9CP6OELE9CP6OELE"
         );
     }
 
@@ -475,7 +475,7 @@ mod tests {
         let hash = Hash::from_bytes([42; DIGEST]);
         assert_eq!(
             format!("{hash:?}"),
-            "Hash(\"9CP6OELE9CP6OELE9CP6OELE9CP6OELE9CP6OELE9CP6OELE9CP6OELE9CP6OELE\")"
+            "Hash(\"9CP6OELE9CP6OELE9CP6OELE9CP6OELE9CP6OELE9CP6OELE9CP6OELE9CP6OELE9CP6OELE\")"
         );
     }
 

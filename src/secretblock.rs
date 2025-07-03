@@ -331,14 +331,14 @@ mod tests {
     }
 
     #[test]
-    #[should_panic(expected = "Need a 272 byte Vec<u8>; got 271 bytes")]
+    #[should_panic(expected = "Need a 292 byte Vec<u8>; got 291 bytes")]
     fn test_check_secretblock_buf_panic_low() {
         let buf = vec![0; SECRET_BLOCK - 1];
         check_secretblock_buf(&buf);
     }
 
     #[test]
-    #[should_panic(expected = "Need a 272 byte Vec<u8>; got 273 bytes")]
+    #[should_panic(expected = "Need a 292 byte Vec<u8>; got 293 bytes")]
     fn test_check_secretblock_buf_panic_high() {
         let buf = vec![0; SECRET_BLOCK + 1];
         check_secretblock_buf(&buf);
@@ -352,14 +352,14 @@ mod tests {
     }
 
     #[test]
-    #[should_panic(expected = "Need a 288 byte Vec<u8>; got 287 bytes")]
+    #[should_panic(expected = "Need a 308 byte Vec<u8>; got 307 bytes")]
     fn test_check_secretblock_buf_aead_panic_low() {
         let buf = vec![0; SECRET_BLOCK_AEAD - 1];
         check_secretblock_buf_aead(&buf);
     }
 
     #[test]
-    #[should_panic(expected = "Need a 288 byte Vec<u8>; got 289 bytes")]
+    #[should_panic(expected = "Need a 308 byte Vec<u8>; got 309 bytes")]
     fn test_check_secretblock_buf_aead_panic_high() {
         let buf = vec![0; SECRET_BLOCK_AEAD + 1];
         check_secretblock_buf_aead(&buf);
@@ -643,11 +643,12 @@ mod tests {
                 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
                 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
                 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                0, 0, 0, 0, 0, 0, 0, 0, 210, 2, 150, 73, 0, 0, 0, 0, 13, 13, 13, 13, 13, 13, 13,
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 210, 2, 150, 73, 0, 0, 0, 0,
                 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13,
-                13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13,
+                13, 13, 13, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
                 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                0, 0, 0, 0, 0, 0, 0, 0
+                0
             ]
         );
     }
