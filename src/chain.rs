@@ -162,6 +162,12 @@ impl Chain {
         }
     }
 
+    fn read_block(&mut self, buf: &mut [u8], block_index: u64) -> io::Result<()> {
+        self.file
+            .seek(SeekFrom::Start(BLOCK as u64 * block_index))?;
+        self.file.read_exact(buf)
+    }
+
     /// Return the number of blocks in the chain.
     pub fn count(&self) -> u64 {
         self.tail.block_index + 1
@@ -261,6 +267,37 @@ impl Iterator for ChainIter {
         } else {
             None
         }
+    }
+}
+
+pub struct Cursor {
+    chain: Chain,
+    index: u64,
+    state: BlockState,
+}
+
+impl Cursor {
+    pub fn next(&mut self) -> io::Result<bool> {
+        Ok(true)
+    }
+
+    pub fn previous(&mut self) -> io::Result<bool> {
+        if self.index == 0 {
+            Ok(false)
+        } else {
+            let mut buf = [0; BLOCK];
+            self.chain.read_block(&mut buf, self.index - 1)?;
+            let block = Block::new(&buf);
+            self.state = match block.from_hash_at_index(&self.state.previous_hash, self.index - 1) {
+                Ok(state) => state,
+                Err(err) => return Err(err.to_io_error()),
+            };
+            Ok(true)
+        }
+    }
+
+    pub fn state(&self) -> &BlockState {
+        &self.state
     }
 }
 
