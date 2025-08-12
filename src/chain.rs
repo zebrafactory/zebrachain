@@ -270,25 +270,45 @@ impl Iterator for ChainIter {
     }
 }
 
-pub struct Cursor {
-    chain: Chain,
-    index: u64,
+pub struct Cursor<'a> {
+    chain: &'a mut Chain,
     state: BlockState,
 }
 
-impl Cursor {
-    pub fn next(&mut self) -> io::Result<bool> {
-        Ok(true)
+impl<'a> Cursor<'a> {
+    pub fn new(chain: &'a mut Chain, state: BlockState) -> Self {
+        Self { chain, state }
     }
 
-    pub fn previous(&mut self) -> io::Result<bool> {
-        if self.index == 0 {
+    pub fn next(&mut self) -> io::Result<bool> {
+        if self.state.block_index >= self.chain.count() {
             Ok(false)
         } else {
             let mut buf = [0; BLOCK];
-            self.chain.read_block(&mut buf, self.index - 1)?;
+            self.chain
+                .read_block(&mut buf, self.state.block_index + 1)?;
             let block = Block::new(&buf);
-            self.state = match block.from_hash_at_index(&self.state.previous_hash, self.index - 1) {
+            self.state = match block
+                .from_hash_at_index(&self.state.next_pubkey_hash, self.state.block_index + 1)
+            {
+                Ok(state) => state,
+                Err(err) => return Err(err.to_io_error()),
+            };
+            Ok(true)
+        }
+    }
+
+    pub fn previous(&mut self) -> io::Result<bool> {
+        if self.state.block_index == 0 {
+            Ok(false)
+        } else {
+            let mut buf = [0; BLOCK];
+            self.chain
+                .read_block(&mut buf, self.state.block_index - 1)?;
+            let block = Block::new(&buf);
+            self.state = match block
+                .from_hash_at_index(&self.state.previous_hash, self.state.block_index - 1)
+            {
                 Ok(state) => state,
                 Err(err) => return Err(err.to_io_error()),
             };
