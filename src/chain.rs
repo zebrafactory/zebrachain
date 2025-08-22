@@ -281,7 +281,7 @@ impl<'a> Cursor<'a> {
     }
 
     pub fn next(&mut self) -> io::Result<bool> {
-        if self.state.block_index >= self.chain.count() {
+        if self.state.block_index >= self.chain.count() - 1 {
             Ok(false)
         } else {
             let mut buf = [0; BLOCK];
@@ -399,7 +399,7 @@ impl ChainStore {
 mod tests {
     use super::*;
     use crate::testhelpers::{BitFlipper, random_hash, random_payload};
-    use crate::{Hash, MutBlock, Seed};
+    use crate::{Hash, MutBlock, Seed, sign_block};
     use tempfile;
 
     #[test]
@@ -590,5 +590,22 @@ mod tests {
         let chainstore = ChainStore::new(tmpdir.path());
         let chain_hash = random_hash();
         assert!(chainstore.open_chain(&chain_hash).is_err());
+    }
+
+    #[test]
+    fn test_cursor_live() {
+        let tmpdir = tempfile::TempDir::new().unwrap();
+        let chainstore = ChainStore::new(tmpdir.path());
+        let mut buf = [0; BLOCK];
+        let seed = Seed::generate().unwrap();
+        let payload = random_payload();
+        let block_hash = sign_block(&mut buf, &seed, &payload, None);
+        let mut chain = chainstore.create_chain(&buf, &block_hash).unwrap();
+        let state = chain.head().clone();
+        let mut cursor = Cursor::new(&mut chain, state.clone());
+        assert!(!cursor.next().unwrap());
+        assert_eq!(cursor.state(), &state);
+        assert!(!cursor.previous().unwrap());
+        assert_eq!(cursor.state(), &state);
     }
 }
