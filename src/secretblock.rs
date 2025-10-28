@@ -104,17 +104,17 @@ impl SecretBlockState {
     fn from_buf(buf: &[u8]) -> Result<Self, SecretBlockError> {
         assert_eq!(buf.len(), SECRET_BLOCK);
         let computed_hash = Hash::compute(&buf[SEC_HASHABLE_RANGE]);
-        let block_hash = get_hash(buf, SEC_HASH_RANGE);
+        let block_hash = Hash::from_slice(&buf[SEC_HASH_RANGE]).unwrap();
         if computed_hash != block_hash {
             Err(SecretBlockError::Content)
         } else {
             Ok(Self {
                 block_hash,
-                public_block_hash: get_hash(buf, SEC_PUBLIC_HASH_RANGE),
+                public_block_hash: Hash::from_slice(&buf[SEC_PUBLIC_HASH_RANGE]).unwrap(),
                 seed: Seed::from_buf(&buf[SEC_SEED_RANGE])?,
                 payload: Payload::from_buf(&buf[SEC_PAYLOAD_RANGE]),
                 block_index: get_u64(buf, SEC_INDEX_RANGE),
-                previous_hash: get_hash(buf, SEC_PREV_HASH_RANGE),
+                previous_hash: Hash::from_slice(&buf[SEC_PREV_HASH_RANGE]).unwrap(),
             })
         }
     }
