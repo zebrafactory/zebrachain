@@ -25,7 +25,7 @@ Or when resuming from a checkpoint, the chain validation process is:
 // ChainIter.
 
 fn validate_chain(file: File, chain_hash: &Hash) -> io::Result<(File, BlockState, BlockState)> {
-    let mut file = BufReader::with_capacity(BLOCK * 16, file);
+    let mut file = BufReader::with_capacity(BLOCK_READ_BUF, file);
     let mut buf = [0; BLOCK];
 
     // Read and validate first block
