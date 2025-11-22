@@ -13,7 +13,7 @@ fn build_ed25519_keypair(secret: SubSecret256) -> ed25519_dalek::SigningKey {
 fn build_mldsa_keypair(secret: SubSecret256) -> ml_dsa::KeyPair<MlDsa44> {
     let mut hack = B32::default();
     hack.0.copy_from_slice(secret.as_bytes()); // FIXME: Do more better
-    MlDsa44::key_gen_internal(&hack)
+    MlDsa44::from_seed(&hack)
 }
 
 struct KeyPair {
