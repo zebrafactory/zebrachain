@@ -32,7 +32,7 @@
 //!
 //! ```
 //! use tempfile;
-//! use zf_zebrachain::{ChainStore, Hash, OwnedChainStore, Payload};
+//! use zf_zebrachain::{ChainStore, Cursor, Hash, OwnedChainStore, Payload};
 //!
 //! // To create a chain and make signatures, you need a directory for your public chain files
 //! // and another directory for your secret chain files:
@@ -83,9 +83,17 @@
 //! assert_eq!(store.list_chains().unwrap(), [chain_hash]);
 //!
 //! // Open and fully verify the public chain by the `chain_hash` like this:
-//! let chain = store.open_chain(&chain_hash).unwrap();
+//! let mut chain = store.open_chain(&chain_hash).unwrap();
 //! assert_eq!(chain.head().payload, payload1);
 //! assert_eq!(chain.tail().payload, payload3);
+//!
+//! // A `Cursor` allows you step step forward and backward through a chain:
+//! let mut cursor = Cursor::from_tail(&mut chain);
+//! assert_eq!(cursor.state().payload, payload3);
+//! cursor.previous().unwrap();
+//! assert_eq!(cursor.state().payload, payload2);
+//! cursor.previous().unwrap();
+//! assert_eq!(cursor.state().payload, payload1);
 //! ```
 //!
 //! [ML-DSA]: https://github.com/RustCrypto/signatures/tree/master/ml-dsa
