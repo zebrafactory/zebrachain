@@ -270,16 +270,26 @@ impl Iterator for ChainIter {
     }
 }
 
+/// Step forward or backward through a chain, block by block.
 pub struct Cursor<'a> {
     chain: &'a mut Chain,
     state: BlockState,
 }
 
 impl<'a> Cursor<'a> {
-    pub fn new(chain: &'a mut Chain, state: BlockState) -> Self {
+    /// Create a cursor initially at the first block of the chain.
+    pub fn from_head(chain: &'a mut Chain) -> Self {
+        let state = chain.head().clone();
         Self { chain, state }
     }
 
+    /// Create a cursor initially at the final block of the chain.
+    pub fn from_tail(chain: &'a mut Chain) -> Self {
+        let state = chain.tail().clone();
+        Self { chain, state }
+    }
+
+    /// Advance cursor to next block in chain.
     pub fn next(&mut self) -> io::Result<bool> {
         if self.state.block_index >= self.chain.count() - 1 {
             Ok(false)
@@ -288,9 +298,7 @@ impl<'a> Cursor<'a> {
             self.chain
                 .read_block(&mut buf, self.state.block_index + 1)?;
             let block = Block::new(&buf);
-            self.state = match block
-                .from_hash_at_index(&self.state.next_pubkey_hash, self.state.block_index + 1)
-            {
+            self.state = match block.from_previous(&self.state) {
                 Ok(state) => state,
                 Err(err) => return Err(err.to_io_error()),
             };
@@ -298,6 +306,7 @@ impl<'a> Cursor<'a> {
         }
     }
 
+    /// Rewind cursor to previous block in chain.
     pub fn previous(&mut self) -> io::Result<bool> {
         if self.state.block_index == 0 {
             Ok(false)
@@ -316,6 +325,7 @@ impl<'a> Cursor<'a> {
         }
     }
 
+    /// Reference to the state of the current block.
     pub fn state(&self) -> &BlockState {
         &self.state
     }
@@ -602,10 +612,37 @@ mod tests {
         let block_hash = sign_block(&mut buf, &seed, &payload, None);
         let mut chain = chainstore.create_chain(&buf, &block_hash).unwrap();
         let state = chain.head().clone();
-        let mut cursor = Cursor::new(&mut chain, state.clone());
+
+        let mut cursor = Cursor::from_head(&mut chain);
         assert!(!cursor.next().unwrap());
         assert_eq!(cursor.state(), &state);
         assert!(!cursor.previous().unwrap());
+        assert_eq!(cursor.state(), &state);
+
+        let mut cursor = Cursor::from_tail(&mut chain);
+        assert!(!cursor.next().unwrap());
+        assert_eq!(cursor.state(), &state);
+        assert!(!cursor.previous().unwrap());
+        assert_eq!(cursor.state(), &state);
+
+        let seed = seed.advance().unwrap();
+        let payload = random_payload();
+        sign_block(&mut buf, &seed, &payload, Some(&state));
+        let tail = chain.append(&buf).unwrap().clone();
+        assert_eq!(&tail, chain.tail());
+
+        let mut cursor = Cursor::from_head(&mut chain);
+        assert!(!cursor.previous().unwrap());
+        assert_eq!(cursor.state(), &state);
+        assert!(cursor.next().unwrap());
+        assert_ne!(cursor.state(), &state);
+        assert_eq!(cursor.state(), &tail);
+
+        let mut cursor = Cursor::from_tail(&mut chain);
+        assert!(!cursor.next().unwrap());
+        assert_eq!(cursor.state(), &tail);
+        assert!(cursor.previous().unwrap());
+        assert_ne!(cursor.state(), &tail);
         assert_eq!(cursor.state(), &state);
     }
 }

@@ -112,7 +112,7 @@ pub use always::{
     SECRET_CHAIN_HEADER, Z32DIGEST,
 };
 pub use block::{Block, BlockState, CheckPoint, MutBlock, sign_block};
-pub use chain::{Chain, ChainIter, ChainStore};
+pub use chain::{Chain, ChainIter, ChainStore, Cursor};
 pub use errors::{BlockError, EntropyError, SecretBlockError};
 pub use hashing::{Hash, HexError, Secret, SubSecret, SubSecret192, SubSecret256, Zbase32Error};
 pub use ownedblock::{MutOwnedBlock, OwnedBlockState};
