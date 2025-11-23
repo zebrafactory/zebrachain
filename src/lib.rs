@@ -89,11 +89,11 @@
 //!
 //! // A `Cursor` allows you step step forward and backward through a chain:
 //! let mut cursor = Cursor::from_tail(&mut chain);
-//! assert_eq!(cursor.state().payload, payload3);
-//! cursor.previous().unwrap();
-//! assert_eq!(cursor.state().payload, payload2);
-//! cursor.previous().unwrap();
-//! assert_eq!(cursor.state().payload, payload1);
+//! assert_eq!(cursor.block_state().payload, payload3);
+//! cursor.previous_block().unwrap();
+//! assert_eq!(cursor.block_state().payload, payload2);
+//! cursor.previous_block().unwrap();
+//! assert_eq!(cursor.block_state().payload, payload1);
 //! ```
 //!
 //! [ML-DSA]: https://github.com/RustCrypto/signatures/tree/master/ml-dsa

@@ -290,7 +290,7 @@ impl<'a> Cursor<'a> {
     }
 
     /// Advance cursor to next block in chain.
-    pub fn next(&mut self) -> io::Result<bool> {
+    pub fn next_block(&mut self) -> io::Result<bool> {
         if self.state.block_index >= self.chain.count() - 1 {
             Ok(false)
         } else {
@@ -307,7 +307,7 @@ impl<'a> Cursor<'a> {
     }
 
     /// Rewind cursor to previous block in chain.
-    pub fn previous(&mut self) -> io::Result<bool> {
+    pub fn previous_block(&mut self) -> io::Result<bool> {
         if self.state.block_index == 0 {
             Ok(false)
         } else {
@@ -326,7 +326,7 @@ impl<'a> Cursor<'a> {
     }
 
     /// Reference to the state of the current block.
-    pub fn state(&self) -> &BlockState {
+    pub fn block_state(&self) -> &BlockState {
         &self.state
     }
 }
@@ -613,16 +613,16 @@ mod tests {
         let state = chain.head().clone();
 
         let mut cursor = Cursor::from_head(&mut chain);
-        assert!(!cursor.next().unwrap());
-        assert_eq!(cursor.state(), &state);
-        assert!(!cursor.previous().unwrap());
-        assert_eq!(cursor.state(), &state);
+        assert!(!cursor.next_block().unwrap());
+        assert_eq!(cursor.block_state(), &state);
+        assert!(!cursor.previous_block().unwrap());
+        assert_eq!(cursor.block_state(), &state);
 
         let mut cursor = Cursor::from_tail(&mut chain);
-        assert!(!cursor.next().unwrap());
-        assert_eq!(cursor.state(), &state);
-        assert!(!cursor.previous().unwrap());
-        assert_eq!(cursor.state(), &state);
+        assert!(!cursor.next_block().unwrap());
+        assert_eq!(cursor.block_state(), &state);
+        assert!(!cursor.previous_block().unwrap());
+        assert_eq!(cursor.block_state(), &state);
 
         let seed = seed.advance().unwrap();
         let payload = random_payload();
@@ -631,17 +631,17 @@ mod tests {
         assert_eq!(&tail, chain.tail());
 
         let mut cursor = Cursor::from_head(&mut chain);
-        assert!(!cursor.previous().unwrap());
-        assert_eq!(cursor.state(), &state);
-        assert!(cursor.next().unwrap());
-        assert_ne!(cursor.state(), &state);
-        assert_eq!(cursor.state(), &tail);
+        assert!(!cursor.previous_block().unwrap());
+        assert_eq!(cursor.block_state(), &state);
+        assert!(cursor.next_block().unwrap());
+        assert_ne!(cursor.block_state(), &state);
+        assert_eq!(cursor.block_state(), &tail);
 
         let mut cursor = Cursor::from_tail(&mut chain);
-        assert!(!cursor.next().unwrap());
-        assert_eq!(cursor.state(), &tail);
-        assert!(cursor.previous().unwrap());
-        assert_ne!(cursor.state(), &tail);
-        assert_eq!(cursor.state(), &state);
+        assert!(!cursor.next_block().unwrap());
+        assert_eq!(cursor.block_state(), &tail);
+        assert!(cursor.previous_block().unwrap());
+        assert_ne!(cursor.block_state(), &tail);
+        assert_eq!(cursor.block_state(), &state);
     }
 }
