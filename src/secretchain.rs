@@ -305,14 +305,13 @@ impl SecretChainStore {
         let mut list = Vec::new();
         for entry in std::fs::read_dir(&self.dir)? {
             let entry = entry?;
-            if let Some(osname) = entry.path().file_name() {
-                if let Some(name) = osname.to_str() {
-                    if name.len() == Z32DIGEST + 7 && &name[Z32DIGEST..] == ".secret" {
-                        if let Ok(hash) = Hash::from_z32(&name.as_bytes()[0..Z32DIGEST]) {
-                            list.push(hash);
-                        }
-                    }
-                }
+            if let Some(osname) = entry.path().file_name()
+                && let Some(name) = osname.to_str()
+                && name.len() == Z32DIGEST + 7
+                && &name[Z32DIGEST..] == ".secret"
+                && let Ok(hash) = Hash::from_z32(&name.as_bytes()[0..Z32DIGEST])
+            {
+                list.push(hash);
             }
         }
         list.sort();
