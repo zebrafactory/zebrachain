@@ -2,7 +2,7 @@ use crate::always::*;
 use crate::{Hash, Payload, Secret, SecretBlockError, Seed, SubSecret192, SubSecret256};
 use chacha20poly1305::{
     Key, XChaCha20Poly1305, XNonce,
-    aead::{AeadInPlace, KeyInit},
+    aead::{AeadInOut, KeyInit},
 };
 use zeroize::{Zeroize, ZeroizeOnDrop};
 
