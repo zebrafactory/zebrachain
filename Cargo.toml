@@ -22,14 +22,14 @@ blake2 = "0.11.0-rc.3"
 chacha20poly1305 = { version = "=0.11.0-rc.2", default-features = false, features = ["alloc"] }
 ed25519-dalek = "=3.0.0-pre.2"
 getrandom = "0.3.4"
-hex-literal = "1.0.0"
+hex-literal = "1.1.0"
 ml-dsa = { version = "=0.1.0-rc.2", default-features = false, features = ["zeroize"] }
 signature = "=3.0.0-rc.5"
 subtle = "2.6.1"
-zeroize = { version = "1.8.1", features = ["derive", "zeroize_derive"] }
+zeroize = { version = "1.8.2", features = ["derive", "zeroize_derive"] }
 
 [dev-dependencies]
-tempfile = "3.14.0"
+tempfile = "3.23.0"
 
 [profile.dev]
 opt-level = 2
