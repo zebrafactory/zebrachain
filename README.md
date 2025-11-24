@@ -23,7 +23,7 @@ commits to the protocol.
 However, the dust is settling quickly and it's a perfect time to jump in and start building
 experimental applications on top of ZebraChain!
 
-See the [Quickstart][doc-link] for an overview of the API.
+See the [Quickstart](https://docs.rs/zf-zebrachain/latest/zf_zebrachain/#-quickstart) for an overview of the API.
 
 ## ⚠️ Security Warning
 
