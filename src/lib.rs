@@ -87,7 +87,7 @@
 //! assert_eq!(chain.head().payload, payload1);
 //! assert_eq!(chain.tail().payload, payload3);
 //!
-//! // A `Cursor` allows you step step forward and backward through a chain:
+//! // A Cursor allows you step step forward and backward through a chain:
 //! let mut cursor = Cursor::from_tail(&mut chain);
 //! assert_eq!(cursor.block_state().payload, payload3);
 //! cursor.previous_block().unwrap();

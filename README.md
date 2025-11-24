@@ -23,6 +23,8 @@ commits to the protocol.
 However, the dust is settling quickly and it's a perfect time to jump in and start building
 experimental applications on top of ZebraChain!
 
+See the [Quickstart][doc-link] for an overview of the API.
+
 ## ⚠️ Security Warning
 
 ZebraChain is not yet suitable for production use.

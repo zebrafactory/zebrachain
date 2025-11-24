@@ -270,7 +270,7 @@ impl Iterator for ChainIter {
     }
 }
 
-/// Step forward or backward through a chain, block by block.
+/// Step forward or backward through a [Chain], block by block.
 pub struct Cursor<'a> {
     chain: &'a mut Chain,
     state: BlockState,
@@ -289,7 +289,7 @@ impl<'a> Cursor<'a> {
         Self { chain, state }
     }
 
-    /// Advance cursor to next block in chain.
+    /// Advance cursor to next block in chain. Returns `false` if already at the end of the chain.
     pub fn next_block(&mut self) -> io::Result<bool> {
         if self.state.block_index >= self.chain.count() - 1 {
             Ok(false)
@@ -306,7 +306,7 @@ impl<'a> Cursor<'a> {
         }
     }
 
-    /// Rewind cursor to previous block in chain.
+    /// Rewind cursor to previous block in chain. Returns `true` if already at the start of the chain.
     pub fn previous_block(&mut self) -> io::Result<bool> {
         if self.state.block_index == 0 {
             Ok(false)
@@ -325,7 +325,7 @@ impl<'a> Cursor<'a> {
         }
     }
 
-    /// Reference to the state of the current block.
+    /// Reference to the [BlockState] of the current block.
     pub fn block_state(&self) -> &BlockState {
         &self.state
     }

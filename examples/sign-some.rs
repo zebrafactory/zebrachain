@@ -88,6 +88,11 @@ fn main() {
     let mut chain = chain.into_chain();
     let mut cursor = Cursor::from_tail(&mut chain);
     assert_eq!(&tail, cursor.block_state());
-    while cursor.previous_block().unwrap() {}
+    while cursor.previous_block().unwrap() {
+        assert_eq!(
+            cursor.block_state().payload,
+            payloads[cursor.block_state().block_index as usize]
+        );
+    }
     assert_eq!(&head, cursor.block_state());
 }
