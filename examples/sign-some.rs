@@ -1,7 +1,7 @@
 //! Create a new chain and some signatures.
 
 use tempfile;
-use zf_zebrachain::{OwnedChainStore, PAYLOAD, Payload, Secret};
+use zf_zebrachain::{Cursor, OwnedChainStore, PAYLOAD, Payload, Secret};
 
 const COUNT: usize = 420;
 
@@ -83,4 +83,11 @@ fn main() {
     assert_eq!(chain.count(), payloads.len() as u64);
     assert_eq!(&head, chain.head());
     assert_eq!(&tail, chain.tail());
+
+    println!("Stepping backward through chain using a Cursor...");
+    let mut chain = chain.into_chain();
+    let mut cursor = Cursor::from_tail(&mut chain);
+    assert_eq!(&tail, cursor.block_state());
+    while cursor.previous_block().unwrap() {}
+    assert_eq!(&head, cursor.block_state());
 }

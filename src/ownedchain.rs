@@ -146,6 +146,11 @@ impl OwnedChain {
         }
     }
 
+    /// Consume instance, returning public Chain..
+    pub fn into_chain(self) -> Chain {
+        self.chain
+    }
+
     /// Sign next block, internally generating new entropy.
     pub fn sign(&mut self, payload: &Payload) -> io::Result<&BlockState> {
         let new_entropy = match Secret::generate() {
