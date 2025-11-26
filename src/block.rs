@@ -242,18 +242,32 @@ impl<'a> Block<'a> {
 /// ```
 /// use zf_zebrachain::{BLOCK, DIGEST, Block, Hash, MutBlock, Payload, Seed};
 ///
-/// // Build, sign, and finalize a new block like this:
+/// // Build, sign, and finalize a new block:
 /// let mut buf = [0; BLOCK];
-/// let payload = Payload::new(123, Hash::from_bytes([69; DIGEST]));
-/// let mut block = MutBlock::new(&mut buf, &payload);
+/// let payload = Payload::new(420, Hash::from_bytes([69; DIGEST]));
+/// let mut mutblock = MutBlock::new(&mut buf, &payload);
 /// let seed = Seed::generate().unwrap();
-/// block.sign(&seed);
-/// let block_hash = block.finalize();
+/// mutblock.sign(&seed);
+/// let block_hash = mutblock.finalize();
 ///
-/// // And then read out the block state like this:
+/// // And then read out the block state:
 /// let block = Block::new(&buf);
 /// let state = block.from_hash_at_index(&block_hash, 0).unwrap();
+/// assert_eq!(state.block_hash, block_hash);
+/// assert_eq!(state.block_index, 0);
 /// assert_eq!(state.payload, payload);
+///
+/// // Sign a 2nd next block (we'll reuse the payload):
+/// // let seed = seed.advance().unwrap(); // #FIXME: should fail without advanced seed
+/// let mut mutblock = MutBlock::new(&mut buf, &payload);
+/// mutblock.set_previous(&state);
+/// mutblock.sign(&seed);
+/// let block2_hash = mutblock.finalize();
+///
+/// // Read out the 2nd block state:
+/// let block = Block::new(&buf);
+/// let state2 = block.from_hash_at_index(&block2_hash, 1).unwrap();
+/// assert_eq!(state2.previous_hash, state.block_hash);
 /// ```
 pub struct MutBlock<'a> {
     pub(crate) buf: &'a mut [u8],
