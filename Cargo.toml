@@ -18,13 +18,13 @@ rust-version = "1.92"
 [dependencies]
 argon2 = { version = "=0.6.0-rc.8", default-features = false, features = ["alloc", "zeroize"] }
 arrayvec = "0.7.6"
-blake2 = "0.11.0-rc.6"
+blake2 = "=0.11.0-rc.6"
 chacha20poly1305 = { version = "=0.11.0-rc.3", default-features = false, features = ["alloc"] }
-ed25519-dalek = "3.0.0-rc.0"
+ed25519-dalek = "=3.0.0-rc.0"
 getrandom = "0.4.3"
 hex-literal = "1.1.0"
 ml-dsa = { version = "=0.1.0-rc.2", default-features = false, features = ["zeroize"] }
-signature = "=3.0.0"
+signature = "3.0.0"
 subtle = "2.6.1"
 zeroize = { version = "1.8.2", features = ["derive", "zeroize_derive"] }
 
