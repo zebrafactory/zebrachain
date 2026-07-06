@@ -2,7 +2,7 @@
 
 use crate::always::*;
 use crate::{Block, Hash, MutBlock, Secret, Seed, SubSecret256};
-use ml_dsa::{B32, MlDsa44, SigningKey, signature::Keypair};
+use ml_dsa::{MlDsa44, SigningKey, signature::Keypair};
 use signature::Signer;
 use zeroize::Zeroize;
 
@@ -11,9 +11,7 @@ fn build_ed25519_keypair(secret: SubSecret256) -> ed25519_dalek::SigningKey {
 }
 
 fn build_mldsa_keypair(secret: SubSecret256) -> ml_dsa::SigningKey<MlDsa44> {
-    let mut hack = B32::default();
-    hack.0.copy_from_slice(secret.as_bytes()); // FIXME: Do more better
-    SigningKey::<MlDsa44>::from_seed(&hack)
+    SigningKey::<MlDsa44>::from_seed(secret.as_bytes().into())
 }
 
 struct KeyPair {
