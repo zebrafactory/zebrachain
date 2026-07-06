@@ -2,7 +2,7 @@
 
 use crate::always::*;
 use crate::{Block, Hash, MutBlock, Secret, Seed, SubSecret256};
-use ml_dsa::{B32, KeyGen, MlDsa44};
+use ml_dsa::{B32, MlDsa44, SigningKey, signature::Keypair};
 use signature::Signer;
 use zeroize::Zeroize;
 
@@ -10,15 +10,15 @@ fn build_ed25519_keypair(secret: SubSecret256) -> ed25519_dalek::SigningKey {
     ed25519_dalek::SigningKey::from_bytes(secret.as_bytes())
 }
 
-fn build_mldsa_keypair(secret: SubSecret256) -> ml_dsa::KeyPair<MlDsa44> {
+fn build_mldsa_keypair(secret: SubSecret256) -> ml_dsa::SigningKey<MlDsa44> {
     let mut hack = B32::default();
     hack.0.copy_from_slice(secret.as_bytes()); // FIXME: Do more better
-    MlDsa44::from_seed(&hack)
+    SigningKey::<MlDsa44>::from_seed(&hack)
 }
 
 struct KeyPair {
     ed25519: ed25519_dalek::SigningKey,
-    mldsa: ml_dsa::KeyPair<MlDsa44>,
+    mldsa: ml_dsa::SigningKey<MlDsa44>,
 }
 
 impl KeyPair {
@@ -74,7 +74,7 @@ impl KeyPair {
         // Compute ML-DSA signature over SIGNABLE2_RANGE, then write it to the buffer:
         let sig = self
             .mldsa
-            .signing_key()
+            .expanded_key()
             .sign_deterministic(block.as_signable2(), SIGNING_CXT_ML_DSA)
             .unwrap();
         block.as_mut_signature()[SIG_MLDSA_RANGE].copy_from_slice(sig.encode().as_slice());
