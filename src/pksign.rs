@@ -2,8 +2,10 @@
 
 use crate::always::*;
 use crate::{Block, Hash, MutBlock, Secret, Seed, SubSecret256};
-use ml_dsa::{MlDsa44, SigningKey, signature::Keypair};
-use signature::Signer;
+use ml_dsa::{
+    MlDsa44, SigningKey,
+    signature::{Keypair, Signer},
+};
 use zeroize::Zeroize;
 
 fn build_ed25519_keypair(secret: SubSecret256) -> ed25519_dalek::SigningKey {
