@@ -20,7 +20,7 @@ argon2 = { version = "=0.6.0-rc.8", default-features = false, features = ["alloc
 arrayvec = "0.7.8"
 blake2 = "=0.11.0-rc.6"
 chacha20poly1305 = { version = "0.11.0", default-features = false, features = ["alloc"] }
-ed25519-dalek = "=3.0.0-rc.1"
+ed25519-dalek = "3.0.0"
 getrandom = "0.4.3"
 hex-literal = "1.1.0"
 ml-dsa = { version = "0.1.1", default-features = false, features = ["zeroize"] }
