@@ -163,9 +163,6 @@ with the following additional clauses:
 The Minimum Supported Rust Version is whatever the current stable Rust release is when a ZebraChain
 release is made.
 
-ZebraChain releases are made weekly (on Thursdays), and when that Thursday happens to correspond
-with a Rust release, the MSRV is bumped.
-
 ## 🦀 SemVer Policy
 
 There will be one. There is not one yet and there wont be one till the 0.1.0 release.
