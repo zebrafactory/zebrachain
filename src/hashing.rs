@@ -96,7 +96,7 @@ pub enum HexError {
     BadByte(u8),
 }
 
-/// Buffer containing the 320-bit (40-byte) BLAKE2b hash, with ConstantTimeEq.
+/// Buffer containing the 360-bit (45-byte) BLAKE2b hash, with ConstantTimeEq.
 ///
 /// # Examples
 ///
@@ -110,7 +110,7 @@ pub struct Hash {
 }
 
 impl Hash {
-    /// Compute the 320-bit BLAKE2b hash of `input`, returning `Hash`.
+    /// Compute the 360-bit BLAKE2b hash of `input`, returning `Hash`.
     pub fn compute(input: &[u8]) -> Self {
         assert!(!input.is_empty());
         let mut hasher = Blake2b360::new();

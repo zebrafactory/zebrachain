@@ -46,7 +46,7 @@ pub(crate) const PUB_ED25519_RANGE: Range<usize> = PUB_MLDSA..PUB_MLDSA + PUB_ED
 pub(crate) const SIG_MLDSA_RANGE: Range<usize> = 0..SIG_MLDSA;
 pub(crate) const SIG_ED25519_RANGE: Range<usize> = SIG_MLDSA..SIG_MLDSA + SIG_ED25519;
 
-/// Size of hash output digest (45 bytes).
+/// Size of hash output digest (360 bits, 45 bytes).
 pub const DIGEST: usize = 45;
 
 /// Size of hex-encoded hash (90 bytes).
