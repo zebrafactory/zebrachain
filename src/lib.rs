@@ -1,3 +1,4 @@
+#![forbid(unsafe_code)]
 #![deny(missing_docs)]
 
 //! # 🦓 🔗 ZebraChain: A futuristic cryptographic identity system.
