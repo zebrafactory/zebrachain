@@ -16,7 +16,7 @@ edition = "2024"
 rust-version = "1.98"
 
 [dependencies]
-argon2 = { version = "=0.6.0-rc.8", default-features = false, features = ["alloc", "zeroize"] }
+argon2 = { version = "0.6.0", default-features = false, features = ["alloc", "zeroize"] }
 arrayvec = "0.7.8"
 blake2 = "0.11.0"
 chacha20poly1305 = { version = "0.11.0", default-features = false, features = ["alloc"] }
