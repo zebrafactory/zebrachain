@@ -40,8 +40,8 @@ fn derive_block_sub_secrets(
 // A unique key and nonce derived from the chain_secret and block_index
 fn get_block_key_and_nonce(chain_secret: &Secret, block_index: u64) -> (Key, XNonce) {
     let (key, nonce) = derive_block_sub_secrets(chain_secret, block_index);
-    let key = Key::from_slice(key.as_bytes());
-    let nonce = XNonce::from_slice(nonce.as_bytes());
+    let key: &Key = key.as_bytes().into();
+    let nonce: &XNonce = nonce.as_bytes().into();
     (*key, *nonce)
 }
 
