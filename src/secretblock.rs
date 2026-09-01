@@ -203,7 +203,6 @@ pub struct MutSecretBlock<'a> {
 impl<'a> MutSecretBlock<'a> {
     /// Zero secret block buffer and set payload.
     pub fn new(buf: &'a mut Vec<u8>, payload: &Payload) -> Self {
-        //check_secretblock_buf(buf);
         buf.resize(SECRET_BLOCK, 0);
         buf.fill(0);
         payload.write_to_buf(&mut buf[SEC_PAYLOAD_RANGE]);

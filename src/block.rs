@@ -321,12 +321,12 @@ impl<'a> MutBlock<'a> {
         &mut self.buf[PUBKEY_RANGE]
     }
 
-    /// Bytes over which the ed25519 signature is made.
+    /// Bytes over which the ed25519 signature is computed.
     pub(crate) fn as_signable(&self) -> &[u8] {
         &self.buf[SIGNABLE_RANGE]
     }
 
-    /// Bytes over which the ml-dsa signature is made (includes ed25519 signature).
+    /// Bytes over which the ml-dsa signature is computed (includes ed25519 signature).
     pub(crate) fn as_signable2(&self) -> &[u8] {
         &self.buf[SIGNABLE2_RANGE]
     }

@@ -108,7 +108,7 @@ pub(crate) const CHAIN_HASH_RANGE: Range<usize> = get_range(6);
 pub(crate) const PREVIOUS_HASH_RANGE: Range<usize> = get_range(7);
 
 /*
-A SecretBlock currently has 6 fields:
+A SecretBlock has 6 fields:
 
     HASH || PUBLIC_HASH || SEED || PAYLOAD || INDEX || PREVIOUS_HASH
                                               ^^^^^^^^^^^^^^^^^^^^^^

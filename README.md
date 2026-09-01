@@ -27,11 +27,8 @@ See the [Quickstart](https://docs.rs/zf-zebrachain/latest/zf_zebrachain/#-quicks
 
 ## ⚠️ Security Warning
 
-ZebraChain is not yet suitable for production use.
-
-This is a nascent implementation of a yet to be finalized protocol. It's also built on a quite new
-Rust implementation of [ML-DSA](https://github.com/RustCrypto/signatures/tree/master/ml-dsa) that
-has its own security warning (on account of not yet having sufficient independent review).
+ZebraChain is not yet suitable for production use. This is a nascent implementation of a yet to be
+finalized protocol.
 
 ## 🦓 Overview
 

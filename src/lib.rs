@@ -24,10 +24,8 @@
 //!
 //! ## ⚠️ Security Warning
 //!
-//! ZebraChain is not yet suitable for production use.
-//!
-//! This is a nascent implementation of a yet to be finalized protocol. It's also built on a quite new
-//! Rust implementation of [ML-DSA] that has its own security warning.
+//! ZebraChain is not yet suitable for production use. This is a nascent implementation of a yet to
+//! be finalized protocol.
 //!
 //! ##  🚀 Quickstart
 //!
@@ -96,8 +94,6 @@
 //! cursor.previous_block().unwrap();
 //! assert_eq!(cursor.block_state().payload, payload1);
 //! ```
-//!
-//! [ML-DSA]: https://github.com/RustCrypto/signatures/tree/master/ml-dsa
 
 mod always;
 mod block;
