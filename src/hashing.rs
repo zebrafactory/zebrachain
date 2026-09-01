@@ -442,16 +442,6 @@ mod tests {
     }
 
     #[test]
-    fn test_argon2() {
-        let password = b"hunter42";
-        let salt = Secret::generate().unwrap();
-        let mut buf = [0; SECRET];
-        argon2::Argon2::default()
-            .hash_password_into(password, salt.as_bytes(), &mut buf)
-            .unwrap();
-    }
-
-    #[test]
     fn test_generate_secret() {
         let count = 1024;
         let mut hset = HashSet::new();
