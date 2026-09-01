@@ -306,7 +306,7 @@ impl<'a> Cursor<'a> {
         }
     }
 
-    /// Rewind cursor to previous block in chain. Returns `true` if already at the start of the chain.
+    /// Rewind cursor to previous block in chain. Returns `false` if already at the start of the chain.
     pub fn previous_block(&mut self) -> io::Result<bool> {
         if self.state.block_index == 0 {
             Ok(false)
