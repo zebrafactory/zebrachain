@@ -1,7 +1,7 @@
 use hex_literal::hex;
 use std::collections::HashSet;
 use std::fs::File;
-use std::io::Read;
+use std::io::{Read, Seek};
 use tempfile;
 use zf_zebrachain::{
     BLOCK, ChainStore, DIGEST, Hash, MutSecretBlock, OwnedChainStore, PAYLOAD, Payload, SECRET,
@@ -230,13 +230,37 @@ fn test_owned_chain_store() {
 
     // And hash the entire secret chain file too. This is important because this is how we check
     // that the secret block encryption is being done the same.
-    let chain_filename = tmpdir.path().join(format!("{}.secret", chain.chain_hash()));
-    let mut chain_file = File::open(&chain_filename).unwrap();
+    let secret_chain_filename = tmpdir.path().join(format!("{}.secret", chain.chain_hash()));
+    let mut secret_chain_file = File::open(&secret_chain_filename).unwrap();
     let mut buf = Vec::new();
-    chain_file.read_to_end(&mut buf).unwrap();
+    secret_chain_file.read_to_end(&mut buf).unwrap();
     assert_eq!(buf.len(), SECRET_CHAIN_HEADER + SECRET_BLOCK_AEAD * 420);
     assert_eq!(
         Hash::compute(&buf),
         Hash::from_z32(FULL_SECRET_CHAIN_HASH).unwrap()
     );
+
+    // Truncate public chain file to make sure it gets filled in from the secret chain
+    let mut chain_file = store
+        .store()
+        .open_chain_file(&Hash::from_z32(BLOCK_HASH_0).unwrap())
+        .unwrap();
+    chain_file.rewind().unwrap();
+    chain_file.set_len(BLOCK as u64 * 360).unwrap();
+    let mut chain = store
+        .open_chain(&Hash::from_z32(BLOCK_HASH_0).unwrap(), PASSWORD)
+        .unwrap();
+    assert_eq!(
+        chain.head().block_hash,
+        Hash::from_z32(BLOCK_HASH_0).unwrap()
+    );
+    assert_eq!(
+        chain.tail().block_hash,
+        Hash::from_z32(BLOCK_HASH_419).unwrap()
+    );
+    assert_eq!(
+        chain.secret_tail().block_hash,
+        Hash::from_z32(SECRET_BLOCK_HASH_419).unwrap()
+    );
+    assert_ne!(chain.head(), chain.tail());
 }

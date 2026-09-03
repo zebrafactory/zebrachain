@@ -1,7 +1,7 @@
 //! Create a new chain and some signatures.
 
 use tempfile;
-use zf_zebrachain::{Cursor, OwnedChainStore, PAYLOAD, Payload, Secret};
+use zf_zebrachain::{BLOCK, Cursor, OwnedChainStore, PAYLOAD, Payload, Secret};
 
 const COUNT: usize = 420;
 
@@ -95,4 +95,11 @@ fn main() {
         );
     }
     assert_eq!(&head, cursor.block_state());
+
+    println!(
+        "Truncating public chain to ensure correct partial reconstruction from secret chain..."
+    );
+    let mut file = ocs.store().open_chain_file(&chain_hash).unwrap();
+    file.set_len(BLOCK as u64 * 400).unwrap();
+    let chain = ocs.open_chain(&chain_hash, password.as_bytes()).unwrap();
 }
