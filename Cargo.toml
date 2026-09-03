@@ -7,7 +7,6 @@ asymmetric key pairs used to sign software releases (and to sign other super imp
 """
 authors = ["Jason Gerard DeRose <jasonderose@gmail.com>"]
 license = "MIT OR Apache-2.0"
-readme = "README.md"
 documentation = "https://docs.rs/zf-zebrachain"
 repository = "https://github.com/zebrafactory/zebrachain"
 keywords = ["pqc", "awesomeness"]
