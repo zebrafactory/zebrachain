@@ -99,7 +99,7 @@ fn main() {
     println!(
         "Truncating public chain to ensure correct partial reconstruction from secret chain..."
     );
-    let mut file = ocs.store().open_chain_file(&chain_hash).unwrap();
+    let file = ocs.store().open_chain_file(&chain_hash).unwrap();
     file.set_len(BLOCK as u64 * 400).unwrap();
-    let chain = ocs.open_chain(&chain_hash, password.as_bytes()).unwrap();
+    let _chain = ocs.open_chain(&chain_hash, password.as_bytes()).unwrap();
 }

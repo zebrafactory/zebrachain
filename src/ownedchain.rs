@@ -69,7 +69,7 @@ impl OwnedChainStore {
         // FIXME: It would be best to interleave the chain and secret_chain verification so that
         // we can verify that state.block_hash == secret_state.public_block_hash for every block.
         // This requires changes to the Chain and SecretChain API.
-        let mut secret_chain = self.secret_store.open_chain(chain_hash, password)?;
+        let secret_chain = self.secret_store.open_chain(chain_hash, password)?;
         let mut chain = self.store.open_chain(chain_hash)?;
         if chain.count() < secret_chain.count() {
             // Trailing public chain blocks are mising, rebuild from secret blocks:

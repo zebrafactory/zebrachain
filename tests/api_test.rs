@@ -247,7 +247,7 @@ fn test_owned_chain_store() {
         .unwrap();
     chain_file.rewind().unwrap();
     chain_file.set_len(BLOCK as u64 * 360).unwrap();
-    let mut chain = store
+    let chain = store
         .open_chain(&Hash::from_z32(BLOCK_HASH_0).unwrap(), PASSWORD)
         .unwrap();
     assert_eq!(
