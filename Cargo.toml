@@ -1,6 +1,6 @@
 [package]
 name = "zf-zebrachain"
-version = "0.0.15"
+version = "0.0.16"
 description = """
 🦓 🔗 ZebraChain is a logged, quantum safe signing protocol designed to replace the long lived
 asymmetric key pairs used to sign software releases (and to sign other super important stuff).
@@ -12,7 +12,7 @@ repository = "https://github.com/zebrafactory/zebrachain"
 keywords = ["pqc", "awesomeness"]
 categories = ["cryptography"]
 edition = "2024"
-rust-version = "1.98"
+rust-version = "1.98.1"
 
 [dependencies]
 argon2 = { version = "0.6.0", default-features = false, features = ["alloc", "zeroize"] }
