@@ -100,6 +100,7 @@ mod block;
 mod chain;
 mod errors;
 mod fsutil;
+mod groupblock;
 mod hashing;
 mod ownedblock;
 mod ownedchain;
@@ -118,7 +119,8 @@ pub use always::{
 };
 pub use block::{Block, BlockState, CheckPoint, MutBlock, sign_block};
 pub use chain::{Chain, ChainIter, ChainStore, Cursor};
-pub use errors::{BlockError, EntropyError, SecretBlockError};
+pub use errors::{BlockError, EntropyError, PermissionError, SecretBlockError};
+pub use groupblock::GroupPermission;
 pub use hashing::{Hash, HexError, Secret, SubSecret, SubSecret192, SubSecret256, Zbase32Error};
 pub use ownedblock::{MutOwnedBlock, OwnedBlockState};
 pub use ownedchain::{OwnedChain, OwnedChainStore};

@@ -90,6 +90,29 @@ impl EntropyError {
     }
 }
 
+/// Errors encountered when validating or modifying `GroupPermission`.
+#[derive(Debug, PartialEq)]
+pub enum PermissionError {
+    /// There are zero permissions set in the `GroupPermissions`,
+    Empty,
+
+    /// Length of permissions buffer is wrong.
+    Length,
+
+    /// User already has a public key in the permissions object.
+    BadInsert,
+
+    /// User was not in permissions object.
+    BadReplace,
+}
+
+impl PermissionError {
+    /// Map into an io Error with appropriate msg text.
+    pub fn to_io_error(&self) -> io::Error {
+        io::Error::other(format!("PermissionError::{self:?}"))
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -115,6 +138,18 @@ mod tests {
         assert_eq!(
             format!("{:?}", SecretBlockError::SeedSequence.to_io_error()),
             "Custom { kind: Other, error: \"SecretBlockError::SeedSequence\" }"
+        );
+    }
+
+    #[test]
+    fn test_permissionerror_to_io_error() {
+        assert_eq!(
+            format!("{:?}", PermissionError::Empty.to_io_error()),
+            "Custom { kind: Other, error: \"PermissionError::Empty\" }"
+        );
+        assert_eq!(
+            format!("{:?}", PermissionError::Length.to_io_error()),
+            "Custom { kind: Other, error: \"PermissionError::Length\" }"
         );
     }
 }
