@@ -2,7 +2,7 @@ use crate::{DIGEST, Hash, PermissionError};
 use std::collections::HashMap;
 
 /// Which users (and via which public keys) can sign the next block.
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub struct GroupPermission {
     map: HashMap<Hash, Hash>,
 }
@@ -48,7 +48,7 @@ impl GroupPermission {
     pub fn write_to_buf(&self, buf: &mut [u8]) -> Result<(), PermissionError> {
         if self.map.is_empty() {
             Err(PermissionError::Empty)
-        } else if buf.is_empty() || buf.len() != self.map.len() * DIGEST * 2 {
+        } else if buf.len() != self.map.len() * DIGEST * 2 {
             Err(PermissionError::Length)
         } else {
             let mut pairs = Vec::from_iter(self.map.iter());
@@ -66,7 +66,9 @@ impl GroupPermission {
 
     /// Deserialize permissions.
     pub fn from_buf(buf: &[u8]) -> Result<Self, PermissionError> {
-        if buf.is_empty() || buf.len() % (DIGEST * 2) != 0 {
+        if buf.is_empty() {
+            Err(PermissionError::Empty)
+        } else if buf.len() % (DIGEST * 2) != 0 {
             Err(PermissionError::Length)
         } else {
             let mut perm = GroupPermission::new();
@@ -173,6 +175,62 @@ mod tests {
             assert_eq!(&buf[DIGEST * 2..DIGEST * 3], user0_hash.as_bytes());
             assert_eq!(&buf[DIGEST * 3..DIGEST * 4], pubkey0_hash.as_bytes());
         }
+
+        let mut long_buf = [0; DIGEST * 4 + 1];
+        assert_eq!(gp.write_to_buf(&mut long_buf), Err(PermissionError::Length));
+        let mut short_buf = [0; DIGEST * 4 - 1];
+        assert_eq!(
+            gp.write_to_buf(&mut short_buf),
+            Err(PermissionError::Length)
+        );
+        let mut empty_buf = [0; 0];
+        assert_eq!(
+            gp.write_to_buf(&mut empty_buf),
+            Err(PermissionError::Length)
+        );
+    }
+
+    #[test]
+    fn test_group_permission_from_buf() {
+        // Empty buffer
+        let empty_buf = [69; 0];
+        assert_eq!(
+            GroupPermission::from_buf(&empty_buf),
+            Err(PermissionError::Empty)
+        );
+
+        // Buffer not a multiple of (DIGEST * 2)
+        let tiny_buf = [69; 1];
+        assert_eq!(
+            GroupPermission::from_buf(&tiny_buf),
+            Err(PermissionError::Length)
+        );
+        let short_buf = [69; DIGEST * 2 - 1];
+        assert_eq!(
+            GroupPermission::from_buf(&short_buf),
+            Err(PermissionError::Length)
+        );
+        let long_buf = [69; DIGEST * 2 + 1];
+        assert_eq!(
+            GroupPermission::from_buf(&long_buf),
+            Err(PermissionError::Length)
+        );
+
+        // Good buffer (sort of, should check that user_hash != pubkey_hash)
+        let good_buf = [69; DIGEST * 2];
+        let gp = GroupPermission::from_buf(&good_buf).unwrap();
+        let user_hash = Hash::from_bytes([69; DIGEST]);
+        let pubkey_hash = Hash::from_bytes([69; DIGEST]);
+        assert!(gp.is_authorized(&user_hash, &pubkey_hash));
+        assert_eq!(gp.map.len(), 1);
+        assert_eq!(gp.map.get(&user_hash), Some(&pubkey_hash));
+
+        // Duplicate user hashes
+        let bad_buf = [69; DIGEST * 4];
+        assert_eq!(
+            GroupPermission::from_buf(&bad_buf),
+            Err(PermissionError::BadInsert)
+        );
     }
 
     #[test]
