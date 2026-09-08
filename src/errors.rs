@@ -104,6 +104,9 @@ pub enum PermissionError {
 
     /// User was not in permissions object.
     BadReplace,
+
+    /// fixme.
+    BadReplaceValue,
 }
 
 impl PermissionError {

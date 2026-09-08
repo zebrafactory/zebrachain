@@ -15,6 +15,11 @@ impl GroupPermission {
         }
     }
 
+    /// Determine whether a next signature is valid.
+    pub fn is_authorized(&self, user_hash: &Hash, pubkey_hash: &Hash) -> bool {
+        self.map.get(user_hash) == Some(pubkey_hash)
+    }
+
     /// Specify that the `user_hash` chain can sign the next block with a public key with `pubkey_hash`.
     pub fn insert(&mut self, user_hash: Hash, pubkey_hash: Hash) -> Result<(), PermissionError> {
         if self.map.contains_key(&user_hash) {
@@ -27,9 +32,13 @@ impl GroupPermission {
 
     /// Update permissions to be signed by this user next block but with a new public key.
     pub fn replace(&mut self, user_hash: Hash, pubkey_hash: Hash) -> Result<(), PermissionError> {
-        if self.map.contains_key(&user_hash) {
-            self.map.insert(user_hash, pubkey_hash);
-            Ok(())
+        if let Some(old_pubkey_hash) = self.map.get(&user_hash) {
+            if &pubkey_hash == old_pubkey_hash {
+                Err(PermissionError::BadReplaceValue)
+            } else {
+                self.map.insert(user_hash, pubkey_hash);
+                Ok(())
+            }
         } else {
             Err(PermissionError::BadReplace)
         }
@@ -86,6 +95,30 @@ mod tests {
     }
 
     #[test]
+    fn test_group_permission_is_authorized() {
+        let user0_hash = random_hash();
+        let pubkey0_hash = random_hash();
+        let user1_hash = random_hash();
+        let pubkey1_hash = random_hash();
+
+        let mut gp = GroupPermission::new();
+        assert!(!gp.is_authorized(&user0_hash, &pubkey0_hash));
+        assert!(!gp.is_authorized(&user1_hash, &pubkey1_hash));
+
+        gp.insert(user0_hash.clone(), pubkey0_hash.clone()).unwrap();
+        assert!(gp.is_authorized(&user0_hash, &pubkey0_hash));
+        assert!(!gp.is_authorized(&user1_hash, &pubkey1_hash));
+        assert!(!gp.is_authorized(&user0_hash, &pubkey1_hash));
+        assert!(!gp.is_authorized(&user1_hash, &pubkey0_hash));
+
+        gp.insert(user1_hash.clone(), pubkey1_hash.clone()).unwrap();
+        assert!(gp.is_authorized(&user0_hash, &pubkey0_hash));
+        assert!(gp.is_authorized(&user1_hash, &pubkey1_hash));
+        assert!(!gp.is_authorized(&user0_hash, &pubkey1_hash));
+        assert!(!gp.is_authorized(&user1_hash, &pubkey0_hash));
+    }
+
+    #[test]
     fn test_group_permission_insert() {
         let user_hash = random_hash();
         let pubkey_hash = random_hash();
@@ -106,12 +139,17 @@ mod tests {
             gp.replace(user_hash.clone(), pubkey_hash.clone()),
             Err(PermissionError::BadReplace)
         );
-        gp.map.insert(user_hash.clone(), pubkey_hash.clone()); // FIXME, we didn't change the key
-        assert_eq!(gp.replace(user_hash, pubkey_hash), Ok(()));
+        gp.map.insert(user_hash.clone(), pubkey_hash.clone());
+        assert_eq!(
+            gp.replace(user_hash.clone(), pubkey_hash.clone()),
+            Err(PermissionError::BadReplaceValue)
+        );
+        let pubkey1_hash = random_hash();
+        assert_eq!(gp.replace(user_hash.clone(), pubkey1_hash.clone()), Ok(()));
     }
 
     #[test]
-    fn test_ground_permission_write_to_buf() {
+    fn test_group_permission_write_to_buf() {
         let mut gp = GroupPermission::new();
         let mut buf = [0; DIGEST * 4];
         assert_eq!(gp.write_to_buf(&mut buf), Err(PermissionError::Empty));
@@ -124,6 +162,17 @@ mod tests {
         gp.insert(user1_hash.clone(), pubkey1_hash.clone()).unwrap();
 
         assert_eq!(gp.write_to_buf(&mut buf), Ok(()));
+        if user0_hash < user1_hash {
+            assert_eq!(&buf[0..DIGEST], user0_hash.as_bytes());
+            assert_eq!(&buf[DIGEST..DIGEST * 2], pubkey0_hash.as_bytes());
+            assert_eq!(&buf[DIGEST * 2..DIGEST * 3], user1_hash.as_bytes());
+            assert_eq!(&buf[DIGEST * 3..DIGEST * 4], pubkey1_hash.as_bytes());
+        } else {
+            assert_eq!(&buf[0..DIGEST], user1_hash.as_bytes());
+            assert_eq!(&buf[DIGEST..DIGEST * 2], pubkey1_hash.as_bytes());
+            assert_eq!(&buf[DIGEST * 2..DIGEST * 3], user0_hash.as_bytes());
+            assert_eq!(&buf[DIGEST * 3..DIGEST * 4], pubkey0_hash.as_bytes());
+        }
     }
 
     #[test]
