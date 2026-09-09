@@ -97,16 +97,13 @@ pub enum PermissionError {
     Empty,
 
     /// Length of permissions buffer is wrong.
-    Length,
+    BufferLength,
 
     /// User already has a public key in the permissions object.
-    BadInsert,
-
-    /// User was not in permissions object.
-    BadReplace,
+    EmptyBuffer,
 
     /// fixme.
-    BadReplaceValue,
+    Duplicate,
 }
 
 impl PermissionError {
@@ -151,8 +148,8 @@ mod tests {
             "Custom { kind: Other, error: \"PermissionError::Empty\" }"
         );
         assert_eq!(
-            format!("{:?}", PermissionError::Length.to_io_error()),
-            "Custom { kind: Other, error: \"PermissionError::Length\" }"
+            format!("{:?}", PermissionError::BufferLength.to_io_error()),
+            "Custom { kind: Other, error: \"PermissionError::BufferLength\" }"
         );
     }
 }

@@ -1,8 +1,9 @@
 //! Abstraction over the content to be signed.
 
-use crate::Hash;
 use crate::always::*;
+use crate::{Hash, PermissionError};
 use core::ops::Range;
+use std::collections::HashSet;
 use std::time::SystemTime;
 
 const TIME_RANGE: Range<usize> = 0..TIME;
@@ -72,6 +73,77 @@ impl Payload {
     }
 }
 
+#[derive(Debug, PartialEq)]
+pub struct Permission {
+    chains: HashSet<Hash>,
+}
+
+impl Permission {
+    pub fn new() -> Self {
+        Self {
+            chains: HashSet::new(),
+        }
+    }
+
+    pub fn needed_size(&self) -> usize {
+        self.chains.len() * DIGEST
+    }
+
+    pub fn insert(&mut self, chain_hash: Hash) -> Result<(), PermissionError> {
+        if self.chains.insert(chain_hash) {
+            Ok(())
+        } else {
+            Err(PermissionError::Duplicate)
+        }
+    }
+
+    pub fn is_allowed(&self, chain_hash: &Hash) -> bool {
+        self.chains.contains(chain_hash)
+    }
+
+    pub fn from_buf(buf: &[u8]) -> Result<Self, PermissionError> {
+        if buf.is_empty() {
+            Err(PermissionError::EmptyBuffer)
+        } else if !buf.len().is_multiple_of(DIGEST) {
+            Err(PermissionError::BufferLength)
+        } else {
+            let mut permission = Self::new();
+            let mut offset = 0;
+            for _ in 0..buf.len() / DIGEST {
+                let chain_hash = Hash::from_slice(&buf[offset..offset + DIGEST]).unwrap();
+                offset += DIGEST;
+                permission.insert(chain_hash)?;
+            }
+            Ok(permission)
+        }
+    }
+
+    pub fn write_to_buf(&self, buf: &mut [u8]) -> Result<(), PermissionError> {
+        if self.chains.is_empty() {
+            Err(PermissionError::Empty)
+        } else if buf.is_empty() {
+            Err(PermissionError::EmptyBuffer)
+        } else if buf.len() != self.needed_size() {
+            Err(PermissionError::BufferLength)
+        } else {
+            let mut chains = Vec::from_iter(&self.chains);
+            chains.sort();
+            let mut offset = 0;
+            for chain_hash in &chains {
+                buf[offset..offset + DIGEST].copy_from_slice(chain_hash.as_bytes());
+                offset += DIGEST;
+            }
+            Ok(())
+        }
+    }
+}
+
+pub struct RootState {
+    pub hash: Hash,
+    pub permission: Permission,
+    pub previous_hash: Hash,
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -135,6 +207,138 @@ mod tests {
             assert_ne!(buf, buf2);
             payload.write_to_buf(&mut buf2);
             assert_eq!(buf, buf2);
+        }
+    }
+
+    #[test]
+    fn test_permission_new() {
+        let permission = Permission::new();
+        assert!(permission.chains.is_empty());
+        assert_eq!(permission.needed_size(), 0);
+    }
+
+    #[test]
+    fn test_permission_insert_and_is_allowed() {
+        let mut permission = Permission::new();
+
+        let chain0_hash = random_hash();
+        assert!(!permission.is_allowed(&chain0_hash));
+        assert_eq!(permission.insert(chain0_hash.clone()), Ok(()));
+        assert!(permission.is_allowed(&chain0_hash));
+        assert_eq!(
+            permission.insert(chain0_hash.clone()),
+            Err(PermissionError::Duplicate)
+        );
+        assert_eq!(permission.chains.len(), 1);
+        assert_eq!(permission.needed_size(), DIGEST);
+
+        let chain1_hash = random_hash();
+        assert!(!permission.is_allowed(&chain1_hash));
+        assert_eq!(permission.insert(chain1_hash.clone()), Ok(()));
+        assert!(permission.is_allowed(&chain1_hash));
+        assert_eq!(
+            permission.insert(chain1_hash.clone()),
+            Err(PermissionError::Duplicate)
+        );
+        assert!(permission.is_allowed(&chain0_hash));
+        assert_eq!(permission.chains.len(), 2);
+        assert_eq!(permission.needed_size(), DIGEST * 2);
+    }
+
+    #[test]
+    fn test_permission_from_buf() {
+        assert_eq!(
+            Permission::from_buf(&[69; 0]),
+            Err(PermissionError::EmptyBuffer)
+        );
+        assert_eq!(
+            Permission::from_buf(&[69; 1]),
+            Err(PermissionError::BufferLength)
+        );
+        assert_eq!(
+            Permission::from_buf(&[69; DIGEST - 1]),
+            Err(PermissionError::BufferLength)
+        );
+        assert_eq!(
+            Permission::from_buf(&[69; DIGEST + 1]),
+            Err(PermissionError::BufferLength)
+        );
+
+        let permission = Permission::from_buf(&[69; DIGEST]).unwrap();
+        let chain_hash = Hash::from_bytes([69; DIGEST]);
+        assert_eq!(permission.chains.len(), 1);
+        assert!(permission.is_allowed(&chain_hash));
+
+        assert_eq!(
+            Permission::from_buf(&[69; DIGEST * 2 - 1]),
+            Err(PermissionError::BufferLength)
+        );
+        assert_eq!(
+            Permission::from_buf(&[69; DIGEST * 2]),
+            Err(PermissionError::Duplicate)
+        );
+        assert_eq!(
+            Permission::from_buf(&[69; DIGEST * 2 + 1]),
+            Err(PermissionError::BufferLength)
+        );
+
+        let mut buf = [42; DIGEST * 2];
+        buf[DIGEST..DIGEST * 2].copy_from_slice(&[69; DIGEST]);
+        let permission = Permission::from_buf(&buf).unwrap();
+        assert_eq!(permission.chains.len(), 2);
+        assert!(!permission.is_allowed(&Hash::from_bytes([41; DIGEST])));
+        assert!(permission.is_allowed(&Hash::from_bytes([42; DIGEST])));
+        assert!(permission.is_allowed(&Hash::from_bytes([69; DIGEST])));
+        assert!(!permission.is_allowed(&Hash::from_bytes([70; DIGEST])));
+    }
+
+    #[test]
+    fn test_permission_write_to_buf() {
+        let mut buf = [0; DIGEST];
+        let mut permission = Permission::new();
+        assert_eq!(
+            permission.write_to_buf(&mut buf),
+            Err(PermissionError::Empty)
+        );
+        let chain0_hash = random_hash();
+        permission.insert(chain0_hash.clone()).unwrap();
+        assert_eq!(
+            permission.write_to_buf(&mut [0; 0]),
+            Err(PermissionError::EmptyBuffer)
+        );
+        assert_eq!(
+            permission.write_to_buf(&mut [0; 1]),
+            Err(PermissionError::BufferLength)
+        );
+        assert_eq!(
+            permission.write_to_buf(&mut [0; DIGEST - 1]),
+            Err(PermissionError::BufferLength)
+        );
+        assert_eq!(
+            permission.write_to_buf(&mut [0; DIGEST + 1]),
+            Err(PermissionError::BufferLength)
+        );
+        permission.write_to_buf(&mut buf).unwrap();
+        assert_eq!(&buf, chain0_hash.as_bytes());
+
+        let mut buf = [0; DIGEST * 2];
+        let chain1_hash = random_hash();
+        permission.insert(chain1_hash.clone()).unwrap();
+        assert_eq!(
+            permission.write_to_buf(&mut [0; DIGEST * 2 - 1]),
+            Err(PermissionError::BufferLength)
+        );
+        assert_eq!(
+            permission.write_to_buf(&mut [0; DIGEST * 2 + 1]),
+            Err(PermissionError::BufferLength)
+        );
+        permission.write_to_buf(&mut buf).unwrap();
+        if chain0_hash < chain1_hash {
+            assert_eq!(&buf[0..DIGEST], chain0_hash.as_bytes());
+            assert_eq!(&buf[DIGEST..DIGEST * 2], chain1_hash.as_bytes());
+        } else {
+            assert_eq!(&buf[0..DIGEST], chain1_hash.as_bytes());
+            assert_eq!(&buf[DIGEST..DIGEST * 2], chain0_hash.as_bytes());
         }
     }
 }
