@@ -156,9 +156,7 @@ impl Root {
             Err(RootError::BufferLength)
         } else {
             let hash = Hash::from_slice(&buf[0..DIGEST]).unwrap();
-            if hash.ct_ne(&Hash::compute(&buf[DIGEST..])).into() {
-                Err(RootError::Hash)
-            } else {
+            if hash.ct_eq(&Hash::compute(&buf[DIGEST..])).into() {
                 let permission = Permission::from_buf(&buf[DIGEST..buf.len() - DIGEST])?;
                 let previous_hash = Hash::from_slice(&buf[buf.len() - DIGEST..]).unwrap();
                 Ok(Self {
@@ -166,6 +164,8 @@ impl Root {
                     permission,
                     previous_hash,
                 })
+            } else {
+                Err(RootError::Hash)
             }
         }
     }
