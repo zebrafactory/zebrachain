@@ -107,6 +107,12 @@ pub enum RootError {
 
     /// FIXME
     Hash,
+
+    /// FIXME
+    Size,
+
+    /// FIXME
+    Header,
 }
 
 impl RootError {

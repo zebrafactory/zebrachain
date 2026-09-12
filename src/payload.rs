@@ -2,13 +2,24 @@
 
 use crate::always::*;
 use crate::{Hash, RootError};
+use blake2::{Blake2b, Digest, digest::consts::U45};
 use core::ops::Range;
 use std::collections::HashSet;
 use std::time::SystemTime;
 use subtle::ConstantTimeEq;
 
+type Blake2b360 = Blake2b<U45>;
+
+/// Max size of an Object (2^24, 16777216 bytes)
+pub const OBJECT_MAX_SIZE: usize = 16777216;
+
 const TIME_RANGE: Range<usize> = 0..TIME;
 const STATE_HASH_RANGE: Range<usize> = TIME..TIME + DIGEST;
+
+pub const INFO: usize = 4;
+
+pub const HEADER: usize = DIGEST + INFO;
+pub const INFO_RANGE: Range<usize> = DIGEST..DIGEST + INFO;
 
 fn system_time() -> u64 {
     let now = match SystemTime::now().duration_since(SystemTime::UNIX_EPOCH) {
@@ -171,11 +182,72 @@ impl Root {
     }
 }
 
+fn build_info(size: usize, kind: u8) -> Result<u32, RootError> {
+    if !(1..=OBJECT_MAX_SIZE).contains(&size) {
+        Err(RootError::Size)
+    } else {
+        Ok((size - 1) as u32 | (kind as u32) << 24)
+    }
+}
+
+fn build_header(data: &[u8], kind: u8) -> Result<(Hash, u32), RootError> {
+    let info = build_info(data.len(), kind)?;
+    let mut hasher = Blake2b360::new();
+    hasher.update(&info.to_le_bytes());
+    hasher.update(data);
+    let output = hasher.finalize();
+    let hash = Hash::from_bytes(output.into());
+    Ok((hash, info))
+}
+
+fn extract_info(buf: &[u8]) -> (usize, u8) {
+    let info = u32::from_le_bytes(buf.try_into().unwrap());
+    let size = ((info & 0x00ffffff) + 1) as usize;
+    let kind = (info >> 24) as u8;
+    (size, kind)
+}
+
+fn extract_header(buf: &[u8]) -> Result<(Hash, usize, u8), RootError> {
+    if buf.len() < HEADER {
+        Err(RootError::Header)
+    } else {
+        let hash = Hash::from_slice(&buf[0..DIGEST]).unwrap();
+        let (size, kind) = extract_info(&buf[INFO_RANGE]);
+        Ok((hash, size, kind))
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
     use crate::testhelpers::{random_hash, random_u64};
     use getrandom;
+
+    #[test]
+    fn test_build_info() {
+        assert_eq!(build_info(0, 0), Err(RootError::Size));
+        assert_eq!(build_info(0, 255), Err(RootError::Size));
+        assert_eq!(build_info(OBJECT_MAX_SIZE + 1, 0), Err(RootError::Size));
+        assert_eq!(build_info(OBJECT_MAX_SIZE + 1, 255), Err(RootError::Size));
+
+        assert_eq!(build_info(1, 0), Ok(0));
+        assert_eq!(build_info(1, 255), Ok(255 << 24));
+        assert_eq!(
+            build_info(OBJECT_MAX_SIZE, 0),
+            Ok((OBJECT_MAX_SIZE - 1) as u32)
+        );
+        assert_eq!(build_info(OBJECT_MAX_SIZE, 255), Ok(u32::MAX));
+    }
+
+    #[test]
+    fn test_extract_info() {
+        assert_eq!(extract_info(&[0, 0, 0, 0]), (1, 0));
+        assert_eq!(extract_info(&[0, 0, 0, 255]), (1, 255));
+        assert_eq!(extract_info(&[1, 0, 0, 0]), (2, 0));
+        assert_eq!(extract_info(&[1, 0, 0, 255]), (2, 255));
+        assert_eq!(extract_info(&[255, 255, 255, 0]), (OBJECT_MAX_SIZE, 0));
+        assert_eq!(extract_info(&[255, 255, 255, 255]), (OBJECT_MAX_SIZE, 255));
+    }
 
     #[test]
     fn test_payload_new_time_stamped() {
