@@ -1,25 +1,13 @@
 //! Abstraction over the content to be signed.
 
 use crate::always::*;
-use crate::{Hash, RootError};
-use blake2::{Blake2b, Digest, digest::consts::U45};
+use crate::{Hash, PermissionError};
 use core::ops::Range;
 use std::collections::HashSet;
 use std::time::SystemTime;
-use subtle::ConstantTimeEq;
-
-type Blake2b360 = Blake2b<U45>;
-
-/// Max size of an Object (2^24, 16777216 bytes)
-pub const OBJECT_MAX_SIZE: usize = 16777216;
 
 const TIME_RANGE: Range<usize> = 0..TIME;
 const STATE_HASH_RANGE: Range<usize> = TIME..TIME + DIGEST;
-
-pub const INFO: usize = 4;
-
-pub const HEADER: usize = DIGEST + INFO;
-pub const INFO_RANGE: Range<usize> = DIGEST..DIGEST + INFO;
 
 fn system_time() -> u64 {
     let now = match SystemTime::now().duration_since(SystemTime::UNIX_EPOCH) {
@@ -85,39 +73,47 @@ impl Payload {
     }
 }
 
+/// Set of `chain_hash` that have permission to make the next commit in a commit stream.
 #[derive(Debug, PartialEq)]
 pub struct Permission {
     chains: HashSet<Hash>,
 }
 
 impl Permission {
+    /// Construct new, empty permission set.
     pub fn new() -> Self {
         Self {
             chains: HashSet::new(),
         }
     }
 
+    /// Return the size (in bytes) needed to store this permission set.
     pub fn needed_size(&self) -> usize {
         self.chains.len() * DIGEST
     }
 
-    pub fn insert(&mut self, chain_hash: Hash) -> Result<(), RootError> {
+    /// Add a new `chain_hash` to the permission set.
+    pub fn insert(&mut self, chain_hash: Hash) -> Result<(), PermissionError> {
         if self.chains.insert(chain_hash) {
             Ok(())
         } else {
-            Err(RootError::Duplicate)
+            Err(PermissionError::Duplicate)
         }
     }
 
+    /// Return `true` if `chain_hash` is in the authorized set.
+    ///
+    /// FIXME: This should return a Result.
     pub fn is_allowed(&self, chain_hash: &Hash) -> bool {
         self.chains.contains(chain_hash)
     }
 
-    pub fn from_buf(buf: &[u8]) -> Result<Self, RootError> {
+    /// Load a permission set from supplied buffer.
+    pub fn from_buf(buf: &[u8]) -> Result<Self, PermissionError> {
         if buf.is_empty() {
-            Err(RootError::EmptyBuffer)
+            Err(PermissionError::EmptyBuffer)
         } else if !buf.len().is_multiple_of(DIGEST) {
-            Err(RootError::BufferLength)
+            Err(PermissionError::BufferLength)
         } else {
             let mut permission = Self::new();
             let mut offset = 0;
@@ -130,13 +126,14 @@ impl Permission {
         }
     }
 
-    pub fn write_to_buf(&self, buf: &mut [u8]) -> Result<(), RootError> {
+    /// Write a permission set into supplied buffer.
+    pub fn write_to_buf(&self, buf: &mut [u8]) -> Result<(), PermissionError> {
         if self.chains.is_empty() {
-            Err(RootError::Empty)
+            Err(PermissionError::Empty)
         } else if buf.is_empty() {
-            Err(RootError::EmptyBuffer)
+            Err(PermissionError::EmptyBuffer)
         } else if buf.len() != self.needed_size() {
-            Err(RootError::BufferLength)
+            Err(PermissionError::BufferLength)
         } else {
             let mut chains = Vec::from_iter(&self.chains);
             chains.sort();
@@ -150,104 +147,11 @@ impl Permission {
     }
 }
 
-#[derive(Debug, PartialEq)]
-pub struct Root {
-    pub hash: Hash,
-    pub permission: Permission,
-    pub previous_hash: Hash,
-}
-
-impl Root {
-    pub fn needed_size(&self) -> usize {
-        self.permission.needed_size() + DIGEST * 2
-    }
-
-    pub fn from_buf(buf: &[u8]) -> Result<Self, RootError> {
-        if !buf.len().is_multiple_of(DIGEST) || buf.len() < DIGEST * 3 {
-            Err(RootError::BufferLength)
-        } else {
-            let hash = Hash::from_slice(&buf[0..DIGEST]).unwrap();
-            if hash.ct_eq(&Hash::compute(&buf[DIGEST..])).into() {
-                let permission = Permission::from_buf(&buf[DIGEST..buf.len() - DIGEST])?;
-                let previous_hash = Hash::from_slice(&buf[buf.len() - DIGEST..]).unwrap();
-                Ok(Self {
-                    hash,
-                    permission,
-                    previous_hash,
-                })
-            } else {
-                Err(RootError::Hash)
-            }
-        }
-    }
-}
-
-fn build_info(size: usize, kind: u8) -> Result<u32, RootError> {
-    if !(1..=OBJECT_MAX_SIZE).contains(&size) {
-        Err(RootError::Size)
-    } else {
-        Ok((size - 1) as u32 | (kind as u32) << 24)
-    }
-}
-
-fn build_header(data: &[u8], kind: u8) -> Result<(Hash, u32), RootError> {
-    let info = build_info(data.len(), kind)?;
-    let mut hasher = Blake2b360::new();
-    hasher.update(&info.to_le_bytes());
-    hasher.update(data);
-    let output = hasher.finalize();
-    let hash = Hash::from_bytes(output.into());
-    Ok((hash, info))
-}
-
-fn extract_info(buf: &[u8]) -> (usize, u8) {
-    let info = u32::from_le_bytes(buf.try_into().unwrap());
-    let size = ((info & 0x00ffffff) + 1) as usize;
-    let kind = (info >> 24) as u8;
-    (size, kind)
-}
-
-fn extract_header(buf: &[u8]) -> Result<(Hash, usize, u8), RootError> {
-    if buf.len() < HEADER {
-        Err(RootError::Header)
-    } else {
-        let hash = Hash::from_slice(&buf[0..DIGEST]).unwrap();
-        let (size, kind) = extract_info(&buf[INFO_RANGE]);
-        Ok((hash, size, kind))
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
     use crate::testhelpers::{random_hash, random_u64};
     use getrandom;
-
-    #[test]
-    fn test_build_info() {
-        assert_eq!(build_info(0, 0), Err(RootError::Size));
-        assert_eq!(build_info(0, 255), Err(RootError::Size));
-        assert_eq!(build_info(OBJECT_MAX_SIZE + 1, 0), Err(RootError::Size));
-        assert_eq!(build_info(OBJECT_MAX_SIZE + 1, 255), Err(RootError::Size));
-
-        assert_eq!(build_info(1, 0), Ok(0));
-        assert_eq!(build_info(1, 255), Ok(255 << 24));
-        assert_eq!(
-            build_info(OBJECT_MAX_SIZE, 0),
-            Ok((OBJECT_MAX_SIZE - 1) as u32)
-        );
-        assert_eq!(build_info(OBJECT_MAX_SIZE, 255), Ok(u32::MAX));
-    }
-
-    #[test]
-    fn test_extract_info() {
-        assert_eq!(extract_info(&[0, 0, 0, 0]), (1, 0));
-        assert_eq!(extract_info(&[0, 0, 0, 255]), (1, 255));
-        assert_eq!(extract_info(&[1, 0, 0, 0]), (2, 0));
-        assert_eq!(extract_info(&[1, 0, 0, 255]), (2, 255));
-        assert_eq!(extract_info(&[255, 255, 255, 0]), (OBJECT_MAX_SIZE, 0));
-        assert_eq!(extract_info(&[255, 255, 255, 255]), (OBJECT_MAX_SIZE, 255));
-    }
 
     #[test]
     fn test_payload_new_time_stamped() {
@@ -326,7 +230,7 @@ mod tests {
         assert!(permission.is_allowed(&chain0_hash));
         assert_eq!(
             permission.insert(chain0_hash.clone()),
-            Err(RootError::Duplicate)
+            Err(PermissionError::Duplicate)
         );
         assert_eq!(permission.chains.len(), 1);
         assert_eq!(permission.needed_size(), DIGEST);
@@ -337,7 +241,7 @@ mod tests {
         assert!(permission.is_allowed(&chain1_hash));
         assert_eq!(
             permission.insert(chain1_hash.clone()),
-            Err(RootError::Duplicate)
+            Err(PermissionError::Duplicate)
         );
         assert!(permission.is_allowed(&chain0_hash));
         assert_eq!(permission.chains.len(), 2);
@@ -346,15 +250,21 @@ mod tests {
 
     #[test]
     fn test_permission_from_buf() {
-        assert_eq!(Permission::from_buf(&[69; 0]), Err(RootError::EmptyBuffer));
-        assert_eq!(Permission::from_buf(&[69; 1]), Err(RootError::BufferLength));
+        assert_eq!(
+            Permission::from_buf(&[69; 0]),
+            Err(PermissionError::EmptyBuffer)
+        );
+        assert_eq!(
+            Permission::from_buf(&[69; 1]),
+            Err(PermissionError::BufferLength)
+        );
         assert_eq!(
             Permission::from_buf(&[69; DIGEST - 1]),
-            Err(RootError::BufferLength)
+            Err(PermissionError::BufferLength)
         );
         assert_eq!(
             Permission::from_buf(&[69; DIGEST + 1]),
-            Err(RootError::BufferLength)
+            Err(PermissionError::BufferLength)
         );
 
         let permission = Permission::from_buf(&[69; DIGEST]).unwrap();
@@ -364,15 +274,15 @@ mod tests {
 
         assert_eq!(
             Permission::from_buf(&[69; DIGEST * 2 - 1]),
-            Err(RootError::BufferLength)
+            Err(PermissionError::BufferLength)
         );
         assert_eq!(
             Permission::from_buf(&[69; DIGEST * 2]),
-            Err(RootError::Duplicate)
+            Err(PermissionError::Duplicate)
         );
         assert_eq!(
             Permission::from_buf(&[69; DIGEST * 2 + 1]),
-            Err(RootError::BufferLength)
+            Err(PermissionError::BufferLength)
         );
 
         let mut buf = [42; DIGEST * 2];
@@ -389,24 +299,27 @@ mod tests {
     fn test_permission_write_to_buf() {
         let mut buf = [0; DIGEST];
         let mut permission = Permission::new();
-        assert_eq!(permission.write_to_buf(&mut buf), Err(RootError::Empty));
+        assert_eq!(
+            permission.write_to_buf(&mut buf),
+            Err(PermissionError::Empty)
+        );
         let chain0_hash = random_hash();
         permission.insert(chain0_hash.clone()).unwrap();
         assert_eq!(
             permission.write_to_buf(&mut [0; 0]),
-            Err(RootError::EmptyBuffer)
+            Err(PermissionError::EmptyBuffer)
         );
         assert_eq!(
             permission.write_to_buf(&mut [0; 1]),
-            Err(RootError::BufferLength)
+            Err(PermissionError::BufferLength)
         );
         assert_eq!(
             permission.write_to_buf(&mut [0; DIGEST - 1]),
-            Err(RootError::BufferLength)
+            Err(PermissionError::BufferLength)
         );
         assert_eq!(
             permission.write_to_buf(&mut [0; DIGEST + 1]),
-            Err(RootError::BufferLength)
+            Err(PermissionError::BufferLength)
         );
         permission.write_to_buf(&mut buf).unwrap();
         assert_eq!(&buf, chain0_hash.as_bytes());
@@ -416,11 +329,11 @@ mod tests {
         permission.insert(chain1_hash.clone()).unwrap();
         assert_eq!(
             permission.write_to_buf(&mut [0; DIGEST * 2 - 1]),
-            Err(RootError::BufferLength)
+            Err(PermissionError::BufferLength)
         );
         assert_eq!(
             permission.write_to_buf(&mut [0; DIGEST * 2 + 1]),
-            Err(RootError::BufferLength)
+            Err(PermissionError::BufferLength)
         );
         permission.write_to_buf(&mut buf).unwrap();
         if chain0_hash < chain1_hash {
@@ -430,66 +343,5 @@ mod tests {
             assert_eq!(&buf[0..DIGEST], chain1_hash.as_bytes());
             assert_eq!(&buf[DIGEST..DIGEST * 2], chain0_hash.as_bytes());
         }
-    }
-
-    #[test]
-    fn test_root_from_buf() {
-        assert_eq!(Root::from_buf(&[42; 0]), Err(RootError::BufferLength));
-        assert_eq!(Root::from_buf(&[42; 1]), Err(RootError::BufferLength));
-        assert_eq!(
-            Root::from_buf(&[42; DIGEST * 3 - 1]),
-            Err(RootError::BufferLength)
-        );
-        assert_eq!(
-            Root::from_buf(&[42; DIGEST * 3 + 1]),
-            Err(RootError::BufferLength)
-        );
-        assert_eq!(
-            Root::from_buf(&[42; DIGEST * 4 - 1]),
-            Err(RootError::BufferLength)
-        );
-        assert_eq!(
-            Root::from_buf(&[42; DIGEST * 4 + 1]),
-            Err(RootError::BufferLength)
-        );
-        assert_eq!(Root::from_buf(&[42; DIGEST * 3]), Err(RootError::Hash));
-
-        let mut buf = [42; DIGEST * 4];
-        let hash = Hash::compute(&buf[DIGEST..]);
-        buf[0..DIGEST].copy_from_slice(hash.as_bytes());
-        assert_eq!(Root::from_buf(&buf), Err(RootError::Duplicate));
-
-        let mut buf = [42; DIGEST * 3];
-        let hash = Hash::compute(&buf[DIGEST..]);
-        buf[0..DIGEST].copy_from_slice(hash.as_bytes());
-        let root = Root::from_buf(&buf).unwrap();
-        assert_eq!(hash, root.hash);
-
-        let mut buf = [0; DIGEST * 3];
-        let chain0_hash = random_hash();
-        let previous_hash = random_hash();
-        buf[DIGEST..DIGEST * 2].copy_from_slice(chain0_hash.as_bytes());
-        buf[DIGEST * 2..DIGEST * 3].copy_from_slice(previous_hash.as_bytes());
-        let root0_hash = Hash::compute(&buf[DIGEST..]);
-        buf[0..DIGEST].copy_from_slice(root0_hash.as_bytes());
-        let root0 = Root::from_buf(&buf).unwrap();
-        assert_eq!(root0.hash, root0_hash);
-        assert!(root0.permission.is_allowed(&chain0_hash));
-        assert_eq!(root0.previous_hash, previous_hash);
-
-        let chain1_hash = random_hash();
-        assert!(!root0.permission.is_allowed(&chain1_hash));
-
-        let mut buf = [0; DIGEST * 4];
-        buf[DIGEST..DIGEST * 2].copy_from_slice(chain0_hash.as_bytes());
-        buf[DIGEST * 2..DIGEST * 3].copy_from_slice(chain1_hash.as_bytes());
-        buf[DIGEST * 3..DIGEST * 4].copy_from_slice(root0.hash.as_bytes());
-        let root1_hash = Hash::compute(&buf[DIGEST..]);
-        buf[0..DIGEST].copy_from_slice(root1_hash.as_bytes());
-        let root1 = Root::from_buf(&buf).unwrap();
-        assert_eq!(root1.hash, root1_hash);
-        assert!(root1.permission.is_allowed(&chain0_hash));
-        assert!(root1.permission.is_allowed(&chain1_hash));
-        assert_eq!(root1.previous_hash, root0.hash);
     }
 }

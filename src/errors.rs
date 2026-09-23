@@ -90,9 +90,9 @@ impl EntropyError {
     }
 }
 
-/// Errors encountered when validating or modifying `GroupPermission`.
+/// Errors encountered when validating or modifying `Permission`.
 #[derive(Debug, PartialEq)]
-pub enum RootError {
+pub enum PermissionError {
     /// There are zero permissions set in the `GroupPermissions`,
     Empty,
 
@@ -115,10 +115,10 @@ pub enum RootError {
     Header,
 }
 
-impl RootError {
+impl PermissionError {
     /// Map into an io Error with appropriate msg text.
     pub fn to_io_error(&self) -> io::Error {
-        io::Error::other(format!("RootError::{self:?}"))
+        io::Error::other(format!("PermissionError::{self:?}"))
     }
 }
 
@@ -153,12 +153,12 @@ mod tests {
     #[test]
     fn test_permissionerror_to_io_error() {
         assert_eq!(
-            format!("{:?}", RootError::Empty.to_io_error()),
-            "Custom { kind: Other, error: \"RootError::Empty\" }"
+            format!("{:?}", PermissionError::Empty.to_io_error()),
+            "Custom { kind: Other, error: \"PermissionError::Empty\" }"
         );
         assert_eq!(
-            format!("{:?}", RootError::BufferLength.to_io_error()),
-            "Custom { kind: Other, error: \"RootError::BufferLength\" }"
+            format!("{:?}", PermissionError::BufferLength.to_io_error()),
+            "Custom { kind: Other, error: \"PermissionError::BufferLength\" }"
         );
     }
 }

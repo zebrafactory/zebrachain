@@ -118,11 +118,11 @@ pub use always::{
 };
 pub use block::{Block, BlockState, CheckPoint, MutBlock, sign_block};
 pub use chain::{Chain, ChainIter, ChainStore, Cursor};
-pub use errors::{BlockError, EntropyError, RootError, SecretBlockError};
+pub use errors::{BlockError, EntropyError, PermissionError, SecretBlockError};
 pub use hashing::{Hash, HexError, Secret, SubSecret, SubSecret192, SubSecret256, Zbase32Error};
 pub use ownedblock::{MutOwnedBlock, OwnedBlockState};
 pub use ownedchain::{OwnedChain, OwnedChainStore};
-pub use payload::Payload;
+pub use payload::{Payload, Permission};
 pub use secretblock::{MutSecretBlock, SecretBlock, SecretBlockState};
 pub use secretchain::{SecretChain, SecretChainHeader, SecretChainIter, SecretChainStore};
 pub use secretseed::Seed;
