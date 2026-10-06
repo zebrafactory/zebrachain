@@ -16,7 +16,6 @@ rust-version = "1.99"
 
 [dependencies]
 argon2 = { version = "0.6.0", default-features = false, features = ["alloc", "zeroize"] }
-arrayvec = "0.7.8"
 blake2 = "0.11.0"
 chacha20poly1305 = { version = "0.11.0", default-features = false, features = ["alloc"] }
 ed25519-dalek = "3.0.0"
@@ -24,7 +23,7 @@ getrandom = "0.4.3"
 hex-literal = "1.1.0"
 ml-dsa = { version = "0.1.1", default-features = false, features = ["zeroize"] }
 subtle = "2.6.1"
-zeroize = { version = "1.9.0", features = ["derive", "zeroize_derive"] }
+zeroize = { version = "1.9.1", features = ["derive", "zeroize_derive"] }
 zf-zebrachaos = { git = "https://github.com/zebrafactory/zebrachaos.git", branch = "main", version = "0.0.0-pre.0" }
 
 [dev-dependencies]
