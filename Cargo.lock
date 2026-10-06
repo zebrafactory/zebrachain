@@ -549,7 +549,7 @@ dependencies = [
 [[package]]
 name = "zf-zebrachaos"
 version = "0.0.0-pre.0"
-source = "git+https://github.com/zebrafactory/zebrachaos.git?branch=main#4cf13c8866d820d7bf7cde6248492b8f2b72c36b"
+source = "git+https://github.com/zebrafactory/zebrachaos.git?branch=main#1dff08fc0b2f2a7f36de576614041dcfd596c49e"
 dependencies = [
  "arrayvec",
  "blake2",

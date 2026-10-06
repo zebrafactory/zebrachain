@@ -1,7 +1,7 @@
 use crate::{Hash, Secret};
 use core::ops::Range;
 use hex_literal::hex;
-pub use zf_zebrachaos::DIGEST;
+pub use zf_zebrachaos::{DIGEST, HEXDIGEST, Z32DIGEST};
 
 /*
 A Block has 8 fields:
@@ -46,12 +46,6 @@ pub(crate) const PUB_MLDSA_RANGE: Range<usize> = 0..PUB_MLDSA;
 pub(crate) const PUB_ED25519_RANGE: Range<usize> = PUB_MLDSA..PUB_MLDSA + PUB_ED25519;
 pub(crate) const SIG_MLDSA_RANGE: Range<usize> = 0..SIG_MLDSA;
 pub(crate) const SIG_ED25519_RANGE: Range<usize> = SIG_MLDSA..SIG_MLDSA + SIG_ED25519;
-
-/// Size of hex-encoded hash (90 bytes).
-pub const HEXDIGEST: usize = DIGEST * 2;
-
-/// Size of Zbase32-encoded hash (72 bytes).
-pub const Z32DIGEST: usize = DIGEST * 8 / 5;
 
 /// Size of secrets (48 bytes)
 pub const SECRET: usize = 48;
