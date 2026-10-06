@@ -5,6 +5,7 @@ use crate::{Hash, PermissionError};
 use core::ops::Range;
 use std::collections::HashSet;
 use std::time::SystemTime;
+use zf_zebrachaos::{MutObject, ObjectError};
 
 const TIME_RANGE: Range<usize> = 0..TIME;
 const STATE_HASH_RANGE: Range<usize> = TIME..TIME + DIGEST;
@@ -145,6 +146,20 @@ impl Permission {
             Ok(())
         }
     }
+
+    /// Write permessions into a [MutObject].
+    pub fn write_to_object(&self, obj: &mut MutObject) -> Result<(), ObjectError> {
+        if self.chains.is_empty() || self.needed_size() > obj.remaining() {
+            Err(ObjectError::DataLenBounds)
+        } else {
+            let mut chains = Vec::from_iter(&self.chains);
+            chains.sort();
+            for chain_hash in &chains {
+                obj.try_extend_from_slice(chain_hash.as_bytes()).unwrap();
+            }
+            Ok(())
+        }
+    }
 }
 
 #[cfg(test)]
@@ -152,6 +167,7 @@ mod tests {
     use super::*;
     use crate::testhelpers::{random_hash, random_u64};
     use getrandom;
+    use zf_zebrachaos::{BUF_MAX_LEN, DATA_MAX_LEN};
 
     #[test]
     fn test_payload_new_time_stamped() {
@@ -342,6 +358,51 @@ mod tests {
         } else {
             assert_eq!(&buf[0..DIGEST], chain1_hash.as_bytes());
             assert_eq!(&buf[DIGEST..DIGEST * 2], chain0_hash.as_bytes());
+        }
+    }
+
+    #[test]
+    fn test_permission_write_to_object() {
+        let mut buf = Vec::with_capacity(BUF_MAX_LEN);
+        let mut perm = Permission::new();
+
+        // Empty Permission
+        {
+            let mut obj = MutObject::new(&mut buf);
+            assert_eq!(
+                perm.write_to_object(&mut obj).unwrap_err(),
+                ObjectError::DataLenBounds
+            );
+            assert_eq!(obj.remaining(), DATA_MAX_LEN);
+        }
+
+        // One chain_hash in Permission
+        perm.insert(random_hash()).unwrap();
+        {
+            let mut obj = MutObject::new(&mut buf);
+            assert!(perm.write_to_object(&mut obj).is_ok());
+            assert_eq!(obj.remaining(), DATA_MAX_LEN - DIGEST);
+        }
+
+        // Max nubedr of chain hashes in Permission that will fit in object
+        for _ in 0..DATA_MAX_LEN / DIGEST - 1 {
+            perm.insert(random_hash()).unwrap();
+        }
+        {
+            let mut obj = MutObject::new(&mut buf);
+            assert!(perm.write_to_object(&mut obj).is_ok());
+            assert_eq!(obj.remaining(), DATA_MAX_LEN % DIGEST);
+        }
+
+        // One indentity too many
+        perm.insert(random_hash()).unwrap();
+        {
+            let mut obj = MutObject::new(&mut buf);
+            assert_eq!(
+                perm.write_to_object(&mut obj).unwrap_err(),
+                ObjectError::DataLenBounds
+            );
+            assert_eq!(obj.remaining(), DATA_MAX_LEN);
         }
     }
 }
