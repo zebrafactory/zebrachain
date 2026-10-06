@@ -133,9 +133,9 @@ dependencies = [
 
 [[package]]
 name = "ctutils"
-version = "0.4.2"
+version = "0.4.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7d5515a3834141de9eafb9717ad39eea8247b5674e6066c404e8c4b365d2a29e"
+checksum = "03bb0e1cc970d482d121d9a1744999169b69a07470b3d644a7894e53fcaf4574"
 dependencies = [
  "cmov",
 ]
@@ -543,4 +543,15 @@ dependencies = [
  "subtle",
  "tempfile",
  "zeroize",
+ "zf-zebrachaos",
+]
+
+[[package]]
+name = "zf-zebrachaos"
+version = "0.0.0-pre.0"
+source = "git+https://github.com/zebrafactory/zebrachaos.git?branch=main#4cf13c8866d820d7bf7cde6248492b8f2b72c36b"
+dependencies = [
+ "arrayvec",
+ "blake2",
+ "subtle",
 ]
