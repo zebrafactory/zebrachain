@@ -705,7 +705,10 @@ mod tests {
         let state = block.open().unwrap();
 
         // Cannot append from the current block
-        assert!(Block::new(&buf).from_previous(&state).is_err());
+        assert_eq!(
+            Block::new(&buf).from_previous(&state).unwrap_err(),
+            BlockError::PubKeyHash
+        );
 
         let prev = BlockState::new(
             // Previous block state

@@ -408,7 +408,7 @@ impl ChainStore {
 mod tests {
     use super::*;
     use crate::testhelpers::{BitFlipper, random_hash, random_payload};
-    use crate::{Hash, MutBlock, Seed, sign_block};
+    use crate::{BlockError, Hash, MutBlock, Seed, sign_block};
     use tempfile;
 
     #[test]
@@ -484,7 +484,15 @@ mod tests {
             file.rewind().unwrap();
             file.set_len(0).unwrap();
             file.write_all(&bad).unwrap();
-            assert!(validate_chain(file.try_clone().unwrap(), &chain_hash).is_err());
+            assert_eq!(
+                validate_chain(file.try_clone().unwrap(), &chain_hash)
+                    .unwrap_err()
+                    .into_inner()
+                    .unwrap()
+                    .downcast()
+                    .unwrap(),
+                Box::new(BlockError::Content)
+            );
         }
 
         file.rewind().unwrap();
@@ -499,7 +507,12 @@ mod tests {
             assert!(reduce > 0);
             file.set_len(length - reduce).unwrap();
             if reduce > BLOCK as u64 {
-                assert!(validate_chain(file.try_clone().unwrap(), &chain_hash).is_err());
+                assert_eq!(
+                    validate_chain(file.try_clone().unwrap(), &chain_hash)
+                        .unwrap_err()
+                        .kind(),
+                    io::ErrorKind::UnexpectedEof
+                );
             } else {
                 assert!(validate_chain(file.try_clone().unwrap(), &chain_hash).is_ok());
             }
@@ -519,11 +532,17 @@ mod tests {
         let seed = Seed::generate().unwrap();
         block.sign(&seed);
         let chain_hash = block.finalize();
-
         let mut file = tempfile::tempfile().unwrap();
         file.write_all(&buf).unwrap();
-
-        assert!(validate_chain(file, &chain_hash).is_err());
+        assert_eq!(
+            validate_chain(file, &chain_hash)
+                .unwrap_err()
+                .into_inner()
+                .unwrap()
+                .downcast()
+                .unwrap(),
+            Box::new(BlockError::BlockIndex)
+        );
     }
 
     #[test]

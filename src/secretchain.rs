@@ -64,6 +64,7 @@ impl SecretChainHeader {
 }
 
 /// Save secret chain to non-volatile storage (encrypted and authenticated).
+#[derive(Debug)]
 pub struct SecretChain {
     file: File,
     buf: Vec<u8>,
@@ -456,8 +457,14 @@ mod tests {
 
         // Test bit flips in password
         for bad_password in BitFlipper::new(&password) {
-            assert!(
-                SecretChain::open(file.try_clone().unwrap(), &chain_hash, &bad_password).is_err()
+            assert_eq!(
+                SecretChain::open(file.try_clone().unwrap(), &chain_hash, &bad_password)
+                    .unwrap_err()
+                    .into_inner()
+                    .unwrap()
+                    .downcast()
+                    .unwrap(),
+                Box::new(SecretBlockError::Decryption)
             );
         }
     }
@@ -469,8 +476,11 @@ mod tests {
         let password = random_hash();
 
         // Empty file
-        assert!(
-            SecretChain::open(file.try_clone().unwrap(), &chain_hash, password.as_bytes()).is_err()
+        assert_eq!(
+            SecretChain::open(file.try_clone().unwrap(), &chain_hash, password.as_bytes())
+                .unwrap_err()
+                .kind(),
+            io::ErrorKind::UnexpectedEof
         );
 
         // A secret aead block full of random data
@@ -478,7 +488,15 @@ mod tests {
         getrandom::fill(&mut buf).unwrap();
         file.write_all(&buf).unwrap();
         file.rewind().unwrap();
-        assert!(SecretChain::open(file, &chain_hash, password.as_bytes()).is_err());
+        assert_eq!(
+            SecretChain::open(file, &chain_hash, password.as_bytes())
+                .unwrap_err()
+                .into_inner()
+                .unwrap()
+                .downcast()
+                .unwrap(),
+            Box::new(SecretBlockError::ChainHeader)
+        );
     }
 
     #[test]
