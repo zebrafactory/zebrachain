@@ -594,7 +594,13 @@ mod tests {
         let dir = TempDir::new().unwrap();
         let store = SecretChainStore::new(dir.path());
         let chain_hash = random_hash();
-        assert!(store.open_chain(&chain_hash, b"Bad Password").is_err());
+        assert_eq!(
+            store
+                .open_chain(&chain_hash, b"Bad Password")
+                .unwrap_err()
+                .kind(),
+            io::ErrorKind::NotFound
+        );
         let filename = store.chain_filename(&chain_hash);
 
         let mut file = create_for_append(&filename).unwrap();
@@ -602,7 +608,16 @@ mod tests {
         getrandom::fill(&mut buf).unwrap();
         file.write_all(&buf).unwrap();
         file.rewind().unwrap();
-        assert!(store.open_chain(&chain_hash, b"Bad Password").is_err()); // Not valid ChaCha20Poly1305 content
+        assert_eq!(
+            store
+                .open_chain(&chain_hash, b"Bad Password")
+                .unwrap_err()
+                .into_inner()
+                .unwrap()
+                .downcast()
+                .unwrap(),
+            Box::new(SecretBlockError::ChainHeader)
+        );
     }
 
     #[test]
@@ -641,10 +656,16 @@ mod tests {
         let dir = TempDir::new().unwrap();
         let store = SecretChainStore::new(dir.path());
         let chain_hash = random_hash();
-        assert!(store.remove_chain_file(&chain_hash).is_err());
+        assert_eq!(
+            store.remove_chain_file(&chain_hash).unwrap_err().kind(),
+            io::ErrorKind::NotFound
+        );
         let filename = store.chain_filename(&chain_hash);
         create_for_append(&filename).unwrap();
         assert!(store.remove_chain_file(&chain_hash).is_ok());
-        assert!(store.remove_chain_file(&chain_hash).is_err());
+        assert_eq!(
+            store.remove_chain_file(&chain_hash).unwrap_err().kind(),
+            io::ErrorKind::NotFound
+        );
     }
 }

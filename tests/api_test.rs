@@ -1,7 +1,7 @@
 use hex_literal::hex;
 use std::collections::HashSet;
 use std::fs::File;
-use std::io::{Read, Seek};
+use std::io::{ErrorKind, Read, Seek};
 use tempfile;
 use zf_zebrachain::{
     BLOCK, ChainStore, DIGEST, Hash, MutSecretBlock, OwnedChainStore, PAYLOAD, Payload, SECRET,
@@ -115,8 +115,14 @@ fn test_chain_store() {
     let tmpdir = tempfile::TempDir::new().unwrap();
     let store = ChainStore::new(tmpdir.path());
     let chain_hash = Hash::from_bytes([42; DIGEST]);
-    assert!(store.open_chain(&chain_hash).is_err());
-    assert!(store.remove_chain_file(&chain_hash).is_err());
+    assert_eq!(
+        store.open_chain(&chain_hash).unwrap_err().kind(),
+        ErrorKind::NotFound
+    );
+    assert_eq!(
+        store.remove_chain_file(&chain_hash).unwrap_err().kind(),
+        ErrorKind::NotFound
+    );
 }
 
 #[test]
@@ -125,7 +131,13 @@ fn test_secret_chain_store() {
     let pw = Secret::generate().unwrap();
     let store = SecretChainStore::new(tmpdir.path());
     let chain_hash = Hash::from_bytes([42; DIGEST]);
-    assert!(store.open_chain(&chain_hash, pw.as_bytes()).is_err());
+    assert_eq!(
+        store
+            .open_chain(&chain_hash, pw.as_bytes())
+            .unwrap_err()
+            .kind(),
+        ErrorKind::NotFound
+    );
 
     let mut buf = Vec::new();
     let payload = sample_payload(0);
@@ -147,8 +159,17 @@ fn test_secret_chain_store() {
     let chain = store.open_chain(&chain_hash, pw.as_bytes()).unwrap();
     assert_eq!(chain.tail(), &tail);
     store.remove_chain_file(&chain_hash).unwrap();
-    assert!(store.open_chain(&chain_hash, pw.as_bytes()).is_err());
-    assert!(store.remove_chain_file(&chain_hash).is_err());
+    assert_eq!(
+        store
+            .open_chain(&chain_hash, pw.as_bytes())
+            .unwrap_err()
+            .kind(),
+        ErrorKind::NotFound
+    );
+    assert_eq!(
+        store.remove_chain_file(&chain_hash).unwrap_err().kind(),
+        ErrorKind::NotFound
+    );
 }
 
 #[test]

@@ -81,14 +81,20 @@ mod tests {
         let tmpdir = tempfile::TempDir::new().unwrap();
         let filename = tmpdir.path().join("foo");
         assert!(create_for_append(&filename).is_ok());
-        assert!(create_for_append(&filename).is_err());
+        assert_eq!(
+            create_for_append(&filename).unwrap_err().kind(),
+            io::ErrorKind::AlreadyExists
+        );
     }
 
     #[test]
     fn test_open_for_append() {
         let tmpdir = tempfile::TempDir::new().unwrap();
         let filename = tmpdir.path().join("foo");
-        assert!(open_for_append(&filename).is_err());
+        assert_eq!(
+            open_for_append(&filename).unwrap_err().kind(),
+            io::ErrorKind::NotFound
+        );
         assert!(create_for_append(&filename).is_ok());
         assert!(open_for_append(&filename).is_ok());
     }

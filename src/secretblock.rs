@@ -286,7 +286,10 @@ mod tests {
         let secret = Secret::generate().unwrap();
         encrypt_in_place(&mut buf, &secret, 0);
         for mut bad in BitFlipper::new(&buf) {
-            assert!(decrypt_in_place(&mut bad, &secret, 0).is_err());
+            assert_eq!(
+                decrypt_in_place(&mut bad, &secret, 0).unwrap_err(),
+                SecretBlockError::Decryption
+            );
         }
         decrypt_in_place(&mut buf, &secret, 0).unwrap();
         assert_eq!(Hash::compute(&buf), h);

@@ -109,6 +109,7 @@ fn validate_from_checkpoint(
 }
 
 /// Read and write blocks to a file.
+#[derive(Debug)]
 pub struct Chain {
     file: File,
     head: BlockState,
@@ -585,7 +586,10 @@ mod tests {
         let tmpdir = tempfile::TempDir::new().unwrap();
         let chainstore = ChainStore::new(tmpdir.path());
         let chain_hash = random_hash();
-        assert!(chainstore.open_chain_file(&chain_hash).is_err()); // File does not exist yet
+        assert_eq!(
+            chainstore.open_chain_file(&chain_hash).unwrap_err().kind(),
+            io::ErrorKind::NotFound
+        );
 
         let filename = chainstore.chain_filename(&chain_hash);
         create_for_append(&filename).unwrap();
@@ -598,7 +602,13 @@ mod tests {
         let chainstore = ChainStore::new(tmpdir.path());
         let chain_hash = random_hash();
         assert!(chainstore.create_chain_file(&chain_hash).is_ok());
-        assert!(chainstore.create_chain_file(&chain_hash).is_err()); // File already exists
+        assert_eq!(
+            chainstore
+                .create_chain_file(&chain_hash)
+                .unwrap_err()
+                .kind(),
+            io::ErrorKind::AlreadyExists
+        );
     }
 
     #[test]
@@ -606,10 +616,16 @@ mod tests {
         let tmpdir = tempfile::TempDir::new().unwrap();
         let store = ChainStore::new(tmpdir.path());
         let chain_hash = random_hash();
-        assert!(store.remove_chain_file(&chain_hash).is_err()); // File does not exist
+        assert_eq!(
+            store.remove_chain_file(&chain_hash).unwrap_err().kind(),
+            io::ErrorKind::NotFound
+        );
         assert!(store.create_chain_file(&chain_hash).is_ok());
         assert!(store.remove_chain_file(&chain_hash).is_ok());
-        assert!(store.remove_chain_file(&chain_hash).is_err()); // Gone again
+        assert_eq!(
+            store.remove_chain_file(&chain_hash).unwrap_err().kind(),
+            io::ErrorKind::NotFound
+        );
     }
 
     #[test]
@@ -617,7 +633,10 @@ mod tests {
         let tmpdir = tempfile::TempDir::new().unwrap();
         let chainstore = ChainStore::new(tmpdir.path());
         let chain_hash = random_hash();
-        assert!(chainstore.open_chain(&chain_hash).is_err());
+        assert_eq!(
+            chainstore.open_chain(&chain_hash).unwrap_err().kind(),
+            io::ErrorKind::NotFound
+        );
     }
 
     #[test]
