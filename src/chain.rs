@@ -33,7 +33,7 @@ fn validate_chain(file: File, chain_hash: &Hash) -> io::Result<(File, BlockState
     file.read_exact(&mut buf)?;
     let head = match Block::new(&buf).from_hash_at_index(chain_hash, 0) {
         Ok(state) => state,
-        Err(err) => return Err(err.to_io_error()),
+        Err(err) => return Err(err.into_io_error()),
     };
 
     // Read and validate all remaining blocks till the end of the chain
@@ -52,7 +52,7 @@ fn validate_chain(file: File, chain_hash: &Hash) -> io::Result<(File, BlockState
             assert_eq!(read, buf.len());
             tail = match Block::new(&buf).from_previous(&tail) {
                 Ok(state) => state,
-                Err(err) => return Err(err.to_io_error()),
+                Err(err) => return Err(err.into_io_error()),
             };
         }
     }
@@ -70,7 +70,7 @@ fn validate_from_checkpoint(
     file.read_exact(&mut buf)?;
     let head = match Block::new(&buf).from_hash_at_index(&checkpoint.chain_hash, 0) {
         Ok(state) => state,
-        Err(err) => return Err(err.to_io_error()),
+        Err(err) => return Err(err.into_io_error()),
     };
 
     // FIXME: We should do a fast verification (by hash only) from the first block all the way to
@@ -84,7 +84,7 @@ fn validate_from_checkpoint(
     file.read_exact(&mut buf)?;
     let mut tail = match Block::new(&buf).from_checkpoint(checkpoint) {
         Ok(state) => state,
-        Err(err) => return Err(err.to_io_error()),
+        Err(err) => return Err(err.into_io_error()),
     };
 
     // Read and validate any remaining blocks till the end of the chain
@@ -102,7 +102,7 @@ fn validate_from_checkpoint(
             assert_eq!(read, buf.len());
             tail = match Block::new(&buf).from_previous(&tail) {
                 Ok(state) => state,
-                Err(err) => return Err(err.to_io_error()),
+                Err(err) => return Err(err.into_io_error()),
             };
         }
     }
@@ -127,7 +127,7 @@ impl Chain {
                     tail: state,
                 })
             }
-            Err(err) => Err(err.to_io_error()),
+            Err(err) => Err(err.into_io_error()),
         }
     }
 
@@ -158,7 +158,7 @@ impl Chain {
                 self.tail = state;
                 Ok(&self.tail)
             }
-            Err(err) => Err(err.to_io_error()),
+            Err(err) => Err(err.into_io_error()),
         }
     }
 
@@ -253,7 +253,7 @@ impl ChainIter {
                 self.tail = Some(state.clone());
                 Ok(state)
             }
-            Err(err) => Err(err.to_io_error()),
+            Err(err) => Err(err.into_io_error()),
         }
     }
 }
@@ -300,7 +300,7 @@ impl<'a> Cursor<'a> {
             let block = Block::new(&buf);
             self.state = match block.from_previous(&self.state) {
                 Ok(state) => state,
-                Err(err) => return Err(err.to_io_error()),
+                Err(err) => return Err(err.into_io_error()),
             };
             Ok(true)
         }
@@ -319,7 +319,7 @@ impl<'a> Cursor<'a> {
                 .from_hash_at_index(&self.state.previous_hash, self.state.block_index - 1)
             {
                 Ok(state) => state,
-                Err(err) => return Err(err.to_io_error()),
+                Err(err) => return Err(err.into_io_error()),
             };
             Ok(true)
         }

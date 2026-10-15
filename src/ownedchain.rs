@@ -32,7 +32,7 @@ impl OwnedChainStore {
     pub fn generate_chain(&self, payload: &Payload, password: &[u8]) -> io::Result<OwnedChain> {
         let initial_entropy = match Secret::generate() {
             Ok(secret) => secret,
-            Err(err) => return Err(err.to_io_error()),
+            Err(err) => return Err(err.into_io_error()),
         };
         self.create_chain(&initial_entropy, payload, password)
     }
@@ -168,7 +168,7 @@ impl OwnedChain {
     pub fn sign(&mut self, payload: &Payload) -> io::Result<&BlockState> {
         let new_entropy = match Secret::generate() {
             Ok(secret) => secret,
-            Err(err) => return Err(err.to_io_error()),
+            Err(err) => return Err(err.into_io_error()),
         };
         self.sign_raw(&new_entropy, payload)
     }

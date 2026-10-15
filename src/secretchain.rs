@@ -109,7 +109,7 @@ impl SecretChain {
         file.read_exact(&mut buf)?;
         let header = match SecretChainHeader::from_buf(&buf) {
             Ok(header) => header,
-            Err(err) => return Err(err.to_io_error()),
+            Err(err) => return Err(err.into_io_error()),
         };
         let chain_secret = header.derive_chain_secret(chain_hash, password);
 
@@ -118,7 +118,7 @@ impl SecretChain {
             file.read_exact(block.as_mut_read_buf())?;
             match block.from_index(&chain_secret, 0) {
                 Ok(state) => state,
-                Err(err) => return Err(err.to_io_error()),
+                Err(err) => return Err(err.into_io_error()),
             }
         };
         let first_block_hash = tail.block_hash;
@@ -147,7 +147,7 @@ impl SecretChain {
                     let block = SecretBlock::new(&mut buf);
                     match block.from_previous(&chain_secret, &tail) {
                         Ok(state) => state,
-                        Err(err) => return Err(err.to_io_error()),
+                        Err(err) => return Err(err.into_io_error()),
                     }
                 }
             };
@@ -249,7 +249,7 @@ impl SecretChainIter {
                 self.tail = Some(state.clone());
                 Ok(state)
             }
-            Err(err) => Err(err.to_io_error()),
+            Err(err) => Err(err.into_io_error()),
         }
     }
 }

@@ -31,11 +31,19 @@ pub enum BlockError {
 }
 
 impl BlockError {
-    /// Map into an io Error with appropriate msg text.
-    pub fn to_io_error(&self) -> io::Error {
-        io::Error::other(format!("BlockError::{self:?}"))
+    /// Consume instance and use as inner value for `io::Error`.
+    pub fn into_io_error(self) -> io::Error {
+        io::Error::other(self)
     }
 }
+
+impl core::fmt::Display for BlockError {
+    fn fmt(&self, f: &mut core::fmt::Formatter) -> core::fmt::Result {
+        f.write_str(&format!("BlockError::{self:?}"))
+    }
+}
+
+impl core::error::Error for BlockError {}
 
 /// Error conditions hit when validating a [SecretBlock][crate::secretblock::SecretBlock].
 #[derive(Debug, PartialEq)]
@@ -66,11 +74,19 @@ pub enum SecretBlockError {
 }
 
 impl SecretBlockError {
-    /// Map into an io Error with appropriate msg text.
-    pub fn to_io_error(&self) -> io::Error {
-        io::Error::other(format!("SecretBlockError::{self:?}"))
+    /// Consume instance and use as inner value for `io::Error`.
+    pub fn into_io_error(self) -> io::Error {
+        io::Error::other(self)
     }
 }
+
+impl core::fmt::Display for SecretBlockError {
+    fn fmt(&self, f: &mut core::fmt::Formatter) -> core::fmt::Result {
+        f.write_str(&format!("SecretBlockError::{self:?}"))
+    }
+}
+
+impl core::error::Error for SecretBlockError {}
 
 /// Error equivalent to gettrandom::Error.
 #[derive(Debug)]
@@ -84,11 +100,19 @@ impl EntropyError {
         Self { inner }
     }
 
-    /// Map into an io Error with appropriate msg text.
-    pub fn to_io_error(&self) -> io::Error {
-        io::Error::other(format!("EntropyError({:?})", self.inner))
+    /// Consume instance and use as inner value for `io::Error`.
+    pub fn into_io_error(self) -> io::Error {
+        io::Error::other(self)
     }
 }
+
+impl core::fmt::Display for EntropyError {
+    fn fmt(&self, f: &mut core::fmt::Formatter) -> core::fmt::Result {
+        f.write_str(&format!("EntropyError::{:?}", self.inner))
+    }
+}
+
+impl core::error::Error for EntropyError {}
 
 /// Errors encountered when validating or modifying `Permission`.
 #[derive(Debug, PartialEq)]
@@ -116,49 +140,45 @@ pub enum PermissionError {
 }
 
 impl PermissionError {
-    /// Map into an io Error with appropriate msg text.
-    pub fn to_io_error(&self) -> io::Error {
-        io::Error::other(format!("PermissionError::{self:?}"))
+    /// Consume instance and use as inner value for `io::Error`.
+    pub fn into_io_error(self) -> io::Error {
+        io::Error::other(self)
     }
 }
+
+impl core::fmt::Display for PermissionError {
+    fn fmt(&self, f: &mut core::fmt::Formatter) -> core::fmt::Result {
+        f.write_str(&format!("PermissionError::{self:?}"))
+    }
+}
+
+impl core::error::Error for PermissionError {}
 
 #[cfg(test)]
 mod tests {
     use super::*;
 
     #[test]
-    fn test_blockerror_to_io_error() {
-        assert_eq!(
-            format!("{:?}", BlockError::Content.to_io_error()),
-            "Custom { kind: Other, error: \"BlockError::Content\" }"
-        );
-        assert_eq!(
-            format!("{:?}", BlockError::Signature.to_io_error()),
-            "Custom { kind: Other, error: \"BlockError::Signature\" }"
-        );
+    fn test_blockerror_display_fmt() {
+        let err = BlockError::Content;
+        assert_eq!(format!("{err}"), "BlockError::Content");
+        let err = BlockError::Signature;
+        assert_eq!(format!("{err}"), "BlockError::Signature");
     }
 
     #[test]
-    fn test_secretblockerror_to_io_error() {
-        assert_eq!(
-            format!("{:?}", SecretBlockError::Decryption.to_io_error()),
-            "Custom { kind: Other, error: \"SecretBlockError::Decryption\" }"
-        );
-        assert_eq!(
-            format!("{:?}", SecretBlockError::SeedSequence.to_io_error()),
-            "Custom { kind: Other, error: \"SecretBlockError::SeedSequence\" }"
-        );
+    fn test_secretblockerror_display_fmt() {
+        let err = SecretBlockError::Decryption;
+        assert_eq!(format!("{err}"), "SecretBlockError::Decryption");
+        let err = SecretBlockError::SeedSequence;
+        assert_eq!(format!("{err}"), "SecretBlockError::SeedSequence");
     }
 
     #[test]
-    fn test_permissionerror_to_io_error() {
-        assert_eq!(
-            format!("{:?}", PermissionError::Empty.to_io_error()),
-            "Custom { kind: Other, error: \"PermissionError::Empty\" }"
-        );
-        assert_eq!(
-            format!("{:?}", PermissionError::BufferLength.to_io_error()),
-            "Custom { kind: Other, error: \"PermissionError::BufferLength\" }"
-        );
+    fn test_permissionerror_display_fmt() {
+        let err = PermissionError::Empty;
+        assert_eq!(format!("{err}"), "PermissionError::Empty");
+        let err = PermissionError::BufferLength;
+        assert_eq!(format!("{err}"), "PermissionError::BufferLength");
     }
 }
