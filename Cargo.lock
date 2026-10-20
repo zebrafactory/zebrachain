@@ -252,9 +252,9 @@ dependencies = [
 
 [[package]]
 name = "inout"
-version = "0.2.3"
+version = "0.2.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d8c0d789294fb457b791f7797a04478704788f30b407e5d0b01deaa846572d9f"
+checksum = "3b5cf4372d022092674a83b8febf5865f7a573cc0c5baec5e49c879b6a20978f"
 dependencies = [
  "hybrid-array",
 ]
@@ -271,9 +271,9 @@ dependencies = [
 
 [[package]]
 name = "libc"
-version = "0.2.190"
+version = "0.2.191"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ce5d3ddc6d3fa000eb1536d85e147bfe31aacaba692ed6a876f95cb7c855be78"
+checksum = "65cd87c9a6d60536580b316ad985726104730a5151c99845f2490428ef91240a"
 
 [[package]]
 name = "linux-raw-sys"
@@ -548,7 +548,7 @@ dependencies = [
 [[package]]
 name = "zf-zebrachaos"
 version = "0.0.0-pre.0"
-source = "git+https://github.com/zebrafactory/zebrachaos.git?branch=main#d49a27266b383dda0b599f24bfa8199c45faa3a6"
+source = "git+https://github.com/zebrafactory/zebrachaos.git?branch=main#55bae992bfdd82bd74d64422a211aefda56595a9"
 dependencies = [
  "arrayvec",
  "blake2",

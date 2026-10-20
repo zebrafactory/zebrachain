@@ -21,7 +21,8 @@ This is a pre-release crate. The API is still being finalized. The 0.0.x release
 commits to the protocol.
 
 However, the dust is settling quickly and it's a perfect time to jump in and start building
-experimental applications on top of ZebraChain!
+experimental applications on top of ZebraChain! If you are interested, please jump in and help!
+Feedback and pull requests welcome!
 
 See the [Quickstart](https://docs.rs/zf-zebrachain/latest/zf_zebrachain/#-quickstart) for an overview of the API.
 
@@ -41,31 +42,18 @@ specific ZebraChain.
 
 * A given asymmetric key pair is only used *once!* Each block contains the signature, the
 corresponding public key used to sign the block, and a *forward-reference* to the *hash* of the
-corresponding public key that will be used to sign the *next* block. This allows new entropy to be
-introduced at each signature, minimizing the problem of whether there was high enough quality
-entropy when the ZebraChain was created.
+corresponding public key that will be used to sign the *next* block.
 
 * Entropy accumulation throughout the lifetime of a ZebraChain. At each signature, a new call to
 `getrandom()` is made. This new entropy is securely mixed with the current seed (using a keyed
-hash), and the result is the next seed. Want to rotate your keys? Just make a new signature.
+hash), and the result is the next seed. This allows new entropy to be introduced at each signature,
+minimizing the problem of whether there was high enough quality entropy when the ZebraChain was created.
 
 * Quantum safe. ZebraChain uses the recently standardized
 [FIPS 204 ML-DSA](https://csrc.nist.gov/pubs/fips/204/final) quantum secure algorithm in a hybrid
 construction with the classically secure [ed25519](https://ed25519.cr.yp.to/) algorithm (as
 recommended by the ML-DSA authors). Support for
 [FIPS 205 SLH-DSA](https://csrc.nist.gov/pubs/fips/205/final) will be added soon.
-
-## 🧑‍🏭 Development Status
-
-As of the 0.0.12 release, ZebraChain has reached Minimum Viable Product. Assuming no errors are
-found in the design, backward compatibility will be maintained with the current public and secret
-chain formats.
-
-With time, both the protocol parameters and the payload will be configurable. There will also be a
-non-quantum-secure, light version of the protocol that only signs with ed25519, but otherwise
-maintains the same design.
-
-If you are interested, please jump in and help! Feedback and pull requests welcome!
 
 ## 🦀 Dependencies of Interest
 
@@ -140,13 +128,19 @@ The crate is licensed under either of:
 
 at your option.
 
-## 😎 Contribution
+## 🧑‍🏭 Contribution
 
 Unless you explicitly state otherwise, any contribution intentionally submitted
 for inclusion in the work by you, as defined in the Apache-2.0 license, shall be
 dual licensed as above, without any additional terms or conditions.
 
-Note that `unsafe` Rust code is not allowed in ZebraChain.
+## 🤖 AI/LLM Contribution Policy
+
+An open source software project thrives best when a large number of human brains have a deep,
+ongoing, and evolving understanding of the project's code, documentation, and procedures.
+
+To understand your contribution, you must write it. Therefore, AI/LLM generated contributions
+are not welcome.
 
 ## 🖖 Code of Conduct
 
