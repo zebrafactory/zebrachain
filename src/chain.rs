@@ -487,6 +487,87 @@ mod tests {
     }
 
     #[test]
+    fn test_validate_chain_partial_block() {
+        // Generate 1st block
+        let seed = Seed::generate().unwrap();
+        let mut buf_0 = [0; BLOCK];
+        let payload_0 = random_payload();
+        let mut block = MutBlock::new(&mut buf_0, &payload_0);
+        block.sign(&seed);
+        let chain_hash = block.finalize();
+        let buf_0 = buf_0; // Doesn't need to be mutable anymore
+        let state_0 = Block::new(&buf_0)
+            .from_hash_at_index(&chain_hash, 0)
+            .unwrap();
+
+        // Generate a 2nd block
+        let next = seed.advance().unwrap();
+        let mut buf_1 = [0; BLOCK];
+        let payload_1 = random_payload();
+        let mut block = MutBlock::new(&mut buf_1, &payload_1);
+        block.set_previous(&state_0);
+        block.sign(&next);
+        block.finalize();
+        let buf_1 = buf_1; // Doesn't need to be mutable anymore
+        let state_1 = Block::new(&buf_1).from_previous(&state_0).unwrap();
+
+        // Write just the first byte
+        let mut file = tempfile::tempfile().unwrap();
+        file.write_all(&buf_0[..1]).unwrap();
+        file.rewind().unwrap();
+        assert_eq!(
+            validate_chain(file, &chain_hash).unwrap_err().kind(),
+            io::ErrorKind::UnexpectedEof
+        );
+
+        // Write all but the last byte
+        let mut file = tempfile::tempfile().unwrap();
+        file.write_all(&buf_0[..BLOCK - 1]).unwrap();
+        file.rewind().unwrap();
+        assert_eq!(
+            validate_chain(file, &chain_hash).unwrap_err().kind(),
+            io::ErrorKind::UnexpectedEof
+        );
+
+        // Write entire first block
+        let mut file = tempfile::tempfile().unwrap();
+        file.write_all(&buf_0[..BLOCK]).unwrap();
+        file.rewind().unwrap();
+        let (_file, head, tail) = validate_chain(file, &chain_hash).unwrap();
+        assert_eq!(head, state_0);
+        assert_eq!(tail, state_0);
+
+        // Write first block + 1 byte of 2nd block
+        let mut file = tempfile::tempfile().unwrap();
+        file.write_all(&buf_0[..BLOCK]).unwrap();
+        file.write_all(&buf_1[..1]).unwrap();
+        file.rewind().unwrap();
+        assert_eq!(
+            validate_chain(file, &chain_hash).unwrap_err().kind(),
+            io::ErrorKind::UnexpectedEof
+        );
+
+        // Write first block + all but 1 byte of 2nd blocks
+        let mut file = tempfile::tempfile().unwrap();
+        file.write_all(&buf_0[..BLOCK]).unwrap();
+        file.write_all(&buf_1[..BLOCK - 1]).unwrap();
+        file.rewind().unwrap();
+        assert_eq!(
+            validate_chain(file, &chain_hash).unwrap_err().kind(),
+            io::ErrorKind::UnexpectedEof
+        );
+
+        // Write entire 1st + 2nd blocks
+        let mut file = tempfile::tempfile().unwrap();
+        file.write_all(&buf_0[..BLOCK]).unwrap();
+        file.write_all(&buf_1[..BLOCK]).unwrap();
+        file.rewind().unwrap();
+        let (_file, head, tail) = validate_chain(file, &chain_hash).unwrap();
+        assert_eq!(head, state_0);
+        assert_eq!(tail, state_1);
+    }
+
+    #[test]
     fn test_validate_chain_bad_first_block() {
         // Test a first block that has a non-zero block_index but is other wise valid
         let mut buf = [0; BLOCK];
