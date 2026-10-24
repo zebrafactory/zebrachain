@@ -1,7 +1,7 @@
 use hex_literal::hex;
 use std::collections::HashSet;
 use std::fs::File;
-use std::io::{ErrorKind, Read, Seek};
+use std::io::{ErrorKind, Read};
 use tempfile;
 use zf_zebrachain::{
     BLOCK, ChainStore, DIGEST, Hash, MutSecretBlock, OwnedChainStore, PAYLOAD, Payload, SECRET,
@@ -262,12 +262,12 @@ fn test_owned_chain_store() {
     );
 
     // Truncate public chain file to make sure it gets filled in from the secret chain
-    let mut chain_file = store
+    let filename = store
         .store()
-        .open_chain_file(&Hash::from_z32(BLOCK_HASH_0).unwrap())
-        .unwrap();
-    chain_file.rewind().unwrap();
+        .chain_filename(&Hash::from_z32(BLOCK_HASH_0).unwrap());
+    let chain_file = File::options().write(true).open(&filename).unwrap();
     chain_file.set_len(BLOCK as u64 * 360).unwrap();
+
     let chain = store
         .open_chain(&Hash::from_z32(BLOCK_HASH_0).unwrap(), PASSWORD)
         .unwrap();
