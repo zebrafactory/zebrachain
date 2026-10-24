@@ -99,7 +99,17 @@ fn main() {
     println!(
         "Truncating public chain to ensure correct partial reconstruction from secret chain..."
     );
-    let file = ocs.store().open_chain_file(&chain_hash).unwrap();
+    let filename = ocs.store().chain_filename(&chain_hash);
+    let file = std::fs::File::options()
+        .write(true)
+        .open(&filename)
+        .unwrap();
     file.set_len(BLOCK as u64 * 400).unwrap();
-    let _chain = ocs.open_chain(&chain_hash, password.as_bytes()).unwrap();
+    let chain = ocs.open_chain(&chain_hash, password.as_bytes()).unwrap();
+    println!("Head: {}", chain.head().block_hash);
+    println!("Tead: {}", chain.tail().block_hash);
+    println!("Count: {}", chain.count());
+    assert_eq!(chain.count(), payloads.len() as u64);
+    assert_eq!(&head, chain.head());
+    assert_eq!(&tail, chain.tail());
 }
