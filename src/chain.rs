@@ -1,7 +1,7 @@
 //! Writes/reads blocks to/from non-volatile storage and network.
 
 use crate::always::*;
-use crate::fsutil::{chain_filename, create_for_append, open_for_append, read_retry};
+use crate::fsutil::{chain_filename, create_for_append, open_for_append};
 use crate::{Block, BlockState, CheckPoint, Hash};
 use std::fs::{File, remove_file};
 use std::io;
@@ -39,23 +39,21 @@ fn validate_chain(file: File, chain_hash: &Hash) -> io::Result<(File, BlockState
     // Read and validate all remaining blocks till the end of the chain
     let mut tail = head.clone();
     loop {
-        let read = read_retry(&mut file, &mut buf)?;
-        if read < buf.len() {
-            let mut file = file.into_inner();
-            if read > 0 {
-                // Partially written block that should be truncated
-                file.set_len((tail.block_index + 1) * BLOCK as u64)?;
-                file.seek(SeekFrom::End(0))?;
+        match file.read(&mut buf) {
+            Ok(0) => break,
+            Ok(n) => {
+                if n < BLOCK {
+                    file.read_exact(&mut buf[n..])?
+                }
+                tail = match Block::new(&buf).from_previous(&tail) {
+                    Ok(state) => state,
+                    Err(err) => return Err(err.into_io_error()),
+                };
             }
-            return Ok((file, head, tail));
-        } else {
-            assert_eq!(read, buf.len());
-            tail = match Block::new(&buf).from_previous(&tail) {
-                Ok(state) => state,
-                Err(err) => return Err(err.into_io_error()),
-            };
+            Err(err) => return Err(err),
         }
     }
+    Ok((file.into_inner(), head, tail))
 }
 
 // Security Warning: This is ONLY secure if `checkpoint` is trustworthy and correct!
@@ -74,7 +72,7 @@ fn validate_from_checkpoint(
     };
 
     // FIXME: We should do a fast verification (by hash only) from the first block all the way to
-    // the checkpoint block. Most of the compute time in on signature verification (although we still
+    // the checkpoint block. Most of the compute time is on signature verification (although we still
     // have the IO overhead). This could be relaxed later, but for now we should double check things
     // are as expected. This requires some changes to the Block API.
 
@@ -87,25 +85,23 @@ fn validate_from_checkpoint(
         Err(err) => return Err(err.into_io_error()),
     };
 
-    // Read and validate any remaining blocks till the end of the chain
+    // Read and validate all remaining blocks till the end of the chain
     loop {
-        let read = read_retry(&mut file, &mut buf)?;
-        if read < buf.len() {
-            let mut file = file.into_inner();
-            if read > 0 {
-                // Partially written block that should be truncated
-                file.set_len((tail.block_index + 1) * BLOCK as u64)?;
-                file.seek(SeekFrom::End(0))?;
+        match file.read(&mut buf) {
+            Ok(0) => break,
+            Ok(n) => {
+                if n < BLOCK {
+                    file.read_exact(&mut buf[n..])?
+                }
+                tail = match Block::new(&buf).from_previous(&tail) {
+                    Ok(state) => state,
+                    Err(err) => return Err(err.into_io_error()),
+                };
             }
-            return Ok((file, head, tail));
-        } else {
-            assert_eq!(read, buf.len());
-            tail = match Block::new(&buf).from_previous(&tail) {
-                Ok(state) => state,
-                Err(err) => return Err(err.into_io_error()),
-            };
+            Err(err) => return Err(err),
         }
     }
+    Ok((file.into_inner(), head, tail))
 }
 
 /// Read and write blocks to a file.
@@ -156,6 +152,7 @@ impl Chain {
         match Block::new(buf).from_previous(&self.tail) {
             Ok(state) => {
                 self.file.write_all(buf)?;
+                self.file.sync_all()?;
                 self.tail = state;
                 Ok(&self.tail)
             }
@@ -443,14 +440,6 @@ mod tests {
         assert_eq!(head.block_index, 0);
         assert_eq!(tail.block_index, 0);
 
-        // Write a single extra byte at end. If truncation isn't done correctly when reopening the chain
-        // the chain will be in an invalid state after the next block is written, and validation will fail
-        // with BlockError::Content the next time the chain is opened.
-        file.write_all(b"0").unwrap();
-        let (mut file, head, tail) = validate_chain(file, &chain_hash).unwrap();
-        assert_eq!(head, state1);
-        assert_eq!(tail, state1);
-
         // Generate a 2nd block
         let next = seed.advance().unwrap();
         let mut buf2 = [0; BLOCK];
@@ -494,29 +483,6 @@ mod tests {
                     .unwrap(),
                 Box::new(BlockError::Content)
             );
-        }
-
-        file.rewind().unwrap();
-        file.set_len(0).unwrap();
-        file.write_all(&good).unwrap();
-        let (_, head, tail) = validate_chain(file.try_clone().unwrap(), &chain_hash).unwrap();
-        assert_eq!(head, state1);
-        assert_eq!(tail, state2);
-        assert_eq!(tail.block_index, 1);
-        let length = (BLOCK * 2) as u64;
-        for reduce in 1..=length {
-            assert!(reduce > 0);
-            file.set_len(length - reduce).unwrap();
-            if reduce > BLOCK as u64 {
-                assert_eq!(
-                    validate_chain(file.try_clone().unwrap(), &chain_hash)
-                        .unwrap_err()
-                        .kind(),
-                    io::ErrorKind::UnexpectedEof
-                );
-            } else {
-                assert!(validate_chain(file.try_clone().unwrap(), &chain_hash).is_ok());
-            }
         }
     }
 

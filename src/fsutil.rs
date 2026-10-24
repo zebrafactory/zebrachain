@@ -27,7 +27,6 @@ pub(crate) fn secret_chain_filename(dir: &Path, chain_hash: &Hash) -> PathBuf {
     filename
 }
 
-#[cfg(not(target_os = "windows"))]
 pub(crate) fn create_for_append(path: &Path) -> io::Result<File> {
     File::options()
         .read(true)
@@ -36,24 +35,8 @@ pub(crate) fn create_for_append(path: &Path) -> io::Result<File> {
         .open(path)
 }
 
-#[cfg(not(target_os = "windows"))]
 pub(crate) fn open_for_append(path: &Path) -> io::Result<File> {
     File::options().read(true).append(true).open(path)
-}
-
-#[cfg(target_os = "windows")]
-pub(crate) fn create_for_append(path: &Path) -> io::Result<File> {
-    File::options()
-        .read(true)
-        .write(true) // Must open in write mode on Windows in order to truncate
-        .create_new(true)
-        .open(path)
-}
-
-#[cfg(target_os = "windows")]
-pub(crate) fn open_for_append(path: &Path) -> io::Result<File> {
-    // Must open in write mode on Windows in order to truncate
-    File::options().read(true).write(true).open(path)
 }
 
 #[cfg(test)]
