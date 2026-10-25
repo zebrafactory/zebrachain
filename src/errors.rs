@@ -126,17 +126,8 @@ pub enum PermissionError {
     /// User already has a public key in the permissions object.
     EmptyBuffer,
 
-    /// fixme.
+    /// Chain Hash already exists in Permission set.
     Duplicate,
-
-    /// FIXME
-    Hash,
-
-    /// FIXME
-    Size,
-
-    /// FIXME
-    Header,
 }
 
 impl PermissionError {
