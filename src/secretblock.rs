@@ -212,7 +212,7 @@ impl<'a> MutSecretBlock<'a> {
     /// Set needed secret block fields for block after `prev`.
     pub fn set_previous(&mut self, prev: &SecretBlockState) {
         set_u64(self.buf, SEC_INDEX_RANGE, prev.block_index + 1);
-        set_hash(self.buf, SEC_PREV_HASH_RANGE, &prev.block_hash);
+        self.buf[SEC_PREV_HASH_RANGE].copy_from_slice(prev.block_hash.as_bytes());
     }
 
     /// Write seed to buffer.
@@ -222,14 +222,14 @@ impl<'a> MutSecretBlock<'a> {
 
     /// Set hash of resulting public block (used for integrity check).
     pub fn set_public_block_hash(&mut self, public_block_hash: &Hash) {
-        set_hash(self.buf, SEC_PUBLIC_HASH_RANGE, public_block_hash);
+        self.buf[SEC_PUBLIC_HASH_RANGE].copy_from_slice(public_block_hash.as_bytes());
     }
 
     /// Set and return block hash.
     pub fn finalize(self, chain_secret: &Secret) -> Hash {
         let block_index = get_u64(self.buf, SEC_INDEX_RANGE);
         let block_hash = Hash::compute(&self.buf[SEC_HASHABLE_RANGE]);
-        set_hash(self.buf, SEC_HASH_RANGE, &block_hash);
+        self.buf[SEC_HASH_RANGE].copy_from_slice(block_hash.as_bytes());
         encrypt_in_place(self.buf, chain_secret, block_index);
         block_hash
     }
@@ -398,8 +398,8 @@ mod tests {
         let mut buf = vec![0; SECRET_BLOCK];
         getrandom::fill(&mut buf).unwrap();
         set_u64(&mut buf, SEC_INDEX_RANGE, state.block_index + 1);
-        set_secret(&mut buf[SEC_SEED_RANGE], 0..SECRET, &state.seed.next_secret);
-        set_hash(&mut buf, SEC_PREV_HASH_RANGE, &state.block_hash);
+        buf[SEC_SEED_RANGE][0..SECRET].copy_from_slice(state.seed.next_secret.as_bytes());
+        buf[SEC_PREV_HASH_RANGE].copy_from_slice(state.block_hash.as_bytes());
         let block_hash = Hash::compute(&buf[SEC_HASHABLE_RANGE]);
         buf[SEC_HASH_RANGE].copy_from_slice(block_hash.as_bytes());
         (block_hash, buf)
@@ -468,7 +468,7 @@ mod tests {
                 let mut buf = orig.clone();
                 set_u64(&mut buf, SEC_INDEX_RANGE, bad_block_index);
                 let bad_block_hash = Hash::compute(&buf[SEC_HASHABLE_RANGE]);
-                set_hash(&mut buf, SEC_HASH_RANGE, &bad_block_hash);
+                buf[SEC_HASH_RANGE].copy_from_slice(bad_block_hash.as_bytes());
                 encrypt_in_place(&mut buf, &chain_secret, block_index);
                 {
                     let block = SecretBlock::new(&mut buf);
@@ -484,7 +484,7 @@ mod tests {
             let mut buf = orig.clone();
             buf[SEC_SEED_RANGE][0..SECRET].copy_from_slice(state_in.seed.next_secret.as_bytes());
             let bad_block_hash = Hash::compute(&buf[SEC_HASHABLE_RANGE]);
-            set_hash(&mut buf, SEC_HASH_RANGE, &bad_block_hash);
+            buf[SEC_HASH_RANGE].copy_from_slice(bad_block_hash.as_bytes());
             encrypt_in_place(&mut buf, &chain_secret, block_index);
             {
                 let block = SecretBlock::new(&mut buf);
@@ -499,7 +499,7 @@ mod tests {
             let mut buf = orig.clone();
             buf[SEC_SEED_RANGE][0..SECRET].copy_from_slice(&[0; SECRET]);
             let bad_block_hash = Hash::compute(&buf[SEC_HASHABLE_RANGE]);
-            set_hash(&mut buf, SEC_HASH_RANGE, &bad_block_hash);
+            buf[SEC_HASH_RANGE].copy_from_slice(bad_block_hash.as_bytes());
             encrypt_in_place(&mut buf, &chain_secret, block_index);
             {
                 let block = SecretBlock::new(&mut buf);
@@ -514,7 +514,7 @@ mod tests {
             let mut buf = orig.clone();
             buf[SEC_SEED_RANGE][SECRET..SECRET * 2].copy_from_slice(&[0; SECRET]);
             let bad_block_hash = Hash::compute(&buf[SEC_HASHABLE_RANGE]);
-            set_hash(&mut buf, SEC_HASH_RANGE, &bad_block_hash);
+            buf[SEC_HASH_RANGE].copy_from_slice(bad_block_hash.as_bytes());
             encrypt_in_place(&mut buf, &chain_secret, block_index);
             {
                 let block = SecretBlock::new(&mut buf);

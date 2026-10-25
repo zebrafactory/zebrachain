@@ -78,8 +78,8 @@ impl Seed {
     /// Load a seed from a buffer.
     pub fn from_buf(buf: &[u8]) -> Result<Self, SecretBlockError> {
         assert_eq!(buf.len(), SEED);
-        let secret = get_secret(buf, SECRET_RANGE);
-        let next_secret = get_secret(buf, NEXT_SECRET_RANGE);
+        let secret = Secret::from_slice(&buf[SECRET_RANGE]).unwrap();
+        let next_secret = Secret::from_slice(&buf[NEXT_SECRET_RANGE]).unwrap();
         if secret.is_zeros() || next_secret.is_zeros() || secret == next_secret {
             Err(SecretBlockError::Seed)
         } else {
@@ -93,8 +93,8 @@ impl Seed {
     /// Write seed to buffer.
     pub fn write_to_buf(&self, buf: &mut [u8]) {
         assert_eq!(buf.len(), SEED);
-        set_secret(buf, SECRET_RANGE, &self.secret);
-        set_secret(buf, NEXT_SECRET_RANGE, &self.next_secret);
+        buf[SECRET_RANGE].copy_from_slice(self.secret.as_bytes());
+        buf[NEXT_SECRET_RANGE].copy_from_slice(self.next_secret.as_bytes());
     }
 }
 

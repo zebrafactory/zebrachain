@@ -1,4 +1,3 @@
-use crate::{Hash, Secret};
 use core::ops::Range;
 use hex_literal::hex;
 pub use zf_zebrachaos::{DIGEST, HEXDIGEST, Z32DIGEST};
@@ -176,21 +175,6 @@ pub(crate) static SIGNING_CXT_ML_DSA: &[u8; 32] =
     &hex!("270973c068ca5b0188c0e0b89f286d1a8c6a3b3c176aa07b3ae3a519fd65032f");
 //pub(crate) static SIGNING_CXT_SLH_DSA: &[u8] =
 //    b"b71cd1500453530f76d0a4e47863c69bb4842a42ba088532d58d11c149489853";
-
-#[inline]
-pub(crate) fn set_hash(buf: &mut [u8], range: Range<usize>, value: &Hash) {
-    buf[range].copy_from_slice(value.as_bytes());
-}
-
-#[inline]
-pub(crate) fn get_secret(buf: &[u8], range: Range<usize>) -> Secret {
-    Secret::from_slice(&buf[range]).unwrap()
-}
-
-#[inline]
-pub(crate) fn set_secret(buf: &mut [u8], range: Range<usize>, value: &Secret) {
-    buf[range].copy_from_slice(value.as_bytes());
-}
 
 #[inline]
 pub(crate) fn get_u64(buf: &[u8], range: Range<usize>) -> u64 {
