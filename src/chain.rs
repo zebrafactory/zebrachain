@@ -47,7 +47,7 @@ fn validate_chain(file: File, chain_hash: &Hash) -> io::Result<(File, BlockState
                 }
                 tail = match Block::new(&buf).from_previous(&tail) {
                     Ok(state) => state,
-                    Err(err) => return Err(err.into_io_error()),
+                    Err(block_err) => return Err(block_err.into_io_error()),
                 };
             }
             Err(err) => return Err(err),
@@ -95,7 +95,7 @@ fn validate_from_checkpoint(
                 }
                 tail = match Block::new(&buf).from_previous(&tail) {
                     Ok(state) => state,
-                    Err(err) => return Err(err.into_io_error()),
+                    Err(block_err) => return Err(block_err.into_io_error()),
                 };
             }
             Err(err) => return Err(err),
