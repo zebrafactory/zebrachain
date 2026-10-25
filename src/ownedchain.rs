@@ -117,7 +117,7 @@ impl OwnedChainStore {
     pub fn secret_to_public(&self, secret_chain: &SecretChain) -> io::Result<Chain> {
         let mut buf = [0; BLOCK];
         let mut iter = secret_chain.iter();
-        let sec = iter.nth(0).unwrap()?;
+        let sec = iter.next().unwrap()?;
         let chain_hash = sign_block(&mut buf, &sec.seed, &sec.payload, None);
         let mut chain = self.store.create_chain(&buf, &chain_hash)?;
         let mut tail = chain.head().clone();
