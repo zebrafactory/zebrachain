@@ -11,11 +11,10 @@ In short, ZebraChain:
 
 * Logs each signature in a block chain
 
+* Is quantum secure because it uses ML-DSA + ed25519 in a hybrid signing construction
+
 * Changes the keypairs at every signature by including the public key used to sign the current
 block and the hash of the public key that will be used to sign the next block
-
-* Is quantum secure because it uses ML-DSA + ed25519 in a hybrid signing construction (as
-recommended by the ML-DSA authors)
 
 This is a pre-release crate. The API is still being finalized. The 0.0.x releases make no API commitments, nor any
 commits to the protocol.
@@ -36,24 +35,23 @@ finalized protocol.
 Consider the GPG key used to sign updates for your favorite Linux distribution.  You could replace
 it with a ZebraChain, gaining some important benefits over the GPG key:
 
-* Each signature is a new block in a blockchain, with a back-reference to the hash of the previous
-block.  This creates a robust, publicly verifiable log of every signature that has be made using a
+* Each signature is a new block in a blockchain, with a back-reference (the hash of the previous
+block).  This creates a robust, publicly verifiable log of every signature that has be made using a
 specific ZebraChain.
 
 * A given asymmetric key pair is only used *once!* Each block contains the signature, the
-corresponding public key used to sign the block, and a *forward-reference* to the *hash* of the
-corresponding public key that will be used to sign the *next* block.
+corresponding public key used to sign the block, and a *forward-reference* (the *hash* of the
+corresponding public key that will be used to sign the *next* block).
 
 * Entropy accumulation throughout the lifetime of a ZebraChain. At each signature, a new call to
 `getrandom()` is made. This new entropy is securely mixed with the current seed (using a keyed
 hash), and the result is the next seed. This allows new entropy to be introduced at each signature,
 minimizing the problem of whether there was high enough quality entropy when the ZebraChain was created.
 
-* Quantum safe. ZebraChain uses the recently standardized
+* Quantum safe. ZebraChain uses the
 [FIPS 204 ML-DSA](https://csrc.nist.gov/pubs/fips/204/final) quantum secure algorithm in a hybrid
 construction with the classically secure [ed25519](https://ed25519.cr.yp.to/) algorithm (as
-recommended by the ML-DSA authors). Support for
-[FIPS 205 SLH-DSA](https://csrc.nist.gov/pubs/fips/205/final) will be added soon.
+recommended by the ML-DSA authors).
 
 ## 🦀 Dependencies of Interest
 

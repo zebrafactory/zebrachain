@@ -45,7 +45,7 @@ impl OwnedChainStore {
         password: &[u8],
     ) -> io::Result<OwnedChain> {
         let mut buf = [0; BLOCK];
-        let mut secret_buf = vec![0u8; SECRET_BLOCK_AEAD];
+        let mut secret_buf = vec![0; SECRET_BLOCK_AEAD];
         let mut block = MutOwnedBlock::new(&mut buf, &mut secret_buf, payload);
         let seed = Seed::create(initial_entropy);
         block.sign(&seed);
