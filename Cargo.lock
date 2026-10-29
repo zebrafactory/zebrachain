@@ -284,7 +284,7 @@ checksum = "32a66949e030da00e8c7d4434b251670a91556f4144941d37452769c25d58a53"
 [[package]]
 name = "ml-dsa"
 version = "0.1.1"
-source = "git+https://github.com/RustCrypto/signatures.git?branch=master#b35b7654d113df4bca2e77959e5257a0c5b7c774"
+source = "git+https://github.com/RustCrypto/signatures.git?branch=master#99fe9e27e6346a4161893409190a799c16a7552b"
 dependencies = [
  "crypto-common",
  "ctutils",
