@@ -133,9 +133,9 @@ dependencies = [
 
 [[package]]
 name = "ctutils"
-version = "0.4.5"
+version = "0.4.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "38d28fb6aa7dd680b3ffd1a3e64e115c177bdba63c0ae7f9cd48129ff05c4fa0"
+checksum = "a2376ffd6f96d8a9db59875b4b6b0237d6900b5baf64279714e05493ce64828a"
 dependencies = [
  "cmov",
 ]
@@ -284,7 +284,7 @@ checksum = "32a66949e030da00e8c7d4434b251670a91556f4144941d37452769c25d58a53"
 [[package]]
 name = "ml-dsa"
 version = "0.1.1"
-source = "git+https://github.com/RustCrypto/signatures.git?branch=master#7b8bdcde8917a9db5775e689e25c91adb784492a"
+source = "git+https://github.com/RustCrypto/signatures.git?branch=master#b35b7654d113df4bca2e77959e5257a0c5b7c774"
 dependencies = [
  "crypto-common",
  "ctutils",
@@ -386,9 +386,9 @@ dependencies = [
 
 [[package]]
 name = "rustix"
-version = "1.1.5"
+version = "1.1.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "891efababe418670775f199f0d233d84843c227a0949a883ce15b37c78d6629d"
+checksum = "e5e76742e5294153d4dde1207dbec5bdd81eef6fabdc0d2118babadabfd858aa"
 dependencies = [
  "bitflags",
  "errno",
@@ -547,7 +547,7 @@ dependencies = [
 [[package]]
 name = "zf-zebrachaos"
 version = "0.0.0-pre.0"
-source = "git+https://github.com/zebrafactory/zebrachaos.git?branch=main#55bae992bfdd82bd74d64422a211aefda56595a9"
+source = "git+https://github.com/zebrafactory/zebrachaos.git?branch=main#191c90f7f664a2dfd2f01e78fd494b6b8107e202"
 dependencies = [
  "arrayvec",
  "blake2",
