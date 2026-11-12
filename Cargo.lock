@@ -204,9 +204,9 @@ dependencies = [
 
 [[package]]
 name = "errno"
-version = "0.3.14"
+version = "0.3.15"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "39cab71617ae0d63f51a36d69f866391735b51691dbda63cf6f96d042b63efeb"
+checksum = "e35d6e78f4cebb90e51d543db8fe41528851d6deeef6ef21ebd4bfdc1e784776"
 dependencies = [
  "libc",
  "windows-sys",
@@ -552,9 +552,9 @@ dependencies = [
 
 [[package]]
 name = "zf-zebrachaos"
-version = "0.0.1-rc.0"
+version = "0.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "75bd0cec638ec97b35b8880a9ec4b3217bf73b545f3925ddaff128597f23f538"
+checksum = "359e8f813b9c8a25e1783fb5bff4180997600dcdbccaeffd49f489e4f9f9df3c"
 dependencies = [
  "arrayvec",
  "blake2",
