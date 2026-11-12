@@ -535,7 +535,7 @@ dependencies = [
 
 [[package]]
 name = "zf-zebrachain"
-version = "0.0.16"
+version = "0.0.17"
 dependencies = [
  "argon2",
  "blake2",
