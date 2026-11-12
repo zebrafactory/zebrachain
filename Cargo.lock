@@ -552,8 +552,9 @@ dependencies = [
 
 [[package]]
 name = "zf-zebrachaos"
-version = "0.0.0-pre.0"
-source = "git+https://github.com/zebrafactory/zebrachaos.git?branch=main#4c0f049308c924c3166c2db99f916b3c7fc1ec79"
+version = "0.0.1-rc.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "75bd0cec638ec97b35b8880a9ec4b3217bf73b545f3925ddaff128597f23f538"
 dependencies = [
  "arrayvec",
  "blake2",

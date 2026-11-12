@@ -374,7 +374,7 @@ mod tests {
 
         // Empty Permission
         {
-            let mut obj = MutObject::new(&mut buf);
+            let mut obj = MutObject::new(0, &mut buf);
             assert_eq!(
                 perm.write_to_object(&mut obj).unwrap_err(),
                 ObjectError::DataLenBounds
@@ -385,7 +385,7 @@ mod tests {
         // One chain_hash in Permission
         perm.insert(random_hash()).unwrap();
         {
-            let mut obj = MutObject::new(&mut buf);
+            let mut obj = MutObject::new(0, &mut buf);
             assert!(perm.write_to_object(&mut obj).is_ok());
             assert_eq!(obj.remaining(), DATA_MAX_LEN - DIGEST);
         }
@@ -395,7 +395,7 @@ mod tests {
             perm.insert(random_hash()).unwrap();
         }
         {
-            let mut obj = MutObject::new(&mut buf);
+            let mut obj = MutObject::new(0, &mut buf);
             assert!(perm.write_to_object(&mut obj).is_ok());
             assert_eq!(obj.remaining(), DATA_MAX_LEN % DIGEST);
         }
@@ -403,7 +403,7 @@ mod tests {
         // One indentity too many
         perm.insert(random_hash()).unwrap();
         {
-            let mut obj = MutObject::new(&mut buf);
+            let mut obj = MutObject::new(0, &mut buf);
             assert_eq!(
                 perm.write_to_object(&mut obj).unwrap_err(),
                 ObjectError::DataLenBounds
