@@ -515,9 +515,9 @@ dependencies = [
 
 [[package]]
 name = "zeroize"
-version = "1.9.1"
+version = "1.9.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e13084392c5e4bc371903e2935a5eaeed24905a7511356b883835e18a78f6879"
+checksum = "85ccff8a4805aba1eaa4cd4afcd49f7557dd2cf5fd79ffc37f8959466effc5aa"
 dependencies = [
  "zeroize_derive",
 ]
@@ -553,7 +553,7 @@ dependencies = [
 [[package]]
 name = "zf-zebrachaos"
 version = "0.0.1"
-source = "git+https://github.com/zebrafactory/zebrachaos.git?branch=main#40556c15ee489316e9bfb4382ac5bef5df7a97b8"
+source = "git+https://github.com/zebrafactory/zebrachaos.git?branch=main#19e90ed49c31977d09053fd0c1d05780472c0c08"
 dependencies = [
  "arrayvec",
  "blake2",
